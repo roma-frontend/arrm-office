@@ -177,7 +177,7 @@ const Input = ({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         rows={2}
-        className="w-full px-3 py-2 rounded-xl border border-(--border) text-sm outline-none transition-all bg-(--input) text-(--text-primary) focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 resize-none"
+        className="w-full px-3 py-2 rounded-xl border border-(--border) text-sm outline-none transition-all bg-(--input) text-(--text-primary) focus:border-(--brand-outline) focus:ring-1 focus:ring-(--brand-text) resize-none"
       />
     ) : (
       <input
@@ -185,7 +185,7 @@ const Input = ({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full px-3 py-2 rounded-xl border border-(--border) text-sm outline-none transition-all bg-(--input) text-(--text-primary) focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20"
+        className="w-full px-3 py-2 rounded-xl border border-(--border) text-sm outline-none transition-all bg-(--input) text-(--text-primary) focus:border-(--brand-outline) focus:ring-1 focus:ring-(--brand-text)"
       />
     )}
   </div>
@@ -330,7 +330,7 @@ export default function EditExtendedProfileModal({
           >
             <div>
               <h3 className="text-sm font-semibold text-(--text-primary) flex items-center gap-2">
-                <Heart className="w-4 h-4 text-rose-500" />
+                <Heart className="w-4 h-4 text-(--danger-text)" />
                 {t('extendedProfile.personalDetails', 'Personal Details')}
               </h3>
               <p className="text-xs text-(--text-muted) mt-1">
@@ -370,7 +370,7 @@ export default function EditExtendedProfileModal({
                 aria-checked={form.pensionExempt}
                 onClick={() => updateField('pensionExempt', !form.pensionExempt)}
                 className={`w-9 h-5 rounded-full transition-all relative ${
-                  form.pensionExempt ? 'bg-blue-500' : 'bg-(--border)'
+                  form.pensionExempt ? 'bg-(--brand)' : 'bg-(--border)'
                 }`}
               >
                 <div
@@ -404,7 +404,7 @@ export default function EditExtendedProfileModal({
           >
             <div>
               <h3 className="text-sm font-semibold text-(--text-primary) flex items-center gap-2">
-                <Briefcase className="w-4 h-4 text-amber-500" />
+                <Briefcase className="w-4 h-4 text-(--warning-text)" />
                 {t('extendedProfile.workDetails', 'Work Details')}
               </h3>
               <p className="text-xs text-(--text-muted) mt-1">
@@ -442,7 +442,7 @@ export default function EditExtendedProfileModal({
                     onClick={() => updateField('workFormat', opt.value as FormData['workFormat'])}
                     className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 text-xs font-medium transition-all ${
                       form.workFormat === opt.value
-                        ? 'border-blue-500 bg-blue-500/10 text-blue-600 dark:text-blue-400'
+                        ? 'border-(--brand-outline) bg-(--brand-quiet) text-(--brand-text) dark:text-(--brand-text)'
                         : 'border-(--border) bg-(--background-subtle) text-(--text-muted) hover:border-(--border)/60'
                     }`}
                   >
@@ -504,7 +504,7 @@ export default function EditExtendedProfileModal({
                       }
                       className={`text-[11px] px-2.5 py-1 rounded-lg font-medium transition-all border ${
                         isSelected
-                          ? 'bg-blue-500/10 border-blue-500/30 text-blue-600 dark:text-blue-400'
+                          ? 'bg-(--brand-quiet) border-(--brand-outline) text-(--brand-text) dark:text-(--brand-text)'
                           : 'bg-(--background-subtle) border-(--border) text-(--text-muted)/60'
                       }`}
                     >
@@ -524,7 +524,7 @@ export default function EditExtendedProfileModal({
                     }))
                   }
                   className={`w-9 h-5 rounded-full transition-all relative ${
-                    form.workSchedule.flexHours ? 'bg-blue-500' : 'bg-(--border)'
+                    form.workSchedule.flexHours ? 'bg-(--brand)' : 'bg-(--border)'
                   }`}
                 >
                   <div
@@ -551,7 +551,7 @@ export default function EditExtendedProfileModal({
           >
             <div>
               <h3 className="text-sm font-semibold text-(--text-primary) flex items-center gap-2">
-                <Phone className="w-4 h-4 text-red-500" />
+                <Phone className="w-4 h-4 text-(--danger-text)" />
                 {t('extendedProfile.emergencyContact', 'Emergency Contact')}
               </h3>
               <p className="text-xs text-(--text-muted) mt-1">
@@ -596,7 +596,7 @@ export default function EditExtendedProfileModal({
           >
             <div>
               <h3 className="text-sm font-semibold text-(--text-primary) flex items-center gap-2">
-                <Globe className="w-4 h-4 text-purple-500" />
+                <Globe className="w-4 h-4 text-(--purple-text)" />
                 {t('extendedProfile.socialLinks', 'Social Links')}
               </h3>
               <p className="text-xs text-(--text-muted) mt-1">
@@ -646,7 +646,7 @@ export default function EditExtendedProfileModal({
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-semibold text-(--text-primary) flex items-center gap-2">
-                  <Building2 className="w-4 h-4 text-emerald-500" />
+                  <Building2 className="w-4 h-4 text-(--success-text)" />
                   {t('extendedProfile.workHistory', 'Work History')}
                 </h3>
                 <p className="text-xs text-(--text-muted) mt-1">
@@ -678,7 +678,7 @@ export default function EditExtendedProfileModal({
                     >
                       <button
                         onClick={() => removeWorkEntry(idx)}
-                        className="absolute top-2 right-2 p-1 rounded-lg text-red-400 opacity-0 group-hover/entry:opacity-100 hover:bg-red-500/10 transition-all"
+                        className="absolute top-2 right-2 p-1 rounded-lg text-(--danger-text) opacity-0 group-hover/entry:opacity-100 hover:bg-(--danger-quiet) transition-all"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -737,7 +737,7 @@ export default function EditExtendedProfileModal({
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-semibold text-(--text-primary) flex items-center gap-2">
-                  <GraduationCap className="w-4 h-4 text-sky-500" />
+                  <GraduationCap className="w-4 h-4 text-(--brand-text)" />
                   {t('extendedProfile.education', 'Education')}
                 </h3>
                 <p className="text-xs text-(--text-muted) mt-1">
@@ -770,7 +770,7 @@ export default function EditExtendedProfileModal({
                       {' '}
                       <button
                         onClick={() => removeEduEntry(idx)}
-                        className="absolute top-2 right-2 p-1 rounded-lg text-red-400 opacity-0 group-hover/entry:opacity-100 hover:bg-red-500/10 transition-all"
+                        className="absolute top-2 right-2 p-1 rounded-lg text-(--danger-text) opacity-0 group-hover/entry:opacity-100 hover:bg-(--danger-quiet) transition-all"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>

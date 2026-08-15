@@ -348,7 +348,7 @@ export function MobileMenuSheet({ open, onClose, role, bottomInset }: MobileMenu
               style={{ background: 'var(--primary-gradient, var(--primary))' }}
             >
               <Sparkles className="h-5 w-5" />
-              <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-(--card)" />
+              <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-(--success-solid) ring-2 ring-(--card)" />
             </span>
             <span className="relative min-w-0 flex-1">
               <span className="flex items-center gap-1.5 text-sm font-semibold text-(--text-primary)">

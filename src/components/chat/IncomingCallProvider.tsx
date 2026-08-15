@@ -99,18 +99,21 @@ export function IncomingCallProvider() {
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-md animate-fade-in">
           <div
             className="relative w-80 rounded-3xl overflow-hidden shadow-2xl p-6 flex flex-col items-center gap-4"
-            style={{ background: 'linear-gradient(160deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)' }}
+            style={{
+              background:
+                'linear-gradient(160deg, var(--canvas) 0%, var(--surface-1) 50%, var(--surface-2) 100%)',
+            }}
           >
             {/* Animated ring */}
             <div className="relative">
-              <div className="w-20 h-20 rounded-full flex items-center justify-center bg-linear-to-br from-purple-600 to-blue-600">
+              <div className="w-20 h-20 rounded-full flex items-center justify-center bg-linear-to-br from-(--purple) to-(--brand)">
                 <span className="text-white text-2xl font-bold">
                   {incomingCall.remoteUserName?.[0]?.toUpperCase() ?? '?'}
                 </span>
               </div>
-              <span className="absolute inset-0 rounded-full ring-4 ring-green-500/40 animate-ping" />
+              <span className="absolute inset-0 rounded-full ring-4 ring-(--success-text) animate-ping" />
               <span
-                className="absolute inset-0 rounded-full ring-4 ring-green-500/20 animate-ping"
+                className="absolute inset-0 rounded-full ring-4 ring-(--success-text) animate-ping"
                 style={{ animationDelay: '0.5s' }}
               />
             </div>

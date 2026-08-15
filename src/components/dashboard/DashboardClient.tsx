@@ -14,18 +14,15 @@ import { LEAVE_TYPE_LABELS, LEAVE_TYPE_COLORS, type LeaveType } from '@/lib/type
 import { type LeaveEnriched, type Organization } from '@/lib/convex-types';
 import { DashboardBanners } from '@/components/dashboard/DashboardBanners';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
-import { SecurityWidget } from '@/components/dashboard/SecurityWidget';
 import { LeaveCharts } from '@/components/dashboard/LeaveCharts';
 import { RecentLeavesCard } from '@/components/dashboard/RecentLeavesCard';
 import { EnterpriseWidgets } from '@/components/dashboard/EnterpriseWidgets';
 import StrategyDashboardWidget from '@/components/dashboard/StrategyDashboardWidget';
 import LeaveStats from '@/components/dashboard/LeaveStats';
-import { QuickActions } from '@/components/dashboard/QuickActions';
 import { CheckInOutWidget } from '@/components/attendance/CheckInOutWidget';
-import { FocusFeed } from '@/components/dashboard/FocusFeed';
+import { TasksFocusWidget } from '@/components/dashboard/TasksFocusWidget';
 import ActivityFeed from '@/components/dashboard/ActivityFeed';
 import { WidgetErrorBoundary } from '@/components/error/WidgetErrorBoundary';
-import { useCommandPaletteStore } from '@/store/useCommandPaletteStore';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -39,7 +36,6 @@ const itemVariants = {
 export default function DashboardClient() {
   const { t } = useTranslation();
   const user = useAuthUser();
-  const openPalette = useCommandPaletteStore((s) => s.openPalette);
 
   const [mounted, setMounted] = React.useState(false);
 
@@ -78,14 +74,9 @@ export default function DashboardClient() {
     userId ? { userId } : 'skip',
   ) as Organization | null;
 
-  const isSuperadmin = user?.role === 'superadmin';
   // The audit-log query behind ActivityFeed is admin/superadmin only; keep the
   // widget off the dashboard for roles that would just render its empty state.
   const canViewAuditLogs = user?.role === 'admin' || user?.role === 'superadmin';
-  const securityStats = useQuery(
-    api.security.getLoginStats,
-    mounted && isSuperadmin ? { hours: 24 } : 'skip',
-  );
 
   React.useEffect(() => {
     setMounted(true);
@@ -158,8 +149,8 @@ export default function DashboardClient() {
   if (isError)
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 text-center">
-        <div className="w-16 h-16 rounded-2xl bg-amber-500/10 flex items-center justify-center">
-          <TrendingUp className="w-8 h-8 text-amber-500" />
+        <div className="w-16 h-16 rounded-2xl bg-(--warning-quiet) flex items-center justify-center">
+          <TrendingUp className="w-8 h-8 text-(--warning-text)" />
         </div>
         <h2 className="text-xl font-semibold text-(--text-primary)">
           {t('dashboard.convexNotDeployed')}
@@ -182,33 +173,27 @@ export default function DashboardClient() {
         userRole={user?.role}
       />
 
-      {/* Lead block: what needs this person today, and the ability to act on it
-          here. Everything below is reference material — stats, charts, widgets —
-          which is why it used to take three clicks to find a pending approval. */}
-      <motion.div variants={itemVariants}>
-        <WidgetErrorBoundary name="FocusFeed">
-          <FocusFeed onOpenSearch={openPalette} />
-        </WidgetErrorBoundary>
-      </motion.div>
-
       <DashboardBanners />
 
-      {/* Managers file attendance like everyone else, so the tracker belongs on
-          their dashboard too — it was only ever mounted on the employee one. */}
+      {/* Daily actions — compact strips that do the thing, side by side so
+          the top of the page answers "what do I do today" without a wall of
+          full-width cards. */}
       <motion.div variants={itemVariants}>
-        <CheckInOutWidget />
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-5">
+          <WidgetErrorBoundary name="TasksFocusWidget">
+            <TasksFocusWidget />
+          </WidgetErrorBoundary>
+          {/* Compact tracker — clock, status, check-in action, and a link to
+              the full /attendance page. */}
+          <CheckInOutWidget compact />
+        </div>
       </motion.div>
 
+      {/* The two figures nothing else reports: headcount and the month's
+          approvals with their trend. Two tiles, not four — "pending requests"
+          and "on leave now" were removed because the Focus Feed states both
+          above (and lets a pending request be approved in place). */}
       <motion.div variants={itemVariants}>
-        {/* Two tiles, not four.
-            "Pending requests" and "On leave now" were removed: the Focus Feed
-            above states both — and lets a pending request be approved in place,
-            which makes a bare count a strictly weaker copy of it. Worse, the two
-            widgets computed "on leave" from different sources (this tile scans
-            leaveRequests date ranges, the Feed reads getOutOfOffice's isOutToday),
-            so they could show different numbers on the same screen.
-            What is left is the two figures nothing else reports: headcount, and
-            the month's approvals with their trend. */}
         <div data-tour="quick-stats" className="grid grid-cols-2 gap-2 sm:gap-3">
           <StatsCard
             title={t('titles.totalEmployees')}
@@ -233,11 +218,29 @@ export default function DashboardClient() {
         </div>
       </motion.div>
 
-      {user?.role === 'superadmin' && <SecurityWidget securityStats={securityStats} />}
-
-      <LeaveCharts monthlyTrend={monthlyTrend} pieData={pieData} />
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+      {/* Reference material — one tight 2×2 grid: leave charts, balance,
+          recent requests and strategy all fill the same band, so the page
+          reads as blocks, not a running list. */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-5 items-stretch">
+        <motion.div variants={itemVariants} className="h-full">
+          <LeaveCharts monthlyTrend={monthlyTrend} pieData={pieData} />
+        </motion.div>
+        {user?.id ? (
+          <motion.div variants={itemVariants} data-tour="leave-balance" className="h-full">
+            <LeaveStats userId={user.id as Id<'users'>} />
+          </motion.div>
+        ) : (
+          <motion.div variants={itemVariants} className="h-full">
+            <RecentLeavesCard
+              recentLeaves={
+                recentLeaves.map((l) => ({
+                  ...l,
+                  organizationId: l.organizationId ?? ('' as Id<'organizations'>),
+                })) as LeaveEnriched[]
+              }
+            />
+          </motion.div>
+        )}
         <RecentLeavesCard
           recentLeaves={
             recentLeaves.map((l) => ({
@@ -246,34 +249,25 @@ export default function DashboardClient() {
             })) as LeaveEnriched[]
           }
         />
-        {user?.id && (
-          <motion.div variants={itemVariants} data-tour="leave-balance">
-            <LeaveStats userId={user.id as Id<'users'>} />
-          </motion.div>
-        )}
+        <motion.div variants={itemVariants} className="h-full">
+          <StrategyDashboardWidget />
+        </motion.div>
       </div>
 
-      {/* Live activity feed — the org's recent actions, with ticking
-          relative timestamps and a live badge. Admin/superadmin only (the
-          audit-log query behind it is role-gated). */}
+      {/* Live activity feed — the org's recent actions, with ticking relative
+          timestamps and a live badge. Admin/superadmin only (the audit-log
+          query behind it is role-gated). */}
       {canViewAuditLogs && (
         <motion.div variants={itemVariants}>
           <ActivityFeed limit={6} />
         </motion.div>
       )}
 
-      {/* Strategy OKR Widget */}
-      <motion.div variants={itemVariants}>
-        <StrategyDashboardWidget />
-      </motion.div>
-
-      <motion.div variants={itemVariants} data-tour="quick-actions" className="lg:col-span-2">
-        <QuickActions />
-      </motion.div>
-
-      <motion.div variants={itemVariants} data-tour="recent-activity" className="lg:col-span-1">
-        {organization?.plan === 'enterprise' && <EnterpriseWidgets />}
-      </motion.div>
+      {organization?.plan === 'enterprise' && (
+        <motion.div variants={itemVariants} data-tour="recent-activity">
+          <EnterpriseWidgets />
+        </motion.div>
+      )}
     </motion.div>
   );
 }

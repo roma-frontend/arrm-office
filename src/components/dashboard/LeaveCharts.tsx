@@ -25,8 +25,6 @@ interface LeaveChartsProps {
   pieData: Array<{ name: string; value: number; color: string }>;
 }
 
-const CHART_HEIGHT = 220;
-
 /** A dot and a word — the legend Recharts draws costs a row of chart height. */
 function LegendDot({ color, label }: { color: string; label: string }) {
   return (
@@ -51,9 +49,12 @@ export function LeaveCharts({ monthlyTrend, pieData }: LeaveChartsProps) {
   const hasTrend = monthlyTrend.some((m) => m.approved + m.pending + m.rejected > 0);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-5 gap-3 sm:gap-4 items-stretch">
-      <motion.div variants={itemVariants} className="lg:col-span-3">
-        <Card className="h-full glass-panel">
+    <div className="flex h-full flex-col gap-3 sm:gap-4">
+      {/* Bar chart — flex-1 makes it soak up whatever height the pie card
+          below doesn't need, so the left column reads as one solid block
+          with no dead band between the two charts. */}
+      <motion.div variants={itemVariants} className="min-h-0 flex-1">
+        <Card className="flex h-full flex-col glass-panel">
           {/* The legend moves into the header: it belongs with the title, and
               inside the plot it ate a row of the chart's own height. */}
           <SectionHeader
@@ -66,52 +67,54 @@ export function LeaveCharts({ monthlyTrend, pieData }: LeaveChartsProps) {
               </div>
             }
           />
-          <CardContent className="px-2 sm:px-3 pb-4">
+          <CardContent className="flex min-h-0 flex-1 flex-col px-2 pb-4 sm:px-3">
             {hasTrend ? (
-              <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
-                <BarChart data={monthlyTrend} margin={{ top: 8, right: 8, left: -22, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
-                  <XAxis
-                    dataKey="month"
-                    tick={{ fill: axisTickFill, fontSize: 10 }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    tick={{ fill: axisTickFill, fontSize: 10 }}
-                    axisLine={false}
-                    tickLine={false}
-                    allowDecimals={false}
-                  />
-                  <RechartsTooltip
-                    contentStyle={tooltipStyle}
-                    itemStyle={{ color: tooltipColor }}
-                    labelStyle={{ color: tooltipColor }}
-                    cursor={{ fill: hoverFill }}
-                  />
-                  <Bar
-                    dataKey="approved"
-                    name={t('statuses.approved')}
-                    fill={status.success}
-                    radius={[4, 4, 0, 0]}
-                    maxBarSize={22}
-                  />
-                  <Bar
-                    dataKey="pending"
-                    name={t('statuses.pending')}
-                    fill={status.warning}
-                    radius={[4, 4, 0, 0]}
-                    maxBarSize={22}
-                  />
-                  <Bar
-                    dataKey="rejected"
-                    name={t('statuses.rejected')}
-                    fill={status.danger}
-                    radius={[4, 4, 0, 0]}
-                    maxBarSize={22}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
+              <div className="min-h-[220px] flex-1">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={monthlyTrend} margin={{ top: 8, right: 8, left: -22, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
+                    <XAxis
+                      dataKey="month"
+                      tick={{ fill: axisTickFill, fontSize: 10 }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tick={{ fill: axisTickFill, fontSize: 10 }}
+                      axisLine={false}
+                      tickLine={false}
+                      allowDecimals={false}
+                    />
+                    <RechartsTooltip
+                      contentStyle={tooltipStyle}
+                      itemStyle={{ color: tooltipColor }}
+                      labelStyle={{ color: tooltipColor }}
+                      cursor={{ fill: hoverFill }}
+                    />
+                    <Bar
+                      dataKey="approved"
+                      name={t('statuses.approved')}
+                      fill={status.success}
+                      radius={[4, 4, 0, 0]}
+                      maxBarSize={22}
+                    />
+                    <Bar
+                      dataKey="pending"
+                      name={t('statuses.pending')}
+                      fill={status.warning}
+                      radius={[4, 4, 0, 0]}
+                      maxBarSize={22}
+                    />
+                    <Bar
+                      dataKey="rejected"
+                      name={t('statuses.rejected')}
+                      fill={status.danger}
+                      radius={[4, 4, 0, 0]}
+                      maxBarSize={22}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             ) : (
               <SectionEmpty
                 icon={<CalendarDays className="w-4 h-4" />}
@@ -123,12 +126,15 @@ export function LeaveCharts({ monthlyTrend, pieData }: LeaveChartsProps) {
         </Card>
       </motion.div>
 
-      <motion.div variants={itemVariants} className="lg:col-span-2">
-        <Card className="h-full glass-panel">
+      {/* Pie — natural height, donut + legend side by side. The legend is the
+          body text of this card, not a caption squeezed under a stretched
+          donut, so the card never grows dead space. */}
+      <motion.div variants={itemVariants}>
+        <Card className="glass-panel">
           <SectionHeader title={t('dashboard.leaveDistribution')} />
-          <CardContent className="px-4 sm:px-5 pb-4">
+          <CardContent className="px-4 pb-4 sm:px-5">
             {pieData.length > 0 ? (
-              <div className="flex flex-col sm:flex-row lg:flex-col items-center gap-3">
+              <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-center">
                 <div
                   className="relative shrink-0"
                   // Safety net: if the pointer leaves the chart faster than
@@ -198,7 +204,7 @@ export function LeaveCharts({ monthlyTrend, pieData }: LeaveChartsProps) {
 
                 {/* Coloured slices with no key are unreadable; each type is named
                     with its own count and share. */}
-                <ul className="w-full space-y-1.5 min-w-0">
+                <ul className="w-full flex-1 min-w-0 space-y-1.5">
                   {pieData.map((entry) => (
                     <li key={entry.name} className="flex items-center gap-2 text-xs">
                       <span

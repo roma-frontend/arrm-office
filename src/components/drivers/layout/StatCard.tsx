@@ -22,9 +22,9 @@ export const StatCard = memo(function StatCard({
   label,
   value,
   icon: Icon,
-  gradientFrom = '#6366f1',
-  gradientTo = '#4f46e5',
-  iconBgColor = 'rgba(99, 102, 241, 0.1)',
+  gradientFrom = 'var(--purple)',
+  gradientTo = 'var(--purple-text)',
+  iconBgColor = 'var(--purple-quiet)',
 }: StatCardProps) {
   return (
     <Card className="drivers-card-hover relative overflow-hidden border-(--border)">

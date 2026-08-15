@@ -35,7 +35,7 @@ export const MyTasksWidget = memo(function MyTasksWidget({ userId }: { userId: s
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2">
-            <ListChecks className="w-5 h-5 text-[#2563eb]" />
+            <ListChecks className="w-5 h-5 text-(--brand-text)" />
             {t('dashboardWidgets.myTasks', 'My Tasks')}
           </CardTitle>
           <Button asChild variant="ghost" size="sm">
@@ -73,7 +73,7 @@ export const MyTasksWidget = memo(function MyTasksWidget({ userId }: { userId: s
                     </p>
                     {typeof task.deadline === 'number' && (
                       <p
-                        className={`text-xs mt-0.5 flex items-center gap-1 ${overdue ? 'text-[#ef4444]' : 'text-(--text-muted)'}`}
+                        className={`text-xs mt-0.5 flex items-center gap-1 ${overdue ? 'text-(--danger-text)' : 'text-(--text-muted)'}`}
                       >
                         {overdue ? (
                           <AlertTriangle className="w-3 h-3" />

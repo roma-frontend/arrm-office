@@ -181,13 +181,13 @@ export default function HolidayCalendarSync({ organizationId }: HolidayCalendarS
       <Card className="border-(--border)">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-blue-500" />
+            <Calendar className="h-5 w-5 text-(--brand-text)" />
             {t('calendarSync.title')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Stats */}
-          <div className="rounded-lg bg-linear-to-br from-blue-500/10 to-cyan-500/10 p-4">
+          <div className="rounded-lg bg-linear-to-br from-(--brand) to-(--cyan) p-4">
             <p className="text-sm text-(--text-secondary)">{t('calendarSync.upcomingLeaves')}</p>
             <p className="text-3xl font-bold text-(--text-primary)">{calendarData.length}</p>
           </div>
@@ -234,7 +234,7 @@ export default function HolidayCalendarSync({ organizationId }: HolidayCalendarS
                 ) : !hasCalendarSync ? (
                   <Lock className="mr-2 h-4 w-4 text-(--text-muted)" />
                 ) : googleConnected ? (
-                  <CheckCircle2 className="mr-2 h-4 w-4 text-green-500" />
+                  <CheckCircle2 className="mr-2 h-4 w-4 text-(--success-text)" />
                 ) : (
                   <ExternalLink className="mr-2 h-4 w-4" />
                 )}
@@ -245,7 +245,7 @@ export default function HolidayCalendarSync({ organizationId }: HolidayCalendarS
               {googleConnected && hasCalendarSync && (
                 <Badge
                   variant="secondary"
-                  className="absolute -right-2 -top-2 bg-green-500 text-white"
+                  className="absolute -right-2 -top-2 bg-(--success-solid) text-white"
                 >
                   {t('calendarSync.connected')}
                 </Badge>
@@ -253,7 +253,7 @@ export default function HolidayCalendarSync({ organizationId }: HolidayCalendarS
               {!hasCalendarSync && (
                 <Badge
                   variant="secondary"
-                  className="absolute -right-2 -top-2 bg-linear-to-r from-amber-500 to-orange-500 text-white text-[10px]"
+                  className="absolute -right-2 -top-2 bg-linear-to-r from-(--warning-solid) to-(--warning-solid) text-white text-[10px]"
                 >
                   {t('calendarSync.pro')}
                 </Badge>
@@ -282,7 +282,7 @@ export default function HolidayCalendarSync({ organizationId }: HolidayCalendarS
                 ) : !hasCalendarSync ? (
                   <Lock className="mr-2 h-4 w-4 text-(--text-muted)" />
                 ) : outlookConnected ? (
-                  <CheckCircle2 className="mr-2 h-4 w-4 text-green-500" />
+                  <CheckCircle2 className="mr-2 h-4 w-4 text-(--success-text)" />
                 ) : (
                   <ExternalLink className="mr-2 h-4 w-4" />
                 )}
@@ -293,7 +293,7 @@ export default function HolidayCalendarSync({ organizationId }: HolidayCalendarS
               {outlookConnected && hasCalendarSync && (
                 <Badge
                   variant="secondary"
-                  className="absolute -right-2 -top-2 bg-green-500 text-white"
+                  className="absolute -right-2 -top-2 bg-(--success-solid) text-white"
                 >
                   {t('calendarSync.connected')}
                 </Badge>
@@ -301,7 +301,7 @@ export default function HolidayCalendarSync({ organizationId }: HolidayCalendarS
               {!hasCalendarSync && (
                 <Badge
                   variant="secondary"
-                  className="absolute -right-2 -top-2 bg-linear-to-r from-amber-500 to-orange-500 text-white text-[10px]"
+                  className="absolute -right-2 -top-2 bg-linear-to-r from-(--warning-solid) to-(--warning-solid) text-white text-[10px]"
                 >
                   {t('calendarSync.pro')}
                 </Badge>

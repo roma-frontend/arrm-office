@@ -47,7 +47,7 @@ export default function EmployeeProfilePageClient() {
         </Link>
         <Card>
           <CardContent className="p-8 text-center">
-            <AlertCircle className="w-12 h-12 text-orange-500 mx-auto mb-3" />
+            <AlertCircle className="w-12 h-12 text-(--warning-text) mx-auto mb-3" />
             <h3 className="text-lg font-semibold text-(--text-primary) mb-1">
               {t('employees.employeeNotFound')}
             </h3>

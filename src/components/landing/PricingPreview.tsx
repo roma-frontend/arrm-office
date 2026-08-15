@@ -893,8 +893,8 @@ export default function PricingPreview() {
     <section id="pricing" className="relative z-10 px-6 md:px-12 py-12 md:py-24 overflow-hidden">
       {/* Background glows */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-1/2 left-1/4 w-96 h-96 bg-indigo-600/8 rounded-full blur-[120px]" />
-        <div className="absolute top-1/2 right-1/4 w-96 h-96 bg-blue-600/8 rounded-full blur-[120px]" />
+        <div className="absolute top-1/2 left-1/4 w-96 h-96 bg-(--purple-quiet) rounded-full blur-[120px]" />
+        <div className="absolute top-1/2 right-1/4 w-96 h-96 bg-(--brand-quiet) rounded-full blur-[120px]" />
       </div>
 
       {/* Header */}

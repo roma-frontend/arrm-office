@@ -169,7 +169,7 @@ export function TaxRuleEditor({
           )}
         </div>
         {base.approximate && (
-          <div className="flex items-start gap-2 mt-2 text-xs text-amber-600 bg-amber-50 dark:bg-amber-950/30 rounded-md p-2">
+          <div className="flex items-start gap-2 mt-2 text-xs text-(--warning-text) bg-(--warning-quiet) dark:bg-(--warning-quiet) rounded-md p-2">
             <Info className="w-4 h-4 shrink-0 mt-0.5" />
             <span>
               {t(
@@ -247,7 +247,7 @@ export function TaxRuleEditor({
                   onClick={() => removeBracket(i)}
                   aria-label={t('common.delete', 'Delete')}
                 >
-                  <Trash2 className="w-4 h-4 text-red-500" />
+                  <Trash2 className="w-4 h-4 text-(--danger-text)" />
                 </Button>
               </div>
             ))}
@@ -328,7 +328,7 @@ export function TaxRuleEditor({
                     onClick={() => removeContribution(side, i)}
                     aria-label={t('common.delete', 'Delete')}
                   >
-                    <Trash2 className="w-4 h-4 text-red-500" />
+                    <Trash2 className="w-4 h-4 text-(--danger-text)" />
                   </Button>
                 </div>
               ))}

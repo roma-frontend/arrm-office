@@ -31,9 +31,9 @@ const PLAN_ICONS: Record<string, React.ReactNode> = {
 };
 
 const PLAN_COLORS: Record<string, string> = {
-  starter: 'text-indigo-500',
-  professional: 'text-blue-500',
-  enterprise: 'text-cyan-500',
+  starter: 'text-(--purple-text)',
+  professional: 'text-(--brand-text)',
+  enterprise: 'text-(--cyan-text)',
 };
 
 function StatusBadge({
@@ -145,7 +145,7 @@ export function SubscriptionPlanCard() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div
-                    className={`p-2 rounded-xl bg-(--background-subtle) ${PLAN_COLORS[plan] ?? 'text-indigo-500'}`}
+                    className={`p-2 rounded-xl bg-(--background-subtle) ${PLAN_COLORS[plan] ?? 'text-(--purple-text)'}`}
                   >
                     {PLAN_ICONS[plan] ?? <Zap className="w-5 h-5" />}
                   </div>
@@ -161,7 +161,7 @@ export function SubscriptionPlanCard() {
 
               {/* Trial info */}
               {isTrialing && trialDaysLeft !== null && (
-                <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-sm">
+                <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-(--warning-quiet) border border-(--warning-outline) text-(--warning-text) dark:text-(--warning-text) text-sm">
                   <Clock className="w-4 h-4 shrink-0" />
                   <span
                     dangerouslySetInnerHTML={{
@@ -175,7 +175,7 @@ export function SubscriptionPlanCard() {
 
               {/* Past due warning */}
               {isPastDue && (
-                <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-sm">
+                <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-(--danger-quiet) border border-(--danger-outline) text-(--danger-text) dark:text-(--danger-text) text-sm">
                   <AlertCircle className="w-4 h-4 shrink-0" />
                   <span>{t('billing.paymentFailed')}</span>
                 </div>
@@ -183,7 +183,7 @@ export function SubscriptionPlanCard() {
 
               {/* Cancel at period end */}
               {subscription?.cancelAtPeriodEnd && periodEndStr && (
-                <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-600 dark:text-orange-400 text-sm">
+                <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-(--warning-quiet) border border-(--warning-outline) text-(--warning-text) dark:text-(--warning-text) text-sm">
                   <RefreshCw className="w-4 h-4 shrink-0" />
                   <span
                     dangerouslySetInnerHTML={{

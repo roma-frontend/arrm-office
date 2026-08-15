@@ -169,7 +169,7 @@ export function LeaveConflictAlerts({ organizationId }: LeaveConflictAlertsProps
                         </p>
                       </div>
                     </div>
-                    <ChevronRight className="w-5 h-5 text-gray-400" />
+                    <ChevronRight className="w-5 h-5 text-(--text-3)" />
                   </div>
                 </div>
               ))}

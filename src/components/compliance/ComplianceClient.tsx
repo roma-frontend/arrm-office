@@ -510,7 +510,7 @@ export default function ComplianceClient() {
           {auditStatus === 'CanLoadMore' && (
             <button
               onClick={() => loadMoreAudit(50)}
-              className="w-full mt-3 py-2 text-sm text-[#2563eb] hover:underline rounded-lg border"
+              className="w-full mt-3 py-2 text-sm text-(--brand-text) hover:underline rounded-lg border"
               style={{ borderColor: 'var(--border)' }}
             >
               {t('compliance.loadMore', { defaultValue: 'Load more logs' })}

@@ -326,7 +326,7 @@ function AssistantScene({ t }: { t: (k: string) => string }) {
       <div className="flex justify-end">
         <p
           className="max-w-[85%] rounded-2xl rounded-br-md px-3 py-2 text-[9px] font-medium"
-          style={{ background: 'var(--primary)', color: '#fff' }}
+          style={{ background: 'var(--primary)', color: 'var(--brand-contrast)' }}
         >
           {t(key('storyAssistantAsk'))}
         </p>

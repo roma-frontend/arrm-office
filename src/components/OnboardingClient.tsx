@@ -216,14 +216,14 @@ export default function OnboardingClient() {
             <TabsTrigger value="my">{t('onboarding.tabs.my', 'My Onboarding')}</TabsTrigger>
           )}
           <TabsTrigger
-            className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
+            className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
             value="programs"
           >
             {t('onboarding.tabs.programs', 'Programs')}
           </TabsTrigger>
           {isAdmin && (
             <TabsTrigger
-              className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
+              className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
               value="templates"
             >
               {t('onboarding.tabs.templates', 'Templates')}
@@ -461,7 +461,7 @@ function MyOnboardingView({
           <Card key={task._id} className={task.status === 'completed' ? 'opacity-60' : ''}>
             <CardContent className="p-3 flex items-center gap-3">
               {task.status === 'completed' ? (
-                <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
+                <CheckCircle2 className="h-5 w-5 text-(--success-text) shrink-0" />
               ) : task.status === 'skipped' ? (
                 <SkipForward className="h-5 w-5 text-muted-foreground shrink-0" />
               ) : (
@@ -588,7 +588,7 @@ function ProgramDetailDialog({
                     className={`flex items-center gap-3 p-2.5 rounded-lg border ${task.status === 'completed' ? 'opacity-60 bg-muted/30' : ''}`}
                   >
                     {task.status === 'completed' ? (
-                      <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                      <CheckCircle2 className="h-4 w-4 text-(--success-text) shrink-0" />
                     ) : task.status === 'skipped' ? (
                       <SkipForward className="h-4 w-4 text-muted-foreground shrink-0" />
                     ) : (
@@ -974,7 +974,7 @@ function CreateTemplateWizard({
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="h-6 w-6 p-0 text-red-500"
+                        className="h-6 w-6 p-0 text-(--danger-text)"
                         onClick={() => removeTask(i)}
                       >
                         ×

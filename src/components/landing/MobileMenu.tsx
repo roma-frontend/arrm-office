@@ -59,24 +59,24 @@ const menuItemsConfig: MenuItem[] = [
     href: '/',
     sectionId: 'home',
     icon: Home,
-    gradient: 'from-blue-500/15 to-blue-600/8',
-    iconColor: 'text-blue-500 dark:text-blue-400',
+    gradient: 'from-(--brand) to-(--brand)',
+    iconColor: 'text-(--brand-text) dark:text-(--brand-text)',
     accent: '#2563eb',
   },
   {
     key: 'features',
     href: '/features',
     icon: Sparkles,
-    gradient: 'from-blue-500/15 to-blue-600/8',
-    iconColor: 'text-blue-500 dark:text-blue-400',
+    gradient: 'from-(--brand) to-(--brand)',
+    iconColor: 'text-(--brand-text) dark:text-(--brand-text)',
     accent: '#2563eb',
   },
   {
     key: 'analytics',
     href: '/analytics',
     icon: BarChart3,
-    gradient: 'from-blue-500/15 to-blue-600/8',
-    iconColor: 'text-blue-500 dark:text-blue-400',
+    gradient: 'from-(--brand) to-(--brand)',
+    iconColor: 'text-(--brand-text) dark:text-(--brand-text)',
     accent: '#2563eb',
   },
   {
@@ -84,8 +84,8 @@ const menuItemsConfig: MenuItem[] = [
     href: '/#pricing',
     sectionId: 'pricing',
     icon: DollarSign,
-    gradient: 'from-blue-500/15 to-blue-600/8',
-    iconColor: 'text-blue-500 dark:text-blue-400',
+    gradient: 'from-(--brand) to-(--brand)',
+    iconColor: 'text-(--brand-text) dark:text-(--brand-text)',
     accent: '#2563eb',
   },
   {
@@ -93,16 +93,16 @@ const menuItemsConfig: MenuItem[] = [
     href: '/#testimonials',
     sectionId: 'testimonials',
     icon: MessageCircle,
-    gradient: 'from-blue-500/15 to-blue-600/8',
-    iconColor: 'text-blue-500 dark:text-blue-400',
+    gradient: 'from-(--brand) to-(--brand)',
+    iconColor: 'text-(--brand-text) dark:text-(--brand-text)',
     accent: '#2563eb',
   },
   {
     key: 'recruitment',
     href: '/careers',
     icon: Rocket,
-    gradient: 'from-blue-500/15 to-blue-600/8',
-    iconColor: 'text-blue-500 dark:text-blue-400',
+    gradient: 'from-(--brand) to-(--brand)',
+    iconColor: 'text-(--brand-text) dark:text-(--brand-text)',
     accent: '#2563eb',
   },
 ];
@@ -395,7 +395,7 @@ export default function MobileMenu({ isOpen, onClose, activeSection = null }: Mo
           {/* Decorative */}
           <div
             className="absolute top-0 right-0 w-32 h-32 rounded-full opacity-20 blur-3xl"
-            style={{ background: 'radial-gradient(circle, #3b82f6, transparent)' }}
+            style={{ background: 'radial-gradient(circle, var(--brand), transparent)' }}
           />
 
           <Link
@@ -406,7 +406,7 @@ export default function MobileMenu({ isOpen, onClose, activeSection = null }: Mo
             <div
               className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg"
               style={{
-                background: 'linear-gradient(135deg, #2563eb, #60a5fa)',
+                background: 'linear-gradient(135deg, var(--brand), var(--brand-hover))',
               }}
             >
               <Shield className="w-5 h-5 text-white" />
@@ -457,7 +457,7 @@ export default function MobileMenu({ isOpen, onClose, activeSection = null }: Mo
                   key={item.key}
                   href={item.href}
                   onClick={(e) => handleNavigate(e, item.href)}
-                  className="group relative flex items-center gap-3.5 px-3 py-3 rounded-2xl transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  className="group relative flex items-center gap-3.5 px-3 py-3 rounded-2xl transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--brand-text)"
                   style={{
                     opacity: visibleItems ? 1 : 0,
                     transform: visibleItems ? 'translateX(0)' : 'translateX(20px)',
@@ -596,9 +596,9 @@ export default function MobileMenu({ isOpen, onClose, activeSection = null }: Mo
                   }}
                 >
                   {theme === 'dark' ? (
-                    <Sun size={18} className="text-amber-400" />
+                    <Sun size={18} className="text-(--warning-text)" />
                   ) : (
-                    <Moon size={18} className="text-blue-500" />
+                    <Moon size={18} className="text-(--brand-text)" />
                   )}
                 </div>
 
@@ -641,7 +641,7 @@ export default function MobileMenu({ isOpen, onClose, activeSection = null }: Mo
                       'linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(16, 185, 129, 0.05))',
                   }}
                 >
-                  <Globe size={18} className="text-emerald-500" />
+                  <Globe size={18} className="text-(--success-text)" />
                 </div>
                 <span
                   className="flex-1 font-semibold text-sm"

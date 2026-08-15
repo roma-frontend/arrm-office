@@ -248,7 +248,7 @@ export default function CareersClient() {
                 setSelectedDept('');
               }}
               className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-all hover:opacity-80"
-              style={{ background: 'var(--primary)', color: '#fff' }}
+              style={{ background: 'var(--primary)', color: 'var(--brand-contrast)' }}
             >
               <X className="w-3.5 h-3.5" />
               {t('careers.clearFilters', 'Clear')} ({activeFilters})
@@ -384,7 +384,11 @@ function VacancyCard({ vacancy, onClick }: { vacancy: VacancyItem; onClick: () =
             {vacancy.department && (
               <span
                 className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full"
-                style={{ background: 'var(--landing-gradient-from)', color: '#fff', opacity: 0.9 }}
+                style={{
+                  background: 'var(--landing-gradient-from)',
+                  color: 'var(--brand-contrast)',
+                  opacity: 0.9,
+                }}
               >
                 <Building2 className="w-3 h-3" />
                 {vacancy.department}
@@ -629,7 +633,10 @@ function VacancyDetailModal({
             <div className="text-center py-12">
               <div
                 className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center"
-                style={{ background: 'var(--landing-gradient-from)', color: '#fff' }}
+                style={{
+                  background: 'var(--landing-gradient-from)',
+                  color: 'var(--brand-contrast)',
+                }}
               >
                 <Send className="w-7 h-7" />
               </div>
@@ -694,7 +701,7 @@ function VacancyDetailModal({
                     color: 'var(--landing-text-primary)',
                   }}
                 />
-                {emailError && <p className="text-xs text-red-500 mt-1">{emailError}</p>}
+                {emailError && <p className="text-xs text-(--danger-text) mt-1">{emailError}</p>}
               </div>
               <div>
                 <label

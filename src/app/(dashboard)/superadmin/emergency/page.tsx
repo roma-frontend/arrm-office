@@ -120,13 +120,13 @@ export default function EmergencyDashboardPage() {
   const getPriorityColor = (level: string) => {
     switch (level) {
       case 'critical':
-        return 'text-red-500 bg-red-500/10 border-red-500/30';
+        return 'text-(--danger-text) bg-(--danger-quiet) border-(--danger-outline)';
       case 'high':
-        return 'text-orange-500 bg-orange-500/10 border-orange-500/30';
+        return 'text-(--warning-text) bg-(--warning-quiet) border-(--warning-outline)';
       case 'medium':
-        return 'text-yellow-500 bg-yellow-500/10 border-yellow-500/30';
+        return 'text-(--warning-text) bg-(--warning-quiet) border-(--warning-outline)';
       default:
-        return 'text-green-500 bg-green-500/10 border-green-500/30';
+        return 'text-(--success-text) bg-(--success-quiet) border-(--success-outline)';
     }
   };
 
@@ -226,14 +226,14 @@ export default function EmergencyDashboardPage() {
           {/* Priority Score */}
           {requiresAttention && (
             <Card
-              className="mb-6 border-red-500/50 animate-pulse"
+              className="mb-6 border-(--danger-outline) animate-pulse"
               style={{ background: 'var(--card)' }}
             >
               <CardContent className="p-6">
                 <div className="flex items-center gap-4">
-                  <AlertOctagon className="w-12 h-12 text-red-500" />
+                  <AlertOctagon className="w-12 h-12 text-(--danger-text)" />
                   <div className="flex-1">
-                    <h3 className="text-lg font-bold text-red-500 mb-1">
+                    <h3 className="text-lg font-bold text-(--danger-text) mb-1">
                       {t('superadmin.emergency.attentionRequired')}
                     </h3>
                     <p className="text-sm text-muted-foreground">
@@ -241,7 +241,7 @@ export default function EmergencyDashboardPage() {
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-4xl font-bold text-red-500">{priorityScore}</p>
+                    <p className="text-4xl font-bold text-(--danger-text)">{priorityScore}</p>
                     <p className="text-xs text-muted-foreground">
                       {t('superadmin.emergency.priorityScore')}
                     </p>
@@ -299,9 +299,9 @@ export default function EmergencyDashboardPage() {
 
           {/* Critical Tickets */}
           {criticalTickets.length > 0 && (
-            <Card className="mb-6 border-red-500/50" style={{ background: 'var(--card)' }}>
+            <Card className="mb-6 border-(--danger-outline)" style={{ background: 'var(--card)' }}>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-red-500">
+                <CardTitle className="flex items-center gap-2 text-(--danger-text)">
                   <AlertTriangle className="w-5 h-5" />
                   {t('superadmin.emergency.criticalTickets')}
                 </CardTitle>
@@ -314,7 +314,7 @@ export default function EmergencyDashboardPage() {
                   {criticalTickets.map((ticket: Ticket) => (
                     <div
                       key={ticket._id}
-                      className="p-3 sm:p-4 rounded-lg border border-red-500/30 bg-red-500/5"
+                      className="p-3 sm:p-4 rounded-lg border border-(--danger-outline) bg-(--danger-quiet)"
                     >
                       <div className="flex flex-col sm:flex-row sm:items-start gap-3">
                         <div className="flex-1 min-w-0">
@@ -367,9 +367,9 @@ export default function EmergencyDashboardPage() {
 
           {/* Active Incidents */}
           {activeIncidents.length > 0 && (
-            <Card className="mb-6 border-orange-500/50" style={{ background: 'var(--card)' }}>
+            <Card className="mb-6 border-(--warning-outline)" style={{ background: 'var(--card)' }}>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-orange-500">
+                <CardTitle className="flex items-center gap-2 text-(--warning-text)">
                   <Activity className="w-5 h-5" />
                   {t('superadmin.emergency.activeIncidents')}
                 </CardTitle>
@@ -380,7 +380,7 @@ export default function EmergencyDashboardPage() {
                   {activeIncidents.map((incident: Incident) => (
                     <div
                       key={incident._id}
-                      className="p-3 sm:p-4 rounded-lg border border-orange-500/30 bg-orange-500/5"
+                      className="p-3 sm:p-4 rounded-lg border border-(--warning-outline) bg-(--warning-quiet)"
                     >
                       <div className="flex flex-col sm:flex-row sm:items-start gap-3">
                         <div className="flex-1 min-w-0">
@@ -458,9 +458,9 @@ export default function EmergencyDashboardPage() {
 
           {/* Suspicious IPs */}
           {suspiciousIPs.length > 0 && (
-            <Card className="mb-6 border-purple-500/50" style={{ background: 'var(--card)' }}>
+            <Card className="mb-6 border-(--purple-outline)" style={{ background: 'var(--card)' }}>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-purple-500">
+                <CardTitle className="flex items-center gap-2 text-(--purple-text)">
                   <Shield className="w-5 h-5" />
                   {t('superadmin.emergency.suspiciousIPs')}
                 </CardTitle>
@@ -471,7 +471,7 @@ export default function EmergencyDashboardPage() {
                   {suspiciousIPs.map((ipData: SuspiciousIP) => (
                     <div
                       key={ipData.ip}
-                      className="p-4 rounded-lg border border-purple-500/30 bg-purple-500/5"
+                      className="p-4 rounded-lg border border-(--purple-outline) bg-(--purple-quiet)"
                     >
                       <div className="flex items-center justify-between">
                         <div>
@@ -617,12 +617,12 @@ function StatCard({
   subtitle: string;
 }) {
   const colorClasses: Record<string, string> = {
-    red: 'text-red-500',
-    orange: 'text-orange-500',
-    yellow: 'text-yellow-500',
-    purple: 'text-purple-500',
-    blue: 'text-blue-500',
-    green: 'text-green-500',
+    red: 'text-(--danger-text)',
+    orange: 'text-(--warning-text)',
+    yellow: 'text-(--warning-text)',
+    purple: 'text-(--purple-text)',
+    blue: 'text-(--brand-text)',
+    green: 'text-(--success-text)',
   };
 
   return (

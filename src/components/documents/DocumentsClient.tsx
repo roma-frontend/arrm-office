@@ -206,17 +206,17 @@ export default function DocumentsClient() {
   const getCategoryIcon = (category: string) => {
     switch (category) {
       case 'policy':
-        return <FileText className="h-5 w-5 text-blue-500" />;
+        return <FileText className="h-5 w-5 text-(--brand-text)" />;
       case 'contract':
-        return <FileText className="h-5 w-5 text-green-500" />;
+        return <FileText className="h-5 w-5 text-(--success-text)" />;
       case 'report':
-        return <BarChart3 className="h-5 w-5 text-purple-500" />;
+        return <BarChart3 className="h-5 w-5 text-(--purple-text)" />;
       case 'template':
-        return <FolderOpen className="h-5 w-5 text-orange-500" />;
+        return <FolderOpen className="h-5 w-5 text-(--warning-text)" />;
       case 'form':
-        return <FileText className="h-5 w-5 text-cyan-500" />;
+        return <FileText className="h-5 w-5 text-(--cyan-text)" />;
       case 'certificate':
-        return <CheckCircle className="h-5 w-5 text-yellow-500" />;
+        return <CheckCircle className="h-5 w-5 text-(--warning-text)" />;
       default:
         return <FileText className="h-5 w-5 text-(--text-3)" />;
     }
@@ -377,14 +377,14 @@ export default function DocumentsClient() {
         >
           <TabsTrigger
             value="all"
-            className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center gap-2"
+            className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center gap-2"
           >
             <FileText className="h-4 w-4" />
             {t('documents.allDocuments', 'All Documents')}
           </TabsTrigger>
           <TabsTrigger
             value="mandatory"
-            className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center gap-2"
+            className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center gap-2"
           >
             <CheckCircle className="h-4 w-4" />
             {t('documents.mandatoryDocuments', 'Mandatory')}
@@ -392,7 +392,7 @@ export default function DocumentsClient() {
           {isAdmin && (
             <TabsTrigger
               value="unpublished"
-              className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center gap-2"
+              className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center gap-2"
             >
               <Clock className="h-4 w-4" />
               {t('documents.unpublishedDocuments', 'Unpublished')}
@@ -401,7 +401,7 @@ export default function DocumentsClient() {
           {isAdmin && (
             <TabsTrigger
               value="builder"
-              className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center gap-2"
+              className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center gap-2"
             >
               <Languages className="h-4 w-4" />
               {t('documents.builderTab', 'Bilingual templates')}
@@ -410,7 +410,7 @@ export default function DocumentsClient() {
           {isAdmin && (
             <TabsTrigger
               value="issued"
-              className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center gap-2"
+              className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center gap-2"
             >
               <FileSignature className="h-4 w-4" />
               {t('documents.issuedTab', 'Issued')}
@@ -418,7 +418,7 @@ export default function DocumentsClient() {
           )}
           <TabsTrigger
             value="templates"
-            className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center gap-2"
+            className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center gap-2"
           >
             <FolderOpen className="h-4 w-4" />
             {t('documents.templates', 'Templates')}
@@ -497,7 +497,7 @@ export default function DocumentsClient() {
                     >
                       <CardContent className="pt-6">
                         <div className="flex items-start gap-3">
-                          <PenTool className="h-5 w-5 text-purple-500 shrink-0" />
+                          <PenTool className="h-5 w-5 text-(--purple-text) shrink-0" />
                           <div className="flex-1 min-w-0">
                             <h3 className="font-semibold truncate">{template.title}</h3>
                             {template.description && (

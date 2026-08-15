@@ -208,7 +208,7 @@ export function TaskAttachmentsCard({
                         disabled={removingUrl === attachment.url}
                         aria-label={t('taskAttachments.deleteFile')}
                         onClick={() => handleRemove(attachment)}
-                        className="text-red-500 hover:bg-red-500/10"
+                        className="text-(--danger-text) hover:bg-(--danger-quiet)"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

@@ -40,28 +40,28 @@ const cookieCategories: (category: ReturnType<typeof useTranslation>['t']) => Co
     description: t('cookies.essentialDesc'),
     icon: Shield,
     required: true,
-    color: 'text-green-500',
+    color: 'text-(--success-text)',
   },
   {
     id: 'analytics',
     name: t('cookies.analyticsCookies'),
     description: t('cookies.analyticsDesc'),
     icon: BarChart3,
-    color: 'text-blue-500',
+    color: 'text-(--brand-text)',
   },
   {
     id: 'marketing',
     name: t('cookies.marketingCookies'),
     description: t('cookies.marketingDesc'),
     icon: Target,
-    color: 'text-orange-500',
+    color: 'text-(--warning-text)',
   },
   {
     id: 'preferences',
     name: t('cookies.preferenceCookies'),
     description: t('cookies.preferenceDesc'),
     icon: Palette,
-    color: 'text-orange-500',
+    color: 'text-(--warning-text)',
   },
 ];
 
@@ -137,7 +137,7 @@ export function CookiePreferences() {
             <CardTitle className="text-base">{t('cookies.privacyAndCookies')}</CardTitle>
           </div>
           {hasConsent && (
-            <div className="flex items-center gap-2 text-xs text-green-600 dark:text-green-400">
+            <div className="flex items-center gap-2 text-xs text-(--success-text) dark:text-(--success-text)">
               <CheckCircle2 className="w-3.5 h-3.5" />
               {t('cookies.consentGiven')}
             </div>

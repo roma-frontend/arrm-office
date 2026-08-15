@@ -307,28 +307,28 @@ export default function CompensationClient() {
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
             <TabsList className="w-full mb-4 gap-2 bg-transparent p-0 h-auto grid grid-cols-2 md:grid-cols-4">
               <TabsTrigger
-                className="w-full px-3 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center gap-2 text-sm"
+                className="w-full px-3 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center gap-2 text-sm"
                 value="records"
               >
                 <DollarSign className="w-4 h-4 flex-shrink-0" />
                 <span className="hidden sm:inline">{t('compensation.records')}</span>
               </TabsTrigger>
               <TabsTrigger
-                className="w-full px-3 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center gap-2 text-sm"
+                className="w-full px-3 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center gap-2 text-sm"
                 value="bands"
               >
                 <BarChart3 className="w-4 h-4 flex-shrink-0" />
                 <span className="hidden sm:inline">{t('compensation.bands')}</span>
               </TabsTrigger>
               <TabsTrigger
-                className="w-full px-3 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center gap-2 text-sm"
+                className="w-full px-3 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center gap-2 text-sm"
                 value="bonuses"
               >
                 <Award className="w-4 h-4 flex-shrink-0" />
                 <span className="hidden sm:inline">{t('compensation.bonusPrograms')}</span>
               </TabsTrigger>
               <TabsTrigger
-                className="w-full px-3 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center gap-2 text-sm"
+                className="w-full px-3 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center gap-2 text-sm"
                 value="cycles"
               >
                 <Calendar className="w-4 h-4 flex-shrink-0" />
@@ -665,7 +665,7 @@ export default function CompensationClient() {
                           labelStyle={{ color: tooltipColor, fontWeight: 500 }}
                           formatter={(value, _name) => [value, '']}
                         />
-                        <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="value" fill="var(--chart-1)" radius={[4, 4, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </CardContent>
@@ -691,7 +691,7 @@ export default function CompensationClient() {
                               : ''
                           }
                           outerRadius={80}
-                          fill="#8884d8"
+                          fill="var(--chart-4)"
                           dataKey="value"
                         >
                           {statusChartData.map((_entry, index) => (

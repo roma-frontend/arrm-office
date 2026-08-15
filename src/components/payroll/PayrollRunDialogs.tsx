@@ -337,9 +337,9 @@ export function ConfirmPayrollDialog({
   const { t } = useTranslation();
 
   const iconMap = {
-    default: <AlertTriangle className="w-5 h-5 text-yellow-500" />,
-    destructive: <XCircle className="w-5 h-5 text-red-500" />,
-    success: <CheckCircle className="w-5 h-5 text-green-500" />,
+    default: <AlertTriangle className="w-5 h-5 text-(--warning-text)" />,
+    destructive: <XCircle className="w-5 h-5 text-(--danger-text)" />,
+    success: <CheckCircle className="w-5 h-5 text-(--success-text)" />,
   };
 
   return (

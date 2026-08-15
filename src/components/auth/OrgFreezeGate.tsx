@@ -45,11 +45,11 @@ export function OrgFreezeGate() {
   return (
     <div className="fixed inset-0 z-100 flex items-center justify-center bg-(--background) p-6">
       <div className="w-full max-w-md space-y-4 rounded-2xl border border-(--border) bg-(--card) p-8 text-center shadow-lg">
-        <Snowflake className="mx-auto h-12 w-12 text-blue-500" />
+        <Snowflake className="mx-auto h-12 w-12 text-(--brand-text)" />
         <h1 className="text-xl font-bold text-(--text-primary)">{t('freeze.title')}</h1>
         <p className="text-sm text-(--text-muted)">{t('freeze.description')}</p>
         {freeze.reason && (
-          <p className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-3 text-sm text-(--text-primary)">
+          <p className="rounded-lg border border-(--brand-outline) bg-(--brand-quiet) p-3 text-sm text-(--text-primary)">
             {freeze.reason}
           </p>
         )}

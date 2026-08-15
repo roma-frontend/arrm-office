@@ -144,7 +144,7 @@ function OrgSearch({ onSelect }: { onSelect: (org: OrgResult) => void }) {
             className="flex items-center gap-2 p-3 rounded-xl border"
             style={{ background: 'rgba(16,185,129,0.08)', borderColor: 'rgba(16,185,129,0.3)' }}
           >
-            <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+            <CheckCircle2 className="w-4 h-4 text-(--success-text) shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-(--text-primary) truncate">
                 {selected.name}
@@ -153,7 +153,7 @@ function OrgSearch({ onSelect }: { onSelect: (org: OrgResult) => void }) {
                 <p className="text-xs text-(--text-muted)">{selected.industry}</p>
               )}
             </div>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 uppercase">
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-(--success-quiet) text-(--success-text) uppercase">
               {t('auth.found', 'Found')}
             </span>
           </motion.div>
@@ -358,11 +358,11 @@ function RegisterPageContent() {
         <div className="fixed inset-0 pointer-events-none overflow-hidden">
           <div
             className="absolute -top-40 -right-40 w-96 h-96 rounded-full blur-3xl opacity-20"
-            style={{ background: 'radial-gradient(circle, #2563eb, transparent)' }}
+            style={{ background: 'radial-gradient(circle, var(--brand), transparent)' }}
           />
           <div
             className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full blur-3xl opacity-20"
-            style={{ background: 'radial-gradient(circle, #0ea5e9, transparent)' }}
+            style={{ background: 'radial-gradient(circle, var(--brand-hover), transparent)' }}
           />
         </div>
 
@@ -474,7 +474,7 @@ function RegisterPageContent() {
                             borderColor: 'rgba(37,99,235,0.3)',
                           }}
                         >
-                          <Sparkles className="w-4 h-4 text-blue-500 shrink-0" />
+                          <Sparkles className="w-4 h-4 text-(--brand-text) shrink-0" />
                           <div>
                             <p className="text-sm font-semibold text-(--text-primary)">
                               {t('auth.inviteLinkDetected')}
@@ -494,7 +494,10 @@ function RegisterPageContent() {
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0 }}
                             className="flex items-center gap-2 p-3 rounded-xl text-sm"
-                            style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}
+                            style={{
+                              background: 'var(--danger-quiet)',
+                              color: 'var(--danger-text)',
+                            }}
                           >
                             <AlertCircle className="w-4 h-4 shrink-0" />
                             {error}
@@ -568,7 +571,7 @@ function RegisterPageContent() {
                           placeholder="you@company.com"
                         />
                         {isSuperadmin && (
-                          <p className="text-xs text-blue-500 flex items-center gap-1 px-1 mt-2">
+                          <p className="text-xs text-(--brand-text) flex items-center gap-1 px-1 mt-2">
                             <CheckCircle2 className="w-3 h-3" />{' '}
                             {t('auth.superadminAccount', 'Superadmin account')}
                           </p>
@@ -637,7 +640,7 @@ function RegisterPageContent() {
                     <Link
                       href="/login"
                       className="font-semibold hover:underline"
-                      style={{ color: '#2563eb' }}
+                      style={{ color: 'var(--brand-text)' }}
                     >
                       {t('auth.signIn', 'Sign in')}
                     </Link>

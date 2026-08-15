@@ -2319,5 +2319,29 @@
       "moreFields": "+{{count}} more"
     }
   },
-  "unknownUser": "Unknown"
+  "unknownUser": "Unknown",
+  "toolDock": {
+    "title": "Your tools",
+    "overdue": "overdue",
+    "pending": "pending",
+    "pin": "Pin",
+    "unpin": "Unpin",
+    "myTasks": "My tasks",
+    "viewAll": "View all",
+    "newTask": "New task",
+    "noTasks": "You're all caught up",
+    "noTasksHint": "Nothing needs you right now.",
+    "soon": "Soon",
+    "completeTask": "Mark done",
+    "awaitingWork": "{{count}} open tasks you assigned",
+    "allModules": "All {{count}} modules",
+    "collapse": "Collapse",
+    "search": "Search",
+    "openPanel": "Open tools",
+    "all": "All",
+    "fullscreen": "Fullscreen",
+    "exitFullscreen": "Exit fullscreen",
+    "allModulesTitle": "All modules",
+    "overdueCount": "{{count}} overdue"
+  }
 }

@@ -28,7 +28,7 @@ function Avatar({ name, avatarUrl }: { name: string; avatarUrl?: string }) {
     .join('')
     .toUpperCase();
   return (
-    <div className="w-9 h-9 rounded-full bg-[#f59e0b]/10 text-[#f59e0b] flex items-center justify-center text-xs font-semibold shrink-0">
+    <div className="w-9 h-9 rounded-full bg-(--warning-quiet) text-(--warning-text) flex items-center justify-center text-xs font-semibold shrink-0">
       {initials}
     </div>
   );
@@ -45,7 +45,7 @@ export const OutOfOfficeWidget = memo(function OutOfOfficeWidget() {
     <Card className="h-full">
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2">
-          <PalmtreeIcon className="w-5 h-5 text-[#f59e0b]" />
+          <PalmtreeIcon className="w-5 h-5 text-(--warning-text)" />
           {t('dashboardWidgets.outOfOffice', 'Out of Office')}
         </CardTitle>
       </CardHeader>

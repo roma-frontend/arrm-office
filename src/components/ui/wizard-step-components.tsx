@@ -64,7 +64,7 @@ export function TextInputStep({
   return (
     <div className="space-y-2">
       <Label htmlFor={field} className="text-(--text-primary)">
-        {label} {required && <span className="text-red-500">*</span>}
+        {label} {required && <span className="text-(--danger-text)">*</span>}
       </Label>
       <Input
         id={field}
@@ -180,7 +180,7 @@ export function SelectStep({
   return (
     <div className="space-y-2">
       <Label htmlFor={field} className="text-(--text-primary)">
-        {label} {required && <span className="text-red-500">*</span>}
+        {label} {required && <span className="text-(--danger-text)">*</span>}
       </Label>
       <Select
         value={value ?? ''}
@@ -247,7 +247,7 @@ export function CardSelectionStep({
     <div className="space-y-2 md:space-y-3">
       <div>
         <Label className="text-(--text-primary) text-sm md:text-base">
-          {label} {required && <span className="text-red-500">*</span>}
+          {label} {required && <span className="text-(--danger-text)">*</span>}
         </Label>
         {description && (
           <p className="text-[10px] md:text-xs text-(--text-muted) mt-1">{description}</p>
@@ -271,7 +271,7 @@ export function CardSelectionStep({
               className={cn(
                 'cursor-pointer transition-all duration-200',
                 isSelected
-                  ? 'border-blue-500 bg-blue-500/10 shadow-lg shadow-blue-500/20'
+                  ? 'border-(--brand-outline) bg-(--brand-quiet) shadow-lg shadow-blue-500/20'
                   : 'border-(--border) bg-(--background) hover:bg-(--background-subtle) hover:shadow-md',
               )}
               onClick={() => update(field, option.value)}
@@ -281,7 +281,7 @@ export function CardSelectionStep({
                   className={cn(
                     'p-2 md:p-3 rounded-full transition-colors',
                     isSelected
-                      ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30'
+                      ? 'bg-(--brand) text-white shadow-lg shadow-blue-500/30'
                       : option.color || 'bg-(--background-subtle) text-(--text-muted)',
                   )}
                 >
@@ -296,7 +296,9 @@ export function CardSelectionStep({
                   <p
                     className={cn(
                       'font-bold text-xs md:text-sm leading-tight',
-                      isSelected ? 'text-blue-600 dark:text-blue-400' : 'text-(--text-primary)',
+                      isSelected
+                        ? 'text-(--brand-text) dark:text-(--brand-text)'
+                        : 'text-(--text-primary)',
                     )}
                   >
                     {option.title}
@@ -312,7 +314,7 @@ export function CardSelectionStep({
                   </span>
                 )}
                 {isSelected && (
-                  <Badge className="bg-gradient-to-r from-blue-500 to-blue-600 text-white text-[10px] md:text-xs px-2 py-0.5 shadow-sm">
+                  <Badge className="bg-gradient-to-r from-(--brand) to-(--brand) text-white text-[10px] md:text-xs px-2 py-0.5 shadow-sm">
                     ✓{' '}
                     {i18n.language === 'ru'
                       ? 'Выбрано'
@@ -362,7 +364,7 @@ export function RadioGroupStep({
     <div className="space-y-2 md:space-y-3">
       <div>
         <Label className="text-(--text-primary) text-sm md:text-base">
-          {label} {required && <span className="text-red-500">*</span>}
+          {label} {required && <span className="text-(--danger-text)">*</span>}
         </Label>
         {description && (
           <p className="text-[10px] md:text-xs text-(--text-muted) mt-1">{description}</p>
@@ -508,17 +510,17 @@ interface LocalFile {
 }
 
 const FILE_ICONS: Record<string, React.ReactNode> = {
-  'application/pdf': <FileText className="w-8 h-8 text-red-400" />,
-  'image/': <ImageIcon className="w-8 h-8 text-blue-400" />,
-  'video/': <Video className="w-8 h-8 text-purple-400" />,
-  'audio/': <Music className="w-8 h-8 text-green-400" />,
+  'application/pdf': <FileText className="w-8 h-8 text-(--danger-text)" />,
+  'image/': <ImageIcon className="w-8 h-8 text-(--brand-text)" />,
+  'video/': <Video className="w-8 h-8 text-(--purple-text)" />,
+  'audio/': <Music className="w-8 h-8 text-(--success-text)" />,
 };
 
 function getFileIcon(type: string): React.ReactNode {
   for (const [key, icon] of Object.entries(FILE_ICONS)) {
     if (type.startsWith(key)) return icon;
   }
-  return <File className="w-8 h-8 text-gray-400" />;
+  return <File className="w-8 h-8 text-(--text-3)" />;
 }
 
 function formatSize(bytes: number): string {

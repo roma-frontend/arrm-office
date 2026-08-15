@@ -16,11 +16,11 @@ export default function PendingPage() {
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div
           className="absolute -top-40 -right-40 w-96 h-96 rounded-full blur-3xl opacity-20"
-          style={{ background: 'radial-gradient(circle, #2563eb, transparent)' }}
+          style={{ background: 'radial-gradient(circle, var(--brand), transparent)' }}
         />
         <div
           className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full blur-3xl opacity-20"
-          style={{ background: 'radial-gradient(circle, #0ea5e9, transparent)' }}
+          style={{ background: 'radial-gradient(circle, var(--brand-hover), transparent)' }}
         />
       </div>
 
@@ -47,7 +47,9 @@ export default function PendingPage() {
             animate={{ scale: 1 }}
             transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
             className="w-20 h-20 rounded-full mx-auto mb-6 flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg, #10b981, #22c55e)' }}
+            style={{
+              background: 'linear-gradient(135deg, var(--success-solid), var(--success-text))',
+            }}
           >
             <CheckCircle2 className="w-10 h-10 text-white" />
           </motion.div>
@@ -88,7 +90,9 @@ export default function PendingPage() {
             >
               <div
                 className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
-                style={{ background: 'linear-gradient(135deg, #f59e0b, #f97316)' }}
+                style={{
+                  background: 'linear-gradient(135deg, var(--warning-solid), var(--warning-text))',
+                }}
               >
                 <Clock className="w-4 h-4 text-white" />
               </div>
@@ -111,7 +115,9 @@ export default function PendingPage() {
             >
               <div
                 className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
-                style={{ background: 'linear-gradient(135deg, #6b7280, #9ca3af)' }}
+                style={{
+                  background: 'linear-gradient(135deg, var(--text-4), var(--border-strong))',
+                }}
               >
                 <Mail className="w-4 h-4 text-white" />
               </div>

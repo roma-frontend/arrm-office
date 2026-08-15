@@ -60,18 +60,18 @@ const RESPONSE_STYLE: Record<
   { chip: string; dot: string; icon: React.ComponentType<{ className?: string }> }
 > = {
   accepted: {
-    chip: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
-    dot: 'bg-emerald-500',
+    chip: 'bg-(--success-quiet) text-(--success-text) dark:text-(--success-text)',
+    dot: 'bg-(--success-solid)',
     icon: Check,
   },
   tentative: {
-    chip: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-    dot: 'bg-amber-500',
+    chip: 'bg-(--warning-quiet) text-(--warning-text) dark:text-(--warning-text)',
+    dot: 'bg-(--warning-solid)',
     icon: HelpCircle,
   },
   declined: {
-    chip: 'bg-rose-500/10 text-rose-600 dark:text-rose-400',
-    dot: 'bg-rose-500',
+    chip: 'bg-(--danger-quiet) text-(--danger-text) dark:text-(--danger-text)',
+    dot: 'bg-(--danger-solid)',
     icon: X,
   },
   needs_action: {
@@ -360,7 +360,7 @@ export function BookingTrackingPanel({
           <span>{t('rooms.tracking.updatedAt', { when: formatAbsolute(booking.updatedAt) })}</span>
         )}
         {booking.cancelledAt && (
-          <span className="text-rose-500">
+          <span className="text-(--danger-text)">
             {t('rooms.tracking.cancelledAt', { when: formatAbsolute(booking.cancelledAt) })}
             {booking.cancelReason ? ` · ${booking.cancelReason}` : ''}
           </span>

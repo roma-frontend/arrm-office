@@ -72,7 +72,7 @@ export default function RequestOrgPage() {
 
   const accentColor = plan === 'enterprise' ? '#a855f7' : '#2563eb';
   const gradientColor =
-    plan === 'enterprise' ? 'from-purple-500 to-pink-500' : 'from-blue-500 to-cyan-500';
+    plan === 'enterprise' ? 'from-(--purple) to-(--pink)' : 'from-(--brand) to-(--cyan)';
 
   const proPrice =
     plan === 'professional' ? (currency.loading ? '$79' : currency.professional.formatted) : '';
@@ -462,7 +462,7 @@ export default function RequestOrgPage() {
                 initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="flex items-center gap-2 p-3 rounded-xl text-sm"
-                style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}
+                style={{ background: 'var(--danger-quiet)', color: 'var(--danger-text)' }}
               >
                 <svg
                   className="w-4 h-4 shrink-0"

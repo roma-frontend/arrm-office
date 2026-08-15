@@ -25,11 +25,11 @@ import {
 
 type PresenceStatus = 'available' | 'in_meeting' | 'in_call' | 'out_of_office' | 'busy';
 const PRESENCE_CONFIG: Record<PresenceStatus, { labelKey: string; dot: string; icon: string }> = {
-  available: { labelKey: 'presence.available', dot: 'bg-emerald-500', icon: '🟢' },
-  in_meeting: { labelKey: 'presence.inMeeting', dot: 'bg-amber-500', icon: '📅' },
-  in_call: { labelKey: 'presence.inCall', dot: 'bg-blue-500', icon: '📞' },
-  out_of_office: { labelKey: 'presence.outOfOffice', dot: 'bg-rose-500', icon: '🏠' },
-  busy: { labelKey: 'presence.busy', dot: 'bg-orange-500', icon: '⛔' },
+  available: { labelKey: 'presence.available', dot: 'bg-(--success-solid)', icon: '🟢' },
+  in_meeting: { labelKey: 'presence.inMeeting', dot: 'bg-(--warning-solid)', icon: '📅' },
+  in_call: { labelKey: 'presence.inCall', dot: 'bg-(--brand)', icon: '📞' },
+  out_of_office: { labelKey: 'presence.outOfOffice', dot: 'bg-(--danger-solid)', icon: '🏠' },
+  busy: { labelKey: 'presence.busy', dot: 'bg-(--warning-solid)', icon: '⛔' },
 };
 
 interface NotificationItem {
@@ -310,14 +310,14 @@ export function Navbar() {
             </p>
             <div className="flex items-center gap-2">
               {unreadCount > 0 && (
-                <Badge variant="default" className="text-xs px-1.5 py-0 bg-[#2563eb]">
+                <Badge variant="default" className="text-xs px-1.5 py-0 bg-(--brand)">
                   {unreadCount}
                 </Badge>
               )}
               {unreadCount > 0 && (
                 <button
                   onClick={handleMarkAllRead}
-                  className="text-xs text-[#2563eb] hover:underline flex items-center gap-1"
+                  className="text-xs text-(--brand-text) hover:underline flex items-center gap-1"
                 >
                   <Check className="w-3 h-3" /> {t('notifications.markAllAsRead')}
                 </button>
@@ -341,7 +341,7 @@ export function Navbar() {
                     setShowNotifications(false);
                   }}
                   className={`px-4 py-3 hover:bg-(--background-subtle) cursor-pointer transition-colors ${
-                    !n.isRead ? 'bg-[#2563eb]/5 border-l-2 border-[#2563eb]' : ''
+                    !n.isRead ? 'bg-(--brand)/5 border-l-2 border-(--brand)' : ''
                   }`}
                 >
                   <p className="text-sm font-semibold text-(--text-primary) leading-snug">
@@ -356,7 +356,7 @@ export function Navbar() {
           {notifStatus === 'CanLoadMore' && (
             <button
               onClick={() => loadMore(20)}
-              className="w-full py-2 text-xs text-[#2563eb] hover:bg-(--background-subtle) border-t border-(--border)"
+              className="w-full py-2 text-xs text-(--brand-text) hover:bg-(--background-subtle) border-t border-(--border)"
             >
               {t('notifications.loadMore', { defaultValue: 'Load more' })}
             </button>
@@ -421,7 +421,7 @@ export function Navbar() {
               >
                 <Bell className="w-5 h-5" />
                 {unreadCount > 0 && (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#2563eb] rounded-full animate-pulse" />
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-(--brand) rounded-full animate-pulse" />
                 )}
               </Button>
             </span>
@@ -444,7 +444,7 @@ export function Navbar() {
                   <div className="relative">
                     <Avatar className="w-8 h-8">
                       {user?.avatar && <AvatarImage src={user.avatar} alt={user.name} />}
-                      <AvatarFallback className="text-xs bg-linear-to-br from-[#1d4ed8] to-[#0ea5e9] text-white font-semibold">
+                      <AvatarFallback className="text-xs bg-linear-to-br from-(--brand-hover) to-(--brand-hover) text-white font-semibold">
                         {user?.name ? getInitials(user.name) : 'U'}
                       </AvatarFallback>
                     </Avatar>
@@ -507,7 +507,7 @@ export function Navbar() {
                   className="text-(--text-primary) cursor-pointer hover:bg-(--background-subtle) focus:bg-(--background-subtle) gap-2 font-medium"
                   onClick={() => router.push('/tasks?new=true')}
                 >
-                  <Plus className="w-4 h-4 text-blue-500" />
+                  <Plus className="w-4 h-4 text-(--brand-text)" />
                   <span>{t('shortcuts.newTask')}</span>
                   <kbd className="ml-auto px-1.5 py-0.5 text-[10px] font-mono bg-(--background-subtle) border border-(--border) rounded">
                     ⌘T
@@ -517,7 +517,7 @@ export function Navbar() {
                   className="text-(--text-primary) cursor-pointer hover:bg-(--background-subtle) focus:bg-(--background-subtle) gap-2"
                   onClick={() => router.push('/leaves?new=true')}
                 >
-                  <Calendar className="w-4 h-4 text-purple-500" />
+                  <Calendar className="w-4 h-4 text-(--purple-text)" />
                   <span>{t('leave.requestLeave')}</span>
                   <kbd className="ml-auto px-1.5 py-0.5 text-[10px] font-mono bg-(--background-subtle) border border-(--border) rounded">
                     ⌘L
@@ -527,7 +527,7 @@ export function Navbar() {
                   className="text-(--text-primary) cursor-pointer hover:bg-(--background-subtle) focus:bg-(--background-subtle) gap-2"
                   onClick={() => router.push('/attendance')}
                 >
-                  <Clock className="w-4 h-4 text-green-500" />
+                  <Clock className="w-4 h-4 text-(--success-text)" />
                   <span>{t('navbar.clockInOut')}</span>
                   <kbd className="ml-auto px-1.5 py-0.5 text-[10px] font-mono bg-(--background-subtle) border border-(--border) rounded">
                     ⌘A
@@ -537,7 +537,7 @@ export function Navbar() {
                   className="text-(--text-primary) cursor-pointer hover:bg-(--background-subtle) focus:bg-(--background-subtle) gap-2"
                   onClick={() => router.push('/reports')}
                 >
-                  <FileText className="w-4 h-4 text-orange-500" />
+                  <FileText className="w-4 h-4 text-(--warning-text)" />
                   {t('navbar.myReports')}
                 </DropdownMenuItem>
 
@@ -616,7 +616,7 @@ export function Navbar() {
                           {t(cfg.labelKey)}
                         </span>
                         {currentPresence === key && (
-                          <Check className="w-3.5 h-3.5 text-[#2563eb]" />
+                          <Check className="w-3.5 h-3.5 text-(--brand-text)" />
                         )}
                       </DropdownMenuItem>
                     ))}
@@ -637,7 +637,7 @@ export function Navbar() {
 
                 <DropdownMenuSeparator className="bg-(--border)" />
                 <DropdownMenuItem
-                  className="text-red-500 focus:text-red-500 focus:bg-red-500/10 cursor-pointer gap-2"
+                  className="text-(--danger-text) focus:text-(--danger-text) focus:bg-(--danger-quiet) cursor-pointer gap-2"
                   onClick={handleLogout}
                 >
                   <LogOut className="w-4 h-4" />
@@ -650,7 +650,7 @@ export function Navbar() {
             <>
               <Link
                 href="/login"
-                className="hidden lg:inline-flex text-sm transition-colors font-medium px-3 lg:px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                className="hidden lg:inline-flex text-sm transition-colors font-medium px-3 lg:px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-(--brand-text)"
                 style={{ color: 'var(--landing-navbar-text)', backgroundColor: 'transparent' }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.color = 'var(--landing-navbar-text-hover)';
@@ -665,7 +665,7 @@ export function Navbar() {
               </Link>
               <Link
                 href="/register"
-                className="hidden lg:inline-flex items-center gap-2 text-sm font-semibold px-4 lg:px-5 py-2.5 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                className="hidden lg:inline-flex items-center gap-2 text-sm font-semibold px-4 lg:px-5 py-2.5 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/50 focus:outline-none focus:ring-2 focus:ring-(--brand-text)"
                 style={{
                   background: 'linear-gradient(135deg, #2563eb, #93c5fd)',
                   color: 'var(--primary-foreground)',

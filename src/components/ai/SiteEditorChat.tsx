@@ -327,35 +327,35 @@ export function SiteEditorChat({ userId, organizationId }: SiteEditorChatProps) 
       <div className="flex flex-col h-full space-y-4">
         {/* Usage Stats — только для starter */}
         {!isProfessionalOrHigher && usage && (
-          <Card className="p-4 bg-linear-to-r from-amber-100/10 to-orange-100/10 dark:from-amber-900/10 dark:to-orange-900/10 border-amber-300/20 dark:border-amber-800/20">
+          <Card className="p-4 bg-linear-to-r bg-(--warning-solid) bg-(--warning-solid) dark:bg-(--warning-solid) dark:bg-(--warning-solid) border-(--warning-outline) dark:border-(--warning-outline)">
             <div className="flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-amber-500 dark:text-amber-600 mt-0.5" />
+              <AlertCircle className="h-5 w-5 text-(--warning-text) dark:text-(--warning-text) mt-0.5" />
               <div className="flex-1">
-                <h4 className="font-semibold text-amber-900 dark:text-amber-100 mb-2">
+                <h4 className="font-semibold text-(--warning-text) dark:text-(--warning-text) mb-2">
                   {t('aiSiteEditor.usageThisMonth')}
                 </h4>
                 <div className="grid grid-cols-3 gap-4 text-sm">
                   <div>
-                    <div className="text-amber-500 dark:text-amber-600">
+                    <div className="text-(--warning-text) dark:text-(--warning-text)">
                       {t('aiSiteEditor.design')}
                     </div>
-                    <div className="font-semibold text-amber-900 dark:text-amber-100">
+                    <div className="font-semibold text-(--warning-text) dark:text-(--warning-text)">
                       {usage.designChanges} / {features.aiSiteEditorDesignChanges}
                     </div>
                   </div>
                   <div>
-                    <div className="text-amber-600 dark:text-amber-500">
+                    <div className="text-(--warning-text) dark:text-(--warning-text)">
                       {t('aiSiteEditor.content')}
                     </div>
-                    <div className="font-semibold text-amber-900 dark:text-amber-100">
+                    <div className="font-semibold text-(--warning-text) dark:text-(--warning-text)">
                       {usage.contentChanges} / {features.aiSiteEditorContentChanges}
                     </div>
                   </div>
                   <div>
-                    <div className="text-amber-600 dark:text-amber-500">
+                    <div className="text-(--warning-text) dark:text-(--warning-text)">
                       {t('aiSiteEditor.layout')}
                     </div>
-                    <div className="font-semibold text-amber-900 dark:text-amber-100">
+                    <div className="font-semibold text-(--warning-text) dark:text-(--warning-text)">
                       {usage.layoutChanges} / {features.aiSiteEditorLayoutChanges}
                     </div>
                   </div>
@@ -363,7 +363,7 @@ export function SiteEditorChat({ userId, organizationId }: SiteEditorChatProps) 
                 <Button
                   variant="outline"
                   size="sm"
-                  className="mt-3 border-amber-300 dark:border-amber-700 md:border-amber-300/50 sm:min-w-[120px]"
+                  className="mt-3 border-(--warning-outline) dark:border-(--warning-outline) md:border-(--warning-outline) sm:min-w-[120px]"
                   onClick={() => router.push('/settings?tab=billing')}
                 >
                   <Crown className="h-4 w-4 mr-2" />
@@ -376,9 +376,9 @@ export function SiteEditorChat({ userId, organizationId }: SiteEditorChatProps) 
 
         {/* Professional/Enterprise badge */}
         {isProfessionalOrHigher && (
-          <Card className="p-4 bg-linear-to-r from-purple-900/10 to-blue-900/10 dark:from-purple-50/20 dark:to-blue-50/20 border-purple-700/30 dark:border-purple-300/20">
+          <Card className="p-4 bg-linear-to-r bg-(--purple) bg-(--brand) dark:bg-(--purple) dark:bg-(--brand) border-(--purple-outline) dark:border-(--purple-outline)">
             <div className="flex items-center gap-3">
-              <Crown className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+              <Crown className="h-5 w-5 text-(--purple-text) dark:text-(--purple-text)" />
               <div>
                 <h4 className="font-semibold">
                   {plan === 'professional'
@@ -444,7 +444,7 @@ export function SiteEditorChat({ userId, organizationId }: SiteEditorChatProps) 
                               className="flex items-center justify-between gap-2 rounded bg-background/50 px-2 py-1"
                             >
                               <div className="flex items-center gap-1.5 min-w-0">
-                                <FileCode2 className="h-3 w-3 shrink-0 text-green-500" />
+                                <FileCode2 className="h-3 w-3 shrink-0 text-(--success-text)" />
                                 <span className="text-xs truncate font-mono">{af.filePath}</span>
                               </div>
                               <Button
@@ -477,7 +477,7 @@ export function SiteEditorChat({ userId, organizationId }: SiteEditorChatProps) 
                 <div className="flex justify-start">
                   <div className="bg-secondary text-secondary-foreground rounded-lg p-4">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Sparkles className="h-4 w-4 animate-pulse text-purple-500" />
+                      <Sparkles className="h-4 w-4 animate-pulse text-(--purple-text)" />
                       AI читает код и применяет изменения…
                     </div>
                   </div>
@@ -551,7 +551,7 @@ export function SiteEditorChat({ userId, organizationId }: SiteEditorChatProps) 
                     >
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
-                          <FileCode2 className="h-3 w-3 shrink-0 text-blue-500" />
+                          <FileCode2 className="h-3 w-3 shrink-0 text-(--brand-text)" />
                           <span className="font-mono text-xs truncate">{b.originalPath}</span>
                         </div>
                         <div className="text-xs text-muted-foreground mt-0.5">
@@ -603,7 +603,7 @@ export function SiteEditorChat({ userId, organizationId }: SiteEditorChatProps) 
                     </span>
                   </div>
                   {session.status === 'completed' && (
-                    <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                    <CheckCircle2 className="h-4 w-4 text-(--success-text) shrink-0" />
                   )}
                 </div>
               ))}

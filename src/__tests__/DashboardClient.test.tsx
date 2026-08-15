@@ -125,8 +125,9 @@ jest.mock('@/components/dashboard/StatsCard', () => ({
   ),
 }));
 
-jest.mock('@/components/dashboard/SecurityWidget', () => ({
-  SecurityWidget: () => <div data-testid="security-widget">Security</div>,
+jest.mock('@/components/dashboard/ActivityFeed', () => ({
+  __esModule: true,
+  default: () => <div data-testid="activity-feed">Activity</div>,
 }));
 
 jest.mock('@/components/dashboard/LeaveCharts', () => ({
@@ -149,16 +150,6 @@ jest.mock('@/components/dashboard/EnterpriseWidgets', () => ({
 jest.mock('@/components/dashboard/StrategyDashboardWidget', () => ({
   __esModule: true,
   default: () => <div data-testid="strategy-widget">Strategy</div>,
-}));
-
-jest.mock('@/components/dashboard/QuickActions', () => ({
-  QuickActions: () => <div data-testid="quick-actions">QuickActions</div>,
-}));
-
-// The Focus Feed runs its own Convex queries and is covered by its own suite;
-// here it is stubbed like every other dashboard child.
-jest.mock('@/components/dashboard/FocusFeed', () => ({
-  FocusFeed: () => <div data-testid="focus-feed">FocusFeed</div>,
 }));
 
 // ── Module under test ──
@@ -249,7 +240,7 @@ describe('DashboardClient', () => {
     expect(elements.length).toBe(2);
   });
 
-  it('shows security widget for superadmin', () => {
+  it('shows live activity feed for superadmin', () => {
     mockUser = { id: 'user-super', role: 'superadmin', name: 'Super' };
     queryResults.getDashboardStats = {
       totalEmployees: 10,
@@ -264,11 +255,11 @@ describe('DashboardClient', () => {
     const { rerender } = render(<DashboardClient />);
     rerender(<DashboardClient />);
 
-    expect(screen.getByTestId('security-widget')).toBeInTheDocument();
+    expect(screen.getByTestId('activity-feed')).toBeInTheDocument();
   });
 
-  it('does not show security widget for non-superadmin', () => {
-    mockUser = { id: 'user-admin', role: 'admin', name: 'Admin' };
+  it('hides live activity feed for non-admin roles', () => {
+    mockUser = { id: 'user-emp', role: 'employee', name: 'Emp' };
     queryResults.getDashboardStats = {
       totalEmployees: 10,
       pendingRequests: 0,
@@ -282,7 +273,7 @@ describe('DashboardClient', () => {
     const { rerender } = render(<DashboardClient />);
     rerender(<DashboardClient />);
 
-    expect(screen.queryByTestId('security-widget')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('activity-feed')).not.toBeInTheDocument();
   });
 
   it('renders leave charts', () => {
@@ -335,23 +326,6 @@ describe('DashboardClient', () => {
     rerender(<DashboardClient />);
 
     expect(screen.getByTestId('strategy-widget')).toBeInTheDocument();
-  });
-
-  it('renders quick actions', () => {
-    queryResults.getDashboardStats = {
-      totalEmployees: 10,
-      pendingRequests: 0,
-      approvedThisMonth: 5,
-      onLeaveNow: 1,
-      pieData: [],
-      monthlyTrend: [],
-    };
-    queryResults.getRecentLeaves = [];
-
-    const { rerender } = render(<DashboardClient />);
-    rerender(<DashboardClient />);
-
-    expect(screen.getByTestId('quick-actions')).toBeInTheDocument();
   });
 
   it('renders enterprise widgets for enterprise plan', () => {
@@ -501,7 +475,7 @@ describe('DashboardClient', () => {
     const { rerender } = render(<DashboardClient />);
     rerender(<DashboardClient />);
 
-    expect(screen.getByTestId('security-widget')).toBeInTheDocument();
+    expect(screen.getByTestId('activity-feed')).toBeInTheDocument();
     expect(screen.getByTestId('leave-stats')).toBeInTheDocument();
   });
 

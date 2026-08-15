@@ -191,10 +191,14 @@ export function AttendanceDetailModal({ record, open, onClose }: AttendanceDetai
                       </div>
                       <div className="flex gap-2">
                         {record.status === 'checked_in' && (
-                          <Badge className="bg-green-500 text-white">{t('common.active')}</Badge>
+                          <Badge className="bg-(--success-solid) text-(--brand-contrast)">
+                            {t('common.active')}
+                          </Badge>
                         )}
                         {record.status === 'checked_out' && (
-                          <Badge className="bg-blue-500 text-white">{t('common.done')}</Badge>
+                          <Badge className="bg-(--brand) text-(--brand-contrast)">
+                            {t('common.done')}
+                          </Badge>
                         )}
                         {record.status === 'absent' && (
                           <Badge variant="destructive">{t('statuses.absent')}</Badge>
@@ -205,31 +209,31 @@ export function AttendanceDetailModal({ record, open, onClose }: AttendanceDetai
                     {/* Timeline */}
                     <div className="rounded-xl p-4 space-y-4 border border-border bg-muted/30 shadow-sm">
                       <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-blue-500" />
+                        <Clock className="w-4 h-4 text-(--brand-text)" />
                         {t('attendance.timeLine')}
                       </h3>
                       <div className="flex items-center gap-3">
                         {/* Check In */}
                         <div className="flex-1 rounded-lg p-3 bg-muted/30 border border-border">
                           <div className="flex items-center gap-2 mb-1">
-                            <LogIn className="w-4 h-4 text-green-500" />
+                            <LogIn className="w-4 h-4 text-(--success-text)" />
                             <span className="text-xs text-muted-foreground">
                               {t('attendance.checkIn')}
                             </span>
                           </div>
-                          <p className="text-lg font-bold text-green-600 dark:text-green-400">
+                          <p className="text-lg font-bold text-(--success-text) dark:text-(--success-text)">
                             {record.checkInTime
                               ? formatTime(record.checkInTime, i18n.language)
                               : '—'}
                           </p>
                           {record.isLate && (
-                            <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                            <p className="text-xs text-(--danger-text) mt-1 flex items-center gap-1">
                               <AlertTriangle className="w-3 h-3" />
                               {t('attendance.lateBy', { minutes: record.lateMinutes })}
                             </p>
                           )}
                           {!record.isLate && record.checkInTime && (
-                            <p className="text-xs text-green-500 mt-1 flex items-center gap-1">
+                            <p className="text-xs text-(--success-text) mt-1 flex items-center gap-1">
                               <CheckCircle className="w-3 h-3" />
                               {t('attendance.onTime')}
                             </p>
@@ -242,30 +246,30 @@ export function AttendanceDetailModal({ record, open, onClose }: AttendanceDetai
                         {/* Check Out */}
                         <div className="flex-1 rounded-lg p-3 bg-muted/30 border border-border">
                           <div className="flex items-center gap-2 mb-1">
-                            <LogOut className="w-4 h-4 text-blue-500" />
+                            <LogOut className="w-4 h-4 text-(--brand-text)" />
                             <span className="text-xs text-muted-foreground">
                               {t('attendance.checkOut')}
                             </span>
                           </div>
-                          <p className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                          <p className="text-lg font-bold text-(--brand-text) dark:text-(--brand-text)">
                             {record.checkOutTime
                               ? formatTime(record.checkOutTime, i18n.language)
                               : '—'}
                           </p>
                           {record.isEarlyLeave && record.earlyLeaveMinutes && (
-                            <p className="text-xs text-orange-500 mt-1 flex items-center gap-1">
+                            <p className="text-xs text-(--warning-text) mt-1 flex items-center gap-1">
                               <AlertTriangle className="w-3 h-3" />
                               {t('attendance.earlyLeave', { minutes: record.earlyLeaveMinutes })}
                             </p>
                           )}
                           {record.checkOutTime && !record.isEarlyLeave && (
-                            <p className="text-xs text-green-500 mt-1 flex items-center gap-1">
+                            <p className="text-xs text-(--success-text) mt-1 flex items-center gap-1">
                               <CheckCircle className="w-3 h-3" />
                               {t('attendance.fullDay')}
                             </p>
                           )}
                           {!record.checkOutTime && record.status === 'checked_in' && (
-                            <p className="text-xs text-green-500 mt-1">
+                            <p className="text-xs text-(--success-text) mt-1">
                               {t('attendance.stillWorking')}
                             </p>
                           )}
@@ -288,11 +292,11 @@ export function AttendanceDetailModal({ record, open, onClose }: AttendanceDetai
                               initial={{ width: 0 }}
                               animate={{ width: `${workCompletion}%` }}
                               transition={{ duration: 0.8, ease: 'easeOut' }}
-                              className={`h-full rounded-full ${workCompletion >= 100 ? 'bg-green-500' : workCompletion >= 70 ? 'bg-blue-500' : 'bg-orange-500'}`}
+                              className={`h-full rounded-full ${workCompletion >= 100 ? 'bg-(--success-solid)' : workCompletion >= 70 ? 'bg-(--brand)' : 'bg-(--warning-solid)'}`}
                             />
                           </div>
                           {record.overtimeMinutes && record.overtimeMinutes > 0 && (
-                            <p className="text-xs text-sky-500 mt-1">
+                            <p className="text-xs text-(--brand-text) mt-1">
                               +{formatDuration(record.overtimeMinutes)}{' '}
                               {t('attendanceExtra.overtime')}
                             </p>
@@ -310,7 +314,7 @@ export function AttendanceDetailModal({ record, open, onClose }: AttendanceDetai
                         </div>
                       )}
                       {record.user?.supervisorName && (
-                        <div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 bg-muted/30 px-3 py-2 rounded-lg">
+                        <div className="flex items-center gap-2 text-sm text-(--brand-text) dark:text-(--brand-text) bg-muted/30 px-3 py-2 rounded-lg">
                           <User className="w-4 h-4" />
                           Supervisor:{' '}
                           <span className="font-semibold">{record.user.supervisorName}</span>
@@ -322,12 +326,12 @@ export function AttendanceDetailModal({ record, open, onClose }: AttendanceDetai
                     {monthlyStats && (
                       <div className="rounded-xl p-4 bg-muted/30 border border-border shadow-sm">
                         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
-                          <TrendingUp className="w-4 h-4 text-sky-500" />
+                          <TrendingUp className="w-4 h-4 text-(--brand-text)" />
                           {t('attendance.thisMonth')}
                         </h3>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                           <div className="text-center p-3 bg-background rounded-lg">
-                            <p className="text-xl font-bold text-blue-600 dark:text-blue-400">
+                            <p className="text-xl font-bold text-(--brand-text) dark:text-(--brand-text)">
                               {monthlyStats.totalDays}
                             </p>
                             <p className="text-xs text-muted-foreground">
@@ -335,7 +339,7 @@ export function AttendanceDetailModal({ record, open, onClose }: AttendanceDetai
                             </p>
                           </div>
                           <div className="text-center p-3 bg-background rounded-lg">
-                            <p className="text-xl font-bold text-green-600 dark:text-green-400">
+                            <p className="text-xl font-bold text-(--success-text) dark:text-(--success-text)">
                               {monthlyStats.punctualityRate}%
                             </p>
                             <p className="text-xs text-muted-foreground">
@@ -343,7 +347,7 @@ export function AttendanceDetailModal({ record, open, onClose }: AttendanceDetai
                             </p>
                           </div>
                           <div className="text-center p-3 bg-background rounded-lg">
-                            <p className="text-xl font-bold text-orange-600 dark:text-orange-400">
+                            <p className="text-xl font-bold text-(--warning-text) dark:text-(--warning-text)">
                               {monthlyStats.lateDays}
                             </p>
                             <p className="text-xs text-muted-foreground">
@@ -358,7 +362,7 @@ export function AttendanceDetailModal({ record, open, onClose }: AttendanceDetai
                     {recentRecords && recentRecords.length > 0 && (
                       <div className="rounded-xl p-4 bg-muted/30 border border-border shadow-sm">
                         <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 mb-3">
-                          <Calendar className="w-4 h-4 text-blue-500" />
+                          <Calendar className="w-4 h-4 text-(--brand-text)" />
                           {t('attendance.last7Days')}
                         </h3>
                         <div className="space-y-2">
@@ -396,10 +400,12 @@ export function AttendanceDetailModal({ record, open, onClose }: AttendanceDetai
                                   </Badge>
                                 )}
                                 {r.status === 'checked_out' && !r.isLate && (
-                                  <Badge className="bg-green-500 text-white text-xs py-0">✓</Badge>
+                                  <Badge className="bg-(--success-solid) text-(--brand-contrast) text-xs py-0">
+                                    ✓
+                                  </Badge>
                                 )}
                                 {r.status === 'checked_in' && (
-                                  <Badge className="bg-green-500 text-white text-xs py-0">
+                                  <Badge className="bg-(--success-solid) text-(--brand-contrast) text-xs py-0">
                                     {t('statuses.active')}
                                   </Badge>
                                 )}

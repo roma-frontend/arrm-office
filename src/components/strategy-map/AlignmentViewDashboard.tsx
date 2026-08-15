@@ -58,22 +58,22 @@ const LEVEL_CONFIG = {
 function getHealthBg(health: HealthStatus): string {
   switch (health) {
     case 'on_track':
-      return 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400';
+      return 'bg-(--success-quiet) dark:bg-(--success-quiet) text-(--success-text) dark:text-(--success-text)';
     case 'at_risk':
-      return 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400';
+      return 'bg-(--warning-quiet) dark:bg-(--warning-quiet) text-(--warning-text) dark:text-(--warning-text)';
     case 'behind':
-      return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400';
+      return 'bg-(--danger-quiet) dark:bg-(--danger-quiet) text-(--danger-text) dark:text-(--danger-text)';
     case 'completed':
-      return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400';
+      return 'bg-(--brand-quiet) dark:bg-(--brand-quiet) text-(--brand-text) dark:text-(--brand-text)';
     default:
-      return 'bg-gray-100 dark:bg-gray-800 text-gray-500';
+      return 'bg-(--surface-2) dark:bg-(--surface-3) text-(--text-3)';
   }
 }
 
 function getProgressBarColor(progress: number): string {
-  if (progress >= 70) return 'bg-emerald-500';
-  if (progress >= 40) return 'bg-amber-500';
-  return 'bg-red-500';
+  if (progress >= 70) return 'bg-(--success-solid)';
+  if (progress >= 40) return 'bg-(--warning-solid)';
+  return 'bg-(--danger-solid)';
 }
 
 function getProgressColor(progress: number): string {
@@ -122,9 +122,9 @@ function AlignmentNodeCard({
         <div
           className={`group relative rounded-xl border transition-all duration-200 hover:shadow-md cursor-pointer overflow-hidden ${
             node.health === 'behind'
-              ? 'border-red-200 dark:border-red-900/40'
+              ? 'border-(--danger-outline) dark:border-(--danger-outline)'
               : node.health === 'at_risk'
-                ? 'border-amber-200 dark:border-amber-900/40'
+                ? 'border-(--warning-outline) dark:border-(--warning-outline)'
                 : 'border-border'
           }`}
           onClick={() => router.push(`/goals/${node._id}`)}
@@ -363,8 +363,8 @@ export default function AlignmentViewDashboard() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <Card>
             <CardContent className="p-3.5 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
-                <Target className="w-4 h-4 text-purple-700 dark:text-purple-400" />
+              <div className="p-2 rounded-lg bg-(--purple-quiet) dark:bg-(--purple-quiet)">
+                <Target className="w-4 h-4 text-(--purple-text) dark:text-(--purple-text)" />
               </div>
               <div>
                 <p className="text-xl font-bold">{stats.totalObjs}</p>
@@ -376,8 +376,8 @@ export default function AlignmentViewDashboard() {
           </Card>
           <Card>
             <CardContent className="p-3.5 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
-                <TrendingUp className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
+              <div className="p-2 rounded-lg bg-(--success-quiet) dark:bg-(--success-quiet)">
+                <TrendingUp className="w-4 h-4 text-(--success-text) dark:text-(--success-text)" />
               </div>
               <div>
                 <p className="text-xl font-bold">{stats.avgProgress}%</p>
@@ -389,8 +389,8 @@ export default function AlignmentViewDashboard() {
           </Card>
           <Card>
             <CardContent className="p-3.5 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
-                <Layers className="w-4 h-4 text-blue-700 dark:text-blue-400" />
+              <div className="p-2 rounded-lg bg-(--brand-quiet) dark:bg-(--brand-quiet)">
+                <Layers className="w-4 h-4 text-(--brand-text) dark:text-(--brand-text)" />
               </div>
               <div>
                 <p className="text-xl font-bold">
@@ -405,8 +405,8 @@ export default function AlignmentViewDashboard() {
           </Card>
           <Card>
             <CardContent className="p-3.5 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30">
-                <ListChecks className="w-4 h-4 text-amber-700 dark:text-amber-400" />
+              <div className="p-2 rounded-lg bg-(--warning-quiet) dark:bg-(--warning-quiet)">
+                <ListChecks className="w-4 h-4 text-(--warning-text) dark:text-(--warning-text)" />
               </div>
               <div>
                 <p className="text-xl font-bold">{stats.totalTasks}</p>
@@ -424,7 +424,7 @@ export default function AlignmentViewDashboard() {
         <div className="text-sm text-muted-foreground">
           {alignmentTree ? (
             <span className="flex items-center gap-2">
-              <Building2 className="w-4 h-4 text-purple-500" />
+              <Building2 className="w-4 h-4 text-(--purple-text)" />
               <span>{t('alignmentView.cascade', 'Company → Team → Individual')}</span>
             </span>
           ) : null}

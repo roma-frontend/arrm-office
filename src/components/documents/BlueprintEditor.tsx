@@ -596,7 +596,7 @@ export default function BlueprintEditor({
       )}
 
       {/* ── Actions ──────────────────────────────────────────── */}
-      <div className="sticky bottom-0 flex flex-wrap items-center justify-end gap-2 border-t border-(--border) bg-(--bg-primary)/95 py-3 backdrop-blur">
+      <div className="sticky bottom-0 flex flex-wrap items-center justify-end gap-2 border-t border-(--border) bg-(--background)/95 py-3 backdrop-blur">
         <Button variant="ghost" onClick={() => onClose(blueprintId)}>
           {t('docBuilder.close', 'Close')}
         </Button>
@@ -676,7 +676,7 @@ function SegmentRow({
   const bilingual = !!secondary && secondary !== locales.primary;
 
   return (
-    <Card className={missing ? 'border-amber-500/40' : undefined}>
+    <Card className={missing ? 'border-(--warning-outline)' : undefined}>
       <CardContent className="space-y-3 p-4">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs font-medium text-(--text-muted)">{index + 1}</span>
@@ -749,7 +749,7 @@ function SegmentRow({
               onClick={onRemove}
               title={t('docBuilder.removeSegment', 'Remove')}
             >
-              <Trash2 className="h-4 w-4 text-red-500" />
+              <Trash2 className="h-4 w-4 text-(--danger-text)" />
             </Button>
           </div>
         </div>
@@ -800,7 +800,7 @@ function SegmentTextArea({
         placeholder={placeholder}
         rows={3}
         lang={locale}
-        className="w-full resize-y rounded-lg border border-(--border) bg-(--bg-primary) p-2.5 text-xs leading-relaxed text-(--text-primary) outline-none focus:border-primary"
+        className="w-full resize-y rounded-lg border border-(--border) bg-(--background) p-2.5 text-xs leading-relaxed text-(--text-primary) outline-none focus:border-primary"
       />
     </div>
   );

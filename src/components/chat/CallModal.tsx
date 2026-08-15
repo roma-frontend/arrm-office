@@ -504,7 +504,7 @@ export function CallModal({
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-center">
                   <Avatar className="w-20 h-20 mx-auto mb-3 ring-4 ring-white/20">
-                    <AvatarFallback className="text-2xl font-bold text-white bg-linear-to-br from-purple-600 to-blue-600">
+                    <AvatarFallback className="text-2xl font-bold text-white bg-linear-to-br from-(--purple) to-(--brand)">
                       {getInitials(call.remoteUserName ?? '?')}
                     </AvatarFallback>
                   </Avatar>
@@ -525,7 +525,7 @@ export function CallModal({
               />
               {!camOn && (
                 <div className="absolute inset-0 bg-(--canvas) flex items-center justify-center">
-                  <VideoOff className="w-5 h-5 text-gray-400" />
+                  <VideoOff className="w-5 h-5 text-(--text-3)" />
                 </div>
               )}
             </div>
@@ -537,15 +537,15 @@ export function CallModal({
           <div className="flex flex-col items-center py-10 gap-4">
             <div className={cn('relative', callStatus === 'active' && 'animate-pulse')}>
               <Avatar className="w-24 h-24 ring-4 ring-white/20">
-                <AvatarFallback className="text-3xl font-bold text-white bg-linear-to-br from-purple-600 to-blue-600">
+                <AvatarFallback className="text-3xl font-bold text-white bg-linear-to-br from-(--purple) to-(--brand)">
                   {getInitials(call.remoteUserName ?? '?')}
                 </AvatarFallback>
               </Avatar>
               {callStatus === 'active' && (
                 <>
-                  <span className="absolute inset-0 rounded-full ring-4 ring-green-500/30 animate-ping" />
+                  <span className="absolute inset-0 rounded-full ring-4 ring-(--success-text) animate-ping" />
                   <span
-                    className="absolute inset-0 rounded-full ring-4 ring-green-500/20 animate-ping"
+                    className="absolute inset-0 rounded-full ring-4 ring-(--success-text) animate-ping"
                     style={{ animationDelay: '0.5s' }}
                   />
                 </>
@@ -559,7 +559,7 @@ export function CallModal({
 
         {/* Media Error */}
         {mediaError && (
-          <div className="mx-4 mb-3 px-4 py-3 rounded-xl bg-red-500/20 border border-red-500/40 text-center">
+          <div className="mx-4 mb-3 px-4 py-3 rounded-xl bg-(--danger-quiet) border border-(--danger-outline) text-center">
             <p className="text-(--danger-text) text-xs leading-relaxed">{mediaError}</p>
             <div className="flex gap-2 mt-2 justify-center">
               {retryCount < 3 && (
@@ -573,14 +573,14 @@ export function CallModal({
                       initMedia();
                     }, 500);
                   }}
-                  className="text-xs px-3 py-1 rounded bg-blue-500/30 text-blue-300 hover:bg-blue-500/50 transition"
+                  className="text-xs px-3 py-1 rounded bg-(--brand-quiet) text-(--brand-text) hover:bg-(--brand) transition"
                 >
                   {t('chat.call.retry')}
                 </button>
               )}
               <button
                 onClick={handleEnd}
-                className="text-xs px-3 py-1 rounded bg-red-500/30 text-red-300 hover:bg-red-500/50 transition"
+                className="text-xs px-3 py-1 rounded bg-(--danger-quiet) text-(--danger-text) hover:bg-(--danger-solid) transition"
               >
                 {t('chat.call.closeCall')}
               </button>

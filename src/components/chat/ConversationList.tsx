@@ -107,14 +107,14 @@ function getInitials(name: string) {
 function PresenceDot({ status }: { status?: string }) {
   const color =
     status === 'available'
-      ? 'bg-green-500'
+      ? 'bg-(--success-solid)'
       : status === 'busy'
-        ? 'bg-yellow-500'
+        ? 'bg-(--warning-solid)'
         : status === 'in_call' || status === 'in_meeting'
-          ? 'bg-red-500'
+          ? 'bg-(--danger-solid)'
           : status === 'out_of_office'
-            ? 'bg-gray-400'
-            : 'bg-gray-400';
+            ? 'bg-(--surface-3)'
+            : 'bg-(--surface-3)';
   return (
     <span
       className={cn(
@@ -331,7 +331,7 @@ export const ConversationList = React.memo(function ConversationList({
               {t('chat.messages')}
             </h2>
             {totalUnread > 0 && (
-              <span className="min-w-4.5 h-4.5 px-1 rounded-full bg-linear-to-r from-red-500 to-red-600 text-white text-[10px] font-bold flex items-center justify-center">
+              <span className="min-w-4.5 h-4.5 px-1 rounded-full bg-linear-to-r from-(--danger-solid) to-(--danger-solid) text-white text-[10px] font-bold flex items-center justify-center">
                 {totalUnread > 99 ? '99+' : totalUnread}
               </span>
             )}
@@ -611,7 +611,7 @@ export const ConversationList = React.memo(function ConversationList({
                       <AvatarFallback
                         className={
                           isGroup
-                            ? 'text-xs font-bold text-white bg-gradient-to-br from-indigo-500 to-purple-600'
+                            ? 'text-xs font-bold text-white bg-gradient-to-br from-(--purple) to-(--purple)'
                             : 'text-xs font-bold text-white btn-gradient'
                         }
                       >
@@ -623,7 +623,7 @@ export const ConversationList = React.memo(function ConversationList({
                     )}
                     {/* Unread dot for showCollapse && collapsed mode */}
                     {showCollapse && collapsed && unread > 0 && !conv.membership.isMuted && (
-                      <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-white" />
+                      <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-(--danger-solid) border-2 border-white" />
                     )}
                   </div>
 
@@ -693,7 +693,7 @@ export const ConversationList = React.memo(function ConversationList({
                           </p>
                         </div>
                         {unread > 0 && !conv.membership.isMuted && (
-                          <span className="min-w-5 sm:min-w-4.5 h-5 sm:h-4.5 px-1 rounded-full bg-linear-to-r from-red-500 to-red-600 text-white sm:text-[9px] text-[10px] font-bold flex items-center justify-center shadow-lg">
+                          <span className="min-w-5 sm:min-w-4.5 h-5 sm:h-4.5 px-1 rounded-full bg-linear-to-r from-(--danger-solid) to-(--danger-solid) text-white sm:text-[9px] text-[10px] font-bold flex items-center justify-center shadow-lg">
                             {unread > 99 ? '99+' : unread}
                           </span>
                         )}
@@ -829,7 +829,7 @@ export const ConversationList = React.memo(function ConversationList({
                         handleOperation(() => onDelete?.(conv._id) || Promise.resolve(), conv._id)
                       }
                       disabled={isLoading}
-                      className="flex items-center gap-2 text-red-500 focus:text-red-500"
+                      className="flex items-center gap-2 text-(--danger-text) focus:text-(--danger-text)"
                     >
                       <Trash2 className="w-4 h-4" />
                       {t('chat.delete')}

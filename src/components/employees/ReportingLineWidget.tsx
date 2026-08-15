@@ -85,7 +85,7 @@ export function ReportingLineWidget({
   const chain = [...ancestors, subject];
 
   return (
-    <Card className="overflow-hidden border-blue-500/10">
+    <Card className="overflow-hidden border-(--brand-outline)">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
@@ -93,7 +93,7 @@ export function ReportingLineWidget({
               className="w-8 h-8 rounded-lg flex items-center justify-center"
               style={{ background: 'rgba(37,99,235,0.1)' }}
             >
-              <Crown className="w-4 h-4 text-blue-500" />
+              <Crown className="w-4 h-4 text-(--brand-text)" />
             </div>
             {t('employees.reportingLine', 'Reporting Line')}
           </CardTitle>
@@ -202,7 +202,7 @@ export function ReportingLineWidget({
                           {person.name}
                         </p>
                         {isSubject && (
-                          <Badge className="text-[10px] py-0 px-1.5 bg-blue-500/10 text-blue-500 border-blue-500/30 shrink-0">
+                          <Badge className="text-[10px] py-0 px-1.5 bg-(--brand-quiet) text-(--brand-text) border-(--brand-outline) shrink-0">
                             {t('employees.current', 'Current')}
                           </Badge>
                         )}
@@ -263,7 +263,7 @@ export function ReportingLineWidget({
                     className="w-5 h-5 rounded flex items-center justify-center"
                     style={{ background: 'rgba(16,185,129,0.1)' }}
                   >
-                    <UserCheck className="w-3 h-3 text-emerald-500" />
+                    <UserCheck className="w-3 h-3 text-(--success-text)" />
                   </div>
                   <p
                     className="text-xs font-semibold uppercase tracking-wide"

@@ -80,8 +80,8 @@ export function SecuritySettings({ userId }: SecuritySettingsProps) {
           <div className="space-y-4">
             {faceData?.faceDescriptor ? (
               <>
-                <div className="flex items-center gap-4 p-4 rounded-lg bg-green-500/10 border border-green-500/20 overflow-hidden">
-                  <div className="w-16 h-16 rounded-full overflow-hidden bg-(--surface-hover) border-2 border-green-500/30 shrink-0">
+                <div className="flex items-center gap-4 p-4 rounded-lg bg-(--success-quiet) border border-(--success-outline) overflow-hidden">
+                  <div className="w-16 h-16 rounded-full overflow-hidden bg-(--surface-hover) border-2 border-(--success-outline) shrink-0">
                     {faceData.faceImageUrl ? (
                       <Image
                         src={faceData.faceImageUrl}
@@ -98,7 +98,7 @@ export function SecuritySettings({ userId }: SecuritySettingsProps) {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-green-600 dark:text-green-400 truncate">
+                    <p className="text-sm font-medium text-(--success-text) dark:text-(--success-text) truncate">
                       {t('settingsSecurity.faceIdRegistered')}
                     </p>
                     <p className="text-xs text-(--text-muted) mt-1 truncate">

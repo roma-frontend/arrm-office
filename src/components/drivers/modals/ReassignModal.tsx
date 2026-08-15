@@ -166,7 +166,7 @@ export function ReassignModal({
                         </AvatarFallback>
                       </Avatar>
                       {driver.isAvailable && (
-                        <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-500 border-2 border-(--card)" />
+                        <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-(--success-solid) border-2 border-(--card)" />
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -181,7 +181,7 @@ export function ReassignModal({
                     <div className="flex items-center gap-2">
                       {driver.rating && (
                         <Badge variant="secondary" className="text-xs gap-1">
-                          <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                          <Star className="w-3 h-3 fill-yellow-400 text-(--warning-text)" />
                           {driver.rating.toFixed(1)}
                         </Badge>
                       )}

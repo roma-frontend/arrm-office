@@ -118,7 +118,7 @@ export default function BackupsManagementPage() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <div className="flex items-center gap-2 text-red-500">
+            <div className="flex items-center gap-2 text-(--danger-text)">
               <ShieldAlert className="w-6 h-6" />
               <CardTitle>{t('superadmin.backups.accessDenied')}</CardTitle>
             </div>
@@ -354,7 +354,7 @@ export default function BackupsManagementPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 my-4">
           <div className="p-4 rounded-lg border" style={{ background: 'var(--background-subtle)' }}>
             <div className="flex items-center gap-2 mb-2">
-              <Database className="w-4 h-4 text-blue-500" />
+              <Database className="w-4 h-4 text-(--brand-text)" />
               <p className="text-xs text-muted-foreground">
                 {t('superadmin.backups.totalBackups')}
               </p>
@@ -366,7 +366,7 @@ export default function BackupsManagementPage() {
           </div>
           <div className="p-4 rounded-lg border" style={{ background: 'var(--background-subtle)' }}>
             <div className="flex items-center gap-2 mb-2">
-              <HardDrive className="w-4 h-4 text-orange-500" />
+              <HardDrive className="w-4 h-4 text-(--warning-text)" />
               <p className="text-xs text-muted-foreground">{t('superadmin.backups.storageUsed')}</p>
             </div>
             <p className="text-2xl font-bold">
@@ -378,12 +378,12 @@ export default function BackupsManagementPage() {
           </div>
           <div className="p-4 rounded-lg border" style={{ background: 'var(--background-subtle)' }}>
             <div className="flex items-center gap-2 mb-2">
-              <Building2 className="w-4 h-4 text-green-500" />
+              <Building2 className="w-4 h-4 text-(--success-text)" />
               <p className="text-xs text-muted-foreground">
                 {t('superadmin.backups.orgsBackedUp')}
               </p>
             </div>
-            <p className="text-2xl font-bold text-green-500">
+            <p className="text-2xl font-bold text-(--success-text)">
               {backupStats?.orgsBackedUp ?? '...'}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
@@ -392,7 +392,7 @@ export default function BackupsManagementPage() {
           </div>
           <div className="p-4 rounded-lg border" style={{ background: 'var(--background-subtle)' }}>
             <div className="flex items-center gap-2 mb-2">
-              <Users className="w-4 h-4 text-purple-500" />
+              <Users className="w-4 h-4 text-(--purple-text)" />
               <p className="text-xs text-muted-foreground">
                 {t('superadmin.backups.totalEmployees')}
               </p>
@@ -456,7 +456,7 @@ export default function BackupsManagementPage() {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
             <Card className="w-full max-w-md mx-4 bg-(--card) border-(--border)">
               <CardHeader>
-                <div className="flex items-center gap-2 text-amber-500">
+                <div className="flex items-center gap-2 text-(--warning-text)">
                   <AlertCircle className="w-5 h-5" />
                   <CardTitle>{t('superadmin.backups.restoreConfirmTitle')}</CardTitle>
                 </div>
@@ -589,7 +589,7 @@ function OrgBackups({
 
   return (
     <div
-      className="p-4 rounded-lg border hover:border-blue-400/50 transition-all hover:shadow-md"
+      className="p-4 rounded-lg border hover:border-(--brand-outline) transition-all hover:shadow-md"
       style={{ background: 'var(--card)' }}
     >
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-3">
@@ -722,7 +722,7 @@ function EmployeeBackups({
 
   return (
     <div
-      className="p-3 rounded-lg border hover:border-blue-400/50 transition-all"
+      className="p-3 rounded-lg border hover:border-(--brand-outline) transition-all"
       style={{ background: 'var(--card)' }}
     >
       <div
@@ -838,8 +838,8 @@ function EmployeeBackups({
                             variant="outline"
                             className={
                               isExpired
-                                ? 'bg-red-500/10 text-red-500 border-red-500/20'
-                                : 'bg-green-500/10 text-green-500 border-green-500/20'
+                                ? 'bg-(--danger-quiet) text-(--danger-text) border-(--danger-outline)'
+                                : 'bg-(--success-quiet) text-(--success-text) border-(--success-outline)'
                             }
                           >
                             {isExpired

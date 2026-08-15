@@ -173,7 +173,7 @@ export function ChatWidgetWindow({
             }}
           >
             {/* Header */}
-            <div className="flex items-center gap-3 px-4 py-3 border-b border-(--border) shrink-0 bg-linear-to-r from-[#2563eb]/10 to-[#0ea5e9]/10">
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-(--border) shrink-0 bg-linear-to-r from-(--brand)/10 to-(--brand-hover)/10">
               <div className="w-8 h-8 rounded-xl btn-gradient flex items-center justify-center shadow">
                 <Sparkles className="w-4 h-4 text-white" />
               </div>
@@ -196,7 +196,7 @@ export function ChatWidgetWindow({
                 </button>
                 <button
                   onClick={() => setShowPinned(!showPinned)}
-                  className={`p-1.5 rounded-lg hover:bg-(--background-subtle) transition-colors ${showPinned ? 'text-[#2563eb]' : ''}`}
+                  className={`p-1.5 rounded-lg hover:bg-(--background-subtle) transition-colors ${showPinned ? 'text-(--brand-text)' : ''}`}
                   aria-label="Pinned messages"
                   title="Pinned messages"
                 >
@@ -247,7 +247,7 @@ export function ChatWidgetWindow({
                         key={s}
                         onClick={() => handleSuggestion(s)}
                         disabled={isLoading}
-                        className="text-left px-3 py-2 rounded-xl border border-(--border) bg-(--background-subtle) hover:border-[#2563eb]/50 hover:bg-[#2563eb]/5 hover:text-[#3b82f6] text-xs text-(--text-primary) transition-all duration-150 disabled:opacity-50"
+                        className="text-left px-3 py-2 rounded-xl border border-(--border) bg-(--background-subtle) hover:border-(--brand)/50 hover:bg-(--brand)/5 hover:text-(--brand-text) text-xs text-(--text-primary) transition-all duration-150 disabled:opacity-50"
                       >
                         {s}
                       </button>
@@ -265,7 +265,7 @@ export function ChatWidgetWindow({
                             key={s}
                             onClick={() => handleSuggestion(s)}
                             disabled={isLoading}
-                            className="px-2 py-1 rounded-full border border-[#0ea5e9]/30 bg-[#0ea5e9]/5 hover:bg-[#0ea5e9]/15 text-[10px] text-[#0ea5e9] font-medium transition-all disabled:opacity-50"
+                            className="px-2 py-1 rounded-full border border-(--cyan-outline) bg-(--cyan-quiet) hover:bg-(--cyan-quiet-hover) text-[10px] text-(--cyan-text) font-medium transition-all disabled:opacity-50"
                           >
                             {s}
                           </button>
@@ -287,7 +287,7 @@ export function ChatWidgetWindow({
                       <div
                         className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
                           isUser
-                            ? 'bg-linear-to-br from-[#2563eb] to-[#0ea5e9] text-white rounded-br-sm'
+                            ? 'bg-linear-to-br from-(--brand) to-(--brand-hover) text-white rounded-br-sm'
                             : 'bg-(--background-subtle) text-(--text-primary) rounded-bl-sm'
                         }`}
                       >
@@ -310,7 +310,7 @@ export function ChatWidgetWindow({
                                     router.push('/ai-chat');
                                     setIsOpen(false);
                                   }}
-                                  className="mt-2 flex items-center gap-1.5 text-xs font-medium text-[#2563eb] hover:text-[#1d4ed8] transition-colors"
+                                  className="mt-2 flex items-center gap-1.5 text-xs font-medium text-(--brand-text) hover:text-(--brand-hover) transition-colors"
                                 >
                                   <Maximize2 className="w-3.5 h-3.5" />
                                   {t('chatWidget.viewFullScreen', {
@@ -371,27 +371,27 @@ export function ChatWidgetWindow({
                                 animate={{ opacity: 1, y: 0 }}
                                 className={`rounded-xl border p-3 text-xs space-y-2 ${
                                   isDelete
-                                    ? 'border-red-500/20 bg-red-500/5'
+                                    ? 'border-(--danger-outline) bg-(--danger-quiet)'
                                     : isEdit
-                                      ? 'border-yellow-500/20 bg-yellow-500/5'
+                                      ? 'border-(--warning-outline) bg-(--warning-quiet)'
                                       : isBookDriver
-                                        ? 'border-purple-500/20 bg-purple-500/5'
+                                        ? 'border-(--purple-outline) bg-(--purple-quiet)'
                                         : isBackupOrg || isBackupEmployee || isRestoreBackup
-                                          ? 'border-emerald-500/20 bg-emerald-500/5'
-                                          : 'border-[#2563eb]/20 bg-[#2563eb]/5'
+                                          ? 'border-(--success-outline) bg-(--success-quiet)'
+                                          : 'border-(--brand)/20 bg-(--brand)/5'
                                 }`}
                               >
                                 <div className="flex items-center gap-2 font-semibold text-(--text-primary)">
                                   {isDelete ? (
-                                    <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                                    <Trash2 className="w-3.5 h-3.5 text-(--danger-text)" />
                                   ) : isEdit ? (
-                                    <Pencil className="w-3.5 h-3.5 text-yellow-500" />
+                                    <Pencil className="w-3.5 h-3.5 text-(--warning-text)" />
                                   ) : isBookDriver ? (
-                                    <Car className="w-3.5 h-3.5 text-purple-500" />
+                                    <Car className="w-3.5 h-3.5 text-(--purple-text)" />
                                   ) : isBackupOrg || isBackupEmployee || isRestoreBackup ? (
-                                    <Database className="w-3.5 h-3.5 text-emerald-500" />
+                                    <Database className="w-3.5 h-3.5 text-(--success-text)" />
                                   ) : (
-                                    <Calendar className="w-3.5 h-3.5 text-[#2563eb]" />
+                                    <Calendar className="w-3.5 h-3.5 text-(--brand-text)" />
                                   )}
                                   {isDelete
                                     ? t('chatWidget.cancelLeave')
@@ -470,7 +470,7 @@ export function ChatWidgetWindow({
                                         📅 {(action as DeleteLeaveAction).startDate} →{' '}
                                         {(action as DeleteLeaveAction).endDate}
                                       </p>
-                                      <p className="text-red-500 font-medium">
+                                      <p className="text-(--danger-text) font-medium">
                                         ⚠️ This action cannot be undone
                                       </p>
                                     </>
@@ -482,10 +482,10 @@ export function ChatWidgetWindow({
                                     onClick={() => handleAction(m.id, action, idx)}
                                     className={`w-full py-2 px-3 text-white text-xs font-semibold rounded-lg hover:opacity-90 transition-opacity ${
                                       isDelete
-                                        ? 'bg-linear-to-r from-red-500 to-red-600'
+                                        ? 'bg-linear-to-r from-(--danger-solid) to-(--danger-solid)'
                                         : isEdit
-                                          ? 'bg-linear-to-r from-yellow-500 to-orange-500'
-                                          : 'bg-linear-to-r from-[#2563eb] to-[#0ea5e9]'
+                                          ? 'bg-linear-to-r from-(--warning-solid) to-(--warning-solid)'
+                                          : 'bg-linear-to-r from-(--brand) to-(--brand-hover)'
                                     }`}
                                   >
                                     {isDelete
@@ -504,18 +504,18 @@ export function ChatWidgetWindow({
                                   </div>
                                 )}
                                 {state.status === 'booked' && (
-                                  <div className="flex items-start gap-2 p-2 bg-green-500/10 rounded-lg border border-green-500/20">
-                                    <CheckCircle className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
-                                    <p className="text-xs text-green-600 dark:text-green-400">
+                                  <div className="flex items-start gap-2 p-2 bg-(--success-quiet) rounded-lg border border-(--success-outline)">
+                                    <CheckCircle className="w-4 h-4 text-(--success-text) shrink-0 mt-0.5" />
+                                    <p className="text-xs text-(--success-text) dark:text-(--success-text)">
                                       {state.result}
                                     </p>
                                   </div>
                                 )}
                                 {state.status === 'conflict' && (
-                                  <div className="flex items-start gap-2 p-2 bg-red-500/10 rounded-lg border border-red-500/20">
-                                    <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                                  <div className="flex items-start gap-2 p-2 bg-(--danger-quiet) rounded-lg border border-(--danger-outline)">
+                                    <AlertCircle className="w-4 h-4 text-(--danger-text) shrink-0 mt-0.5" />
                                     <div className="flex-1">
-                                      <p className="text-xs text-red-600 dark:text-red-400 whitespace-pre-line">
+                                      <p className="text-xs text-(--danger-text) dark:text-(--danger-text) whitespace-pre-line">
                                         {state.result}
                                       </p>
 
@@ -525,13 +525,13 @@ export function ChatWidgetWindow({
                                             (conflict: ConflictMessage, idx: number) => (
                                               <div
                                                 key={idx}
-                                                className="text-xs text-red-700 dark:text-red-300 bg-red-500/5 p-2 rounded border border-red-500/10"
+                                                className="text-xs text-(--danger-text) dark:text-(--danger-text) bg-(--danger-quiet) p-2 rounded border border-(--danger-outline)"
                                               >
                                                 <p className="font-medium">{conflict.title}</p>
-                                                <p className="mt-0.5 text-red-600 dark:text-red-400">
+                                                <p className="mt-0.5 text-(--danger-text) dark:text-(--danger-text)">
                                                   {conflict.message}
                                                 </p>
-                                                <p className="mt-1 text-red-500 dark:text-red-300">
+                                                <p className="mt-1 text-(--danger-text) dark:text-(--danger-text)">
                                                   💡 {conflict.suggestion}
                                                 </p>
                                               </div>
@@ -543,7 +543,7 @@ export function ChatWidgetWindow({
                                       {state.alternativeDates &&
                                         state.alternativeDates.length > 0 && (
                                           <div className="mt-3">
-                                            <p className="text-xs font-medium text-red-700 dark:text-red-300 mb-1">
+                                            <p className="text-xs font-medium text-(--danger-text) dark:text-(--danger-text) mb-1">
                                               ✅ Доступные даты без конфликтов:
                                             </p>
                                             <div className="flex flex-wrap gap-1.5">
@@ -566,7 +566,7 @@ export function ChatWidgetWindow({
                                                       ),
                                                     );
                                                   }}
-                                                  className="px-3 py-1.5 rounded-full border border-green-500/30 bg-green-500/10 hover:bg-green-500/20 text-xs text-green-700 dark:text-green-400 font-medium transition-all"
+                                                  className="px-3 py-1.5 rounded-full border border-(--success-outline) bg-(--success-quiet) hover:bg-(--success-quiet) text-xs text-(--success-text) dark:text-(--success-text) font-medium transition-all"
                                                 >
                                                   📅 {dateRange}
                                                 </button>
@@ -596,7 +596,7 @@ export function ChatWidgetWindow({
                               key={s}
                               onClick={() => handleSuggestion(s)}
                               disabled={isLoading}
-                              className="px-2.5 py-1 rounded-full border border-[#2563eb]/30 bg-[#2563eb]/5 hover:bg-[#2563eb]/15 hover:border-[#2563eb]/60 text-[10px] text-[#2563eb] font-medium transition-all duration-150 disabled:opacity-50"
+                              className="px-2.5 py-1 rounded-full border border-(--brand)/30 bg-(--brand)/5 hover:bg-(--brand)/15 hover:border-(--brand)/60 text-[10px] text-(--brand-text) font-medium transition-all duration-150 disabled:opacity-50"
                             >
                               {s}
                             </button>
@@ -633,15 +633,15 @@ export function ChatWidgetWindow({
                   <div className="bg-(--background-subtle) px-4 py-3 rounded-2xl rounded-bl-sm flex items-center gap-2">
                     <div className="flex gap-1">
                       <span
-                        className="w-1.5 h-1.5 rounded-full bg-[#2563eb] animate-bounce"
+                        className="w-1.5 h-1.5 rounded-full bg-(--brand) animate-bounce"
                         style={{ animationDelay: '0ms' }}
                       />
                       <span
-                        className="w-1.5 h-1.5 rounded-full bg-[#2563eb] animate-bounce"
+                        className="w-1.5 h-1.5 rounded-full bg-(--brand) animate-bounce"
                         style={{ animationDelay: '150ms' }}
                       />
                       <span
-                        className="w-1.5 h-1.5 rounded-full bg-[#2563eb] animate-bounce"
+                        className="w-1.5 h-1.5 rounded-full bg-(--brand) animate-bounce"
                         style={{ animationDelay: '300ms' }}
                       />
                     </div>
@@ -663,8 +663,8 @@ export function ChatWidgetWindow({
 
             {/* Error */}
             {error && (
-              <div className="px-4 py-2 bg-red-500/10 border-t border-red-500/20 shrink-0">
-                <p className="text-xs text-red-500">⚠️ {error}</p>
+              <div className="px-4 py-2 bg-(--danger-quiet) border-t border-(--danger-outline) shrink-0">
+                <p className="text-xs text-(--danger-text)">⚠️ {error}</p>
               </div>
             )}
 
@@ -708,8 +708,8 @@ export function ChatWidgetWindow({
                   placeholder={
                     isListening ? t('chatWidget.listening') : t('chatWidget.placeholder')
                   }
-                  className={`w-full px-4 py-2.5 pr-20 bg-(--input) border rounded-xl text-(--text-primary) placeholder:text-(--text-muted) focus:outline-none focus:ring-2 focus:ring-[#2563eb] text-sm transition-colors ${
-                    isListening ? 'border-[#2563eb] ring-2 ring-[#2563eb]/30' : 'border-(--border)'
+                  className={`w-full px-4 py-2.5 pr-20 bg-(--input) border rounded-xl text-(--text-primary) placeholder:text-(--text-muted) focus:outline-none focus:ring-2 focus:ring-(--brand) text-sm transition-colors ${
+                    isListening ? 'border-(--brand) ring-2 ring-(--brand)/30' : 'border-(--border)'
                   }`}
                   disabled={isLoading}
                   onKeyDown={(e) => {
@@ -727,8 +727,8 @@ export function ChatWidgetWindow({
                     title={isListening ? t('chatWidget.stopListening') : t('chatWidget.voiceInput')}
                     className={`p-1.5 rounded-lg transition-colors disabled:opacity-50 ${
                       isListening
-                        ? 'text-[#2563eb] animate-pulse'
-                        : 'text-(--text-muted) hover:text-[#3b82f6]'
+                        ? 'text-(--brand-text) animate-pulse'
+                        : 'text-(--text-muted) hover:text-(--brand-text)'
                     }`}
                   >
                     {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}

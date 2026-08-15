@@ -8,14 +8,22 @@ import type { Id } from '../../../convex/_generated/dataModel';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Clock, LogIn, LogOut, TrendingUp, AlertCircle } from 'lucide-react';
+import { Clock, LogIn, LogOut, TrendingUp, AlertCircle, ArrowRight } from 'lucide-react';
+import Link from 'next/link';
+import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/useAuthStore';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { format } from 'date-fns';
 import { enUS, ru, hy } from 'date-fns/locale';
 
-export function CheckInOutWidget() {
+interface CheckInOutWidgetProps {
+  /** Compact single-row layout for the dashboard: clock, status, one action
+   *  button and a link to the full /attendance page. */
+  compact?: boolean;
+}
+
+export function CheckInOutWidget({ compact }: CheckInOutWidgetProps) {
   const { t, i18n } = useTranslation(['modules', 'common']);
   const dfLocale = i18n.language === 'ru' ? ru : i18n.language === 'hy' ? hy : enUS;
   const { user } = useAuthStore();
@@ -75,8 +83,80 @@ export function CheckInOutWidget() {
       </div>
     );
 
+  // ── Compact layout: one row on the dashboard — clock, status, one action,
+  //    and a path to the full attendance page. The full widget (times, totals,
+  //    overtime) lives at /attendance so the dashboard stays scannable. ──
+  if (compact)
+    return (
+      <Card className="overflow-hidden glass-panel">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3 sm:px-5">
+          {/* Clock + title */}
+          <div className="flex min-w-0 items-center gap-3">
+            <span
+              className="flex size-9 shrink-0 items-center justify-center rounded-lg text-(--brand-text)"
+              style={{ background: 'color-mix(in srgb, var(--primary) 10%, transparent)' }}
+            >
+              <Clock className="size-4.5" aria-hidden="true" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold leading-tight text-(--text-primary)">
+                {t('attendance.timeTracker')}
+              </p>
+              <p
+                className={cn(
+                  'text-xs leading-tight',
+                  isCheckedIn ? 'text-(--success-text)' : 'text-(--text-muted)',
+                )}
+              >
+                {!todayStatus && t('attendance.notCheckedIn')}
+                {isCheckedIn && t('attendance.atWork')}
+                {isCheckedOut && t('attendance.finishedToday')}
+              </p>
+            </div>
+          </div>
+
+          {/* Live clock */}
+          <div className="num ml-auto font-mono text-lg tabular-nums text-(--text-primary)">
+            {format(currentTime, 'HH:mm:ss', { locale: dfLocale })}
+          </div>
+
+          {/* One action */}
+          {!todayStatus && (
+            <Button onClick={handleCheckIn} size="sm">
+              <LogIn className="size-4" />
+              {t('attendance.checkIn')}
+            </Button>
+          )}
+          {isCheckedIn && (
+            <Button onClick={handleCheckOut} size="sm">
+              <LogOut className="size-4" />
+              {t('attendance.checkOut')}
+            </Button>
+          )}
+          {isCheckedOut && (
+            <span className="text-sm font-medium text-(--success-text)">
+              {t('attendance.seeYouTomorrow')}
+            </span>
+          )}
+
+          {/* Full page */}
+          <Link
+            href="/attendance"
+            className={cn(
+              'flex items-center gap-1 rounded-control px-2 py-1 text-xs font-medium text-(--text-2)',
+              'transition-colors duration-140 ease-spark hover:text-(--brand-text)',
+              'focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/25',
+            )}
+          >
+            {t('attendance.viewDetails', 'View details')}
+            <ArrowRight className="size-3.5" aria-hidden="true" />
+          </Link>
+        </div>
+      </Card>
+    );
+
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden glass-panel">
       {/* Full-bleed header: `.brand-panel`, not `.btn-gradient` — a button fill
           spread across the width of a card reads as a lit slab. */}
       <CardHeader className="brand-panel font-medium">

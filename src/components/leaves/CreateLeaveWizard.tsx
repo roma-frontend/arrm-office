@@ -73,7 +73,7 @@ export function CreateLeaveWizard({ userId, onComplete, onCancel }: CreateLeaveW
               title: t('leave.types.paid'),
               description: t('leave.types.paidDesc'),
               icon: <Sun className="w-6 h-6" />,
-              color: 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400',
+              color: 'bg-(--warning-quiet) text-(--warning-text) dark:text-(--warning-text)',
               badge: `${user?.paidLeaveBalance ?? 24} ${t('leave.days', 'days')}`,
             },
             {
@@ -81,7 +81,7 @@ export function CreateLeaveWizard({ userId, onComplete, onCancel }: CreateLeaveW
               title: t('leave.types.sick'),
               description: t('leave.types.sickDesc'),
               icon: <Heart className="w-6 h-6" />,
-              color: 'bg-(--danger-quiet) text-(--danger-text) dark:text-red-400',
+              color: 'bg-(--danger-quiet) text-(--danger-text) dark:text-(--danger-text)',
               badge: `${user?.sickLeaveBalance ?? 10} ${t('leave.days', 'days')}`,
             },
             {
@@ -89,7 +89,7 @@ export function CreateLeaveWizard({ userId, onComplete, onCancel }: CreateLeaveW
               title: t('leave.types.family'),
               description: t('leave.types.familyDesc'),
               icon: <Users className="w-6 h-6" />,
-              color: 'bg-(--purple-quiet) text-(--purple-text) dark:text-purple-400',
+              color: 'bg-(--purple-quiet) text-(--purple-text) dark:text-(--purple-text)',
               badge: `${user?.familyLeaveBalance ?? 5} ${t('leave.days', 'days')}`,
             },
             {
@@ -97,7 +97,7 @@ export function CreateLeaveWizard({ userId, onComplete, onCancel }: CreateLeaveW
               title: t('leave.types.dayOff'),
               description: t('leave.types.dayOffDesc'),
               icon: <Coffee className="w-6 h-6" />,
-              color: 'bg-teal-500/10 text-teal-600 dark:text-teal-400',
+              color: 'bg-(--success-quiet) text-(--success-text) dark:text-(--success-text)',
               badge: `${user?.dayOffBalance ?? 6} ${t('leave.days', 'days')}`,
             },
             {
@@ -105,7 +105,7 @@ export function CreateLeaveWizard({ userId, onComplete, onCancel }: CreateLeaveW
               title: t('leave.types.study'),
               description: t('leave.types.studyDesc'),
               icon: <BookOpen className="w-6 h-6" />,
-              color: 'bg-sky-500/10 text-sky-600 dark:text-sky-400',
+              color: 'bg-(--brand-quiet) text-(--brand-text) dark:text-(--brand-text)',
               badge: `${user?.studyLeaveBalance ?? 5} ${t('leave.days', 'days')}`,
             },
             {
@@ -113,7 +113,7 @@ export function CreateLeaveWizard({ userId, onComplete, onCancel }: CreateLeaveW
               title: t('leave.types.maternity'),
               description: t('leave.types.maternityDesc'),
               icon: <Baby className="w-6 h-6" />,
-              color: 'bg-(--pink-quiet) text-(--pink-text) dark:text-pink-400',
+              color: 'bg-(--pink-quiet) text-(--pink-text) dark:text-(--pink-text)',
               badge: `${t('leave.types.maternityBadge', '18 weeks')}`,
             },
             {
@@ -121,7 +121,7 @@ export function CreateLeaveWizard({ userId, onComplete, onCancel }: CreateLeaveW
               title: t('leave.types.unpaid'),
               description: t('leave.types.unpaidDesc'),
               icon: <Briefcase className="w-6 h-6" />,
-              color: 'bg-gray-500/10 text-gray-600 dark:text-gray-400',
+              color: 'bg-(--surface-2) text-(--text-3) dark:text-(--text-3)',
             },
           ].filter((option) => isActive(option.value))}
           columns={3}
@@ -197,31 +197,31 @@ export function CreateLeaveWizard({ userId, onComplete, onCancel }: CreateLeaveW
                     key: 'paid',
                     label: t('leave.types.paid'),
                     balance: user.paidLeaveBalance ?? 24,
-                    color: 'bg-yellow-500',
+                    color: 'bg-(--warning-solid)',
                   },
                   {
                     key: 'sick',
                     label: t('leave.types.sick'),
                     balance: user.sickLeaveBalance ?? 10,
-                    color: 'bg-red-500',
+                    color: 'bg-(--danger-solid)',
                   },
                   {
                     key: 'day_off',
                     label: t('leave.types.dayOff'),
                     balance: user.dayOffBalance ?? 6,
-                    color: 'bg-teal-500',
+                    color: 'bg-(--success-solid)',
                   },
                   {
                     key: 'family',
                     label: t('leave.types.family'),
                     balance: user.familyLeaveBalance ?? 5,
-                    color: 'bg-purple-500',
+                    color: 'bg-(--purple)',
                   },
                   {
                     key: 'study',
                     label: t('leave.types.study'),
                     balance: user.studyLeaveBalance ?? 5,
-                    color: 'bg-sky-500',
+                    color: 'bg-(--brand)',
                   },
                 ]
                   .filter(({ key }) => isActive(key))

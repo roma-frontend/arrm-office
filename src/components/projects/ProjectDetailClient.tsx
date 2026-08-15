@@ -27,22 +27,22 @@ import {
 type LabelStyle = { label: string; color: string };
 
 const STATUS_CONFIG: Record<string, LabelStyle> = {
-  planning: { label: 'Planning', color: 'text-blue-500' },
-  active: { label: 'Active', color: 'text-emerald-500' },
-  on_hold: { label: 'On Hold', color: 'text-amber-500' },
-  completed: { label: 'Completed', color: 'text-green-500' },
-  cancelled: { label: 'Cancelled', color: 'text-rose-500' },
+  planning: { label: 'Planning', color: 'text-(--brand-text)' },
+  active: { label: 'Active', color: 'text-(--success-text)' },
+  on_hold: { label: 'On Hold', color: 'text-(--warning-text)' },
+  completed: { label: 'Completed', color: 'text-(--success-text)' },
+  cancelled: { label: 'Cancelled', color: 'text-(--danger-text)' },
 };
 
 const PRIORITY_CONFIG: Record<string, LabelStyle> = {
   low: { label: 'Low', color: 'text-(--text-muted)' },
-  medium: { label: 'Medium', color: 'text-blue-500' },
-  high: { label: 'High', color: 'text-orange-500' },
-  urgent: { label: 'Urgent', color: 'text-rose-500' },
+  medium: { label: 'Medium', color: 'text-(--brand-text)' },
+  high: { label: 'High', color: 'text-(--warning-text)' },
+  urgent: { label: 'Urgent', color: 'text-(--danger-text)' },
 };
 
-const STATUS_FALLBACK: LabelStyle = { label: 'Planning', color: 'text-blue-500' };
-const PRIORITY_FALLBACK: LabelStyle = { label: 'Medium', color: 'text-blue-500' };
+const STATUS_FALLBACK: LabelStyle = { label: 'Planning', color: 'text-(--brand-text)' };
+const PRIORITY_FALLBACK: LabelStyle = { label: 'Medium', color: 'text-(--brand-text)' };
 
 export default function ProjectDetailClient({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
@@ -154,7 +154,7 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card>
           <CardContent className="p-4 text-center">
-            <CheckCircle2 className="w-5 h-5 mx-auto mb-1 text-emerald-500" />
+            <CheckCircle2 className="w-5 h-5 mx-auto mb-1 text-(--success-text)" />
             <p className="text-xl font-bold">
               {project.completedTasks}/{project.taskCount}
             </p>
@@ -163,7 +163,7 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <Users className="w-5 h-5 mx-auto mb-1 text-blue-500" />
+            <Users className="w-5 h-5 mx-auto mb-1 text-(--brand-text)" />
             <p className="text-xl font-bold">{project.members?.length ?? 0}</p>
             <p className="text-xs text-(--text-muted)">{t('projects.members', 'Members')}</p>
           </CardContent>
@@ -171,9 +171,9 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
         <Card>
           <CardContent className="p-4 text-center">
             <Calendar
-              className={`w-5 h-5 mx-auto mb-1 ${isOverdue ? 'text-rose-500' : 'text-blue-500'}`}
+              className={`w-5 h-5 mx-auto mb-1 ${isOverdue ? 'text-(--danger-text)' : 'text-(--brand-text)'}`}
             />
-            <p className={`text-sm font-bold ${isOverdue ? 'text-rose-500' : ''}`}>
+            <p className={`text-sm font-bold ${isOverdue ? 'text-(--danger-text)' : ''}`}>
               {deadlineDate ? deadlineDate.toLocaleDateString() : '—'}
             </p>
             <p className="text-xs text-(--text-muted)">{t('projects.deadline', 'Deadline')}</p>
@@ -184,7 +184,7 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
             <div className="w-full mb-2">
               <Progress value={project.progress} className="h-2" />
             </div>
-            <p className="text-xl font-bold text-emerald-500">{project.progress}%</p>
+            <p className="text-xl font-bold text-(--success-text)">{project.progress}%</p>
             <p className="text-xs text-(--text-muted)">{t('common.progress', 'Progress')}</p>
           </CardContent>
         </Card>
@@ -210,11 +210,11 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
                   <div
                     className={`w-2 h-2 rounded-full ${
                       task.status === 'completed'
-                        ? 'bg-emerald-500'
+                        ? 'bg-(--success-solid)'
                         : task.status === 'in_progress'
-                          ? 'bg-blue-500'
+                          ? 'bg-(--brand)'
                           : task.status === 'review'
-                            ? 'bg-amber-500'
+                            ? 'bg-(--warning-solid)'
                             : 'bg-(--text-muted)'
                     }`}
                   />

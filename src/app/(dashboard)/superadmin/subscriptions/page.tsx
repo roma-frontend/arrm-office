@@ -50,7 +50,7 @@ export default function SubscriptionsManagementPage() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <div className="flex items-center gap-2 text-red-500">
+            <div className="flex items-center gap-2 text-(--danger-text)">
               <ShieldAlert className="w-6 h-6" />
               <CardTitle>{t('superadmin.subscriptions.accessDenied')}</CardTitle>
             </div>
@@ -74,10 +74,10 @@ export default function SubscriptionsManagementPage() {
 
   const getStatusBadge = (status: string) => {
     const colors: Record<string, string> = {
-      active: 'bg-green-500/10 text-green-500 border-green-500/20',
-      canceled: 'bg-red-500/10 text-red-500 border-red-500/20',
-      trialing: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
-      past_due: 'bg-orange-500/10 text-orange-500 border-orange-500/20',
+      active: 'bg-(--success-quiet) text-(--success-text) border-(--success-outline)',
+      canceled: 'bg-(--danger-quiet) text-(--danger-text) border-(--danger-outline)',
+      trialing: 'bg-(--brand-quiet) text-(--brand-text) border-(--brand-outline)',
+      past_due: 'bg-(--warning-quiet) text-(--warning-text) border-(--warning-outline)',
     };
 
     return (
@@ -209,14 +209,14 @@ export default function SubscriptionsManagementPage() {
                       {sub.isManual ? (
                         <Badge
                           variant="outline"
-                          className="bg-purple-500/10 text-purple-500 border-purple-500/20"
+                          className="bg-(--purple-quiet) text-(--purple-text) border-(--purple-outline)"
                         >
                           {t('superadmin.subscriptions.manual')}
                         </Badge>
                       ) : (
                         <Badge
                           variant="outline"
-                          className="bg-blue-500/10 text-blue-500 border-blue-500/20"
+                          className="bg-(--brand-quiet) text-(--brand-text) border-(--brand-outline)"
                         >
                           {t('superadmin.subscriptions.stripe')}
                         </Badge>
@@ -249,7 +249,7 @@ export default function SubscriptionsManagementPage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleCancel(sub._id)}
-                          className="text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                          className="text-(--danger-text) hover:text-(--danger-text) hover:bg-(--danger-quiet)"
                         >
                           <X className="w-4 h-4" />
                         </Button>

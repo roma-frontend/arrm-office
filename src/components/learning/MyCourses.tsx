@@ -58,10 +58,12 @@ interface MyCoursesProps {
 }
 
 const statusColors: Record<string, string> = {
-  completed: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-  in_progress: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-  not_started: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200',
-  expired: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+  completed:
+    'bg-(--success-quiet) text-(--success-text) dark:bg-(--success-solid) dark:text-(--success-text)',
+  in_progress: 'bg-(--brand-quiet) text-(--brand-text) dark:bg-(--brand) dark:text-(--brand-text)',
+  not_started: 'bg-(--surface-2) text-(--text-3) dark:bg-(--surface-3) dark:text-(--text-3)',
+  expired:
+    'bg-(--danger-quiet) text-(--danger-text) dark:bg-(--danger-solid) dark:text-(--danger-text)',
 };
 
 export function MyCourses({ myEnrollments, onOpenCourse, onGoToCatalog }: MyCoursesProps) {

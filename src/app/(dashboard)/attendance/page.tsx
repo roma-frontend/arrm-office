@@ -262,7 +262,7 @@ export default function AttendancePage() {
                   <tab.icon className="w-4 h-4 sm:mr-2" />
                   <span className="hidden sm:inline">{tab.label}</span>
                   {tab.id === 'rating' && needsRating && needsRating.length > 0 && (
-                    <span className="bg-amber-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                    <span className="bg-(--warning-solid) text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
                       {needsRating.length}
                     </span>
                   )}
@@ -276,33 +276,37 @@ export default function AttendancePage() {
         {isAdminOrSupervisor && activeTab === 'today' && todaySummary !== undefined && (
           <div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <Card className="border border-green-200 dark:border-green-800">
+              <Card className="border border-(--success-outline) dark:border-(--success-outline)">
                 <CardContent className="p-5 text-center">
-                  <p className="text-3xl font-bold text-green-500">{todaySummary.checkedIn}</p>
+                  <p className="text-3xl font-bold text-(--success-text)">
+                    {todaySummary.checkedIn}
+                  </p>
                   <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
                     {t('common.atWorkNow')}
                   </p>
                 </CardContent>
               </Card>
-              <Card className="border border-blue-200 dark:border-blue-800">
+              <Card className="border border-(--brand-outline) dark:border-(--brand-outline)">
                 <CardContent className="p-5 text-center">
-                  <p className="text-3xl font-bold text-blue-500">{todaySummary.checkedOut}</p>
+                  <p className="text-3xl font-bold text-(--brand-text)">
+                    {todaySummary.checkedOut}
+                  </p>
                   <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
                     {t('common.leftToday')}
                   </p>
                 </CardContent>
               </Card>
-              <Card className="border border-red-200 dark:border-red-800">
+              <Card className="border border-(--danger-outline) dark:border-(--danger-outline)">
                 <CardContent className="p-5 text-center">
-                  <p className="text-3xl font-bold text-red-500">{todaySummary.absent}</p>
+                  <p className="text-3xl font-bold text-(--danger-text)">{todaySummary.absent}</p>
                   <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
                     {t('statuses.absent')}
                   </p>
                 </CardContent>
               </Card>
-              <Card className="border border-orange-200 dark:border-orange-800">
+              <Card className="border border-(--warning-outline) dark:border-(--warning-outline)">
                 <CardContent className="p-5 text-center">
-                  <p className="text-3xl font-bold text-orange-500">{todaySummary.late}</p>
+                  <p className="text-3xl font-bold text-(--warning-text)">{todaySummary.late}</p>
                   <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
                     {t('common.lateArrivals')}
                   </p>
@@ -318,10 +322,10 @@ export default function AttendancePage() {
             <Card>
               <CardHeader className="flex">
                 <CardTitle className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
-                  <Users className="w-5 h-5 text-blue-500" />
+                  <Users className="w-5 h-5 text-(--brand-text)" />
                   {t('attendance.todaysAttendance')} —{' '}
                   {format(new Date(), 'EEEE, d MMMM', { locale: dateFnsLocale })}
-                  <Badge className="ml-0 sm:ml-auto bg-blue-500/10 text-blue-500 border-blue-500/30">
+                  <Badge className="ml-0 sm:ml-auto bg-(--brand-quiet) text-(--brand-text) border-(--brand-outline)">
                     {todayAllAttendance.length} {t('common.recorded', 'recorded')}
                   </Badge>
                 </CardTitle>
@@ -353,7 +357,7 @@ export default function AttendancePage() {
                             }}
                           >
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-full shrink-0 overflow-hidden bg-linear-to-br from-[#2563eb] to-[#0ea5e9] flex items-center justify-center text-white text-sm font-bold">
+                              <div className="w-10 h-10 rounded-full shrink-0 overflow-hidden bg-linear-to-br from-(--brand) to-(--brand-hover) flex items-center justify-center text-white text-sm font-bold">
                                 {record.user?.avatarUrl ? (
                                   <Image
                                     src={record.user.avatarUrl}
@@ -400,18 +404,18 @@ export default function AttendancePage() {
                                 </Badge>
                               )}
                               {record.isEarlyLeave && (
-                                <Badge className="bg-orange-500 text-white text-xs">
+                                <Badge className="bg-(--warning-solid) text-white text-xs">
                                   {t('attendanceIssues.early')}
                                 </Badge>
                               )}
                               {record.status === t('status.checkedIn') && (
-                                <Badge className="bg-green-500 text-white text-xs">
+                                <Badge className="bg-(--success-solid) text-white text-xs">
                                   <Clock className="w-3 h-3 mr-1" />
                                   {t('attendance.active')}
                                 </Badge>
                               )}
                               {record.status === t('status.checkedOut') && (
-                                <Badge className="bg-blue-500 text-white text-xs">
+                                <Badge className="bg-(--brand) text-white text-xs">
                                   {t('attendance.checkedOut')}
                                 </Badge>
                               )}
@@ -437,7 +441,7 @@ export default function AttendancePage() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 flex-wrap">
-                  <BarChart2 className="w-5 h-5 text-blue-500" />
+                  <BarChart2 className="w-5 h-5 text-(--brand-text)" />
                   {t('attendance.attendanceOverview')}
                   <div className="ml-auto flex items-center gap-2">
                     {/* Search */}
@@ -498,10 +502,10 @@ export default function AttendancePage() {
                             };
                             setDrawerEmployee(empForDrawer);
                           }}
-                          className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-600 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 cursor-pointer transition-all group"
+                          className="flex items-center gap-3 p-3 rounded-xl border border-(--border-default) dark:border-(--border-default) hover:border-(--brand-outline) dark:hover:border-(--brand-outline) hover:bg-(--brand-quiet) dark:hover:bg-(--brand-quiet) cursor-pointer transition-all group"
                         >
                           {/* Avatar */}
-                          <div className="w-10 h-10 rounded-full overflow-hidden bg-linear-to-br from-blue-500 to-sky-500 flex items-center justify-center text-white text-sm font-bold shrink-0">
+                          <div className="w-10 h-10 rounded-full overflow-hidden bg-linear-to-br from-(--brand) to-(--brand) flex items-center justify-center text-white text-sm font-bold shrink-0">
                             {emp.avatarUrl ? (
                               // eslint-disable-next-line @next/next/no-img-element
                               <img
@@ -523,7 +527,7 @@ export default function AttendancePage() {
                           {/* Info */}
                           <div className="flex-1 min-w-0">
                             <p
-                              className="font-semibold text-sm group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors truncate"
+                              className="font-semibold text-sm group-hover:text-(--brand-text) dark:group-hover:text-(--brand-text) transition-colors truncate"
                               style={{ color: 'var(--text-primary)' }}
                             >
                               {emp.name}
@@ -534,7 +538,7 @@ export default function AttendancePage() {
                             >
                               {emp.position && <span>{emp.position}</span>}
                               {supervisor && (
-                                <span className="text-blue-400 dark:text-blue-500">
+                                <span className="text-(--brand-text) dark:text-(--brand-text)">
                                   · {supervisor.name}
                                 </span>
                               )}
@@ -544,7 +548,7 @@ export default function AttendancePage() {
                           {/* Stats */}
                           <div className="hidden sm:flex items-center gap-4 text-center shrink-0">
                             <div>
-                              <p className="text-sm font-bold text-blue-600 dark:text-blue-400">
+                              <p className="text-sm font-bold text-(--brand-text) dark:text-(--brand-text)">
                                 {stats.totalDays}
                               </p>
                               <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
@@ -552,7 +556,7 @@ export default function AttendancePage() {
                               </p>
                             </div>
                             <div>
-                              <p className="text-sm font-bold text-rose-500 dark:text-rose-400">
+                              <p className="text-sm font-bold text-(--danger-text) dark:text-(--danger-text)">
                                 {stats.lateDays}
                               </p>
                               <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
@@ -560,7 +564,7 @@ export default function AttendancePage() {
                               </p>
                             </div>
                             <div>
-                              <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                              <p className="text-sm font-bold text-(--success-text) dark:text-(--success-text)">
                                 {stats.totalWorkedHours}
                                 {t('time.h')}
                               </p>
@@ -570,7 +574,7 @@ export default function AttendancePage() {
                             </div>
                             <div>
                               <p
-                                className={`text-sm font-bold ${Number(stats.punctualityRate) >= 80 ? 'text-emerald-600 dark:text-emerald-400' : Number(stats.punctualityRate) >= 60 ? 'text-amber-500 dark:text-amber-400' : 'text-rose-500 dark:text-rose-400'}`}
+                                className={`text-sm font-bold ${Number(stats.punctualityRate) >= 80 ? 'text-(--success-text) dark:text-(--success-text)' : Number(stats.punctualityRate) >= 60 ? 'text-(--warning-text) dark:text-(--warning-text)' : 'text-(--danger-text) dark:text-(--danger-text)'}`}
                               >
                                 {stats.punctualityRate}%
                               </p>
@@ -583,11 +587,11 @@ export default function AttendancePage() {
                           {/* Last record badge */}
                           <div className="shrink-0">
                             {lastRecord?.status === t('status.checkedIn') ? (
-                              <span className="text-xs bg-green-500/20 dark:bg-green-500/30 text-green-600 dark:text-green-400 px-2 py-1 rounded-full font-medium animate-pulse">
+                              <span className="text-xs bg-(--success-quiet) dark:bg-(--success-quiet) text-(--success-text) dark:text-(--success-text) px-2 py-1 rounded-full font-medium animate-pulse">
                                 {t('common.active')}
                               </span>
                             ) : lastRecord?.status === t('status.checkedOut') ? (
-                              <span className="text-xs bg-blue-500/20 dark:bg-blue-500/30 text-blue-600 dark:text-blue-400 px-2 py-1 rounded-full font-medium">
+                              <span className="text-xs bg-(--brand-quiet) dark:bg-(--brand-quiet) text-(--brand-text) dark:text-(--brand-text) px-2 py-1 rounded-full font-medium">
                                 {t('common.done')}
                               </span>
                             ) : (
@@ -622,7 +626,7 @@ export default function AttendancePage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+                    <Star className="w-5 h-5 text-(--warning-text) fill-yellow-400" />
                     {t('attendance.employeesPendingRating')} ({needsRating.length})
                   </CardTitle>
                 </CardHeader>
@@ -706,7 +710,7 @@ export default function AttendancePage() {
             <div>
               <Card className="border-dashed">
                 <CardContent className="p-6 text-center">
-                  <UserCheck className="w-10 h-10 text-green-500 mx-auto mb-2" />
+                  <UserCheck className="w-10 h-10 text-(--success-text) mx-auto mb-2" />
                   <p className="text-sm font-medium text-(--text-primary)">
                     {t('attendance.allEmployeesRated')}
                   </p>

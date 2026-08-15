@@ -28,7 +28,7 @@ function Avatar({ name, avatarUrl }: { name: string; avatarUrl?: string }) {
     .join('')
     .toUpperCase();
   return (
-    <div className="w-9 h-9 rounded-full bg-[#ec4899]/10 text-[#ec4899] flex items-center justify-center text-xs font-semibold shrink-0">
+    <div className="w-9 h-9 rounded-full bg-(--pink-quiet) text-(--pink-text) flex items-center justify-center text-xs font-semibold shrink-0">
       {initials}
     </div>
   );
@@ -45,7 +45,7 @@ export const UpcomingBirthdaysWidget = memo(function UpcomingBirthdaysWidget() {
     <Card className="h-full">
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2">
-          <Cake className="w-5 h-5 text-[#ec4899]" />
+          <Cake className="w-5 h-5 text-(--pink-text)" />
           {t('dashboardWidgets.upcomingBirthdays', 'Upcoming Birthdays')}
         </CardTitle>
       </CardHeader>

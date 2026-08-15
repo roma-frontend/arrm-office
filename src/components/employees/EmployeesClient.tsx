@@ -260,11 +260,11 @@ export function EmployeesClient() {
             className="p-4 rounded-xl border flex items-start gap-3"
             style={{ background: 'rgba(37,99,235,0.08)', borderColor: 'rgba(37,99,235,0.2)' }}
           >
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-blue-500 bg-blue-500/10">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-(--brand-text) bg-(--brand-quiet)">
               <Plus className="w-5 h-5" />
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-sm" style={{ color: '#2563eb' }}>
+              <h3 className="font-semibold text-sm" style={{ color: 'var(--brand-text)' }}>
                 {t('employees.infoBannerTitle')}
               </h3>
               <p
@@ -510,7 +510,7 @@ export function EmployeesClient() {
                             setOpenMenuId(null);
                           }}
                           className="w-full flex items-center gap-2 px-4 py-2.5 text-sm hover:opacity-80"
-                          style={{ color: '#ef4444' }}
+                          style={{ color: 'var(--danger-text)' }}
                         >
                           <Trash2 className="w-3.5 h-3.5" /> {t('employees.deactivate')}
                         </button>
@@ -569,7 +569,7 @@ export function EmployeesClient() {
                             />
                             <div className="min-w-0 flex-1">
                               <h3
-                                className="font-semibold truncate cursor-pointer hover:text-blue-500 transition-colors"
+                                className="font-semibold truncate cursor-pointer hover:text-(--brand-text) transition-colors"
                                 style={{ color: 'var(--text-primary)' }}
                               >
                                 {emp.name}
@@ -618,8 +618,8 @@ export function EmployeesClient() {
                             )}
                             {emp.supervisorId && (
                               <div className="flex items-center gap-2">
-                                <UserCog className="w-3 h-3 shrink-0 text-blue-400" />
-                                <span className="truncate text-blue-500 font-medium">
+                                <UserCog className="w-3 h-3 shrink-0 text-(--brand-text)" />
+                                <span className="truncate text-(--brand-text) font-medium">
                                   {supervisorMap.get(emp.supervisorId) ??
                                     t('employees.noSupervisor')}
                                 </span>
@@ -663,7 +663,10 @@ export function EmployeesClient() {
                             >
                               <span
                                 className="text-xs font-bold px-3 py-1 rounded-full"
-                                style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444' }}
+                                style={{
+                                  background: 'var(--danger-quiet)',
+                                  color: 'var(--danger-text)',
+                                }}
                               >
                                 {t('employees.deactivatedBadge')}
                               </span>
@@ -795,7 +798,7 @@ export function EmployeesClient() {
                           >
                             {/* Employee name + avatar */}
                             <div className="sm:col-span-4 flex items-center gap-3 min-w-0">
-                              <div className="w-9 h-9 rounded-full overflow-hidden shrink-0 bg-blue-500 flex items-center justify-center text-white text-xs font-bold">
+                              <div className="w-9 h-9 rounded-full overflow-hidden shrink-0 bg-(--brand) flex items-center justify-center text-white text-xs font-bold">
                                 {emp.avatarUrl ? (
                                   <Image
                                     src={emp.avatarUrl}
@@ -880,7 +883,7 @@ export function EmployeesClient() {
                             </div>
 
                             {/* Supervisor - desktop only */}
-                            <div className="hidden sm:block sm:col-span-2 text-sm truncate text-blue-500 font-medium">
+                            <div className="hidden sm:block sm:col-span-2 text-sm truncate text-(--brand-text) font-medium">
                               {emp.supervisorId
                                 ? (supervisorMap.get(emp.supervisorId) ?? t('common.none'))
                                 : t('common.none')}
@@ -924,7 +927,7 @@ export function EmployeesClient() {
                                   e.stopPropagation();
                                   openEmployee(emp._id, emp.name ?? '');
                                 }}
-                                className="p-1.5 rounded-md text-blue-500 hover:bg-blue-500/20 transition-colors"
+                                className="p-1.5 rounded-md text-(--brand-text) hover:bg-(--brand-quiet) transition-colors"
                                 title={t('common.view')}
                               >
                                 <Eye className="w-3.5 h-3.5" />
@@ -1029,7 +1032,7 @@ export function EmployeesClient() {
                   className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
                   style={{ background: 'rgba(239,68,68,0.1)' }}
                 >
-                  <AlertTriangle className="w-7 h-7" style={{ color: '#ef4444' }} />
+                  <AlertTriangle className="w-7 h-7" style={{ color: 'var(--danger-text)' }} />
                 </div>
                 <h3 className="text-lg font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
                   {t('employees.deactivateTitle')}
@@ -1048,7 +1051,7 @@ export function EmployeesClient() {
                   <button
                     onClick={() => handleDelete(deleteConfirm)}
                     className="flex-1 py-2 rounded-xl text-sm font-semibold text-white"
-                    style={{ background: '#ef4444' }}
+                    style={{ background: 'var(--danger-solid)' }}
                   >
                     {t('employees.deactivate')}
                   </button>

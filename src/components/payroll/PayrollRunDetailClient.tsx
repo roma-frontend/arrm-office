@@ -229,7 +229,7 @@ export default function PayrollRunDetailClient({ params }: { params: Promise<{ i
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-2 mb-2">
-              <DollarSign className="w-4 h-4 text-emerald-500" />
+              <DollarSign className="w-4 h-4 text-(--success-text)" />
               <span className="text-sm text-(--text-muted)">{t('payroll.totalGross')}</span>
             </div>
             <p className="text-2xl font-bold text-(--text-primary)">
@@ -241,20 +241,22 @@ export default function PayrollRunDetailClient({ params }: { params: Promise<{ i
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-2 mb-2">
-              <TrendingUp className="w-4 h-4 text-blue-500" />
+              <TrendingUp className="w-4 h-4 text-(--brand-text)" />
               <span className="text-sm text-(--text-muted)">{t('payroll.totalNet')}</span>
             </div>
-            <p className="text-2xl font-bold text-blue-500">{formatCurrency(run.totalNet || 0)}</p>
+            <p className="text-2xl font-bold text-(--brand-text)">
+              {formatCurrency(run.totalNet || 0)}
+            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-2 mb-2">
-              <TrendingDown className="w-4 h-4 text-red-500" />
+              <TrendingDown className="w-4 h-4 text-(--danger-text)" />
               <span className="text-sm text-(--text-muted)">{t('payroll.totalDeductions')}</span>
             </div>
-            <p className="text-2xl font-bold text-red-500">
+            <p className="text-2xl font-bold text-(--danger-text)">
               {formatCurrency(run.totalDeductions || 0)}
             </p>
           </CardContent>
@@ -263,10 +265,10 @@ export default function PayrollRunDetailClient({ params }: { params: Promise<{ i
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-2 mb-2">
-              <Users className="w-4 h-4 text-purple-500" />
+              <Users className="w-4 h-4 text-(--purple-text)" />
               <span className="text-sm text-(--text-muted)">{t('payroll.employees')}</span>
             </div>
-            <p className="text-2xl font-bold text-purple-500">{run.employeeCount || 0}</p>
+            <p className="text-2xl font-bold text-(--purple-text)">{run.employeeCount || 0}</p>
           </CardContent>
         </Card>
       </div>
@@ -325,7 +327,7 @@ export default function PayrollRunDetailClient({ params }: { params: Promise<{ i
                       <td className="py-3 px-4 text-right font-medium text-(--text-primary)">
                         {formatCurrency(record.grossSalary)}
                       </td>
-                      <td className="py-3 px-4 text-right font-medium text-emerald-500">
+                      <td className="py-3 px-4 text-right font-medium text-(--success-text)">
                         {formatCurrency(record.netSalary)}
                       </td>
                       <td className="py-3 px-4 text-center">{getStatusBadge(record.status, t)}</td>
@@ -388,7 +390,7 @@ export default function PayrollRunDetailClient({ params }: { params: Promise<{ i
               )}
               {run.approvedAt && (
                 <div className="flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <CheckCircle className="w-4 h-4 text-(--success-text)" />
                   <span className="text-sm text-(--text-muted)">{t('payroll.approvedAt')}:</span>
                   <span className="text-sm font-medium">
                     {new Date(run.approvedAt).toLocaleString()}

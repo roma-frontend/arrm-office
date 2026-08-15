@@ -84,7 +84,7 @@ const TAB_GRID_BY_COUNT: Record<number, string> = {
 };
 
 const TAB_TRIGGER_CLASS =
-  'w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-(--background-subtle) shadow-sm font-medium flex items-center justify-center gap-2';
+  'w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-(--background-subtle) shadow-sm font-medium flex items-center justify-center gap-2';
 
 export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDetailProps) {
   const { user: currentUser } = useAuthStore();
@@ -171,7 +171,7 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
     [1, 2, 3, 4, 5].map((i) => (
       <Star
         key={i}
-        className={`w-3.5 h-3.5 ${i <= Math.round(rating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
+        className={`w-3.5 h-3.5 ${i <= Math.round(rating) ? 'fill-yellow-400 text-(--warning-text)' : 'text-(--text-3)'}`}
       />
     ));
 
@@ -181,27 +181,32 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
     if (!status) return null;
     const map: Record<string, { color: string; label: string; Icon: typeof BadgeCheck }> = {
       verified: {
-        color: 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
+        color:
+          'text-(--success-text) dark:text-(--success-text) bg-(--success-quiet) border-(--success-outline)',
         label: t('employees.taxIdVerified', 'Verified by SRC'),
         Icon: BadgeCheck,
       },
       not_found: {
-        color: 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/30',
+        color:
+          'text-(--warning-text) dark:text-(--warning-text) bg-(--warning-quiet) border-(--warning-outline)',
         label: t('employees.taxIdNotFound', 'Not found in SRC'),
         Icon: ShieldQuestion,
       },
       valid_local: {
-        color: 'text-sky-600 dark:text-sky-400 bg-sky-500/10 border-sky-500/30',
+        color:
+          'text-(--brand-text) dark:text-(--brand-text) bg-(--brand-quiet) border-(--brand-outline)',
         label: t('employees.taxIdValidLocal', 'Format valid (local check)'),
         Icon: ShieldQuestion,
       },
       invalid_checksum: {
-        color: 'text-red-600 dark:text-red-400 bg-red-500/10 border-red-500/30',
+        color:
+          'text-(--danger-text) dark:text-(--danger-text) bg-(--danger-quiet) border-(--danger-outline)',
         label: t('employees.taxIdInvalidChecksum', 'Checksum invalid'),
         Icon: ShieldAlert,
       },
       invalid_format: {
-        color: 'text-red-600 dark:text-red-400 bg-red-500/10 border-red-500/30',
+        color:
+          'text-(--danger-text) dark:text-(--danger-text) bg-(--danger-quiet) border-(--danger-outline)',
         label: t('employees.taxIdInvalidFormat', 'Must be 8 digits'),
         Icon: ShieldAlert,
       },
@@ -347,24 +352,26 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-blue-500" />
+                  <Clock className="w-5 h-5 text-(--brand-text)" />
                   {t('attendance.thisMonthsAttendance')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   <div className="text-center p-3 rounded-lg bg-(--background-subtle)">
-                    <p className="text-2xl font-bold text-blue-500">{monthlyStats.totalDays}</p>
+                    <p className="text-2xl font-bold text-(--brand-text)">
+                      {monthlyStats.totalDays}
+                    </p>
                     <p className="text-xs text-(--text-muted) mt-1">{t('attendance.daysWorked')}</p>
                   </div>
                   <div className="text-center p-3 rounded-lg bg-(--background-subtle)">
-                    <p className="text-2xl font-bold text-green-500">
+                    <p className="text-2xl font-bold text-(--success-text)">
                       {monthlyStats.totalWorkedHours}h
                     </p>
                     <p className="text-xs text-(--text-muted) mt-1">{t('attendance.totalHours')}</p>
                   </div>
                   <div className="text-center p-3 rounded-lg bg-(--background-subtle)">
-                    <p className="text-2xl font-bold text-sky-400">
+                    <p className="text-2xl font-bold text-(--brand-text)">
                       {monthlyStats.punctualityRate}%
                     </p>
                     <p className="text-xs text-(--text-muted) mt-1">
@@ -373,7 +380,7 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
                   </div>
                   <div className="text-center p-3 rounded-lg bg-(--background-subtle)">
                     <p
-                      className={`text-2xl font-bold ${Number(monthlyStats.lateDays) > 0 ? 'text-red-500' : 'text-green-500'}`}
+                      className={`text-2xl font-bold ${Number(monthlyStats.lateDays) > 0 ? 'text-(--danger-text)' : 'text-(--success-text)'}`}
                     >
                       {monthlyStats.lateDays}
                     </p>
@@ -381,9 +388,9 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
                   </div>
                 </div>
                 {(Number(monthlyStats.lateDays) > 0 || Number(monthlyStats.earlyLeaveDays) > 0) && (
-                  <div className="mt-3 flex items-center gap-2 p-3 rounded-lg bg-orange-50 dark:bg-orange-950">
-                    <AlertTriangle className="w-4 h-4 text-orange-500 shrink-0" />
-                    <p className="text-sm text-orange-700 dark:text-orange-200">
+                  <div className="mt-3 flex items-center gap-2 p-3 rounded-lg bg-(--warning-quiet) dark:bg-(--warning-solid)">
+                    <AlertTriangle className="w-4 h-4 text-(--warning-text) shrink-0" />
+                    <p className="text-sm text-(--warning-text) dark:text-(--warning-text)">
                       {Number(monthlyStats.lateDays) > 0 &&
                         `${monthlyStats.lateDays} ${t('attendance.lateArrivals')}`}
                       {Number(monthlyStats.lateDays) > 0 &&
@@ -405,15 +412,21 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
             </CardHeader>
             <CardContent className="grid grid-cols-3 gap-4">
               <div className="text-center">
-                <p className="text-2xl font-bold text-[#2563eb]">{employee.paidLeaveBalance}</p>
+                <p className="text-2xl font-bold text-(--brand-text)">
+                  {employee.paidLeaveBalance}
+                </p>
                 <p className="text-xs text-(--text-muted) mt-1">{t('employeeProfile.paidLeave')}</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-[#ef4444]">{employee.sickLeaveBalance}</p>
+                <p className="text-2xl font-bold text-(--danger-text)">
+                  {employee.sickLeaveBalance}
+                </p>
                 <p className="text-xs text-(--text-muted) mt-1">{t('employeeProfile.sickLeave')}</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-[#10b981]">{employee.familyLeaveBalance}</p>
+                <p className="text-2xl font-bold text-(--success-text)">
+                  {employee.familyLeaveBalance}
+                </p>
                 <p className="text-xs text-(--text-muted) mt-1">
                   {t('employeeProfile.familyLeave')}
                 </p>
@@ -462,8 +475,8 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
             <Card className="border-dashed">
               <CardContent className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
-                    <Calculator className="w-5 h-5 text-blue-500" />
+                  <div className="w-10 h-10 rounded-xl bg-(--brand-quiet) flex items-center justify-center shrink-0">
+                    <Calculator className="w-5 h-5 text-(--brand-text)" />
                   </div>
                   <div>
                     <p className="font-medium text-(--text-primary)">
@@ -479,7 +492,7 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
                 </div>
                 <Button
                   size="sm"
-                  className="shrink-0 bg-linear-to-r from-blue-600 to-sky-700 text-white"
+                  className="shrink-0 bg-linear-to-r from-(--brand) bg-(--brand) text-white"
                   onClick={() => setShowSettlement(true)}
                 >
                   <Calculator className="w-4 h-4 mr-1" />
@@ -505,7 +518,7 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg flex items-center gap-2">
-                      <IdCard className="w-5 h-5 text-sky-500" />
+                      <IdCard className="w-5 h-5 text-(--brand-text)" />
                       {t('employees.identity') || 'Identity'}
                     </CardTitle>
                     {renderTaxIdBadge()}
@@ -598,7 +611,7 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg flex items-center gap-2">
-                    <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+                    <Star className="w-5 h-5 text-(--warning-text) fill-yellow-400" />
                     {t('employeeProfile.latestPerformanceRating')}
                   </CardTitle>
                   <div className="text-right">
@@ -636,21 +649,21 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
                   </div>
                 ))}
                 {latestRating.strengths && (
-                  <div className="mt-3 p-3 rounded-lg bg-green-50 dark:bg-green-950">
-                    <p className="text-xs font-semibold text-green-700 dark:text-green-300 mb-1">
+                  <div className="mt-3 p-3 rounded-lg bg-(--success-quiet) dark:bg-(--success-solid)">
+                    <p className="text-xs font-semibold text-(--success-text) dark:text-(--success-text) mb-1">
                       💪 {t('performance.strengths')}
                     </p>
-                    <p className="text-sm text-green-700 dark:text-green-300">
+                    <p className="text-sm text-(--success-text) dark:text-(--success-text)">
                       {latestRating.strengths}
                     </p>
                   </div>
                 )}
                 {latestRating.areasForImprovement && (
-                  <div className="mt-2 p-3 rounded-lg bg-orange-50 dark:bg-orange-950">
-                    <p className="text-xs font-semibold text-orange-700 dark:text-orange-300 mb-1">
+                  <div className="mt-2 p-3 rounded-lg bg-(--warning-quiet) dark:bg-(--warning-solid)">
+                    <p className="text-xs font-semibold text-(--warning-text) dark:text-(--warning-text) mb-1">
                       📈 {t('performance.areasForImprovement')}
                     </p>
-                    <p className="text-sm text-orange-700 dark:text-orange-300">
+                    <p className="text-sm text-(--warning-text) dark:text-(--warning-text)">
                       {latestRating.areasForImprovement}
                     </p>
                   </div>
@@ -715,7 +728,7 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
                 {canRate && !showRatingForm && (
                   <Button
                     size="sm"
-                    className="mt-3 bg-linear-to-r from-blue-600 to-sky-700 text-white"
+                    className="mt-3 bg-linear-to-r from-(--brand) bg-(--brand) text-white"
                     onClick={() => setShowRatingForm(true)}
                   >
                     <Plus className="w-4 h-4 mr-1" />
@@ -782,7 +795,7 @@ export default function EmployeeProfileDetail({ employeeId }: EmployeeProfileDet
           <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle className="flex items-center gap-2 text-red-500">
+                <DialogTitle className="flex items-center gap-2 text-(--danger-text)">
                   <Trash2 className="w-5 h-5" />
                   {t('employees.confirmDelete', 'Confirm Deletion')}
                 </DialogTitle>

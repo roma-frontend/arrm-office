@@ -134,20 +134,20 @@ export default React.memo(
     const burnoutRisk = stats.daysSinceLastLeave !== null && stats.daysSinceLastLeave > 180;
 
     return (
-      <div className="space-y-4 sm:space-y-6">
+      <div className="space-y-4 sm:space-y-6 h-full">
         {/* ═══════════════════════════════════════════════════════════════
           BURNOUT PREVENTION
 
           Restyled onto the theme. It used to paint itself with literal Tailwind
-          palette classes (`border-red-500 bg-red-500/5`, `text-orange-700
-          dark:text-orange-300`, …), which made it the loudest card on the page —
+          palette classes (`border-(--danger-outline) bg-(--danger-quiet)`, `text-(--warning-text)
+          dark:text-(--warning-text)`, …), which made it the loudest card on the page —
           a 2px saturated border around a full-width block — and left it as one of
           the last surfaces that ignored the design tokens.
 
           The severity now reads from a token pair and a badge, not from a frame:
           the risk level is information, not an alarm.
           ═══════════════════════════════════════════════════════════════ */}
-        <Card variant={burnoutRisk ? 'default' : 'flat'}>
+        <Card variant={burnoutRisk ? 'default' : 'flat'} className="glass-panel">
           <SectionHeader
             title={t('leaveStats.burnoutPrevention')}
             aside={
@@ -214,7 +214,7 @@ export default React.memo(
         {/* ═══════════════════════════════════════════════════════════════
           PERSONAL STATS
           ═══════════════════════════════════════════════════════════════ */}
-        <Card variant="flat">
+        <Card variant="flat" className="glass-panel">
           <SectionHeader
             title={t('leaveStats.personalStats', { year: stats.currentYear })}
             aside={

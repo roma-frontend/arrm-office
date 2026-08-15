@@ -2319,5 +2319,29 @@
       "moreFields": "+{{count}} weitere"
     }
   },
-  "unknownUser": "Unbekannt"
+  "unknownUser": "Unbekannt",
+  "toolDock": {
+    "title": "Ihre Tools",
+    "overdue": "überfällig",
+    "pending": "ausstehend",
+    "pin": "Anheften",
+    "unpin": "Lösen",
+    "myTasks": "Meine Aufgaben",
+    "viewAll": "Alle",
+    "newTask": "Neue Aufgabe",
+    "noTasks": "Alles erledigt",
+    "noTasksHint": "Aktuell wartet nichts auf Sie.",
+    "soon": "Bald",
+    "completeTask": "Als erledigt markieren",
+    "awaitingWork": "{{count}} offene von Ihnen vergebene Aufgaben",
+    "allModules": "Alle {{count}} Module",
+    "collapse": "Einklappen",
+    "search": "Suchen",
+    "openPanel": "Tools öffnen",
+    "all": "Alle",
+    "fullscreen": "Vollbild",
+    "exitFullscreen": "Vollbild beenden",
+    "allModulesTitle": "Alle Module",
+    "overdueCount": "{{count}} überfällig"
+  }
 }

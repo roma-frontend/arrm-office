@@ -216,7 +216,7 @@ export default function LeaveTypesPage() {
         <div className="text-center my-12">
           <span
             className="inline-block text-xs font-semibold px-4 py-1.5 rounded-full mb-4"
-            style={{ background: 'rgba(37,99,235,0.1)', color: '#2563eb' }}
+            style={{ background: 'var(--brand-quiet)', color: 'var(--brand-text)' }}
           >
             <Sparkles className="w-3 h-3 inline mr-1" />
             {t('features.leaveTypes')}

@@ -231,7 +231,7 @@ function SendKudosModal({ open, onClose, organizationId, senderId }: SendKudosMo
               {t('recognition.sendKudos')}
             </span>
             <Badge variant="outline" className="text-xs gap-1 font-normal">
-              <Gift className="h-3 w-3 text-blue-500" />
+              <Gift className="h-3 w-3 text-(--brand-text)" />
               {allowance} / {userPoints?.allowanceTotal ?? 0} {t('rewards.wallet.allowanceShort')}
             </Badge>
           </SheetTitle>
@@ -279,7 +279,7 @@ function SendKudosModal({ open, onClose, organizationId, senderId }: SendKudosMo
                       <div className="flex-1 h-0.5 bg-muted mx-1 max-w-6 rounded-full overflow-hidden">
                         <div
                           className={`h-full transition-all duration-300 ${
-                            isCompleted ? 'bg-blue-500' : 'bg-transparent'
+                            isCompleted ? 'bg-(--brand)' : 'bg-transparent'
                           }`}
                           style={{ width: isCompleted ? '100%' : '0%' }}
                         />
@@ -546,8 +546,8 @@ export function RecognitionClient() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="rounded-full bg-white dark:bg-green-900/30 p-2 border border-green-200 dark:border-green-800">
-                  <ThumbsUp className="h-5 w-5 text-green-600 dark:text-green-300" />
+                <div className="rounded-full bg-white dark:bg-(--success-quiet) p-2 border border-(--success-outline) dark:border-(--success-outline)">
+                  <ThumbsUp className="h-5 w-5 text-(--success-text) dark:text-(--success-text)" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{myStats.totalReceived}</p>
@@ -559,8 +559,8 @@ export function RecognitionClient() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="rounded-full bg-white dark:bg-blue-900/30 p-2 border border-blue-200 dark:border-blue-800">
-                  <Send className="h-5 w-5 text-blue-600 dark:text-blue-300" />
+                <div className="rounded-full bg-white dark:bg-(--brand-quiet) p-2 border border-(--brand-outline) dark:border-(--brand-outline)">
+                  <Send className="h-5 w-5 text-(--brand-text) dark:text-(--brand-text)" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{myStats.totalSent}</p>
@@ -572,8 +572,8 @@ export function RecognitionClient() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="rounded-full bg-white dark:bg-yellow-900/30 p-2 border border-yellow-200 dark:border-yellow-800">
-                  <Star className="h-5 w-5 text-yellow-600 dark:text-yellow-300" />
+                <div className="rounded-full bg-white dark:bg-(--warning-quiet) p-2 border border-(--warning-outline) dark:border-(--warning-outline)">
+                  <Star className="h-5 w-5 text-(--warning-text) dark:text-(--warning-text)" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{myPoints?.balance ?? 0}</p>
@@ -585,8 +585,8 @@ export function RecognitionClient() {
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
-                <div className="rounded-full bg-white dark:bg-blue-900/30 p-2 border border-blue-200 dark:border-blue-800">
-                  <Gift className="h-5 w-5 text-blue-600 dark:text-blue-300" />
+                <div className="rounded-full bg-white dark:bg-(--brand-quiet) p-2 border border-(--brand-outline) dark:border-(--brand-outline)">
+                  <Gift className="h-5 w-5 text-(--brand-text) dark:text-(--brand-text)" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold">
@@ -611,21 +611,21 @@ export function RecognitionClient() {
         >
           <TabsTrigger
             value="feed"
-            className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
+            className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
           >
             <Heart className="h-4 w-4" />
             {t('recognition.tabs.feed')}
           </TabsTrigger>
           <TabsTrigger
             value="leaderboard"
-            className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
+            className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
           >
             <Trophy className="h-4 w-4" />
             {t('recognition.tabs.leaderboard')}
           </TabsTrigger>
           <TabsTrigger
             value="rewards"
-            className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
+            className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
           >
             <Gift className="h-4 w-4" />
             {t('rewards.tabs.shop')}
@@ -633,7 +633,7 @@ export function RecognitionClient() {
           {isAdmin && (
             <TabsTrigger
               value="manage"
-              className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
+              className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
             >
               <Settings2 className="h-4 w-4" />
               {t('rewards.tabs.manage')}

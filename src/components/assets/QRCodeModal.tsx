@@ -296,7 +296,7 @@ export default function QRCodeModal({
                   title={t('common.copy', 'Copy')}
                 >
                   {copied ? (
-                    <Check className="w-4 h-4 text-emerald-500" />
+                    <Check className="w-4 h-4 text-(--success-text)" />
                   ) : (
                     <Copy className="w-4 h-4" />
                   )}

@@ -100,9 +100,9 @@ const CATEGORIES = [
 ];
 
 const SEVERITY_COLORS: Record<string, string> = {
-  info: 'text-blue-500 bg-blue-500/10',
-  warning: 'text-amber-500 bg-amber-500/10',
-  critical: 'text-red-500 bg-red-500/10',
+  info: 'text-(--brand-text) bg-(--brand-quiet)',
+  warning: 'text-(--warning-text) bg-(--warning-quiet)',
+  critical: 'text-(--danger-text) bg-(--danger-quiet)',
 };
 
 const CATEGORY_ICONS: Record<string, typeof Shield> = {
@@ -198,8 +198,8 @@ export default function AuditLogDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20">
-            <Eye className="w-6 h-6 text-blue-500" />
+          <div className="p-2.5 rounded-xl bg-(--brand-quiet) border border-(--brand-outline)">
+            <Eye className="w-6 h-6 text-(--brand-text)" />
           </div>
           <div>
             <h2 className="text-xl font-bold text-(--text-primary)">
@@ -260,7 +260,7 @@ export default function AuditLogDashboard() {
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="pl-9 pr-8 h-10 rounded-lg text-sm bg-(--card) border border-(--border) text-(--text-primary) appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+            className="pl-9 pr-8 h-10 rounded-lg text-sm bg-(--card) border border-(--border) text-(--text-primary) appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-(--brand-text)"
           >
             {CATEGORIES.map((cat) => (
               <option key={cat.value} value={cat.value}>
@@ -274,7 +274,7 @@ export default function AuditLogDashboard() {
           <select
             value={severityFilter}
             onChange={(e) => setSeverityFilter(e.target.value)}
-            className="pl-9 pr-8 h-10 rounded-lg text-sm bg-(--card) border border-(--border) text-(--text-primary) appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+            className="pl-9 pr-8 h-10 rounded-lg text-sm bg-(--card) border border-(--border) text-(--text-primary) appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-(--brand-text)"
           >
             <option value="all">{t('auditLog.allSeverities', 'All Severities')}</option>
             <option value="info">{t('auditLog.info', 'Info')}</option>
@@ -307,10 +307,10 @@ export default function AuditLogDashboard() {
                     <div
                       className={`w-2.5 h-2.5 rounded-full ring-4 ${
                         log.severity === 'critical'
-                          ? 'bg-red-500 ring-red-500/20'
+                          ? 'bg-(--danger-solid) ring-(--danger-text)'
                           : log.severity === 'warning'
-                            ? 'bg-amber-500 ring-amber-500/20'
-                            : 'bg-blue-500 ring-blue-500/20'
+                            ? 'bg-(--warning-solid) ring-(--warning-text)'
+                            : 'bg-(--brand) ring-(--brand-text)'
                       }`}
                     />
                     <div className="w-px flex-1 bg-(--border)/30 min-h-[24px]" />
@@ -343,7 +343,7 @@ export default function AuditLogDashboard() {
                             {String(log.userId).slice(0, 12)}...
                           </span>
                           {log.ip && <span className="font-mono">{log.ip}</span>}
-                          {log.target && <span className="text-blue-500">{log.target}</span>}
+                          {log.target && <span className="text-(--brand-text)">{log.target}</span>}
                         </div>
                       </div>
                       <div className="flex items-center gap-3 shrink-0">
@@ -370,15 +370,15 @@ export default function AuditLogDashboard() {
       {/* Legend */}
       <div className="flex items-center gap-6 text-xs text-(--text-muted) px-2">
         <span className="flex items-center gap-1.5">
-          <div className="w-2 h-2 rounded-full bg-blue-500 ring-2 ring-blue-500/20" />
+          <div className="w-2 h-2 rounded-full bg-(--brand) ring-2 ring-(--brand-text)" />
           {t('auditLog.info', 'Info')}
         </span>
         <span className="flex items-center gap-1.5">
-          <div className="w-2 h-2 rounded-full bg-amber-500 ring-2 ring-amber-500/20" />
+          <div className="w-2 h-2 rounded-full bg-(--warning-solid) ring-2 ring-(--warning-text)" />
           {t('auditLog.warning', 'Warning')}
         </span>
         <span className="flex items-center gap-1.5">
-          <div className="w-2 h-2 rounded-full bg-red-500 ring-2 ring-red-500/20" />
+          <div className="w-2 h-2 rounded-full bg-(--danger-solid) ring-2 ring-(--danger-text)" />
           {t('auditLog.critical', 'Critical')}
         </span>
       </div>

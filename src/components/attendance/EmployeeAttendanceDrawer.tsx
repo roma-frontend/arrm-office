@@ -284,10 +284,10 @@ export function EmployeeAttendanceDrawer({ employee, onClose }: Props) {
                                   <div
                                     className={`w-2.5 h-2.5 rounded-full shrink-0 mt-1 ${
                                       record.status === 'checked_in'
-                                        ? 'bg-green-500 animate-pulse'
+                                        ? 'bg-(--success-solid) animate-pulse'
                                         : record.status === 'checked_out'
-                                          ? 'bg-blue-500'
-                                          : 'bg-rose-400'
+                                          ? 'bg-(--brand)'
+                                          : 'bg-(--danger-solid)'
                                     }`}
                                   />
                                   <div>
@@ -298,7 +298,7 @@ export function EmployeeAttendanceDrawer({ employee, onClose }: Props) {
                                       {dayLabel}
                                     </p>
                                     {record.status === 'absent' ? (
-                                      <p className="text-xs text-rose-500 mt-0.5">
+                                      <p className="text-xs text-(--danger-text) mt-0.5">
                                         {t('statuses.absent')}
                                       </p>
                                     ) : (
@@ -307,24 +307,24 @@ export function EmployeeAttendanceDrawer({ employee, onClose }: Props) {
                                         style={{ color: 'var(--text-muted)' }}
                                       >
                                         <span className="flex items-center gap-1">
-                                          <LogIn className="w-3 h-3 text-green-500" />
+                                          <LogIn className="w-3 h-3 text-(--success-text)" />
                                           {record.checkInTime
                                             ? formatTime(record.checkInTime, i18n.language)
                                             : '—'}
                                         </span>
                                         <span>→</span>
                                         <span className="flex items-center gap-1">
-                                          <LogOut className="w-3 h-3 text-blue-500" />
+                                          <LogOut className="w-3 h-3 text-(--brand-text)" />
                                           {record.checkOutTime ? (
                                             formatTime(record.checkOutTime, i18n.language)
                                           ) : (
-                                            <span className="text-green-500">
+                                            <span className="text-(--success-text)">
                                               {t('statuses.active')}
                                             </span>
                                           )}
                                         </span>
                                         {workedH && (
-                                          <span className="flex items-center gap-1 text-blue-500">
+                                          <span className="flex items-center gap-1 text-(--brand-text)">
                                             <Timer className="w-3 h-3" />
                                             {workedH}h
                                           </span>
@@ -380,10 +380,10 @@ export function EmployeeAttendanceDrawer({ employee, onClose }: Props) {
                                     <div
                                       className={`h-full rounded-full transition-all ${
                                         parseFloat(workedH) >= 9
-                                          ? 'bg-emerald-500'
+                                          ? 'bg-(--success-solid)'
                                           : parseFloat(workedH) >= 6
-                                            ? 'bg-blue-500'
-                                            : 'bg-amber-500'
+                                            ? 'bg-(--brand)'
+                                            : 'bg-(--warning-solid)'
                                       }`}
                                       style={{
                                         width: `${Math.min(100, (parseFloat(workedH) / 9) * 100)}%`,

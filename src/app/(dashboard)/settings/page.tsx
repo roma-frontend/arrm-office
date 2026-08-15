@@ -364,7 +364,7 @@ export default function SettingsPage() {
               const el = tabsScrollRef.current;
               if (el) el.scrollBy({ left: -200, behavior: 'smooth' });
             }}
-            className="absolute left-0 top-0 bottom-0 z-10 flex items-center justify-center w-8 bg-linear-to-r from-(--surface) via-(--surface) to-transparent rounded-l-xl opacity-0 group-hover:opacity-100 transition-opacity"
+            className="absolute left-0 top-0 bottom-0 z-10 flex items-center justify-center w-8 bg-linear-to-r from-(--surface-1) via-(--surface-1) to-transparent rounded-l-xl opacity-0 group-hover:opacity-100 transition-opacity"
             style={{ display: canScrollLeft ? undefined : 'none' }}
             aria-label={t('settings.scrollLeft')}
           >
@@ -378,7 +378,7 @@ export default function SettingsPage() {
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseLeave}
-            className="bg-(--surface) p-1.5 rounded-xl border border-(--border) overflow-x-auto scrollbar-hide"
+            className="bg-(--surface-1) p-1.5 rounded-xl border border-(--border) overflow-x-auto scrollbar-hide"
           >
             <TabsList className="inline-flex w-auto min-w-full gap-1 bg-transparent h-auto flex-nowrap">
               {tabs.map((tab) => {
@@ -388,7 +388,7 @@ export default function SettingsPage() {
                     key={tab.value}
                     value={tab.value}
                     data-value={tab.value}
-                    className="data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:text-(--text-muted) data-[state=inactive]:hover:text-(--text-secondary) transition-all rounded-lg py-2.5 px-3 h-auto whitespace-nowrap"
+                    className="data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:text-(--text-muted) data-[state=inactive]:hover:text-(--text-secondary) transition-all rounded-lg py-2.5 px-3 h-auto whitespace-nowrap"
                   >
                     <div className="flex items-center justify-center gap-2">
                       <Icon className="w-4 h-4" />
@@ -404,7 +404,7 @@ export default function SettingsPage() {
               const el = tabsScrollRef.current;
               if (el) el.scrollBy({ left: 200, behavior: 'smooth' });
             }}
-            className="absolute right-0 top-0 bottom-0 z-10 flex items-center justify-center w-8 bg-linear-to-l from-(--surface) via-(--surface) to-transparent rounded-r-xl opacity-0 group-hover:opacity-100 transition-opacity"
+            className="absolute right-0 top-0 bottom-0 z-10 flex items-center justify-center w-8 bg-linear-to-l from-(--surface-1) via-(--surface-1) to-transparent rounded-r-xl opacity-0 group-hover:opacity-100 transition-opacity"
             style={{ display: canScrollRight ? undefined : 'none' }}
             aria-label={t('settings.scrollRight')}
           >

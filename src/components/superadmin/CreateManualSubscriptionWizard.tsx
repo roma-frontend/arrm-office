@@ -71,21 +71,21 @@ export function CreateManualSubscriptionWizard({
               title: t('subscriptionWizard.plans.starter'),
               description: t('subscriptionWizard.plans.starterDesc'),
               icon: <CreditCard className="w-6 h-6" />,
-              color: 'bg-gray-500/10 text-gray-600',
+              color: 'bg-(--surface-2) text-(--text-3)',
             },
             {
               value: 'professional',
               title: t('subscriptionWizard.plans.professional'),
               description: t('subscriptionWizard.plans.professionalDesc'),
               icon: <Crown className="w-6 h-6" />,
-              color: 'bg-blue-500/10 text-blue-600',
+              color: 'bg-(--brand-quiet) text-(--brand-text)',
             },
             {
               value: 'enterprise',
               title: t('subscriptionWizard.plans.enterprise'),
               description: t('subscriptionWizard.plans.enterpriseDesc'),
               icon: <Crown className="w-6 h-6" />,
-              color: 'bg-purple-500/10 text-purple-600',
+              color: 'bg-(--purple-quiet) text-(--purple-text)',
             },
           ]}
           columns={3}

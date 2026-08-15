@@ -47,7 +47,7 @@ function UpgradeCard({
   const planLabel = PLAN_LABELS[requiredPlan];
 
   return (
-    <div className="flex flex-col items-center justify-center text-center px-6 py-12 rounded-2xl border border-dashed border-(--border) bg-(--surface) gap-4 min-h-55">
+    <div className="flex flex-col items-center justify-center text-center px-6 py-12 rounded-2xl border border-dashed border-(--border) bg-(--surface-1) gap-4 min-h-55">
       <div className="w-14 h-14 rounded-2xl bg-(--primary)/10 border border-(--primary)/20 flex items-center justify-center">
         <Lock className="w-6 h-6 text-(--primary)" />
       </div>
@@ -139,7 +139,7 @@ export function PlanGate({
 
 export function UpgradeBadge({ requiredPlan = 'professional' }: { requiredPlan?: PlanType }) {
   return (
-    <span className="ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-linear-to-r from-amber-500 to-orange-500 text-white leading-tight">
+    <span className="ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-linear-to-r from-(--warning-solid) to-(--warning-solid) text-white leading-tight">
       {PLAN_LABELS[requiredPlan]}
     </span>
   );

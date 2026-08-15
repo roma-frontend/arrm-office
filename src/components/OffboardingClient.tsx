@@ -157,14 +157,14 @@ export default function OffboardingClient() {
       <Tabs defaultValue="programs">
         <TabsList className="w-full mb-4 gap-2 bg-transparent p-0 h-auto grid grid-cols-2">
           <TabsTrigger
-            className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
+            className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
             value="programs"
           >
             {t('offboarding.tabs.programs', 'Programs')}
           </TabsTrigger>
           {isAdmin && (
             <TabsTrigger
-              className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
+              className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
               value="insights"
             >
               {t('offboarding.tabs.insights', 'Insights')}
@@ -225,7 +225,7 @@ export default function OffboardingClient() {
                         </div>
                         <div className="w-16 h-2 rounded-full bg-muted overflow-hidden">
                           <div
-                            className="h-full rounded-full bg-orange-500 transition-all"
+                            className="h-full rounded-full bg-(--warning-solid) transition-all"
                             style={{ width: `${prog.progress}%` }}
                           />
                         </div>
@@ -266,7 +266,7 @@ export default function OffboardingClient() {
                               </span>
                               <div className="flex-1 h-2.5 rounded-full bg-muted overflow-hidden">
                                 <div
-                                  className="h-full rounded-full bg-orange-400"
+                                  className="h-full rounded-full bg-(--warning-solid)"
                                   style={{ width: `${(count / insights.totalExits) * 100}%` }}
                                 />
                               </div>
@@ -281,7 +281,7 @@ export default function OffboardingClient() {
                 <div className="grid md:grid-cols-2 gap-4">
                   <Card>
                     <CardContent className="p-5 text-center">
-                      <Star className="h-8 w-8 mx-auto text-yellow-500 mb-2" />
+                      <Star className="h-8 w-8 mx-auto text-(--warning-text) mb-2" />
                       <p className="text-3xl font-bold">{insights.avgExperience}/5</p>
                       <p className="text-sm text-muted-foreground">
                         {t('offboarding.insights.avgScore', 'Average Experience Score')}
@@ -290,7 +290,7 @@ export default function OffboardingClient() {
                   </Card>
                   <Card>
                     <CardContent className="p-5 text-center">
-                      <TrendingDown className="h-8 w-8 mx-auto text-blue-500 mb-2" />
+                      <TrendingDown className="h-8 w-8 mx-auto text-(--brand-text) mb-2" />
                       <p className="text-3xl font-bold">{insights.totalExits}</p>
                       <p className="text-sm text-muted-foreground">
                         {t('offboarding.insights.totalExits', 'Total Exits')}
@@ -445,7 +445,7 @@ function ProgramDetailDialog({
               <div className="flex items-center gap-4">
                 <div className="flex-1 h-2.5 rounded-full bg-muted overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-orange-500 transition-all"
+                    className="h-full rounded-full bg-(--warning-solid) transition-all"
                     style={{ width: `${program.progress}%` }}
                   />
                 </div>
@@ -492,12 +492,12 @@ function ProgramDetailDialog({
                     className={`flex items-center gap-3 p-2.5 rounded-lg border ${task.status === 'completed' ? 'opacity-60 bg-muted/30' : ''}`}
                   >
                     {task.status === 'completed' ? (
-                      <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                      <CheckCircle2 className="h-4 w-4 text-(--success-text) shrink-0" />
                     ) : task.status === 'skipped' ? (
                       <SkipForward className="h-4 w-4 text-muted-foreground shrink-0" />
                     ) : (
                       <button onClick={() => handleComplete(task._id)} className="shrink-0">
-                        <Circle className="h-4 w-4 text-muted-foreground hover:text-orange-500 transition-colors" />
+                        <Circle className="h-4 w-4 text-muted-foreground hover:text-(--warning-text) transition-colors" />
                       </button>
                     )}
                     <div className="flex-1 min-w-0">
@@ -541,7 +541,7 @@ function ProgramDetailDialog({
                   {activeAssets.map((a) => (
                     <div
                       key={a.assignmentId}
-                      className="flex items-center gap-3 p-2.5 rounded-lg border bg-amber-50/50 dark:bg-amber-950/20"
+                      className="flex items-center gap-3 p-2.5 rounded-lg border bg-(--warning-quiet) dark:bg-(--warning-quiet)"
                     >
                       <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                         <ArrowDownLeft className="h-4 w-4 text-primary" />

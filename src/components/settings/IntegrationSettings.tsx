@@ -219,8 +219,8 @@ export function IntegrationSettings() {
           {/* Google Calendar — working */}
           <div className="flex flex-col sm:flex-row flex-wrap gap-3 items-start justify-between p-4 rounded-lg bg-(--surface-hover) border border-(--border)">
             <div className="flex items-start gap-3 flex-1">
-              <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                <Calendar className="w-5 h-5 text-blue-500" />
+              <div className="w-10 h-10 rounded-lg bg-(--brand-quiet) flex items-center justify-center">
+                <Calendar className="w-5 h-5 text-(--brand-text)" />
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
@@ -265,7 +265,7 @@ export function IntegrationSettings() {
           {isRestrictedOrg && (
             <div className="flex flex-col sm:flex-row flex-wrap gap-3 items-start justify-between p-4 rounded-lg bg-(--surface-hover) border border-(--border) opacity-70">
               <div className="flex items-start gap-3 flex-1">
-                <div className="w-10 h-10 rounded-lg bg-blue-600/10 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-lg bg-(--brand-quiet) flex items-center justify-center">
                   <Calendar className="w-5 h-5 text-(--brand-text)" />
                 </div>
                 <div className="flex-1">
@@ -309,8 +309,8 @@ export function IntegrationSettings() {
           <CardContent className="space-y-3">
             <div className="flex flex-col sm:flex-row flex-wrap gap-3 items-start justify-between p-4 rounded-lg bg-(--surface-hover) border border-(--border)">
               <div className="flex items-start gap-3 flex-1">
-                <div className="w-10 h-10 rounded-lg bg-teal-500/10 flex items-center justify-center">
-                  <Users className="w-5 h-5 text-teal-500" />
+                <div className="w-10 h-10 rounded-lg bg-(--success-quiet) flex items-center justify-center">
+                  <Users className="w-5 h-5 text-(--success-text)" />
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -425,8 +425,8 @@ export function IntegrationSettings() {
           {/* Slack */}
           <div className="flex flex-col sm:flex-row flex-wrap gap-3 items-start justify-between p-4 rounded-lg bg-(--surface-hover) border border-(--border)">
             <div className="flex items-start gap-3 flex-1">
-              <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                <MessageSquare className="w-5 h-5 text-purple-500" />
+              <div className="w-10 h-10 rounded-lg bg-(--purple-quiet) flex items-center justify-center">
+                <MessageSquare className="w-5 h-5 text-(--purple-text)" />
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2">
@@ -458,8 +458,8 @@ export function IntegrationSettings() {
           {/* Microsoft Teams — coming soon */}
           <div className="flex flex-wrap gap-3 items-start justify-between p-4 rounded-lg bg-(--surface-hover) border border-(--border) opacity-70">
             <div className="flex items-start gap-3 flex-1">
-              <div className="w-10 h-10 rounded-lg bg-indigo-500/10 flex items-center justify-center">
-                <MessageSquare className="w-5 h-5 text-indigo-500" />
+              <div className="w-10 h-10 rounded-lg bg-(--purple-quiet) flex items-center justify-center">
+                <MessageSquare className="w-5 h-5 text-(--purple-text)" />
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2">

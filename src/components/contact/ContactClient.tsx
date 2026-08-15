@@ -120,7 +120,7 @@ export default function ContactClient() {
             {/* Eyebrow */}
             <span
               className="inline-flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-full mb-6"
-              style={{ background: 'rgba(37,99,235,0.1)', color: '#2563eb' }}
+              style={{ background: 'var(--brand-quiet)', color: 'var(--brand-text)' }}
             >
               <Building2 size={14} />
               {t('contact.enterpriseSupport')}
@@ -265,7 +265,7 @@ export default function ContactClient() {
                       href="/"
                       className="flex items-center gap-2 px-8 py-3.5 rounded-2xl text-sm font-semibold text-white transition-all hover:opacity-90 hover:shadow-lg shadow-md"
                       style={{
-                        background: 'linear-gradient(135deg, #2563eb, #60a5fa)',
+                        background: 'linear-gradient(135deg, var(--brand), var(--brand-hover))',
                         boxShadow: '0 4px 16px rgba(37,99,235,0.15)',
                       }}
                     >
@@ -384,7 +384,7 @@ export default function ContactClient() {
                       disabled={loading}
                       className="w-full py-4 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all hover:opacity-90 hover:shadow-lg shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
                       style={{
-                        background: 'linear-gradient(135deg, #2563eb, #60a5fa)',
+                        background: 'linear-gradient(135deg, var(--brand), var(--brand-hover))',
                         boxShadow: '0 4px 16px rgba(37,99,235,0.15)',
                       }}
                     >

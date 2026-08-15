@@ -68,9 +68,12 @@ interface CourseDetailDialogProps {
 }
 
 const difficultyColors: Record<string, string> = {
-  beginner: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-  intermediate: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
-  advanced: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+  beginner:
+    'bg-(--success-quiet) text-(--success-text) dark:bg-(--success-solid) dark:text-(--success-text)',
+  intermediate:
+    'bg-(--warning-quiet) text-(--warning-text) dark:bg-(--warning-solid) dark:text-(--warning-text)',
+  advanced:
+    'bg-(--danger-quiet) text-(--danger-text) dark:bg-(--danger-solid) dark:text-(--danger-text)',
 };
 
 const contentTypeIcons: Record<string, typeof Video> = {

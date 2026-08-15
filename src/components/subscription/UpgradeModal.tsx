@@ -411,11 +411,11 @@ export function UpgradeModal({
         <div className="absolute inset-0 pointer-events-none">
           <div
             className="absolute -top-24 -left-16 w-72 h-72 rounded-full opacity-40 blur-3xl"
-            style={{ background: 'radial-gradient(circle, #6366f1, transparent 70%)' }}
+            style={{ background: 'radial-gradient(circle, var(--purple), transparent 70%)' }}
           />
           <div
             className="absolute -bottom-24 -right-16 w-72 h-72 rounded-full opacity-30 blur-3xl"
-            style={{ background: 'radial-gradient(circle, #06b6d4, transparent 70%)' }}
+            style={{ background: 'radial-gradient(circle, var(--cyan), transparent 70%)' }}
           />
         </div>
 

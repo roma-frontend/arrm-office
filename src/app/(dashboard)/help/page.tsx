@@ -110,186 +110,184 @@ export default function HelpSupportPage() {
 
   return (
     <div className="min-h-screen">
-      <div className="mx-auto max-w-5xl">
-        {/* Sticky Header */}
-        <div className="sticky top-0 z-10 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 mb-4 bg-(--background)/95 backdrop-blur supports-[backdrop-filter]:bg-(--background)/60 border-b border-(--border)">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex-1">
-              <div className="flex flex-wrap items-center gap-2 mb-2">
-                <h1
-                  className="text-2xl sm:text-3xl font-bold"
-                  style={{ color: 'var(--text-primary)' }}
-                >
-                  {t('help.title')}
-                </h1>
-                {userOrg && (
-                  <Badge
-                    variant="outline"
-                    className={
-                      userOrg.plan === 'enterprise'
-                        ? 'border-(--purple-outline) text-(--purple-text)'
-                        : userOrg.plan === 'professional'
-                          ? 'border-(--brand-outline) text-(--brand-text)'
-                          : ''
-                    }
-                  >
-                    {userOrg.plan.toUpperCase()}
-                  </Badge>
-                )}
-              </div>
-              <p className="text-sm sm:text-base text-muted-foreground">{t('help.subtitle')}</p>
-              {userOrg?.plan === 'starter' && (
-                <p className="text-xs sm:text-sm text-(--warning-text) mt-2">
-                  ⚠️ {t('help.planLimit.starter')}
-                </p>
-              )}
-              {userOrg?.plan === 'professional' && (
-                <p className="text-xs md:text-sm text-(--warning-text) mt-2">
-                  📊{' '}
-                  {t('help.planLimit.professional', {
-                    used: currentMonthTickets,
-                    limit: ticketLimit,
-                  })}
-                </p>
-              )}
-            </div>
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-              <Sheet open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-                <SheetTrigger asChild>
-                  <Button
-                    className="flex items-center gap-2 w-full sm:w-auto justify-center btn-gradient text-white font-medium shadow-md hover:shadow-lg"
-                    onClick={handleCreateTicket}
-                    disabled={!canCreateTickets || isLimitReached}
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span className="hidden sm:inline">{t('help.createTicket')}</span>
-                    <span className="sm:hidden">{t('help.createTicket')}</span>
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="right" size="lg" closeLabel={t('common.close', 'Close')}>
-                  <SheetHeader>
-                    <SheetTitle className="text-lg md:text-xl">{t('help.createTicket')}</SheetTitle>
-                    <SheetDescription className="text-sm">{t('help.subtitle')}</SheetDescription>
-                  </SheetHeader>
-                  <SheetBody>
-                    <CreateTicketWizard
-                      userId={user.id as Id<'users'>}
-                      onComplete={() => setCreateDialogOpen(false)}
-                      onCancel={() => setCreateDialogOpen(false)}
-                    />
-                  </SheetBody>
-                </SheetContent>
-              </Sheet>
-              {/* Upgrade Plan button — only for admins and superadmins */}
-              {(user?.role === 'admin' || user?.role === 'superadmin') && (
-                <Button
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-10 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 mb-4 bg-(--background)/95 backdrop-blur supports-[backdrop-filter]:bg-(--background)/60 border-b border-(--border)">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex-1">
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <h1
+                className="text-2xl sm:text-3xl font-bold"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                {t('help.title')}
+              </h1>
+              {userOrg && (
+                <Badge
                   variant="outline"
-                  onClick={() => router.push('/superadmin/subscriptions')}
-                  className="gap-2 w-full sm:w-auto"
+                  className={
+                    userOrg.plan === 'enterprise'
+                      ? 'border-(--purple-outline) text-(--purple-text)'
+                      : userOrg.plan === 'professional'
+                        ? 'border-(--brand-outline) text-(--brand-text)'
+                        : ''
+                  }
                 >
-                  <span className="hidden sm:inline">💎 {t('help.upgradePlan')}</span>
-                  <span className="sm:hidden">💎</span>
-                </Button>
+                  {userOrg.plan.toUpperCase()}
+                </Badge>
               )}
             </div>
+            <p className="text-sm sm:text-base text-muted-foreground">{t('help.subtitle')}</p>
+            {userOrg?.plan === 'starter' && (
+              <p className="text-xs sm:text-sm text-(--warning-text) mt-2">
+                ⚠️ {t('help.planLimit.starter')}
+              </p>
+            )}
+            {userOrg?.plan === 'professional' && (
+              <p className="text-xs md:text-sm text-(--warning-text) mt-2">
+                📊{' '}
+                {t('help.planLimit.professional', {
+                  used: currentMonthTickets,
+                  limit: ticketLimit,
+                })}
+              </p>
+            )}
+          </div>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            <Sheet open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+              <SheetTrigger asChild>
+                <Button
+                  className="flex items-center gap-2 w-full sm:w-auto justify-center btn-gradient text-white font-medium shadow-md hover:shadow-lg"
+                  onClick={handleCreateTicket}
+                  disabled={!canCreateTickets || isLimitReached}
+                >
+                  <Plus className="w-4 h-4" />
+                  <span className="hidden sm:inline">{t('help.createTicket')}</span>
+                  <span className="sm:hidden">{t('help.createTicket')}</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" size="lg" closeLabel={t('common.close', 'Close')}>
+                <SheetHeader>
+                  <SheetTitle className="text-lg md:text-xl">{t('help.createTicket')}</SheetTitle>
+                  <SheetDescription className="text-sm">{t('help.subtitle')}</SheetDescription>
+                </SheetHeader>
+                <SheetBody>
+                  <CreateTicketWizard
+                    userId={user.id as Id<'users'>}
+                    onComplete={() => setCreateDialogOpen(false)}
+                    onCancel={() => setCreateDialogOpen(false)}
+                  />
+                </SheetBody>
+              </SheetContent>
+            </Sheet>
+            {/* Upgrade Plan button — only for admins and superadmins */}
+            {(user?.role === 'admin' || user?.role === 'superadmin') && (
+              <Button
+                variant="outline"
+                onClick={() => router.push('/superadmin/subscriptions')}
+                className="gap-2 w-full sm:w-auto"
+              >
+                <span className="hidden sm:inline">💎 {t('help.upgradePlan')}</span>
+                <span className="sm:hidden">💎</span>
+              </Button>
+            )}
           </div>
         </div>
-
-        {/* Quick Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6">
-          <StatCard
-            title={t('help.stats.total')}
-            value={myTickets?.length || 0}
-            icon={Ticket}
-            color="blue"
-          />
-          <StatCard
-            title={t('help.stats.open')}
-            value={openTickets.length}
-            icon={AlertCircle}
-            color="orange"
-          />
-          <StatCard
-            title={t('help.stats.resolved')}
-            value={closedTickets.length}
-            icon={CheckCircle}
-            color="green"
-          />
-          <StatCard
-            title={t('help.stats.avgResponse')}
-            value={stats?.avgResponseTime ? `${Math.round(stats.avgResponseTime)}ч` : '—'}
-            icon={Clock}
-            color="purple"
-          />
-        </div>
-
-        {/* Tickets Tabs */}
-        <Tabs defaultValue="open" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger
-              value="open"
-              className="data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-(--background-subtle) shadow-sm font-medium flex items-center gap-1 md:gap-2 text-xs md:text-sm"
-            >
-              <AlertCircle className="w-3 h-3 md:w-4 md:h-4" />
-              <span className="hidden sm:inline">{t('help.tabs.open')}</span>
-              <span className="sm:hidden">{t('help.tabs.open')}</span>
-              <Badge variant="warning" className="ml-1 md:ml-2 text-xs border-0">
-                {openTickets.length}
-              </Badge>
-            </TabsTrigger>
-            <TabsTrigger
-              value="closed"
-              className="data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-(--background-subtle) shadow-sm font-medium flex items-center gap-1 md:gap-2 text-xs md:text-sm"
-            >
-              <CheckCircle className="w-3 h-3 md:w-4 md:h-4" />
-              <span className="hidden sm:inline">{t('help.tabs.closed')}</span>
-              <span className="sm:hidden">{t('help.tabs.closed')}</span>
-              <Badge variant="destructive" className="ml-1 md:ml-2 text-xs border-0">
-                {closedTickets.length}
-              </Badge>
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="open">
-            <TicketList tickets={openTickets} emptyMessage={t('help.noOpenTickets')} />
-          </TabsContent>
-
-          <TabsContent value="closed">
-            <TicketList tickets={closedTickets} emptyMessage={t('help.noClosedTickets')} />
-          </TabsContent>
-        </Tabs>
-
-        {/* Quick Help */}
-        <Card className="mt-6" style={{ background: 'var(--card)' }}>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MessageSquare className="w-5 h-5" />
-              {t('help.quickHelp.title')}
-            </CardTitle>
-            <CardDescription>{t('help.quickHelp.subtitle')}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <QuickHelpCard
-                icon="📧"
-                title={t('help.quickHelp.email.title')}
-                description={t('help.quickHelp.email.desc')}
-              />
-              <QuickHelpCard
-                icon="💬"
-                title={t('help.quickHelp.chat.title')}
-                description={t('help.quickHelp.chat.desc')}
-                onClick={() => router.push('/chat')}
-              />
-              <QuickHelpCard
-                icon="📚"
-                title={t('help.quickHelp.docs.title')}
-                description={t('help.quickHelp.docs.desc')}
-              />
-            </div>
-          </CardContent>
-        </Card>
       </div>
+
+      {/* Quick Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6">
+        <StatCard
+          title={t('help.stats.total')}
+          value={myTickets?.length || 0}
+          icon={Ticket}
+          color="blue"
+        />
+        <StatCard
+          title={t('help.stats.open')}
+          value={openTickets.length}
+          icon={AlertCircle}
+          color="orange"
+        />
+        <StatCard
+          title={t('help.stats.resolved')}
+          value={closedTickets.length}
+          icon={CheckCircle}
+          color="green"
+        />
+        <StatCard
+          title={t('help.stats.avgResponse')}
+          value={stats?.avgResponseTime ? `${Math.round(stats.avgResponseTime)}ч` : '—'}
+          icon={Clock}
+          color="purple"
+        />
+      </div>
+
+      {/* Tickets Tabs */}
+      <Tabs defaultValue="open" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger
+            value="open"
+            className="data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-(--background-subtle) shadow-sm font-medium flex items-center gap-1 md:gap-2 text-xs md:text-sm"
+          >
+            <AlertCircle className="w-3 h-3 md:w-4 md:h-4" />
+            <span className="hidden sm:inline">{t('help.tabs.open')}</span>
+            <span className="sm:hidden">{t('help.tabs.open')}</span>
+            <Badge variant="warning" className="ml-1 md:ml-2 text-xs border-0">
+              {openTickets.length}
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger
+            value="closed"
+            className="data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-(--background-subtle) shadow-sm font-medium flex items-center gap-1 md:gap-2 text-xs md:text-sm"
+          >
+            <CheckCircle className="w-3 h-3 md:w-4 md:h-4" />
+            <span className="hidden sm:inline">{t('help.tabs.closed')}</span>
+            <span className="sm:hidden">{t('help.tabs.closed')}</span>
+            <Badge variant="destructive" className="ml-1 md:ml-2 text-xs border-0">
+              {closedTickets.length}
+            </Badge>
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="open">
+          <TicketList tickets={openTickets} emptyMessage={t('help.noOpenTickets')} />
+        </TabsContent>
+
+        <TabsContent value="closed">
+          <TicketList tickets={closedTickets} emptyMessage={t('help.noClosedTickets')} />
+        </TabsContent>
+      </Tabs>
+
+      {/* Quick Help */}
+      <Card className="mt-6" style={{ background: 'var(--card)' }}>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MessageSquare className="w-5 h-5" />
+            {t('help.quickHelp.title')}
+          </CardTitle>
+          <CardDescription>{t('help.quickHelp.subtitle')}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <QuickHelpCard
+              icon="📧"
+              title={t('help.quickHelp.email.title')}
+              description={t('help.quickHelp.email.desc')}
+            />
+            <QuickHelpCard
+              icon="💬"
+              title={t('help.quickHelp.chat.title')}
+              description={t('help.quickHelp.chat.desc')}
+              onClick={() => router.push('/chat')}
+            />
+            <QuickHelpCard
+              icon="📚"
+              title={t('help.quickHelp.docs.title')}
+              description={t('help.quickHelp.docs.desc')}
+            />
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -307,11 +305,11 @@ function StatCard({
   color: string;
 }) {
   const colorClasses: Record<string, string> = {
-    blue: 'text-blue-500',
-    green: 'text-green-500',
-    red: 'text-red-500',
-    purple: 'text-purple-500',
-    orange: 'text-orange-500',
+    blue: 'text-(--brand-text)',
+    green: 'text-(--success-text)',
+    red: 'text-(--danger-text)',
+    purple: 'text-(--purple-text)',
+    orange: 'text-(--warning-text)',
   };
 
   return (
@@ -449,24 +447,26 @@ function PlanCard({
   return (
     <div
       className={`p-3 md:p-4 rounded-lg border ${
-        recommended ? 'border-blue-500 bg-blue-500/5' : ''
-      } ${current ? 'border-green-500 bg-green-500/5' : ''}`}
+        recommended ? 'border-(--brand-outline) bg-(--brand-quiet)' : ''
+      } ${current ? 'border-(--success-outline) bg-(--success-quiet)' : ''}`}
     >
       <div className="text-center mb-3">
         <h4 className="font-bold text-sm md:text-base">{name}</h4>
         <p className="text-xl md:text-2xl font-bold">{price}</p>
-        {current && <Badge className="mt-2 bg-green-500 text-xs">{t('help.plans.current')}</Badge>}
+        {current && (
+          <Badge className="mt-2 bg-(--success-solid) text-xs">{t('help.plans.current')}</Badge>
+        )}
         {recommended && !current && (
-          <Badge className="mt-2 bg-blue-500 text-xs">{t('help.plans.recommended')}</Badge>
+          <Badge className="mt-2 bg-(--brand) text-xs">{t('help.plans.recommended')}</Badge>
         )}
       </div>
       <ul className="space-y-2 text-xs md:text-sm">
         {features.map((feature, idx) => (
           <li key={idx} className="flex items-start gap-2">
             {feature.included ? (
-              <CheckCircle className="w-3 h-3 md:w-4 md:h-4 text-green-500 shrink-0 mt-0.5" />
+              <CheckCircle className="w-3 h-3 md:w-4 md:h-4 text-(--success-text) shrink-0 mt-0.5" />
             ) : (
-              <XCircle className="w-3 h-3 md:w-4 md:h-4 text-red-500 shrink-0 mt-0.5" />
+              <XCircle className="w-3 h-3 md:w-4 md:h-4 text-(--danger-text) shrink-0 mt-0.5" />
             )}
             <span className={feature.included ? '' : 'text-muted-foreground'}>{feature.text}</span>
           </li>

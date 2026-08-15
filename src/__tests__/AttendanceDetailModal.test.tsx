@@ -323,17 +323,17 @@ describe('AttendanceDetailModal', () => {
 
   it('colors the progress bar green at 100% completion', () => {
     renderModal(); // 9h of 9h → 100
-    expect(document.querySelector('.h-full.bg-green-500')).toBeTruthy();
+    expect(document.querySelector('.h-full[class*="success-solid"]')).toBeTruthy();
   });
 
   it('colors the progress bar blue between 70 and 100', () => {
     renderModal({ record: { ...RECORD, totalWorkedMinutes: 420 } }); // 7h → 77.8
-    expect(document.querySelector('.h-full.bg-blue-500')).toBeTruthy();
+    expect(document.querySelector('.h-full[class*="--brand"]')).toBeTruthy();
   });
 
   it('colors the progress bar orange below 70', () => {
     renderModal({ record: { ...RECORD, totalWorkedMinutes: 300 } }); // 5h → 55.6
-    expect(document.querySelector('.h-full.bg-orange-500')).toBeTruthy();
+    expect(document.querySelector('.h-full[class*="warning-solid"]')).toBeTruthy();
   });
 
   it('renders department and supervisor chips', () => {

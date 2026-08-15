@@ -63,6 +63,14 @@ const ChatWidget = dynamic(
   },
 );
 
+// Tool Dock — floating "Your tools" trigger on the right edge of every
+// dashboard page (mounted once here, not per page). It hides on scroll down
+// and slides back on scroll up; the sheets it opens are self-contained.
+const ToolDock = dynamic(() => import('@/components/dashboard/ToolDock').then((m) => m.ToolDock), {
+  ssr: false,
+  loading: () => null,
+});
+
 const BreakReminderService = dynamic(
   () => import('@/components/productivity/BreakReminderService'),
   { ssr: false, loading: () => null },
@@ -228,7 +236,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
               <div className="fixed top-20 right-4 z-80">
                 <Link
                   href="/superadmin/impersonate"
-                  className="inline-flex items-center gap-2 rounded-full border border-amber-500/60 bg-amber-500 text-black px-4 py-2 text-sm font-semibold shadow-lg transition hover:scale-[1.02] hover:bg-amber-400"
+                  className="inline-flex items-center gap-2 rounded-full border border-(--warning-outline) bg-(--warning-solid) text-black px-4 py-2 text-sm font-semibold shadow-lg transition hover:scale-[1.02] hover:bg-(--warning-solid)"
                 >
                   <Undo2 className="h-4 w-4" />
                   {t('superadmin.impersonate.exitMode')}
@@ -264,7 +272,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
                   </div>
                 </div>
               ) : (
-                <div className="p-3 sm:p-4 md:p-6 pb-mobile-dock mx-auto max-w-7xl w-full">
+                <div className="px-6 pb-mobile-dock !pt-0 mx-auto max-w-7xl w-full">
                   <MobilePageTransition>{children}</MobilePageTransition>
                 </div>
               )}
@@ -272,6 +280,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
           </div>
           {/* AI Chat Widget - hidden on /chat page so it doesn't cover the send button */}
           {!isChatPage && <ChatWidget />}
+
+          {/* Tool Dock — floating "Your tools" trigger on every dashboard page;
+              it hides on scroll down and returns on scroll up. */}
+          {user && <ToolDock />}
 
           {/* Mobile Tab Bar — fixed bottom navigation for mobile */}
           <MobileTabBar />

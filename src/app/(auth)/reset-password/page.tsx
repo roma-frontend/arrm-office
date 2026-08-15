@@ -78,11 +78,11 @@ function ResetPasswordForm() {
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div
           className="absolute -top-40 -right-40 w-96 h-96 rounded-full blur-3xl opacity-20"
-          style={{ background: 'radial-gradient(circle, #2563eb, transparent)' }}
+          style={{ background: 'radial-gradient(circle, var(--brand), transparent)' }}
         />
         <div
           className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full blur-3xl opacity-20"
-          style={{ background: 'radial-gradient(circle, #0ea5e9, transparent)' }}
+          style={{ background: 'radial-gradient(circle, var(--brand-hover), transparent)' }}
         />
       </div>
 
@@ -102,7 +102,7 @@ function ResetPasswordForm() {
             className="flex items-center justify-center gap-3 mb-8 group"
             title={t('auth.logoTooltip')}
           >
-            <div className="w-10 h-10 rounded-xl bg-linear-to-br from-[#2563eb] to-[#0ea5e9] flex items-center justify-center shadow-lg transition-transform group-hover:scale-105">
+            <div className="w-10 h-10 rounded-xl bg-linear-to-br from-(--brand) to-(--brand-hover) flex items-center justify-center shadow-lg transition-transform group-hover:scale-105">
               <Building2 className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -137,8 +137,8 @@ function ResetPasswordForm() {
                 animate={{ opacity: 1 }}
                 className="text-center py-4"
               >
-                <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4">
-                  <AlertCircle className="w-8 h-8 text-red-500" />
+                <div className="w-16 h-16 rounded-full bg-(--danger-quiet) flex items-center justify-center mx-auto mb-4">
+                  <AlertCircle className="w-8 h-8 text-(--danger-text)" />
                 </div>
                 <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
                   {t('resetPassword.invalidOrExpiredLink')}
@@ -163,8 +163,8 @@ function ResetPasswordForm() {
                 animate={{ opacity: 1, scale: 1 }}
                 className="text-center py-4"
               >
-                <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle2 className="w-8 h-8 text-green-500" />
+                <div className="w-16 h-16 rounded-full bg-(--success-quiet) flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle2 className="w-8 h-8 text-(--success-text)" />
                 </div>
                 <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
                   {t('resetPassword.passwordUpdated')}
@@ -258,7 +258,7 @@ function ResetPasswordForm() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0 }}
                         className="flex items-center gap-2 p-3 rounded-xl text-sm"
-                        style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}
+                        style={{ background: 'var(--danger-quiet)', color: 'var(--danger-text)' }}
                       >
                         <AlertCircle className="w-4 h-4 shrink-0" />
                         {error}

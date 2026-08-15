@@ -49,37 +49,42 @@ export default function StrategyDashboardWidget() {
 
   const progressColor =
     strategySummary.avgProgress >= 70
-      ? 'text-emerald-500'
+      ? 'text-(--success-text)'
       : strategySummary.avgProgress >= 40
-        ? 'text-amber-500'
-        : 'text-red-500';
+        ? 'text-(--warning-text)'
+        : 'text-(--danger-text)';
 
   const progressBarColor =
     strategySummary.avgProgress >= 70
-      ? 'bg-emerald-500'
+      ? 'bg-(--success-solid)'
       : strategySummary.avgProgress >= 40
-        ? 'bg-amber-500'
-        : 'bg-red-500';
+        ? 'bg-(--warning-solid)'
+        : 'bg-(--danger-solid)';
 
   const _totalActive = strategySummary.active;
   const issuesCount = strategySummary.atRisk + strategySummary.behind;
   const issuesColor =
-    issuesCount === 0 ? 'text-emerald-500' : issuesCount <= 2 ? 'text-amber-500' : 'text-red-500';
+    issuesCount === 0
+      ? 'text-(--success-text)'
+      : issuesCount <= 2
+        ? 'text-(--warning-text)'
+        : 'text-(--danger-text)';
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: 0.2 }}
+      className="h-full"
     >
-      <Card className="overflow-hidden border-(--border) relative glass-panel">
+      <Card className="h-full overflow-hidden border-(--border) relative glass-panel">
         <CardContent className="p-4 sm:p-5 relative">
           {/* Header */}
           <div className="flex items-start justify-between gap-3 mb-4">
             <div className="flex items-center gap-2.5 min-w-0">
               {/* A glowing gradient chip made this one widget shout over the rest
                   of the page; the icon is tinted like every other section marker. */}
-              <div className="w-9 h-9 rounded-xl bg-[#a855f7]/12 text-[#a855f7] flex items-center justify-center shrink-0">
+              <div className="w-9 h-9 rounded-xl bg-(--purple-quiet) text-(--purple-text) flex items-center justify-center shrink-0">
                 <Layers className="w-[18px] h-[18px]" />
               </div>
               <div className="min-w-0">
@@ -107,15 +112,15 @@ export default function StrategyDashboardWidget() {
           {/* Level breakdown */}
           <div className="flex items-center gap-4 mb-4 text-xs text-(--text-muted)">
             <span className="flex items-center gap-1">
-              <Building2 className="w-3 h-3 text-purple-500" />
+              <Building2 className="w-3 h-3 text-(--purple-text)" />
               {strategySummary.byLevel.company}
             </span>
             <span className="flex items-center gap-1">
-              <Users className="w-3 h-3 text-blue-500" />
+              <Users className="w-3 h-3 text-(--brand-text)" />
               {strategySummary.byLevel.team}
             </span>
             <span className="flex items-center gap-1">
-              <User className="w-3 h-3 text-emerald-500" />
+              <User className="w-3 h-3 text-(--success-text)" />
               {strategySummary.byLevel.individual}
             </span>
           </div>
@@ -140,25 +145,25 @@ export default function StrategyDashboardWidget() {
 
           {/* Health indicators */}
           <div className="grid grid-cols-4 gap-2">
-            <div className="text-center p-2 rounded-lg bg-emerald-500/10">
+            <div className="text-center p-2 rounded-lg bg-(--success-quiet)">
               <p className="text-lg font-bold text-(--success-text)">{strategySummary.onTrack}</p>
               <p className="text-[10px] text-(--text-muted) leading-tight">
                 {t('strategyMap.onTrack', 'On Track')}
               </p>
             </div>
-            <div className="text-center p-2 rounded-lg bg-amber-500/10">
+            <div className="text-center p-2 rounded-lg bg-(--warning-quiet)">
               <p className="text-lg font-bold text-(--warning-text)">{strategySummary.atRisk}</p>
               <p className="text-[10px] text-(--text-muted) leading-tight">
                 {t('strategyMap.atRisk', 'At Risk')}
               </p>
             </div>
-            <div className="text-center p-2 rounded-lg bg-red-500/10">
+            <div className="text-center p-2 rounded-lg bg-(--danger-quiet)">
               <p className="text-lg font-bold text-(--danger-text)">{strategySummary.behind}</p>
               <p className="text-[10px] text-(--text-muted) leading-tight">
                 {t('strategyMap.behind', 'Behind')}
               </p>
             </div>
-            <div className="text-center p-2 rounded-lg bg-blue-500/10">
+            <div className="text-center p-2 rounded-lg bg-(--brand-quiet)">
               <p className="text-lg font-bold text-(--brand-text)">{strategySummary.completed}</p>
               <p className="text-[10px] text-(--text-muted) leading-tight">
                 {t('strategyMap.completed', 'Done')}
@@ -168,11 +173,11 @@ export default function StrategyDashboardWidget() {
 
           {/* Task Alignment Metrics */}
           {taskStats && taskStats.totalLinked > 0 && (
-            <div className="mt-4 p-3 rounded-lg bg-blue-500/5 border border-blue-500/20">
+            <div className="mt-4 p-3 rounded-lg bg-(--brand-quiet) border border-(--brand-outline)">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <ListChecks className="w-4 h-4 text-blue-500" />
-                  <span className="text-xs font-medium text-blue-600 dark:text-blue-400">
+                  <ListChecks className="w-4 h-4 text-(--brand-text)" />
+                  <span className="text-xs font-medium text-(--brand-text) dark:text-(--brand-text)">
                     {t('strategyMap.tasksLinked', 'Tasks → Goals')}
                   </span>
                 </div>
@@ -182,11 +187,11 @@ export default function StrategyDashboardWidget() {
               </div>
               <div className="flex items-center gap-3 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1">
-                  <CheckCircle className="w-3 h-3 text-emerald-500" />
+                  <CheckCircle className="w-3 h-3 text-(--success-text)" />
                   {taskStats.totalCompleted} {t('strategyMap.doneTasks', 'done')}
                 </span>
                 <span className="flex items-center gap-1">
-                  <Target className="w-3 h-3 text-purple-500" />
+                  <Target className="w-3 h-3 text-(--purple-text)" />
                   {taskStats.objectivesWithTasks}/{taskStats.totalObjectives}{' '}
                   {t('strategyMap.objectivesWithTasks', 'objectives with tasks')}
                 </span>
@@ -206,7 +211,7 @@ export default function StrategyDashboardWidget() {
                 </div>
               ) : (
                 <div className="flex items-center gap-1.5">
-                  <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
+                  <CheckCircle className="w-3.5 h-3.5 text-(--success-text)" />
                   <span className="text-xs text-(--success-text) font-medium">
                     {t('strategyMap.allGood', 'All objectives on track')}
                   </span>

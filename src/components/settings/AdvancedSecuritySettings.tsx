@@ -331,7 +331,7 @@ export function AdvancedSecuritySettings() {
                       onClick={() => copyToClipboard(totpSecret, 'secret')}
                     >
                       {copiedSecret ? (
-                        <Check className="w-4 h-4 text-green-500" />
+                        <Check className="w-4 h-4 text-(--success-text)" />
                       ) : (
                         <Copy className="w-4 h-4" />
                       )}
@@ -385,7 +385,7 @@ export function AdvancedSecuritySettings() {
                     setVerifyError(null);
                   }}
                   placeholder="000000"
-                  className="w-full text-center text-2xl tracking-[0.5em] font-mono py-3 px-4 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full text-center text-2xl tracking-[0.5em] font-mono py-3 px-4 rounded-xl border focus:outline-none focus:ring-2 focus:ring-(--brand-text)"
                   style={{
                     background: 'var(--surface-hover)',
                     borderColor: verifyError ? '#ef4444' : 'var(--border)',
@@ -394,7 +394,7 @@ export function AdvancedSecuritySettings() {
                   autoFocus
                 />
                 {verifyError && (
-                  <p className="text-sm text-red-500 mt-2 flex items-center gap-1">
+                  <p className="text-sm text-(--danger-text) mt-2 flex items-center gap-1">
                     <AlertTriangle className="w-4 h-4" />
                     {verifyError}
                   </p>
@@ -418,7 +418,7 @@ export function AdvancedSecuritySettings() {
           {/* Backup Codes Step */}
           {setupStep === 'backup' && (
             <div className="space-y-4">
-              <div className="p-4 rounded-lg border border-green-500/20 bg-green-500/5">
+              <div className="p-4 rounded-lg border border-(--success-outline) bg-(--success-quiet)">
                 <div className="flex items-center gap-2 mb-3">
                   <ShieldCheck className="w-5 h-5 text-(--success-text)" />
                   <p className="text-sm font-medium text-(--success-text)">
@@ -446,7 +446,8 @@ export function AdvancedSecuritySettings() {
                 >
                   {copiedCodes ? (
                     <>
-                      <Check className="w-4 h-4 mr-2 text-green-500" /> {t('settings.2fa.copied')}
+                      <Check className="w-4 h-4 mr-2 text-(--success-text)" />{' '}
+                      {t('settings.2fa.copied')}
                     </>
                   ) : (
                     <>
@@ -473,7 +474,7 @@ export function AdvancedSecuritySettings() {
           {/* Disable Confirmation */}
           {showDisableConfirm && (
             <div className="space-y-4">
-              <div className="p-4 rounded-lg border border-red-500/20 bg-red-500/5">
+              <div className="p-4 rounded-lg border border-(--danger-outline) bg-(--danger-quiet)">
                 <p className="text-sm font-medium text-(--danger-text) mb-2">
                   {t('settings.2fa.disableTitle')}
                 </p>
@@ -486,14 +487,16 @@ export function AdvancedSecuritySettings() {
                     setDisableError(null);
                   }}
                   placeholder={t('settings.2fa.enterPassword')}
-                  className="w-full py-2 px-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
+                  className="w-full py-2 px-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-(--danger-text) text-sm"
                   style={{
                     background: 'var(--surface-hover)',
                     borderColor: disableError ? '#ef4444' : 'var(--border)',
                     color: 'var(--text-primary)',
                   }}
                 />
-                {disableError && <p className="text-sm text-red-500 mt-2">{disableError}</p>}
+                {disableError && (
+                  <p className="text-sm text-(--danger-text) mt-2">{disableError}</p>
+                )}
               </div>
               <div className="flex gap-2">
                 <Button
@@ -597,7 +600,7 @@ export function AdvancedSecuritySettings() {
                   <div className="flex items-start gap-3 flex-1">
                     <div
                       className={`w-2 h-2 rounded-full mt-2 ${
-                        login.status === 'success' ? 'bg-green-500' : 'bg-red-500'
+                        login.status === 'success' ? 'bg-(--success-solid)' : 'bg-(--danger-solid)'
                       }`}
                     />
                     <div className="flex-1 min-w-0">
@@ -649,11 +652,11 @@ export function AdvancedSecuritySettings() {
             <Switch checked={loginAlerts} onCheckedChange={setLoginAlerts} />
           </div>
 
-          <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
+          <div className="p-4 rounded-lg bg-(--brand-quiet) border border-(--brand-outline)">
             <div className="flex items-start gap-3">
               <span className="text-xl">💡</span>
               <div>
-                <p className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                <p className="text-sm font-medium text-(--brand-text) dark:text-(--brand-text)">
                   {t('settingsAdvancedSecurity.securityTip')}
                 </p>
                 <p className="text-xs text-(--text-muted) mt-1">

@@ -82,7 +82,7 @@ export function AttritionRiskPanel({
     <Card>
       <CardContent className="p-4 sm:p-6">
         <div className="flex items-center gap-2 mb-4">
-          <div className="p-2 rounded-lg bg-purple-500/10">
+          <div className="p-2 rounded-lg bg-(--purple-quiet)">
             <Brain className="w-5 h-5 text-(--purple-text)" />
           </div>
           <div className="flex-1">
@@ -111,27 +111,27 @@ export function AttritionRiskPanel({
           <>
             {/* Summary */}
             <div className="grid grid-cols-3 gap-2 mb-4">
-              <div className="rounded-xl border border-red-200 bg-red-50 dark:bg-red-950/30 p-3 text-center">
+              <div className="rounded-xl border border-(--danger-outline) bg-(--danger-quiet) dark:bg-(--danger-quiet) p-3 text-center">
                 <Flame className="w-4 h-4 mx-auto text-(--danger-text) mb-1" />
-                <p className="text-lg font-bold text-red-700 dark:text-red-400">
+                <p className="text-lg font-bold text-(--danger-text) dark:text-(--danger-text)">
                   {data.summary.high}
                 </p>
                 <p className="text-[10px] text-(--text-muted)">
                   {t('attrition.highRisk', 'High risk')}
                 </p>
               </div>
-              <div className="rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-950/30 p-3 text-center">
+              <div className="rounded-xl border border-(--warning-outline) bg-(--warning-quiet) dark:bg-(--warning-quiet) p-3 text-center">
                 <AlertTriangle className="w-4 h-4 mx-auto text-(--warning-text) mb-1" />
-                <p className="text-lg font-bold text-amber-700 dark:text-amber-400">
+                <p className="text-lg font-bold text-(--warning-text) dark:text-(--warning-text)">
                   {data.summary.medium}
                 </p>
                 <p className="text-[10px] text-(--text-muted)">
                   {t('attrition.mediumRisk', 'Medium risk')}
                 </p>
               </div>
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/30 p-3 text-center">
+              <div className="rounded-xl border border-(--success-outline) bg-(--success-quiet) dark:bg-(--success-quiet) p-3 text-center">
                 <ShieldCheck className="w-4 h-4 mx-auto text-(--success-text) mb-1" />
-                <p className="text-lg font-bold text-emerald-700 dark:text-emerald-400">
+                <p className="text-lg font-bold text-(--success-text) dark:text-(--success-text)">
                   {data.summary.low}
                 </p>
                 <p className="text-[10px] text-(--text-muted)">
@@ -184,15 +184,15 @@ export function AttritionRiskPanel({
                         <div className="px-3 pb-3 space-y-1.5 border-t border-(--border) pt-2">
                           {emp.factors.map((f) => (
                             <div key={f.key} className="flex items-start gap-2 text-xs">
-                              <UserMinus className="w-3 h-3 mt-0.5 text-red-500 shrink-0" />
+                              <UserMinus className="w-3 h-3 mt-0.5 text-(--danger-text) shrink-0" />
                               <span className="flex-1 text-(--text-primary)">
                                 {t(`attrition.factor.${f.key}`, f.key)}
                                 <span className="text-(--text-muted)"> (+{f.weight})</span>
                               </span>
                             </div>
                           ))}
-                          <div className="mt-2 rounded-lg bg-purple-500/5 border border-purple-500/20 p-2">
-                            <p className="text-[10px] font-semibold text-purple-700 dark:text-purple-300 uppercase tracking-wide mb-1">
+                          <div className="mt-2 rounded-lg bg-(--purple-quiet) border border-(--purple-outline) p-2">
+                            <p className="text-[10px] font-semibold text-(--purple-text) dark:text-(--purple-text) uppercase tracking-wide mb-1">
                               {t('attrition.recommended', 'Recommended actions')}
                             </p>
                             <ul className="space-y-1">
@@ -205,7 +205,7 @@ export function AttritionRiskPanel({
                                   key={adviceKey}
                                   className="text-xs text-(--text-primary) flex gap-1.5"
                                 >
-                                  <span className="text-purple-500">→</span>
+                                  <span className="text-(--purple-text)">→</span>
                                   {t(`attrition.${adviceKey}`, adviceKey)}
                                 </li>
                               ))}

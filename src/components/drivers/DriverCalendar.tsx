@@ -559,31 +559,31 @@ export function DriverCalendar({ driverId, organizationId, userId, role }: Drive
       {/* Legend - Modern Design */}
       <div className="flex flex-wrap items-center gap-2 sm:gap-3 p-2.5 sm:p-4 rounded-xl bg-muted/30 border border-border/30">
         <div className="flex items-center gap-1.5 sm:gap-2">
-          <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50" />
+          <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-(--success-solid) shadow-sm shadow-emerald-500/50" />
           <span className="text-[10px] sm:text-xs text-muted-foreground">
             {t('driverCalendar.completed')}
           </span>
         </div>
         <div className="flex items-center gap-1.5 sm:gap-2">
-          <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50" />
+          <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-(--brand) shadow-sm shadow-blue-500/50" />
           <span className="text-[10px] sm:text-xs text-muted-foreground">
             {t('driverCalendar.inProgress')}
           </span>
         </div>
         <div className="flex items-center gap-1.5 sm:gap-2">
-          <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-slate-400 shadow-sm shadow-slate-400/50" />
+          <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-(--surface-3) shadow-sm shadow-slate-400/50" />
           <span className="text-[10px] sm:text-xs text-muted-foreground">
             {t('driverCalendar.scheduled')}
           </span>
         </div>
         <div className="flex items-center gap-1.5 sm:gap-2">
-          <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-purple-500 shadow-sm shadow-purple-500/50" />
+          <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-(--purple) shadow-sm shadow-purple-500/50" />
           <span className="text-[10px] sm:text-xs text-muted-foreground">
             {t('driverCalendar.timeOff')}
           </span>
         </div>
         <div className="flex items-center gap-1.5 sm:gap-2">
-          <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-orange-500 shadow-sm shadow-orange-500/50" />
+          <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-(--warning-solid) shadow-sm shadow-orange-500/50" />
           <span className="text-[10px] sm:text-xs text-muted-foreground">
             {t('driverCalendar.maintenance')}
           </span>

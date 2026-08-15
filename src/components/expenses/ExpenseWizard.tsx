@@ -50,16 +50,16 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
-  travel: 'bg-blue-500/20 text-blue-400',
-  meals: 'bg-orange-500/20 text-orange-400',
-  accommodation: 'bg-purple-500/20 text-purple-400',
-  transport: 'bg-green-500/20 text-green-400',
-  office_supplies: 'bg-yellow-500/20 text-yellow-400',
-  software: 'bg-cyan-500/20 text-cyan-400',
-  training: 'bg-indigo-500/20 text-indigo-400',
-  health: 'bg-red-500/20 text-red-400',
-  communication: 'bg-teal-500/20 text-teal-400',
-  other: 'bg-gray-500/20 text-gray-400',
+  travel: 'bg-(--brand-quiet) text-(--brand-text)',
+  meals: 'bg-(--warning-quiet) text-(--warning-text)',
+  accommodation: 'bg-(--purple-quiet) text-(--purple-text)',
+  transport: 'bg-(--success-quiet) text-(--success-text)',
+  office_supplies: 'bg-(--warning-quiet) text-(--warning-text)',
+  software: 'bg-(--cyan-quiet) text-(--cyan-text)',
+  training: 'bg-(--purple-quiet) text-(--purple-text)',
+  health: 'bg-(--danger-quiet) text-(--danger-text)',
+  communication: 'bg-(--success-quiet) text-(--success-text)',
+  other: 'bg-(--surface-2) text-(--text-3)',
 };
 
 interface ExpenseWizardProps {

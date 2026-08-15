@@ -97,7 +97,7 @@ const POSITION_LEVELS = [
     value: 'Director',
     label: 'Director',
     description: 'Department leadership',
-    color: 'bg-orange-500/10 text-orange-600',
+    color: 'bg-(--warning-quiet) text-(--warning-text)',
   },
 ];
 
@@ -155,7 +155,7 @@ function PositionWizard({
       icon: <Building2 className="w-5 h-5" />,
       color: dept.color
         ? `bg-[${dept.color}]/10 text-[${dept.color}]`
-        : 'bg-gray-500/10 text-gray-600',
+        : 'bg-(--surface-2) text-(--text-3)',
     })) || [];
 
   const steps: WizardStep[] = [
@@ -538,8 +538,8 @@ export default function PositionDetailClient() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+      <div className="min-h-screen">
+        <div className="mx-auto max-w-7xl">
           <SkeletonTable rows={8} />
         </div>
       </div>
@@ -561,7 +561,7 @@ export default function PositionDetailClient() {
         </Link>
         <Card>
           <CardContent className="p-8 text-center">
-            <AlertCircle className="w-12 h-12 text-orange-500 mx-auto mb-3" />
+            <AlertCircle className="w-12 h-12 text-(--warning-text) mx-auto mb-3" />
             <h3 className="text-lg font-semibold text-text-primary mb-1">
               {t('common.noResults')}
             </h3>
@@ -578,12 +578,12 @@ export default function PositionDetailClient() {
     Senior: 'bg-(--purple-quiet) text-(--purple-text)',
     Lead: 'bg-(--warning-quiet) text-(--warning-text)',
     Manager: 'bg-(--danger-quiet) text-(--danger-text)',
-    Director: 'bg-orange-500/10 text-orange-600',
+    Director: 'bg-(--warning-quiet) text-(--warning-text)',
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+    <div className="min-h-screen">
+      <div className="mx-auto max-w-7xl">
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-4 mb-4">
@@ -598,9 +598,12 @@ export default function PositionDetailClient() {
             <div className="flex items-center gap-4">
               <div
                 className="w-14 h-14 rounded-xl flex items-center justify-center"
-                style={{ backgroundColor: `${department?.color || '#6B7280'}20` }}
+                style={{ backgroundColor: `${department?.color || 'var(--text-4)'}20` }}
               >
-                <Briefcase className="w-7 h-7" style={{ color: department?.color || '#6B7280' }} />
+                <Briefcase
+                  className="w-7 h-7"
+                  style={{ color: department?.color || 'var(--text-4)' }}
+                />
               </div>
               <div>
                 <div className="flex items-center gap-3">
@@ -609,7 +612,7 @@ export default function PositionDetailClient() {
                     <Badge
                       className={cn(
                         'text-xs',
-                        levelColors[position.level] || 'bg-gray-500/10 text-gray-600',
+                        levelColors[position.level] || 'bg-(--surface-2) text-(--text-3)',
                       )}
                     >
                       {position.level}
@@ -797,7 +800,7 @@ export default function PositionDetailClient() {
                         <Badge
                           className={cn(
                             'text-xs',
-                            levelColors[position.level ?? ''] || 'bg-gray-500/10 text-gray-600',
+                            levelColors[position.level ?? ''] || 'bg-(--surface-2) text-(--text-3)',
                           )}
                         >
                           {position.level || position.title}

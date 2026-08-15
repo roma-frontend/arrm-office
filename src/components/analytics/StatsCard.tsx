@@ -16,16 +16,25 @@ interface StatsCardProps {
 }
 
 const colorMap = {
-  blue: { bg: 'bg-blue-500/20 dark:bg-blue-500/30', icon: 'text-blue-600 dark:text-blue-400' },
-  green: { bg: 'bg-green-500/20 dark:bg-green-500/30', icon: 'text-green-600 dark:text-green-400' },
-  yellow: {
-    bg: 'bg-yellow-500/20 dark:bg-yellow-500/30',
-    icon: 'text-yellow-600 dark:text-yellow-400',
+  blue: {
+    bg: 'bg-(--brand-quiet) dark:bg-(--brand-quiet)',
+    icon: 'text-(--brand-text) dark:text-(--brand-text)',
   },
-  red: { bg: 'bg-red-500/20 dark:bg-red-500/30', icon: 'text-red-600 dark:text-red-400' },
+  green: {
+    bg: 'bg-(--success-quiet) dark:bg-(--success-quiet)',
+    icon: 'text-(--success-text) dark:text-(--success-text)',
+  },
+  yellow: {
+    bg: 'bg-(--warning-quiet) dark:bg-(--warning-quiet)',
+    icon: 'text-(--warning-text) dark:text-(--warning-text)',
+  },
+  red: {
+    bg: 'bg-(--danger-quiet) dark:bg-(--danger-quiet)',
+    icon: 'text-(--danger-text) dark:text-(--danger-text)',
+  },
   purple: {
-    bg: 'bg-purple-500/20 dark:bg-purple-500/30',
-    icon: 'text-purple-600 dark:text-purple-400',
+    bg: 'bg-(--purple-quiet) dark:bg-(--purple-quiet)',
+    icon: 'text-(--purple-text) dark:text-(--purple-text)',
   },
 };
 
@@ -50,7 +59,7 @@ export function StatsCard({ title, value, icon: Icon, trend, color = 'blue' }: S
             {trend && (
               <div className="flex items-center gap-1 mt-2">
                 <span
-                  className={`text-sm font-medium ${trend.isPositive ? 'text-emerald-500' : 'text-rose-500'}`}
+                  className={`text-sm font-medium ${trend.isPositive ? 'text-(--success-text)' : 'text-(--danger-text)'}`}
                 >
                   {trend.isPositive ? '↑' : '↓'} {Math.abs(trend.value)}%
                 </span>

@@ -240,7 +240,7 @@ export default function CompanyEventsPage() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <AlertCircle className="w-12 h-12 mx-auto mb-3 text-red-500" />
+          <AlertCircle className="w-12 h-12 mx-auto mb-3 text-(--danger-text)" />
           <h2 className="text-xl font-semibold">{t('common.accessDenied', 'Access Denied')}</h2>
           <p className="text-muted-foreground">
             {t('events.adminOnly', 'Only administrators can manage company events')}
@@ -354,7 +354,7 @@ export default function CompanyEventsPage() {
             className={cn(
               'flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl transition-all',
               activeTab === tab.key
-                ? 'bg-[#3b82f6] text-white shadow-sm'
+                ? 'bg-(--brand) text-white shadow-sm'
                 : 'text-muted-foreground hover:text-foreground bg-[var(--background-subtle)]',
             )}
           >
@@ -655,7 +655,8 @@ export default function CompanyEventsPage() {
             <SheetBody className="space-y-5">
               <div>
                 <Label className="text-sm font-medium mb-2 block">
-                  {t('events.eventName', 'Event Name')} <span className="text-red-500">*</span>
+                  {t('events.eventName', 'Event Name')}{' '}
+                  <span className="text-(--danger-text)">*</span>
                 </Label>
                 <Input
                   value={editName}
@@ -677,7 +678,8 @@ export default function CompanyEventsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium mb-2 block">
-                    {t('events.startDate', 'Start Date')} <span className="text-red-500">*</span>
+                    {t('events.startDate', 'Start Date')}{' '}
+                    <span className="text-(--danger-text)">*</span>
                   </Label>
                   <Input
                     type="date"
@@ -687,7 +689,8 @@ export default function CompanyEventsPage() {
                 </div>
                 <div>
                   <Label className="text-sm font-medium mb-2 block">
-                    {t('events.endDate', 'End Date')} <span className="text-red-500">*</span>
+                    {t('events.endDate', 'End Date')}{' '}
+                    <span className="text-(--danger-text)">*</span>
                   </Label>
                   <Input
                     type="date"

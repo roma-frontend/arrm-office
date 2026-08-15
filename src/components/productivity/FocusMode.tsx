@@ -95,7 +95,7 @@ export function FocusMode({ currentPresence, onFocusChange }: FocusModeProps) {
           <button
             onClick={toggleFocusMode}
             className={`relative h-6 w-11 rounded-full transition-all shrink-0 ${
-              isFocusMode ? 'btn-gradient' : 'bg-gray-300 dark:bg-gray-700'
+              isFocusMode ? 'btn-gradient' : 'bg-(--surface-3) dark:bg-(--surface-3)'
             }`}
           >
             <span
@@ -121,7 +121,7 @@ export function FocusMode({ currentPresence, onFocusChange }: FocusModeProps) {
 
           <div className="flex items-center gap-2 text-xs">
             <div
-              className={`w-2 h-2 rounded-full ${isFocusMode ? 'bg-red-500' : 'bg-(--text-muted)'}`}
+              className={`w-2 h-2 rounded-full ${isFocusMode ? 'bg-(--danger-solid)' : 'bg-(--text-muted)'}`}
             />
             <span className={isFocusMode ? 'text-(--text-primary)' : 'text-(--text-muted)'}>
               {isFocusMode ? t('focusMode.statusBusy') : t('focusMode.setStatusBusy')}

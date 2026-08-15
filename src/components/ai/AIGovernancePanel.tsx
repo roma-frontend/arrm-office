@@ -158,7 +158,7 @@ export default function AIGovernancePanel() {
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
                 activeTab === tab.id
-                  ? 'text-blue-500 border-blue-500'
+                  ? 'text-(--brand-text) border-(--brand-outline)'
                   : 'text-(--text-muted) border-transparent hover:text-(--text-primary)'
               }`}
             >
@@ -175,7 +175,7 @@ export default function AIGovernancePanel() {
           {/* Recent activity */}
           <Card className="p-5 border border-(--border) bg-(--card)">
             <h3 className="font-semibold text-(--text-primary) mb-4 flex items-center gap-2">
-              <Activity className="w-4 h-4 text-blue-500" />
+              <Activity className="w-4 h-4 text-(--brand-text)" />
               {t('aiGovernance.recentActivity', 'Recent Activity')}
             </h3>
             <div className="space-y-3">
@@ -195,7 +195,7 @@ export default function AIGovernancePanel() {
                   >
                     <div className="flex items-center gap-3">
                       <div
-                        className={`w-2 h-2 rounded-full ${item.status === 'blocked' ? 'bg-red-500' : 'bg-emerald-500'}`}
+                        className={`w-2 h-2 rounded-full ${item.status === 'blocked' ? 'bg-(--danger-solid)' : 'bg-(--success-solid)'}`}
                       />
                       <div>
                         <p className="text-sm font-medium text-(--text-primary)">
@@ -223,7 +223,7 @@ export default function AIGovernancePanel() {
           {/* Agent health */}
           <Card className="p-5 border border-(--border) bg-(--card)">
             <h3 className="font-semibold text-(--text-primary) mb-4 flex items-center gap-2">
-              <Bot className="w-4 h-4 text-emerald-500" />
+              <Bot className="w-4 h-4 text-(--success-text)" />
               {t('aiGovernance.agentHealth', 'Agent Health')}
             </h3>
             <div className="space-y-3">
@@ -243,7 +243,7 @@ export default function AIGovernancePanel() {
                   >
                     <div className="flex items-center gap-2">
                       <div
-                        className={`w-2 h-2 rounded-full ${agent.status === 'degraded' ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                        className={`w-2 h-2 rounded-full ${agent.status === 'degraded' ? 'bg-(--warning-solid)' : 'bg-(--success-solid)'}`}
                       />
                       <span className="text-sm text-(--text-primary)">
                         {agentLabel(agent.agent)}
@@ -274,7 +274,7 @@ export default function AIGovernancePanel() {
       {activeTab === 'guardrails' && (
         <Card className="p-5 border border-(--border) bg-(--card)">
           <h3 className="font-semibold text-(--text-primary) mb-4 flex items-center gap-2">
-            <Shield className="w-4 h-4 text-blue-500" />
+            <Shield className="w-4 h-4 text-(--brand-text)" />
             {t('aiGovernance.guardrailSettings', 'Guardrail Settings')}
           </h3>
           <div className="space-y-4">
@@ -364,7 +364,7 @@ export default function AIGovernancePanel() {
         <Card className="p-5 border border-(--border) bg-(--card)">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold text-(--text-primary) flex items-center gap-2">
-              <Eye className="w-4 h-4 text-blue-500" />
+              <Eye className="w-4 h-4 text-(--brand-text)" />
               {t('aiGovernance.auditLog', 'AI Audit Log')}
             </h3>
             <div className="flex items-center gap-2">
@@ -424,7 +424,7 @@ export default function AIGovernancePanel() {
       {activeTab === 'policies' && (
         <Card className="p-5 border border-(--border) bg-(--card)">
           <h3 className="font-semibold text-(--text-primary) mb-4 flex items-center gap-2">
-            <Lock className="w-4 h-4 text-blue-500" />
+            <Lock className="w-4 h-4 text-(--brand-text)" />
             {t('aiGovernance.governancePolicies', 'Governance Policies')}
           </h3>
           <div className="space-y-3">

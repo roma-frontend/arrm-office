@@ -134,7 +134,7 @@ export default function StripeDashboardPage() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <div className="flex items-center gap-2 text-red-500">
+            <div className="flex items-center gap-2 text-(--danger-text)">
               <ShieldAlert className="w-6 h-6" />
               <CardTitle>{t('stripe.accessDenied')}</CardTitle>
             </div>
@@ -159,9 +159,9 @@ export default function StripeDashboardPage() {
   if (error) {
     return (
       <div className="mx-auto">
-        <Card className="border-red-500/50">
+        <Card className="border-(--danger-outline)">
           <CardHeader>
-            <CardTitle className="text-red-500 flex items-center gap-2">
+            <CardTitle className="text-(--danger-text) flex items-center gap-2">
               <AlertCircle className="w-5 h-5" />
               {t('stripeDashboard.dataLoadError')}
             </CardTitle>
@@ -250,9 +250,9 @@ export default function StripeDashboardPage() {
             <div className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
               {metrics.growth}%
               {parseFloat(metrics.growth) >= 0 ? (
-                <ArrowUpRight className="w-4 h-4 text-green-500" />
+                <ArrowUpRight className="w-4 h-4 text-(--success-text)" />
               ) : (
-                <ArrowDownRight className="w-4 h-4 text-red-500" />
+                <ArrowDownRight className="w-4 h-4 text-(--danger-text)" />
               )}
             </div>
             <p className="text-xs text-muted-foreground">{t('stripe.last30Days')}</p>
@@ -431,25 +431,25 @@ export default function StripeDashboardPage() {
             {
               label: t('stripeDashboard.activeLabel'),
               count: metrics.active,
-              color: 'bg-green-500',
+              color: 'bg-(--success-solid)',
               icon: CheckCircle,
             },
             {
               label: t('stripeDashboard.trialLabel'),
               count: metrics.trialing,
-              color: 'bg-blue-500',
+              color: 'bg-(--brand)',
               icon: Clock,
             },
             {
               label: t('stripeDashboard.pastDueLabel'),
               count: metrics.pastDue,
-              color: 'bg-yellow-500',
+              color: 'bg-(--warning-solid)',
               icon: AlertCircle,
             },
             {
               label: t('stripeDashboard.canceledLabel'),
               count: metrics.canceled,
-              color: 'bg-red-500',
+              color: 'bg-(--danger-solid)',
               icon: XCircle,
             },
           ].map((item) => (

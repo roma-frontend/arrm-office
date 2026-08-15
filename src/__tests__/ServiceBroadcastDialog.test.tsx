@@ -442,10 +442,10 @@ describe('schedule step', () => {
     );
     const twoHours = screen.getByRole('button', { name: 'broadcastDialog.duration2h' });
     fireEvent.click(twoHours);
-    expect(twoHours.className).toContain('border-orange-500');
+    expect(twoHours.className).toContain('border-(--warning-outline)');
     fireEvent.click(screen.getByRole('button', { name: 'broadcastDialog.durationUnknown' }));
     // "unknown" maps to undefined — deselects the highlighted option
-    expect(twoHours.className).not.toContain('border-orange-500');
+    expect(twoHours.className).not.toContain('border-(--warning-outline)');
   });
 
   it('hides the maintenance fields again when toggled off', () => {

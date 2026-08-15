@@ -137,7 +137,7 @@ export default function OrgRequestsClient() {
         {pendingCount > 0 && (
           <div
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium mt-4"
-            style={{ background: 'rgba(37,99,235,0.1)', color: '#2563eb' }}
+            style={{ background: 'var(--brand-quiet)', color: 'var(--brand-text)' }}
           >
             <Clock className="w-4 h-4" />
             {pendingCount} pending request{pendingCount !== 1 ? 's' : ''}
@@ -181,8 +181,8 @@ export default function OrgRequestsClient() {
             const Icon = request.requestedPlan === 'enterprise' ? Crown : Building2;
             const planColor =
               request.requestedPlan === 'enterprise'
-                ? 'from-purple-500 to-pink-500'
-                : 'from-blue-500 to-cyan-500';
+                ? 'from-(--purple) to-(--pink)'
+                : 'from-(--brand) to-(--cyan)';
 
             return (
               <motion.div
@@ -321,9 +321,9 @@ export default function OrgRequestsClient() {
                     style={{ background: 'rgba(239,68,68,0.05)' }}
                   >
                     <div className="flex items-start gap-2 text-sm">
-                      <XCircle className="w-4 h-4 mt-0.5 text-red-500" />
+                      <XCircle className="w-4 h-4 mt-0.5 text-(--danger-text)" />
                       <div>
-                        <p className="font-semibold text-red-500 mb-1">
+                        <p className="font-semibold text-(--danger-text) mb-1">
                           {t('organization.rejectionReason')}
                         </p>
                         <p style={{ color: 'var(--text-secondary)' }}>{request.rejectionReason}</p>
@@ -340,7 +340,10 @@ export default function OrgRequestsClient() {
                       whileTap={{ scale: 0.98 }}
                       onClick={() => handleApprove(request._id)}
                       className="flex-1 py-2.5 rounded-xl font-semibold text-sm text-white flex items-center justify-center gap-2"
-                      style={{ background: 'linear-gradient(135deg, #10b981, #22c55e)' }}
+                      style={{
+                        background:
+                          'linear-gradient(135deg, var(--success-solid), var(--success-text))',
+                      }}
                     >
                       <CheckCircle2 className="w-4 h-4" />
                       Approve & Create
@@ -350,7 +353,10 @@ export default function OrgRequestsClient() {
                       whileTap={{ scale: 0.98 }}
                       onClick={() => openRejectModal(request._id)}
                       className="flex-1 py-2.5 rounded-xl font-semibold text-sm text-white flex items-center justify-center gap-2"
-                      style={{ background: 'linear-gradient(135deg, #ef4444, #dc2626)' }}
+                      style={{
+                        background:
+                          'linear-gradient(135deg, var(--danger-solid), var(--danger-text))',
+                      }}
                     >
                       <XCircle className="w-4 h-4" />
                       Reject
@@ -420,7 +426,9 @@ export default function OrgRequestsClient() {
                 <button
                   onClick={handleReject}
                   className="flex-1 py-2.5 rounded-xl font-semibold text-sm text-white"
-                  style={{ background: 'linear-gradient(135deg, #ef4444, #dc2626)' }}
+                  style={{
+                    background: 'linear-gradient(135deg, var(--danger-solid), var(--danger-text))',
+                  }}
                 >
                   Confirm Reject
                 </button>

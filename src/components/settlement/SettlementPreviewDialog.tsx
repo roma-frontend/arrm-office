@@ -189,7 +189,7 @@ export function SettlementPreviewDialog({
       <SheetContent side="right" size="md" closeLabel={t('common.close', 'Close')}>
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
-            <Calculator className="w-5 h-5 text-[#2563eb]" />
+            <Calculator className="w-5 h-5 text-(--brand-text)" />
             {t('employees.settlement.title', 'Final Settlement')}
           </SheetTitle>
           <SheetDescription>
@@ -236,7 +236,7 @@ export function SettlementPreviewDialog({
             {/* Earnings breakdown */}
             <div className="rounded-xl border border-(--border) overflow-hidden">
               <div className="px-4 py-2.5 bg-(--background-subtle) border-b border-(--border) flex items-center gap-2">
-                <Wallet className="w-4 h-4 text-blue-500" />
+                <Wallet className="w-4 h-4 text-(--brand-text)" />
                 <p className="text-sm font-semibold text-(--text-primary)">
                   {t('employees.settlement.title', 'Final Settlement')}
                 </p>
@@ -251,7 +251,7 @@ export function SettlementPreviewDialog({
                     <span className="font-medium text-(--text-primary)">{row.value}</span>
                   </div>
                 ))}
-                <div className="flex items-center justify-between px-4 py-2.5 text-sm bg-blue-50/50 dark:bg-blue-950/20">
+                <div className="flex items-center justify-between px-4 py-2.5 text-sm bg-(--brand-quiet) dark:bg-(--brand-quiet)">
                   <span className="font-semibold text-(--text-primary)">
                     {t('employees.settlement.totalGross', 'Total gross')}
                   </span>

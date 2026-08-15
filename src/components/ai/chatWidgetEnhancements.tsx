@@ -207,14 +207,14 @@ export function MessageActions({
     <div className="flex items-center gap-0.5 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
       <button
         onClick={() => setReaction(reaction === 'up' ? null : 'up')}
-        className={`p-1 rounded hover:bg-(--background-subtle) ${reaction === 'up' ? 'text-green-500' : 'text-(--text-muted)'}`}
+        className={`p-1 rounded hover:bg-(--background-subtle) ${reaction === 'up' ? 'text-(--success-text)' : 'text-(--text-muted)'}`}
         title="Helpful"
       >
         <ThumbsUp className="w-3 h-3" />
       </button>
       <button
         onClick={() => setReaction(reaction === 'down' ? null : 'down')}
-        className={`p-1 rounded hover:bg-(--background-subtle) ${reaction === 'down' ? 'text-red-500' : 'text-(--text-muted)'}`}
+        className={`p-1 rounded hover:bg-(--background-subtle) ${reaction === 'down' ? 'text-(--danger-text)' : 'text-(--text-muted)'}`}
         title="Not helpful"
       >
         <ThumbsDown className="w-3 h-3" />
@@ -224,11 +224,15 @@ export function MessageActions({
         className="p-1 rounded hover:bg-(--background-subtle) text-(--text-muted)"
         title="Copy"
       >
-        {copied ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+        {copied ? (
+          <Check className="w-3 h-3 text-(--success-text)" />
+        ) : (
+          <Copy className="w-3 h-3" />
+        )}
       </button>
       <button
         onClick={onPin}
-        className={`p-1 rounded hover:bg-(--background-subtle) ${isPinned ? 'text-[#2563eb]' : 'text-(--text-muted)'}`}
+        className={`p-1 rounded hover:bg-(--background-subtle) ${isPinned ? 'text-(--brand-text)' : 'text-(--text-muted)'}`}
         title="Pin"
       >
         <Pin className="w-3 h-3" />
@@ -260,7 +264,7 @@ function TTSButton({ content }: { content: string }) {
   return (
     <button
       onClick={handleTTS}
-      className={`p-1 rounded hover:bg-(--background-subtle) ${speaking ? 'text-[#2563eb] animate-pulse' : 'text-(--text-muted)'}`}
+      className={`p-1 rounded hover:bg-(--background-subtle) ${speaking ? 'text-(--brand-text) animate-pulse' : 'text-(--text-muted)'}`}
       title="Read aloud"
     >
       <Volume2 className="w-3 h-3" />

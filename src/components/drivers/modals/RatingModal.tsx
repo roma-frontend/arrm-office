@@ -128,7 +128,7 @@ export function RatingModal({
                   <Star
                     className={`w-10 h-10 transition-all duration-200 ${
                       star <= (hoveredRating || rating)
-                        ? 'fill-yellow-400 text-yellow-400 drop-shadow-lg'
+                        ? 'fill-yellow-400 text-(--warning-text) drop-shadow-lg'
                         : 'fill-(--border) text-(--border)'
                     }`}
                   />

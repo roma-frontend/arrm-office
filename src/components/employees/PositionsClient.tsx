@@ -91,7 +91,7 @@ const POSITION_LEVELS = [
     value: 'Director',
     label: 'Director',
     description: 'Department leadership',
-    color: 'bg-orange-500/10 text-orange-600',
+    color: 'bg-(--warning-quiet) text-(--warning-text)',
   },
 ];
 
@@ -164,7 +164,7 @@ function PositionWizard({
       icon: <Building2 className="w-5 h-5" />,
       color: dept.color
         ? `bg-[${dept.color}]/10 text-[${dept.color}]`
-        : 'bg-gray-500/10 text-gray-600',
+        : 'bg-(--surface-2) text-(--text-3)',
     })) || [];
 
   const steps: WizardStep[] = [
@@ -574,8 +574,8 @@ export default function PositionsClient() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+    <div className="min-h-screen">
+      <div className="mx-auto max-w-7xl">
         {/* Header */}
         <div className="sticky top-0 z-10 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 mb-4 bg-(--background)/95 backdrop-blur supports-[backdrop-filter]:bg-(--background)/60 border-b border-(--border)">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

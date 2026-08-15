@@ -346,7 +346,7 @@ function Group({
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-sm font-semibold">{title}</span>
                 {entry.isLive && (
-                  <Badge className="bg-emerald-500/10 text-emerald-600">
+                  <Badge className="bg-(--success-quiet) text-(--success-text)">
                     {t('news.schedule.badgeLive')}
                   </Badge>
                 )}
@@ -400,7 +400,7 @@ function Group({
                 onClick={() => onDelete(entry)}
                 aria-label={t('news.schedule.delete')}
               >
-                <Trash2 className="h-4 w-4 text-rose-500" />
+                <Trash2 className="h-4 w-4 text-(--danger-text)" />
               </Button>
             </div>
           </div>

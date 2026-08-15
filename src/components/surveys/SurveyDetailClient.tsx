@@ -319,11 +319,11 @@ export default function SurveyDetailClient() {
                   {result.yesCount !== undefined && result.noCount !== undefined && (
                     <div className="flex items-center gap-4">
                       <div className="flex items-center gap-1">
-                        <CheckCircle className="h-4 w-4 text-green-500" />
+                        <CheckCircle className="h-4 w-4 text-(--success-text)" />
                         <span className="text-sm">{result.yesCount}</span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <XCircle className="h-4 w-4 text-red-500" />
+                        <XCircle className="h-4 w-4 text-(--danger-text)" />
                         <span className="text-sm">{result.noCount}</span>
                       </div>
                     </div>

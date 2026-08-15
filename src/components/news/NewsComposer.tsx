@@ -282,7 +282,7 @@ export function NewsComposer({ open, onClose, organizationId }: NewsComposerProp
                 checked={isUrgent}
                 onCheckedChange={(checked) => setIsUrgent(checked === true)}
               />
-              <Zap className="h-3.5 w-3.5 text-red-500" />
+              <Zap className="h-3.5 w-3.5 text-(--danger-text)" />
               {t('news.compose.urgent')}
             </label>
           </div>

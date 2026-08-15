@@ -134,27 +134,33 @@ export function PassportFields({
     if (!taxIdStatus) return null;
     const map: Record<TaxIdVerifyStatus, { color: string; label: string }> = {
       verified: {
-        color: 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
+        color:
+          'text-(--success-text) dark:text-(--success-text) bg-(--success-quiet) border-(--success-outline)',
         label: t('employees.taxIdVerified', 'Verified by SRC'),
       },
       not_found: {
-        color: 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/30',
+        color:
+          'text-(--warning-text) dark:text-(--warning-text) bg-(--warning-quiet) border-(--warning-outline)',
         label: t('employees.taxIdNotFound', 'Not found in SRC'),
       },
       valid_local: {
-        color: 'text-sky-600 dark:text-sky-400 bg-sky-500/10 border-sky-500/30',
+        color:
+          'text-(--brand-text) dark:text-(--brand-text) bg-(--brand-quiet) border-(--brand-outline)',
         label: t('employees.taxIdValidLocal', 'Format valid (local check)'),
       },
       invalid_checksum: {
-        color: 'text-red-600 dark:text-red-400 bg-red-500/10 border-red-500/30',
+        color:
+          'text-(--danger-text) dark:text-(--danger-text) bg-(--danger-quiet) border-(--danger-outline)',
         label: t('employees.taxIdInvalidChecksum', 'Checksum invalid'),
       },
       invalid_format: {
-        color: 'text-red-600 dark:text-red-400 bg-red-500/10 border-red-500/30',
+        color:
+          'text-(--danger-text) dark:text-(--danger-text) bg-(--danger-quiet) border-(--danger-outline)',
         label: t('employees.taxIdInvalidFormat', 'Must be 8 digits'),
       },
       error: {
-        color: 'text-red-600 dark:text-red-400 bg-red-500/10 border-red-500/30',
+        color:
+          'text-(--danger-text) dark:text-(--danger-text) bg-(--danger-quiet) border-(--danger-outline)',
         label: t('employees.taxIdCheckError', 'Verification failed'),
       },
     };
@@ -317,7 +323,7 @@ export function PassportFields({
               type="button"
               onClick={handleVerifyTaxId}
               disabled={verifyingTaxId}
-              className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-medium transition-all disabled:opacity-60 bg-(--background-subtle) hover:border-blue-500/50 hover:text-(--primary)"
+              className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-medium transition-all disabled:opacity-60 bg-(--background-subtle) hover:border-(--brand-outline) hover:text-(--primary)"
             >
               {verifyingTaxId ? (
                 <>

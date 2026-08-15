@@ -47,33 +47,33 @@ export function AttendanceDashboard() {
       label: t('attendanceExtra.daysWorked'),
       value: monthlyStats.totalDays,
       icon: Calendar,
-      color: 'text-blue-500',
-      borderColor: 'border-blue-500/30',
-      iconBg: 'bg-blue-500/10',
+      color: 'text-(--brand-text)',
+      borderColor: 'border-(--brand-outline)',
+      iconBg: 'bg-(--brand-quiet)',
     },
     {
       label: t('attendanceExtra.totalHours'),
       value: `${monthlyStats.totalWorkedHours}${t('time.h')}`,
       icon: Clock,
-      color: 'text-green-500',
-      borderColor: 'border-green-500/30',
-      iconBg: 'bg-green-500/10',
+      color: 'text-(--success-text)',
+      borderColor: 'border-(--success-outline)',
+      iconBg: 'bg-(--success-quiet)',
     },
     {
       label: t('attendanceExtra.punctuality'),
       value: `${monthlyStats.punctualityRate}%`,
       icon: Target,
-      color: 'text-sky-400',
-      borderColor: 'border-sky-400/30',
-      iconBg: 'bg-sky-400/10',
+      color: 'text-(--brand-text)',
+      borderColor: 'border-(--brand-outline)',
+      iconBg: 'bg-(--brand-quiet)',
     },
     {
       label: t('attendanceExtra.overtime'),
       value: `${monthlyStats.totalOvertimeHours}${t('time.h')}`,
       icon: Award,
-      color: 'text-orange-500',
-      borderColor: 'border-orange-500/30',
-      iconBg: 'bg-orange-500/10',
+      color: 'text-(--warning-text)',
+      borderColor: 'border-(--warning-outline)',
+      iconBg: 'bg-(--warning-quiet)',
     },
   ];
 
@@ -116,11 +116,11 @@ export function AttendanceDashboard() {
       {/* Issues Alert */}
       {(Number(monthlyStats.lateDays) > 0 || Number(monthlyStats.earlyLeaveDays) > 0) && (
         <Card
-          className="border border-orange-500/30"
+          className="border border-(--warning-outline)"
           style={{ background: 'var(--background-card)' }}
         >
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-orange-500">
+            <CardTitle className="flex items-center gap-2 text-(--warning-text)">
               <AlertTriangle className="w-5 h-5" />
               {t('attendanceIssues.title')}
             </CardTitle>
@@ -181,7 +181,7 @@ export function AttendanceDashboard() {
 
                   <div className="flex items-center gap-2">
                     {record.status === 'checked_in' && (
-                      <Badge className="bg-green-500 text-white">
+                      <Badge className="bg-(--success-solid) text-(--brand-contrast)">
                         {t('taskStatus.inProgress')}
                       </Badge>
                     )}
@@ -194,12 +194,12 @@ export function AttendanceDashboard() {
                     )}
                     {record.isLate && <Badge variant="destructive">{t('statuses.late')}</Badge>}
                     {record.isEarlyLeave && (
-                      <Badge className="bg-orange-500 text-white">
+                      <Badge className="bg-(--warning-solid) text-(--brand-contrast)">
                         {t('attendanceIssues.early')}
                       </Badge>
                     )}
                     {record.overtimeMinutes && record.overtimeMinutes > 0 && (
-                      <Badge className="bg-sky-400 text-white">
+                      <Badge className="bg-(--brand) text-white">
                         +{Math.floor(record.overtimeMinutes / 60)}
                         {t('attendanceExtra.hoursShort')} {t('attendanceExtra.overtimeShort')}
                       </Badge>

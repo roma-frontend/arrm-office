@@ -88,7 +88,11 @@ export function NavigatorDropdown({ label, coords }: NavigatorDropdownProps) {
           </DropdownMenuItem>
         ))}
         <DropdownMenuItem onClick={handleCopyCoords} className="gap-2">
-          {copied ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+          {copied ? (
+            <Check className="w-3 h-3 text-(--success-text)" />
+          ) : (
+            <Copy className="w-3 h-3" />
+          )}
           {copied
             ? t('driverActions.navigator.copied', 'Copied!')
             : t('driverActions.navigator.copyCoords', 'Copy Coords')}

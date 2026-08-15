@@ -46,8 +46,8 @@ export function QuickStatsWidget() {
       label: t('quickStats.deadlines'),
       value: stats.todayDeadlines,
       subtext: t('quickStats.dueToday'),
-      color: stats.todayDeadlines > 0 ? 'text-orange-500' : 'text-(--text-muted)',
-      bgColor: stats.todayDeadlines > 0 ? 'bg-orange-500/10' : 'bg-(--background-subtle)',
+      color: stats.todayDeadlines > 0 ? 'text-(--warning-text)' : 'text-(--text-muted)',
+      bgColor: stats.todayDeadlines > 0 ? 'bg-(--warning-quiet)' : 'bg-(--background-subtle)',
     },
     {
       icon: TrendingUp,

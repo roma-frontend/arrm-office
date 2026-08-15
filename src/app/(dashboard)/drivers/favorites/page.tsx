@@ -151,8 +151,8 @@ export default function FavoritesPage() {
               <ChevronLeft className="w-5 h-5" />
             </Button>
             <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-red-500/10">
-                <Heart className="w-5 h-5 text-red-500" />
+              <div className="p-2.5 rounded-xl bg-(--danger-quiet)">
+                <Heart className="w-5 h-5 text-(--danger-text)" />
               </div>
               <div>
                 <h1 className="text-xl font-bold text-foreground">
@@ -234,13 +234,13 @@ export default function FavoritesPage() {
             >
               <Card className="group relative overflow-hidden border border-border/50 bg-card/50 hover:border-border hover:shadow-lg transition-all duration-300">
                 {/* Gradient top border */}
-                <div className="absolute top-0 left-0 right-0 h-0.75 bg-linear-to-r from-red-500/50 via-primary/50 to-red-500/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute top-0 left-0 right-0 h-0.75 bg-linear-to-r from-(--danger-solid) via-primary/50 to-(--danger-solid) opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
                 <CardContent className="pt-6">
                   <div className="flex flex-col items-start gap-4">
                     {/* Avatar */}
                     <div className="relative">
-                      <Avatar className="w-12 h-12 ring-2 ring-transparent group-hover:ring-red-500/30 transition-all duration-300">
+                      <Avatar className="w-12 h-12 ring-2 ring-transparent group-hover:ring-(--danger-text) transition-all duration-300">
                         {driver.userAvatar && <AvatarImage src={driver.userAvatar} />}
                         <AvatarFallback className="text-xs">
                           {driver.userName
@@ -250,7 +250,7 @@ export default function FavoritesPage() {
                         </AvatarFallback>
                       </Avatar>
                       {driver.isOnShift && (
-                        <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-card animate-pulse" />
+                        <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-(--success-solid) border-2 border-card animate-pulse" />
                       )}
                     </div>
 
@@ -258,7 +258,7 @@ export default function FavoritesPage() {
                     <div className="flex-1 w-full">
                       <div className="flex items-start justify-between gap-2">
                         <div>
-                          <h3 className="font-semibold text-foreground group-hover:text-red-500 transition-colors duration-200">
+                          <h3 className="font-semibold text-foreground group-hover:text-(--danger-text) transition-colors duration-200">
                             {driver.userName}
                           </h3>
                           {driver.userPosition && (
@@ -268,15 +268,15 @@ export default function FavoritesPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 rounded-lg hover:bg-red-500/10 hover:text-red-500 transition-all"
+                          className="h-8 w-8 rounded-lg hover:bg-(--danger-quiet) hover:text-(--danger-text) transition-all"
                           onClick={() => handleRemoveFavorite(driver._id)}
                         >
-                          <Heart className="w-4 h-4 fill-red-500 text-red-500" />
+                          <Heart className="w-4 h-4 fill-red-500 text-(--danger-text)" />
                         </Button>
                       </div>
                       <div className="flex items-center gap-1 mt-2">
-                        <Star className="w-4 h-4 fill-yellow-500 text-yellow-500" />
-                        <span className="text-sm font-medium text-yellow-500">
+                        <Star className="w-4 h-4 fill-yellow-500 text-(--warning-text)" />
+                        <span className="text-sm font-medium text-(--warning-text)">
                           {driver.rating.toFixed(1)}
                         </span>
                         <span className="text-xs text-muted-foreground">

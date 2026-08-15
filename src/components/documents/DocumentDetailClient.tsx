@@ -276,7 +276,7 @@ export default function DocumentDetailClient() {
             {document.expiresAt && (
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">{t('documents.expires')}</span>
-                <span className={`font-medium ${isExpired ? 'text-red-500' : ''}`}>
+                <span className={`font-medium ${isExpired ? 'text-(--danger-text)' : ''}`}>
                   {format(new Date(document.expiresAt), 'dd MMM yyyy', { locale: dateLocale })}
                   {isExpired && ` (${t('documents.expired')})`}
                 </span>
@@ -331,9 +331,9 @@ export default function DocumentDetailClient() {
       )}
 
       {isExpired && (
-        <Card className="border-red-200 dark:border-red-900">
+        <Card className="border-(--danger-outline) dark:border-(--danger-outline)">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
+            <CardTitle className="flex items-center gap-2 text-(--danger-text) dark:text-(--danger-text)">
               <AlertTriangle className="h-5 w-5" />
               {t('documents.expiredDocument')}
             </CardTitle>
@@ -345,9 +345,9 @@ export default function DocumentDetailClient() {
       )}
 
       {document.isMandatory && (
-        <Card className="border-yellow-200 dark:border-yellow-900">
+        <Card className="border-(--warning-outline) dark:border-(--warning-outline)">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400">
+            <CardTitle className="flex items-center gap-2 text-(--warning-text) dark:text-(--warning-text)">
               <AlertTriangle className="h-5 w-5" />
               {t('documents.mandatoryDocument')}
             </CardTitle>

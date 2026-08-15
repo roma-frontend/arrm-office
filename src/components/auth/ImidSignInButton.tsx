@@ -138,7 +138,7 @@ export function ImidSignInButton() {
       </button>
 
       {/* Error toast */}
-      {error && <p className="text-xs text-red-500 mt-1 text-center">{error}</p>}
+      {error && <p className="text-xs text-(--danger-text) mt-1 text-center">{error}</p>}
 
       {/* Org picker dialog for multi-org */}
       <Dialog open={showPicker} onOpenChange={setShowPicker}>

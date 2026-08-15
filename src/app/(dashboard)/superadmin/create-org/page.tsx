@@ -229,7 +229,7 @@ export default function SuperadminCreateOrgPage() {
     <div className="min-h-screen">
       {/* ── Sticky Header ─────────────────────────────────────── */}
       <div className="sticky top-0 z-20 border-b border-(--border) bg-(--background)/85 backdrop-blur supports-[backdrop-filter]:bg-(--background)/70">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4">
+        <div className="mx-auto max-w-7xl py-4">
           <button
             type="button"
             onClick={() => router.push('/superadmin/organizations')}
@@ -256,7 +256,7 @@ export default function SuperadminCreateOrgPage() {
       </div>
 
       {/* ── Body ──────────────────────────────────────────────── */}
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+      <div className="mx-auto max-w-7xl py-6 lg:py-8">
         <form
           onSubmit={handleSubmit}
           className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in"
@@ -479,7 +479,7 @@ export default function SuperadminCreateOrgPage() {
             <div className="lg:sticky lg:top-32 space-y-4">
               {/* Preview card */}
               <div className="rounded-2xl border border-(--border) bg-(--card) shadow-sm overflow-hidden">
-                <div className="relative h-20 bg-gradient-to-br from-(--primary-hover) via-blue-500 to-blue-400">
+                <div className="relative h-20 bg-gradient-to-br from-(--primary-hover) via-(--brand) to-(--brand)">
                   <div className="absolute inset-0 opacity-30 [background:radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.6),transparent_50%)]" />
                   <span className="absolute top-3 left-3 inline-flex items-center gap-1 rounded-full bg-white/20 backdrop-blur px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white border border-white/30">
                     <Sparkles className="h-3 w-3" />
@@ -488,7 +488,7 @@ export default function SuperadminCreateOrgPage() {
                 </div>
 
                 <div className="px-5 -mt-10 pb-5">
-                  <div className="relative h-20 w-20 rounded-2xl border-4 border-(--card) shadow-md flex items-center justify-center overflow-hidden bg-gradient-to-br from-(--primary-hover) to-blue-400 text-white">
+                  <div className="relative h-20 w-20 rounded-2xl border-4 border-(--card) shadow-md flex items-center justify-center overflow-hidden bg-gradient-to-br from-(--primary-hover) to-(--brand) text-white">
                     {initials ? (
                       <span className="text-2xl font-bold tracking-tight">{initials}</span>
                     ) : (

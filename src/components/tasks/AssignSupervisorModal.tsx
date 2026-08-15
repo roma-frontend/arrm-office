@@ -21,7 +21,7 @@ function Avatar({ name, url }: { name: string; url?: string | null }) {
     .toUpperCase()
     .slice(0, 2);
   return (
-    <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 flex items-center justify-center font-bold text-white text-xs bg-linear-to-br from-blue-500 to-sky-500">
+    <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 flex items-center justify-center font-bold text-white text-xs bg-linear-to-br from-(--brand) to-(--brand)">
       {url ? (
         <Image
           src={url}
@@ -126,7 +126,7 @@ export function AssignSupervisorModal({ onClose }: Props) {
 
         <div className="p-6 space-y-5">
           {success && (
-            <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm rounded-xl px-4 py-3 text-center font-medium">
+            <div className="bg-(--success-quiet) border border-(--success-outline) text-(--success-text) text-sm rounded-xl px-4 py-3 text-center font-medium">
               ✅ {t('modals.assignSupervisor.supervisorAssignedSuccess')}
             </div>
           )}
@@ -134,7 +134,7 @@ export function AssignSupervisorModal({ onClose }: Props) {
           {error && (
             <div
               role="alert"
-              className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl px-4 py-3 font-medium"
+              className="bg-(--danger-quiet) border border-(--danger-outline) text-(--danger-text) text-sm rounded-xl px-4 py-3 font-medium"
             >
               {error}
             </div>
@@ -165,7 +165,7 @@ export function AssignSupervisorModal({ onClose }: Props) {
                   label: `${emp.name}${emp.position ? ` — ${emp.position}` : ''}`,
                 })) || []),
               ]}
-              triggerClassName="w-full px-4 py-2.5 rounded-xl border border-(--border) bg-(--background-subtle) text-(--text-primary) text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+              triggerClassName="w-full px-4 py-2.5 rounded-xl border border-(--border) bg-(--background-subtle) text-(--text-primary) text-sm focus:outline-none focus:ring-2 focus:ring-(--brand-text)"
               dropdownClassName="bg-(--background-subtle) border border-(--border) text-(--text-primary)"
             />
           </div>
@@ -209,7 +209,7 @@ export function AssignSupervisorModal({ onClose }: Props) {
                   label: `${sup.name} (${t(`roles.${sup.role}`)}${sup.department ? ` · ${sup.department}` : ''})`,
                 })) || []),
               ]}
-              triggerClassName="w-full px-4 py-2.5 rounded-xl border border-(--border) bg-(--background-subtle) text-(--text-primary) text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-50"
+              triggerClassName="w-full px-4 py-2.5 rounded-xl border border-(--border) bg-(--background-subtle) text-(--text-primary) text-sm focus:outline-none focus:ring-2 focus:ring-(--brand-text) disabled:opacity-50"
               dropdownClassName="bg-(--background-subtle) border border-(--border) text-(--text-primary)"
             />
           </div>
@@ -235,7 +235,7 @@ export function AssignSupervisorModal({ onClose }: Props) {
                       {sup ? (
                         `→ ${sup.name}`
                       ) : (
-                        <span className="text-amber-400">
+                        <span className="text-(--warning-text)">
                           {t('modals.assignSupervisor.noSupervisor')}
                         </span>
                       )}

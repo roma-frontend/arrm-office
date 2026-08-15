@@ -181,7 +181,7 @@ export function RecurringTasksClient({ userRole }: RecurringTasksClientProps) {
                   size="sm"
                   disabled={busy}
                   onClick={() => handleDelete(row._id)}
-                  className="bg-red-500 text-white hover:bg-red-600"
+                  className="bg-(--danger-solid) text-white hover:bg-(--danger-solid)"
                 >
                   {t('recurringTasks.confirmDelete')}
                 </Button>
@@ -193,7 +193,7 @@ export function RecurringTasksClient({ userRole }: RecurringTasksClientProps) {
                 disabled={busy}
                 aria-label={t('recurringTasks.delete')}
                 onClick={() => setConfirmDeleteId(row._id)}
-                className="text-red-500 hover:bg-red-500/10"
+                className="text-(--danger-text) hover:bg-(--danger-quiet)"
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
@@ -205,8 +205,8 @@ export function RecurringTasksClient({ userRole }: RecurringTasksClientProps) {
   };
 
   return (
-    <div className="mx-auto w-full max-w-4xl space-y-4">
-      <div className="flex items-center justify-between gap-3">
+    <div className="mx-auto w-full max-w-4xl my-6">
+      <div className="flex items-center justify-between gap-3 my-6">
         <div className="flex min-w-0 items-center gap-3">
           <Button
             variant="ghost"

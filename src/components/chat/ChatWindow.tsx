@@ -696,14 +696,16 @@ export const ChatWindow = React.memo(function ChatWindow({
                 {conv?.avatarUrl && <AvatarImage src={conv.avatarUrl} />}
                 <AvatarFallback
                   className="text-xs font-bold text-white"
-                  style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
+                  style={{
+                    background: 'linear-gradient(135deg, var(--purple), var(--purple-text))',
+                  }}
                 >
                   {getInitials(displayName)}
                 </AvatarFallback>
               </Avatar>
             )}
             {conv?.type === 'direct' && otherUser?.presenceStatus === 'available' && (
-              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-500 border-2 border-white pointer-events-none" />
+              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-(--success-solid) border-2 border-white pointer-events-none" />
             )}
           </div>
 
@@ -894,7 +896,7 @@ export const ChatWindow = React.memo(function ChatWindow({
               {msgStatus === 'CanLoadMore' && (
                 <button
                   onClick={() => loadMoreMessages(30)}
-                  className="w-full py-2 text-xs text-[#2563eb] hover:underline"
+                  className="w-full py-2 text-xs text-(--brand-text) hover:underline"
                 >
                   {t('chat.loadOlderMessages', { defaultValue: '↑ Load older messages' })}
                 </button>
@@ -1030,7 +1032,7 @@ export const ChatWindow = React.memo(function ChatWindow({
                     className="w-14 xs:w-16 h-14 xs:h-16 rounded-xl border flex flex-col items-center justify-center gap-0.5"
                     style={{ borderColor: 'var(--border)', background: 'var(--background)' }}
                   >
-                    <FileText className="w-5 xs:w-6 h-5 xs:h-6 text-red-400" />
+                    <FileText className="w-5 xs:w-6 h-5 xs:h-6 text-(--danger-text)" />
                     <span
                       className="text-[8px] xs:text-[9px] text-center px-1 truncate w-full"
                       style={{ color: 'var(--text-muted)' }}
@@ -1065,7 +1067,7 @@ export const ChatWindow = React.memo(function ChatWindow({
                 {/* Remove button */}
                 <button
                   onClick={() => removePendingFile(idx)}
-                  className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center opacity-100 sm:opacity-0 sm:group-hover/pf:opacity-100 transition-opacity"
+                  className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-(--danger-solid) text-white flex items-center justify-center opacity-100 sm:opacity-0 sm:group-hover/pf:opacity-100 transition-opacity"
                 >
                   <X className="w-2.5 xs:w-3 h-2.5 xs:h-3" />
                 </button>
@@ -1145,7 +1147,7 @@ export const ChatWindow = React.memo(function ChatWindow({
                 {pollOptions.length > 2 && (
                   <button
                     onClick={() => setPollOptions(pollOptions.filter((_, j) => j !== i))}
-                    className="text-red-400 hover:opacity-70 px-2"
+                    className="text-(--danger-text) hover:opacity-70 px-2"
                   >
                     ✕
                   </button>
@@ -1218,7 +1220,7 @@ export const ChatWindow = React.memo(function ChatWindow({
             </span>
             <button
               onClick={() => setScheduledFor('')}
-              className="ml-auto text-xs text-red-400 hover:opacity-70"
+              className="ml-auto text-xs text-(--danger-text) hover:opacity-70"
             >
               {t('chat.cancel')}
             </button>

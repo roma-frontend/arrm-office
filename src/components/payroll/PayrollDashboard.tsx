@@ -318,7 +318,7 @@ export default function PayrollDashboard() {
                       labelStyle={{ color: tooltipColor, fontWeight: 500 }}
                       formatter={(value, _name) => [value, '']}
                     />
-                    <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="value" fill="var(--chart-1)" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -342,7 +342,7 @@ export default function PayrollDashboard() {
                         `${entry.name}: ${((entry.percent ?? 0) * 100).toFixed(0)}%`
                       }
                       outerRadius={80}
-                      fill="#8884d8"
+                      fill="var(--chart-4)"
                       dataKey="value"
                     >
                       {departmentData.map((_entry, index) => (

@@ -18,51 +18,55 @@ import { useTheme } from '@/components/ThemeProvider';
  * theme colour at all.
  */
 
-/** Categorical series colours. Ordered by how often a series is the primary one. */
-const PALETTE_LIGHT = [
-  '#2563eb', // chart-1  brand
-  '#10b981', // chart-2  emerald
-  '#f59e0b', // chart-3  amber
-  '#8b5cf6', // chart-4  violet
-  '#06b6d4', // chart-5  cyan
-  '#ec4899', // chart-6  pink
-  '#f43f5e', // chart-7  rose
-  '#64748b', // chart-8  slate
-] as const;
+/** Helpers: read design tokens from the computed :root so SVG attrs get literals. */
+function readToken(name: string, fallback = ''): string {
+  try {
+    const v = getComputedStyle(document.documentElement).getPropertyValue(name);
+    return v ? v.trim() : fallback;
+  } catch {
+    return fallback;
+  }
+}
 
-const PALETTE_DARK = [
-  '#608ffa',
-  '#34d399',
-  '#fbbf24',
-  '#a78bfa',
-  '#22d3ee',
-  '#f472b6',
-  '#fb7185',
-  '#94a3b8',
-] as const;
+function readChannel(name: string): string | null {
+  const v = readToken(name);
+  return v ? v : null;
+}
 
-/** Status series — leave requests, approvals, SLA. Semantic, not categorical. */
-const STATUS_LIGHT = {
-  success: '#059669',
-  warning: '#f59e0b',
-  danger: '#ef4444',
-  brand: '#2563eb',
-  info: '#06b6d4',
-  accentAlt: '#ec4899',
-} as const;
+/** Build palette by reading `--chart-1..8` tokens; fall back to sensible defaults. */
+function resolvePalette(): readonly string[] {
+  const fallback = [
+    '#2563eb',
+    '#10b981',
+    '#f59e0b',
+    '#8b5cf6',
+    '#06b6d4',
+    '#ec4899',
+    '#f43f5e',
+    '#64748b',
+  ];
+  return Array.from({ length: 8 }, (_, i) => readToken(`--chart-${i + 1}`, fallback[i])).slice(
+    0,
+    8,
+  );
+}
 
-const STATUS_DARK = {
-  success: '#34d399',
-  warning: '#fbbf24',
-  danger: '#f87171',
-  brand: '#608ffa',
-  info: '#22d3ee',
-  accentAlt: '#f472b6',
-} as const;
+/** Resolve semantic status colours from tokens. */
+function resolveStatus() {
+  return {
+    success: readToken('--success-solid', '#059669'),
+    warning: readToken('--warning-solid', '#f59e0b'),
+    danger: readToken('--danger-solid', '#ef4444'),
+    brand: readToken('--brand', '#2563eb'),
+    info: readToken('--cyan', '#06b6d4'),
+    accentAlt: readToken('--pink-500', '#ec4899'),
+  } as const;
+}
 
 /** Semantic series colours. Keyed by role, so a "rejected" line is the same red
  *  as a destructive badge. */
-export type ChartStatusColors = Record<keyof typeof STATUS_LIGHT, string>;
+export type ChartStatusKey = 'success' | 'warning' | 'danger' | 'brand' | 'info' | 'accentAlt';
+export type ChartStatusColors = Record<ChartStatusKey, string>;
 
 export interface ChartTheme {
   isDark: boolean;
@@ -97,25 +101,33 @@ export interface ChartTheme {
  * a duplicated literal in a test is how a palette silently drifts out of sync.
  */
 export function getChartTheme(isDark: boolean): ChartTheme {
-  // Mirrors --surface-2, --border-default, --text-1/2/3 and --elev-3 for the
-  // current theme. A tooltip sits above the card it describes, so it takes
-  // surface-2 rather than surface-1.
-  const tooltipBg = isDark ? '#0d1e38' : '#ffffff';
-  const tooltipBorder = isDark ? '#1a3460' : '#c7d9f5';
-  const tooltipColor = isDark ? '#e8f0fe' : '#0c1a2e';
-  const tooltipShadow = isDark
-    ? '0 10px 15px rgb(0 0 0 / 60%)'
-    : '0 10px 15px rgb(37 99 235 / 10%), 0 4px 6px rgb(0 0 0 / 4%)';
-  const textColor = isDark ? '#bdd4fa' : '#1e3a6e';
-  const gridStroke = isDark ? 'rgb(255 255 255 / 8%)' : 'rgb(37 99 235 / 10%)';
-  const axisTickFill = isDark ? '#7ab3f5' : '#3d6196';
-  const hoverFill = isDark ? 'rgb(255 255 255 / 5%)' : 'rgb(37 99 235 / 5%)';
+  // Read tokens from the computed :root so values are literal strings usable
+  // in SVG attributes (hex / rgb(...)). This avoids keeping literals in JS.
+  const palette = resolvePalette();
+  const status = resolveStatus();
+
+  const tooltipBg = readToken('--surface-2', '#ffffff');
+  const tooltipBorder = readToken('--border-default', '#c7d9f5');
+  const tooltipColor = readToken('--text-1', '#0c1a2e');
+  const tooltipShadow = readToken(
+    '--elev-3',
+    '0 10px 15px rgb(0 0 0 / 35%), 0 4px 6px rgb(0 0 0 / 4%)',
+  );
+  const textColor = readToken('--text-2', '#1e3a6e');
+  const gridStroke = readToken('--chart-grid', 'rgb(37 99 235 / 10%)');
+  const axisTickFill = readToken('--chart-axis', '#3d6196');
+
+  // Build a hover fill from the brand channels when available, otherwise
+  // fall back to a translucent brand-600 or a low-opacity white on dark.
+  const brandCh = readChannel('--brand-600-ch');
+  const hoverFill = brandCh
+    ? `rgb(${brandCh} / 5%)`
+    : readToken('--brand-quiet', 'rgb(37 99 235 / 5%)');
 
   const tooltipStyle: React.CSSProperties = {
     backgroundColor: tooltipBg,
     border: `1px solid ${tooltipBorder}`,
-    // --radius-panel; a chart tooltip is a floating panel, not a card.
-    borderRadius: 18,
+    borderRadius: Number(readToken('--radius-panel', '18').replace('px', '')) || 18,
     color: tooltipColor,
     boxShadow: tooltipShadow,
     padding: '10px 12px',
@@ -124,8 +136,8 @@ export function getChartTheme(isDark: boolean): ChartTheme {
 
   return {
     isDark,
-    palette: isDark ? PALETTE_DARK : PALETTE_LIGHT,
-    status: isDark ? STATUS_DARK : STATUS_LIGHT,
+    palette,
+    status,
     tooltipBg,
     tooltipBorder,
     tooltipColor,
@@ -149,4 +161,16 @@ export function useChartTheme(): ChartTheme {
   return useMemo(() => getChartTheme(isDark), [isDark]);
 }
 
-export { PALETTE_LIGHT as CHART_PALETTE_LIGHT, PALETTE_DARK as CHART_PALETTE_DARK };
+const FALLBACK_PALETTE = [
+  '#2563eb',
+  '#10b981',
+  '#f59e0b',
+  '#8b5cf6',
+  '#06b6d4',
+  '#ec4899',
+  '#f43f5e',
+  '#64748b',
+] as const;
+export const CHART_PALETTE_LIGHT: readonly string[] =
+  typeof window !== 'undefined' ? resolvePalette() : Array.from(FALLBACK_PALETTE);
+export const CHART_PALETTE_DARK: readonly string[] = CHART_PALETTE_LIGHT;

@@ -85,31 +85,31 @@ const STATUS_CONFIG: Record<
   },
   in_progress: {
     labelKey: 'tasks.status.inProgress',
-    color: 'text-blue-500',
-    bg: 'bg-blue-500/10',
-    border: 'border-blue-500/30',
-    dot: 'bg-blue-500',
+    color: 'text-(--brand-text)',
+    bg: 'bg-(--brand-quiet)',
+    border: 'border-(--brand-outline)',
+    dot: 'bg-(--brand)',
   },
   review: {
     labelKey: 'tasks.status.review',
-    color: 'text-amber-500',
-    bg: 'bg-amber-500/10',
-    border: 'border-amber-500/30',
-    dot: 'bg-amber-500',
+    color: 'text-(--warning-text)',
+    bg: 'bg-(--warning-quiet)',
+    border: 'border-(--warning-outline)',
+    dot: 'bg-(--warning-solid)',
   },
   completed: {
     labelKey: 'tasks.status.completed',
-    color: 'text-emerald-500',
-    bg: 'bg-emerald-500/10',
-    border: 'border-emerald-500/30',
-    dot: 'bg-emerald-500',
+    color: 'text-(--success-text)',
+    bg: 'bg-(--success-quiet)',
+    border: 'border-(--success-outline)',
+    dot: 'bg-(--success-solid)',
   },
   cancelled: {
     labelKey: 'tasks.status.cancelled',
-    color: 'text-rose-500',
-    bg: 'bg-rose-500/10',
-    border: 'border-rose-500/30',
-    dot: 'bg-rose-400',
+    color: 'text-(--danger-text)',
+    bg: 'bg-(--danger-quiet)',
+    border: 'border-(--danger-outline)',
+    dot: 'bg-(--danger-solid)',
   },
 };
 
@@ -125,20 +125,20 @@ const PRIORITY_CONFIG: Record<
   },
   medium: {
     labelKey: 'tasks.priority.medium',
-    color: 'text-blue-500',
-    bg: 'bg-blue-500/10',
+    color: 'text-(--brand-text)',
+    bg: 'bg-(--brand-quiet)',
     icon: '',
   },
   high: {
     labelKey: 'tasks.priority.high',
-    color: 'text-orange-500',
-    bg: 'bg-orange-500/10',
+    color: 'text-(--warning-text)',
+    bg: 'bg-(--warning-quiet)',
     icon: '',
   },
   urgent: {
     labelKey: 'tasks.priority.urgent',
-    color: 'text-rose-500',
-    bg: 'bg-rose-500/10',
+    color: 'text-(--danger-text)',
+    bg: 'bg-(--danger-quiet)',
     icon: '?',
   },
 };
@@ -164,7 +164,7 @@ function Avatar({
     .slice(0, 2);
   return (
     <div
-      className={`${dim} rounded-full overflow-hidden shrink-0 flex items-center justify-center font-bold text-white bg-linear-to-br from-blue-500 to-sky-500`}
+      className={`${dim} rounded-full overflow-hidden shrink-0 flex items-center justify-center font-bold text-white bg-linear-to-br from-(--brand) to-(--brand)`}
     >
       {url ? (
         /* eslint-disable-next-line @next/next/no-img-element -- external avatar URLs */
@@ -199,13 +199,13 @@ function DeadlineBadge({ deadline, status }: { deadline?: number; status: Status
 
   if (overdue)
     return (
-      <span className="text-xs font-medium text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded-full">
+      <span className="text-xs font-medium text-(--danger-text) bg-(--danger-quiet) px-2 py-0.5 rounded-full">
         {t('tasksClient.overdueTag')}
       </span>
     );
   if (soon)
     return (
-      <span className="text-xs font-medium text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full">
+      <span className="text-xs font-medium text-(--warning-text) bg-(--warning-quiet) px-2 py-0.5 rounded-full">
         📅 {dateStr}
       </span>
     );
@@ -221,8 +221,8 @@ function TaskCardContent({ task, isDragging = false }: { task: TaskItem; isDragg
     <div
       className={`group bg-(--card) rounded-2xl border shadow-sm p-4 space-y-3 transition-all duration-200 ${
         isDragging
-          ? 'border-blue-400 shadow-2xl rotate-2 scale-105 opacity-90'
-          : 'border-(--border) hover:shadow-md hover:border-blue-400/50'
+          ? 'border-(--brand-outline) shadow-2xl rotate-2 scale-105 opacity-90'
+          : 'border-(--border) hover:shadow-md hover:border-(--brand-outline)'
       }`}
     >
       <div className="flex items-center justify-between gap-2">
@@ -245,7 +245,7 @@ function TaskCardContent({ task, isDragging = false }: { task: TaskItem; isDragg
         </span>
       </div>
       <p
-        className={`font-semibold text-sm leading-snug line-clamp-2 ${isDragging ? 'text-blue-400' : 'text-(--text-primary)'}`}
+        className={`font-semibold text-sm leading-snug line-clamp-2 ${isDragging ? 'text-(--brand-text)' : 'text-(--text-primary)'}`}
       >
         {localizedTaskTitle(t, task)}
       </p>
@@ -260,7 +260,7 @@ function TaskCardContent({ task, isDragging = false }: { task: TaskItem; isDragg
           {task.tags.slice(0, 3).map((tag: string) => (
             <span
               key={tag}
-              className="text-xs bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded-full"
+              className="text-xs bg-(--brand-quiet) text-(--brand-text) px-2 py-0.5 rounded-full"
             >
               #{tag}
             </span>
@@ -385,7 +385,7 @@ function DroppableKanbanColumn({
         ref={setNodeRef}
         className={`space-y-3 min-h-[120px] p-2 rounded-2xl transition-all duration-200 ${
           isOver
-            ? `border-2 border-dashed ${cfg.border} bg-blue-500/5`
+            ? `border-2 border-dashed ${cfg.border} bg-(--brand-quiet)`
             : 'border-2 border-transparent'
         }`}
       >
@@ -394,7 +394,7 @@ function DroppableKanbanColumn({
         ))}
         {tasks.length === 0 && (
           <div
-            className={`rounded-2xl border-2 border-dashed ${cfg.border} p-6 text-center transition-colors ${isOver ? 'bg-blue-500/5' : ''}`}
+            className={`rounded-2xl border-2 border-dashed ${cfg.border} p-6 text-center transition-colors ${isOver ? 'bg-(--brand-quiet)' : ''}`}
           >
             <p className="text-xs text-(--text-muted)">
               {isOver ? t('tasksClient.dropHere') : t('tasksClient.noTasksFound')}
@@ -422,7 +422,7 @@ function TaskRow({ task, onOpen }: { task: TaskItem; onOpen: () => void }) {
           <div className="flex items-center gap-2">
             <span className={`w-2 h-2 rounded-full shrink-0 ${statusCfg.dot}`} />
             <div className="min-w-0">
-              <span className="block font-medium text-(--text-primary) text-sm group-hover:text-blue-400 transition-colors truncate">
+              <span className="block font-medium text-(--text-primary) text-sm group-hover:text-(--brand-text) transition-colors truncate">
                 {localizedTaskTitle(t, task)}
               </span>
               <ProjectBadge
@@ -842,25 +842,25 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
             id: 'inProgress',
             label: t('tasksClient.inProgress'),
             value: stats.inProgress,
-            color: 'from-blue-400 to-blue-500',
+            color: 'from-(--brand) to-(--brand)',
           },
           {
             id: 'inReview',
             label: t('tasksClient.inReview'),
             value: stats.review,
-            color: 'from-amber-400 to-amber-500',
+            color: 'from-(--warning-solid) to-(--warning-solid)',
           },
           {
             id: 'completed',
             label: t('tasksClient.completed'),
             value: stats.completed,
-            color: 'from-emerald-400 to-emerald-500',
+            color: 'from-(--success-solid) to-(--success-solid)',
           },
           {
             id: 'overdue',
             label: t('tasksClient.overdue'),
             value: stats.overdue,
-            color: 'from-rose-400 to-rose-500',
+            color: 'from-(--danger-solid) to-(--danger-solid)',
           },
         ].map((s) => (
           <div
@@ -888,7 +888,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={t('placeholders.searchTasks')}
-            className="w-full pl-9 pr-4 py-2 sm:py-2.5 rounded-xl border border-(--input-border) bg-(--input) text-(--text-primary) text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent placeholder:text-(--text-muted)"
+            className="w-full pl-9 pr-4 py-2 sm:py-2.5 rounded-xl border border-(--input-border) bg-(--input) text-(--text-primary) text-sm focus:outline-none focus:ring-2 focus:ring-(--brand-text) focus:border-transparent placeholder:text-(--text-muted)"
           />
         </div>
 
@@ -903,7 +903,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
             { value: 'medium', label: t('tasksClient.medium') },
             { value: 'low', label: t('tasksClient.low') },
           ]}
-          triggerClassName="px-2 sm:px-3 py-2 sm:py-2.5 rounded-xl border border-(--input-border) bg-(--input) text-(--text-secondary) text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 shrink-0"
+          triggerClassName="px-2 sm:px-3 py-2 sm:py-2.5 rounded-xl border border-(--input-border) bg-(--input) text-(--text-secondary) text-sm focus:outline-none focus:ring-2 focus:ring-(--brand-text) shrink-0"
           dropdownClassName="bg-(--input) border border-(--input-border) text-(--text-primary)"
         />
 
@@ -919,7 +919,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
             { value: 'completed', label: t('statuses.completed') },
             { value: 'cancelled', label: t('taskStatus.cancelled') },
           ]}
-          triggerClassName="px-2 sm:px-3 py-2 sm:py-2.5 rounded-xl border border-(--border) bg-(--card) text-(--text-secondary) text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 shrink-0"
+          triggerClassName="px-2 sm:px-3 py-2 sm:py-2.5 rounded-xl border border-(--border) bg-(--card) text-(--text-secondary) text-sm focus:outline-none focus:ring-2 focus:ring-(--brand-text) shrink-0"
           dropdownClassName="bg-(--card) border border-(--border) text-(--text-primary)"
         />
 
@@ -932,7 +932,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
               { value: 'all', label: t('tasksClient.allProjects', 'All Projects') },
               ...projectFilterOptions,
             ]}
-            triggerClassName="px-2 sm:px-3 py-2 sm:py-2.5 rounded-xl border border-(--border) bg-(--card) text-(--text-secondary) text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 shrink-0"
+            triggerClassName="px-2 sm:px-3 py-2 sm:py-2.5 rounded-xl border border-(--border) bg-(--card) text-(--text-secondary) text-sm focus:outline-none focus:ring-2 focus:ring-(--brand-text) shrink-0"
             dropdownClassName="bg-(--card) border border-(--border) text-(--text-primary)"
           />
         )}
@@ -946,7 +946,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
               { value: 'all', label: t('tasksClient.allEmployees', 'All Employees') },
               ...employees.map((e) => ({ value: e.id, label: `${e.name} (${e.taskCount})` })),
             ]}
-            triggerClassName="px-2 sm:px-3 py-2 sm:py-2.5 rounded-xl border border-(--primary)/30 bg-(--primary)/5 text-(--text-secondary) text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 shrink-0"
+            triggerClassName="px-2 sm:px-3 py-2 sm:py-2.5 rounded-xl border border-(--primary)/30 bg-(--primary)/5 text-(--text-secondary) text-sm focus:outline-none focus:ring-2 focus:ring-(--brand-text) shrink-0"
             dropdownClassName="bg-(--card) border border-(--border) text-(--text-primary)"
           />
         )}

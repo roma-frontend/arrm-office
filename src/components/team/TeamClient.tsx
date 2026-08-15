@@ -374,7 +374,7 @@ export default function TeamClient() {
       label: t('team.stat.outToday', { defaultValue: 'Away today' }),
       value: outTodayIds.size,
       icon: PlaneTakeoff,
-      color: '#f43f5e',
+      color: 'var(--danger-text)',
     },
     {
       key: 'departments',
@@ -388,7 +388,7 @@ export default function TeamClient() {
       label: t('team.stat.birthdays', { defaultValue: 'Birthdays soon' }),
       value: birthdays.length,
       icon: Cake,
-      color: '#f59e0b',
+      color: 'var(--warning-text)',
     },
   ];
 
@@ -400,7 +400,7 @@ export default function TeamClient() {
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-3xl border border-(--border) p-5 sm:p-7"
+        className="relative overflow-hidden rounded-3xl border border-(--border) p-5 sm:p-7 my-6"
         style={{ background: 'var(--card)' }}
       >
         {/* Two soft blooms instead of a flat tint: keeps the header interesting
@@ -796,7 +796,7 @@ export default function TeamClient() {
                     {entry.isOutToday && (
                       <span
                         className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold"
-                        style={{ background: 'rgba(244,63,94,0.15)', color: '#f43f5e' }}
+                        style={{ background: 'var(--danger-quiet)', color: 'var(--danger-text)' }}
                       >
                         {t('team.now', { defaultValue: 'Now' })}
                       </span>
@@ -996,7 +996,7 @@ function MemberCard({
               {away && (
                 <span
                   className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold"
-                  style={{ background: 'rgba(244,63,94,0.14)', color: '#f43f5e' }}
+                  style={{ background: 'var(--danger-quiet)', color: 'var(--danger-text)' }}
                 >
                   <PlaneTakeoff className="h-2.5 w-2.5" />
                   {outToday
@@ -1013,7 +1013,7 @@ function MemberCard({
               {birthday && (
                 <span
                   className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold"
-                  style={{ background: 'rgba(245,158,11,0.16)', color: '#f59e0b' }}
+                  style={{ background: 'var(--warning-quiet)', color: 'var(--warning-text)' }}
                 >
                   <Cake className="h-2.5 w-2.5" />
                   {birthday.isToday

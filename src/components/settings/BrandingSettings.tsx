@@ -101,8 +101,8 @@ export default function BrandingSettingsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-purple-500/10 border border-purple-500/20">
-            <Palette className="w-6 h-6 text-purple-500" />
+          <div className="p-2.5 rounded-xl bg-(--purple-quiet) border border-(--purple-outline)">
+            <Palette className="w-6 h-6 text-(--purple-text)" />
           </div>
           <div>
             <h2 className="text-xl font-bold text-(--text-primary)">
@@ -139,7 +139,7 @@ export default function BrandingSettingsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h3 className="font-semibold text-(--text-primary) flex items-center gap-2">
-              <Globe className="w-4 h-4 text-purple-500" />
+              <Globe className="w-4 h-4 text-(--purple-text)" />
               {t('branding.whiteLabel', 'White-Label Mode')}
             </h3>
             <p className="text-sm text-(--text-muted) mt-1">
@@ -163,7 +163,7 @@ export default function BrandingSettingsPage() {
         {/* Logo upload */}
         <Card className="p-5 border border-(--border) bg-(--card)">
           <h3 className="font-semibold text-(--text-primary) mb-4 flex items-center gap-2">
-            <ImageIcon className="w-4 h-4 text-purple-500" />
+            <ImageIcon className="w-4 h-4 text-(--purple-text)" />
             {t('branding.logo', 'Logo & Icon')}
           </h3>
           <div className="space-y-4">
@@ -183,7 +183,7 @@ export default function BrandingSettingsPage() {
                 {t('branding.logoUpload', 'Logo')}
               </label>
               <div
-                className="flex items-center justify-center h-32 rounded-lg border-2 border-dashed border-(--border) hover:border-purple-500/50 transition-colors cursor-pointer bg-(--background-subtle)"
+                className="flex items-center justify-center h-32 rounded-lg border-2 border-dashed border-(--border) hover:border-(--purple-outline) transition-colors cursor-pointer bg-(--background-subtle)"
                 onClick={() => logoInputRef.current?.click()}
               >
                 {settings.logoUrl ? (
@@ -224,7 +224,7 @@ export default function BrandingSettingsPage() {
         {/* Colors */}
         <Card className="p-5 border border-(--border) bg-(--card)">
           <h3 className="font-semibold text-(--text-primary) mb-4 flex items-center gap-2">
-            <Palette className="w-4 h-4 text-purple-500" />
+            <Palette className="w-4 h-4 text-(--purple-text)" />
             {t('branding.colors', 'Brand Colors')}
           </h3>
           <div className="space-y-4">
@@ -275,7 +275,7 @@ export default function BrandingSettingsPage() {
       {/* Advanced */}
       <Card className="p-5 border border-(--border) bg-(--card)">
         <h3 className="font-semibold text-(--text-primary) mb-4 flex items-center gap-2">
-          <Globe className="w-4 h-4 text-purple-500" />
+          <Globe className="w-4 h-4 text-(--purple-text)" />
           {t('branding.advanced', 'Advanced Settings')}
         </h3>
         <div className="space-y-4">
@@ -329,7 +329,7 @@ export default function BrandingSettingsPage() {
       <Card className="p-5 border border-(--border) bg-(--card)">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-(--text-primary) flex items-center gap-2">
-            <Eye className="w-4 h-4 text-purple-500" />
+            <Eye className="w-4 h-4 text-(--purple-text)" />
             {t('branding.livePreview', 'Live Preview')}
           </h3>
           <Button

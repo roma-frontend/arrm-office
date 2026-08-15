@@ -70,7 +70,8 @@ export const CATEGORY_TONE: Record<RewardCategory, string> = {
   coffee: 'bg-(--warning-quiet) text-(--warning-text) bg-(--warning-solid)/30',
   meal: 'bg-(--warning-quiet) text-(--warning-text) bg-(--warning-solid)/30',
   experience: 'bg-(--brand-quiet) text-(--brand-text) bg-(--brand)/30',
-  time_off: 'bg-sky-100 text-sky-900 dark:bg-sky-900/30 dark:text-sky-200',
+  time_off:
+    'bg-(--brand-quiet) text-(--brand-text) dark:bg-(--brand-quiet) dark:text-(--brand-text)',
   merch: 'bg-(--success-quiet) text-(--success-text) bg-(--success-solid)/30',
   charity: 'bg-(--danger-quiet) text-(--danger-text) bg-(--danger-solid)/30',
   other: 'bg-(--surface-2) text-(--text-primary) dark:bg-(--surface-sunken) text-(--text-muted)',

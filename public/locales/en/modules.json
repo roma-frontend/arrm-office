@@ -96,7 +96,8 @@
     "leftToday": "Left Today",
     "noRecordsToday": "No attendance records yet today",
     "allEmployeesRated": "All employees rated this month! ✅",
-    "checkBackNextMonth": "Check back next month"
+    "checkBackNextMonth": "Check back next month",
+    "viewDetails": "View details"
   },
   "attendanceExtra": {
     "daysWorked": "Days Worked",

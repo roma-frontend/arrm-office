@@ -258,7 +258,7 @@ function AiVisual({ t }: { t: (k: string) => string }) {
       <div className="flex justify-end">
         <p
           className="max-w-[80%] rounded-2xl rounded-br-md px-4 py-2 text-xs font-medium demo-bubble"
-          style={{ background: 'var(--primary)', color: '#ffffff' }}
+          style={{ background: 'var(--primary)', color: 'var(--brand-contrast)' }}
         >
           {t('landing.bentoAiQuestion')}
         </p>
@@ -678,7 +678,7 @@ export default function FeaturesSection({ initialLanguage = 'en' }: { initialLan
             className="flex items-center justify-center w-8 h-8 rounded-full shrink-0 transition-transform duration-200 hover:scale-110 active:scale-95"
             style={{
               background: 'var(--primary)',
-              color: '#fff',
+              color: 'var(--brand-contrast)',
               boxShadow: '0 4px 14px rgb(var(--brand-600-ch) / 35%)',
             }}
           >

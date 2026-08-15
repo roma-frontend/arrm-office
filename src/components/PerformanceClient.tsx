@@ -223,7 +223,7 @@ function CreateCycleWizard({
                       <div className="flex-1 h-0.5 bg-muted mx-1 max-w-8 rounded-full overflow-hidden">
                         <div
                           className={`h-full transition-all duration-300 ${
-                            isCompleted ? 'bg-blue-500' : 'bg-transparent'
+                            isCompleted ? 'bg-(--brand)' : 'bg-transparent'
                           }`}
                           style={{ width: isCompleted ? '100%' : '0%' }}
                         />
@@ -569,13 +569,13 @@ function FillReviewDialog({
         <SheetBody className="space-y-6">
           {/* Aligned Objectives */}
           {revieweeObjectives && revieweeObjectives.length > 0 && (
-            <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 p-4">
+            <div className="rounded-lg border border-(--brand-outline) bg-(--brand-quiet) p-4">
               <button
                 onClick={() => setShowObjectives(!showObjectives)}
                 className="flex items-center justify-between w-full text-left"
               >
                 <div className="flex items-center gap-2">
-                  <Target className="w-4 h-4 text-blue-500" />
+                  <Target className="w-4 h-4 text-(--brand-text)" />
                   <span className="text-sm font-semibold">
                     {t('goals.title')} ({revieweeObjectives.length})
                   </span>
@@ -626,10 +626,10 @@ function FillReviewDialog({
                             <div
                               className={`h-full rounded-full ${
                                 obj.progress >= 70
-                                  ? 'bg-emerald-500'
+                                  ? 'bg-(--success-solid)'
                                   : obj.progress >= 40
-                                    ? 'bg-amber-500'
-                                    : 'bg-red-500'
+                                    ? 'bg-(--warning-solid)'
+                                    : 'bg-(--danger-solid)'
                               }`}
                               style={{ width: `${obj.progress}%` }}
                             />
@@ -1126,7 +1126,7 @@ export function PerformanceClient() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-orange-100 dark:bg-orange-900/30">
+            <div className="p-2 rounded-lg bg-(--warning-quiet) dark:bg-(--warning-quiet)">
               <Clock className="h-5 w-5 text-(--warning-text)" />
             </div>
             <div>
@@ -1137,7 +1137,7 @@ export function PerformanceClient() {
         </Card>
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
+            <div className="p-2 rounded-lg bg-(--success-quiet) dark:bg-(--success-quiet)">
               <CheckCircle className="h-5 w-5 text-(--success-text)" />
             </div>
             <div>
@@ -1152,7 +1152,7 @@ export function PerformanceClient() {
         </Card>
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+            <div className="p-2 rounded-lg bg-(--brand-quiet) dark:bg-(--brand-quiet)">
               <TrendingUp className="h-5 w-5 text-(--brand-text)" />
             </div>
             <div>
@@ -1171,7 +1171,7 @@ export function PerformanceClient() {
       <Tabs defaultValue="my-reviews">
         <TabsList className="w-full my-4 gap-2 bg-transparent p-0 h-auto grid grid-cols-3">
           <TabsTrigger
-            className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
+            className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
             value="my-reviews"
           >
             <UserCheck className="h-4 w-4 mr-1" />
@@ -1179,7 +1179,7 @@ export function PerformanceClient() {
           </TabsTrigger>
           {canManageCycles && (
             <TabsTrigger
-              className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
+              className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
               value="cycles"
             >
               <Calendar className="h-4 w-4 mr-1" />
@@ -1188,7 +1188,7 @@ export function PerformanceClient() {
           )}
           {canManageCycles && (
             <TabsTrigger
-              className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
+              className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
               value="results"
             >
               <BarChart3 className="h-4 w-4 mr-1" />

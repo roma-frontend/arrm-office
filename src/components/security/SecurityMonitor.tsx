@@ -57,20 +57,20 @@ export function SecurityMonitor() {
   if (!isVisible) return null;
 
   const getAnomalyStatus = (score: number) => {
-    if (score >= 80) return { label: 'Critical', color: 'bg-red-500' };
-    if (score >= 60) return { label: 'High', color: 'bg-orange-500' };
-    if (score >= 40) return { label: 'Medium', color: 'bg-yellow-500' };
-    return { label: 'Normal', color: 'bg-green-500' };
+    if (score >= 80) return { label: 'Critical', color: 'bg-(--danger-solid)' };
+    if (score >= 60) return { label: 'High', color: 'bg-(--warning-solid)' };
+    if (score >= 40) return { label: 'Medium', color: 'bg-(--warning-solid)' };
+    return { label: 'Normal', color: 'bg-(--success-solid)' };
   };
 
   const anomalyStatus = getAnomalyStatus(metrics.anomalyScore);
 
   return (
     <div className="fixed bottom-4 right-4 z-50 max-w-sm">
-      <Card className="border-2 border-blue-500/50 shadow-lg">
+      <Card className="border-2 border-(--brand-outline) shadow-lg">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-sm">
-            <Shield className="w-4 h-4 text-blue-500" />
+            <Shield className="w-4 h-4 text-(--brand-text)" />
             {t('security.monitor')}
             <Badge variant="outline" className="ml-auto">
               {t('security.live')}
@@ -116,10 +116,10 @@ export function SecurityMonitor() {
 
           {/* Last Incident */}
           {metrics.lastIncident && (
-            <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+            <div className="pt-2 border-t border-(--border-default) dark:border-(--border-default)">
               <p className="text-xs text-(--text-3)">{t('security.lastIncident')}</p>
               <p className="text-xs font-medium">{metrics.lastIncident.type}</p>
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-(--text-3)">
                 {new Date(metrics.lastIncident.timestamp).toLocaleString()}
               </p>
             </div>

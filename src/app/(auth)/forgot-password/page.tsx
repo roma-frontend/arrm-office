@@ -46,11 +46,11 @@ export default function ForgotPasswordPage() {
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div
           className="absolute -top-40 -right-40 w-96 h-96 rounded-full blur-3xl opacity-20"
-          style={{ background: 'radial-gradient(circle, #2563eb, transparent)' }}
+          style={{ background: 'radial-gradient(circle, var(--brand), transparent)' }}
         />
         <div
           className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full blur-3xl opacity-20"
-          style={{ background: 'radial-gradient(circle, #0ea5e9, transparent)' }}
+          style={{ background: 'radial-gradient(circle, var(--brand-hover), transparent)' }}
         />
       </div>
 
@@ -133,7 +133,7 @@ export default function ForgotPasswordPage() {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0 }}
                         className="flex items-center gap-2 p-3 rounded-xl text-sm"
-                        style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}
+                        style={{ background: 'var(--danger-quiet)', color: 'var(--danger-text)' }}
                       >
                         <AlertCircle className="w-4 h-4 shrink-0" />
                         {error}
@@ -164,8 +164,8 @@ export default function ForgotPasswordPage() {
                 animate={{ opacity: 1, scale: 1 }}
                 className="text-center py-4"
               >
-                <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle2 className="w-8 h-8 text-green-500" />
+                <div className="w-16 h-16 rounded-full bg-(--success-quiet) flex items-center justify-center mx-auto mb-4">
+                  <CheckCircle2 className="w-8 h-8 text-(--success-text)" />
                 </div>
                 <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
                   {t('auth.checkYourEmail')}
@@ -178,7 +178,7 @@ export default function ForgotPasswordPage() {
                   <button
                     onClick={() => setSent(false)}
                     className="underline"
-                    style={{ color: '#2563eb' }}
+                    style={{ color: 'var(--brand-text)' }}
                   >
                     {t('auth.tryAgain')}
                   </button>

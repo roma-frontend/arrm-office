@@ -2319,5 +2319,29 @@
       "moreFields": "+{{count}} ավելին"
     }
   },
-  "unknownUser": "Անհայտ"
+  "unknownUser": "Անհայտ",
+  "toolDock": {
+    "title": "Ձեր գործիքները",
+    "overdue": "ուշացած",
+    "pending": "սպասում է",
+    "pin": "Ամրացնել",
+    "unpin": "Հանել",
+    "myTasks": "Իմ առաջադրանքները",
+    "viewAll": "Բոլորը",
+    "newTask": "Նոր առաջադրանք",
+    "noTasks": "Ամեն ինչ արված է",
+    "noTasksHint": "Հիմա ոչինչ ուշադրություն չի պահանջում։",
+    "soon": "Շուտով",
+    "completeTask": "Նշել կատարված",
+    "awaitingWork": "{{count}} ձեր նշանակած բաց առաջադրանք",
+    "allModules": "Բոլոր {{count}} մոդուլները",
+    "collapse": "Ծալել",
+    "search": "Որոնել",
+    "openPanel": "Բացել գործիքները",
+    "all": "Բոլորը",
+    "fullscreen": "Ամբողջ էկրան",
+    "exitFullscreen": "Դուրս գալ ամբողջ էկրանից",
+    "allModulesTitle": "Բոլոր մոդուլները",
+    "overdueCount": "{{count}} ժամկետանց"
+  }
 }

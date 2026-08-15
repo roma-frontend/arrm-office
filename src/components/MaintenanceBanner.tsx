@@ -107,13 +107,13 @@ export function MaintenanceBanner() {
           <div className="flex-1 min-w-0">
             <p
               className="text-sm font-semibold truncate"
-              style={{ color: 'var(--maintenance-banner-text, #92400e)' }}
+              style={{ color: 'var(--maintenance-banner-text, var(--warning-text))' }}
             >
               {message}
             </p>
             <div
               className="flex items-center gap-3 text-xs mt-0.5"
-              style={{ color: 'var(--maintenance-banner-text-secondary, #a16207)' }}
+              style={{ color: 'var(--maintenance-banner-text-secondary, var(--warning-solid))' }}
             >
               {detail && <span className="truncate">{detail}</span>}
               <span className="flex items-center gap-1 shrink-0">
@@ -137,7 +137,7 @@ export function MaintenanceBanner() {
             >
               <span
                 className="text-xs font-bold tabular-nums"
-                style={{ color: 'var(--maintenance-banner-text, #92400e)' }}
+                style={{ color: 'var(--maintenance-banner-text, var(--warning-text))' }}
               >
                 {countdown}
               </span>
@@ -159,7 +159,10 @@ export function MaintenanceBanner() {
             }}
             aria-label="Dismiss maintenance notice"
           >
-            <X className="w-4 h-4" style={{ color: 'var(--maintenance-banner-text, #92400e)' }} />
+            <X
+              className="w-4 h-4"
+              style={{ color: 'var(--maintenance-banner-text, var(--warning-text))' }}
+            />
           </button>
         </div>
       </div>

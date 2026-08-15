@@ -85,12 +85,12 @@ export function PasswordStrengthIndicator({
             transition={{ delay: index * 0.05 }}
             className={`flex items-start gap-2 text-xs p-2 rounded-lg ${
               item.type === 'success'
-                ? 'bg-(--success-quiet) text-(--success-text) dark:text-green-400'
+                ? 'bg-(--success-quiet) text-(--success-text) dark:text-(--success-text)'
                 : item.type === 'error'
-                  ? 'bg-(--danger-quiet) text-(--danger-text) dark:text-red-400'
+                  ? 'bg-(--danger-quiet) text-(--danger-text) dark:text-(--danger-text)'
                   : item.type === 'warning'
-                    ? 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400'
-                    : 'bg-(--brand-quiet) text-(--brand-text) dark:text-blue-400'
+                    ? 'bg-(--warning-quiet) text-(--warning-text) dark:text-(--warning-text)'
+                    : 'bg-(--brand-quiet) text-(--brand-text) dark:text-(--brand-text)'
             }`}
           >
             <span className="text-base leading-none mt-0.5">{item.icon}</span>
@@ -111,7 +111,7 @@ export function PasswordStrengthIndicator({
                 transition={{ delay: index * 0.03 }}
                 className={`flex items-center gap-2 text-xs transition-all duration-200 ${
                   req.met
-                    ? 'text-green-600 dark:text-green-400'
+                    ? 'text-(--success-text) dark:text-(--success-text)'
                     : req.required
                       ? 'text-(--text-muted)'
                       : 'text-(--text-muted) opacity-60'
@@ -123,7 +123,7 @@ export function PasswordStrengthIndicator({
                   transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                 >
                   {req.met ? (
-                    <Check className="w-4 h-4 text-green-500" />
+                    <Check className="w-4 h-4 text-(--success-text)" />
                   ) : (
                     <div className="w-4 h-4 rounded-full border-2 border-current opacity-30" />
                   )}
@@ -132,7 +132,7 @@ export function PasswordStrengthIndicator({
                   className={`${req.required ? 'font-medium' : ''} flex items-center gap-1 whitespace-nowrap`}
                 >
                   {req.label}
-                  {req.required && <span className="text-red-500">*</span>}
+                  {req.required && <span className="text-(--danger-text)">*</span>}
                 </span>
               </motion.div>
             ))}
@@ -162,7 +162,7 @@ export function PasswordStrengthIndicator({
                 transition={{ delay: index * 0.05 }}
                 className="text-xs text-(--text-muted) flex items-start gap-2"
               >
-                <span className="text-blue-500 mt-0.5">•</span>
+                <span className="text-(--brand-text) mt-0.5">•</span>
                 <span>{suggestion}</span>
               </motion.li>
             ))}

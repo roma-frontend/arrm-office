@@ -251,14 +251,14 @@ export default function ImpersonationClient() {
 
         {(activeSession || isImpersonating) && (
           <Card
-            className="mb-6 border-orange-500/50 bg-orange-500/5"
+            className="mb-6 border-(--warning-outline) bg-(--warning-quiet)"
             style={{ background: 'var(--card)' }}
           >
             <CardContent className="p-4">
               <div className="flex items-center gap-4">
-                <AlertTriangle className="w-8 h-8 text-orange-500" />
+                <AlertTriangle className="w-8 h-8 text-(--warning-text)" />
                 <div className="flex-1">
-                  <h3 className="font-bold text-orange-500 mb-1">
+                  <h3 className="font-bold text-(--warning-text) mb-1">
                     {t('superadmin.impersonate.activeSession')}
                   </h3>
                   {isImpersonating ? (
@@ -537,9 +537,9 @@ export default function ImpersonationClient() {
                 </p>
               </div>
 
-              <div className="mt-4 p-3 rounded bg-yellow-500/10 border border-yellow-500/30">
+              <div className="mt-4 p-3 rounded bg-(--warning-quiet) border border-(--warning-outline)">
                 <div className="flex items-start gap-2">
-                  <AlertTriangle className="w-4 h-4 text-yellow-500 mt-0.5" />
+                  <AlertTriangle className="w-4 h-4 text-(--warning-text) mt-0.5" />
                   <div className="text-xs text-(--warning-text)">
                     <p className="font-semibold mb-1">{t('impersonate.important')}</p>
                     <ul className="list-disc list-inside space-y-1">

@@ -262,7 +262,7 @@ export function ChatWidgetButton({
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            className="hidden sm:block fixed above-mobile-dock right-6 z-50 px-4 py-2 rounded-xl bg-[#2563eb] text-white text-sm font-medium shadow-lg flex items-center gap-2"
+            className="hidden sm:block fixed above-mobile-dock right-6 z-50 px-4 py-2 rounded-xl bg-(--brand) text-white text-sm font-medium shadow-lg flex items-center gap-2"
           >
             <Mic className="w-4 h-4 animate-pulse" />
             Hey HR! I&apos;m listening…

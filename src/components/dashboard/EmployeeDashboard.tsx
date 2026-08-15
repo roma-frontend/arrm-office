@@ -23,9 +23,7 @@ import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import ActivityFeed from '@/components/dashboard/ActivityFeed';
 import PayrollUpcomingBanner from '@/components/payroll/PayrollUpcomingBanner';
 import { MyLeaveMoneyCard } from '@/components/dashboard/MyLeaveMoneyCard';
-import { FocusFeed } from '@/components/dashboard/FocusFeed';
 import { WidgetErrorBoundary } from '@/components/error/WidgetErrorBoundary';
-import { useCommandPaletteStore } from '@/store/useCommandPaletteStore';
 
 // Lazy load heavy dashboard components to reduce initial JS bundle
 const _AttendanceDashboard = dynamic(
@@ -42,7 +40,7 @@ const AIRecommendationsCard = dynamic(() => import('@/components/ai/AIRecommenda
 });
 
 // First-page widgets (My Tasks / Upcoming Birthdays / Out of Office)
-const MyTasksWidget = dynamic(() => import('@/components/dashboard/widgets/MyTasksWidget'), {
+const TasksFocusWidget = dynamic(() => import('@/components/dashboard/TasksFocusWidget'), {
   loading: () => <div className="h-64 bg-(--surface-2) rounded-lg animate-pulse" />,
   ssr: true,
 });
@@ -88,7 +86,7 @@ const StarRating = memo(({ rating }: { rating: number }) => {
   return [1, 2, 3, 4, 5].map((i) => (
     <Star
       key={i}
-      className={`w-4 h-4 ${i <= Math.round(rating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
+      className={`w-4 h-4 ${i <= Math.round(rating) ? 'fill-yellow-400 text-(--warning-text)' : 'text-(--text-3)'}`}
     />
   ));
 });
@@ -97,7 +95,6 @@ StarRating.displayName = 'StarRating';
 export function EmployeeDashboard() {
   const { t } = useTranslation();
   const { user } = useAuthStore();
-  const openPalette = useCommandPaletteStore((s) => s.openPalette);
   const lang = i18n.language || 'en';
   const dateFnsLocale = lang === 'ru' ? ru : lang === 'hy' ? hy : enUS;
 
@@ -160,14 +157,14 @@ export function EmployeeDashboard() {
         />
       </motion.div>
 
-      {/* Lead block. Replaces the plain "Welcome, Anna" heading + date line: same
-          greeting, but it now also answers what today actually holds — due tasks,
-          birthdays, who is out, today's events — instead of just saying hello.
-          The approvals row inside it is role-gated, so employees never see it. */}
+      {/* Daily actions — compact strips that do the thing, side by side. */}
       <motion.div variants={itemVariants}>
-        <WidgetErrorBoundary name="FocusFeed">
-          <FocusFeed onOpenSearch={openPalette} />
-        </WidgetErrorBoundary>
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-5">
+          <WidgetErrorBoundary name="TasksFocusWidget">
+            <TasksFocusWidget />
+          </WidgetErrorBoundary>
+          <CheckInOutWidget compact />
+        </div>
       </motion.div>
 
       {/* Upcoming Pay Periods notification (compact) */}
@@ -175,35 +172,21 @@ export function EmployeeDashboard() {
         <PayrollUpcomingBanner compact />
       </motion.div>
 
-      {/* Check-In / Check-Out Widget */}
-      <motion.div variants={itemVariants}>
-        <CheckInOutWidget />
-      </motion.div>
-
-      {/* My Leave in Money — remaining days valued in money + Excel export */}
-      {user?.id && (
-        <motion.div variants={itemVariants}>
-          <MyLeaveMoneyCard userId={user.id as Id<'users'>} />
-        </motion.div>
-      )}
-
-      {/* First-page widgets: My Tasks · Upcoming Birthdays · Out of Office */}
+      {/* First-page widgets: leave money · birthdays · who is out */}
       <motion.div variants={itemVariants}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <MyTasksWidget userId={user.id} />
+          {user?.id && <MyLeaveMoneyCard userId={user.id as Id<'users'>} />}
           <UpcomingBirthdaysWidget />
           <OutOfOfficeWidget />
         </div>
       </motion.div>
 
-      {/* Reporting structure: manager chain + direct reports */}
+      {/* People context — reporting line and AI recommendations */}
       <motion.div variants={itemVariants}>
-        <ReportingLineWidget />
-      </motion.div>
-
-      {/* AI Recommendations */}
-      <motion.div variants={itemVariants}>
-        <AIRecommendationsCard />
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-5">
+          <ReportingLineWidget />
+          <AIRecommendationsCard />
+        </div>
       </motion.div>
 
       {/* Recent Activity Feed */}
@@ -217,13 +200,13 @@ export function EmployeeDashboard() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <Card>
               <CardContent className="p-4 text-center">
-                <p className="text-2xl font-bold text-blue-500">{monthlyStats.totalDays}</p>
+                <p className="text-2xl font-bold text-(--brand-text)">{monthlyStats.totalDays}</p>
                 <p className="text-xs text-(--text-muted) mt-1">{t('dashboard.daysWorked')}</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4 text-center">
-                <p className="text-2xl font-bold text-green-500">
+                <p className="text-2xl font-bold text-(--success-text)">
                   {monthlyStats.totalWorkedHours}h
                 </p>
                 <p className="text-xs text-(--text-muted) mt-1">{t('dashboard.totalHours')}</p>
@@ -231,14 +214,16 @@ export function EmployeeDashboard() {
             </Card>
             <Card>
               <CardContent className="p-4 text-center">
-                <p className="text-2xl font-bold text-sky-400">{monthlyStats.punctualityRate}%</p>
+                <p className="text-2xl font-bold text-(--brand-text)">
+                  {monthlyStats.punctualityRate}%
+                </p>
                 <p className="text-xs text-(--text-muted) mt-1">{t('dashboard.punctuality')}</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-4 text-center">
                 <p
-                  className={`text-2xl font-bold ${Number(monthlyStats.lateDays) > 0 ? 'text-red-500' : 'text-green-500'}`}
+                  className={`text-2xl font-bold ${Number(monthlyStats.lateDays) > 0 ? 'text-(--danger-text)' : 'text-(--success-text)'}`}
                 >
                   {monthlyStats.lateDays}
                 </p>
@@ -249,186 +234,132 @@ export function EmployeeDashboard() {
         </motion.div>
       )}
 
-      {/* My Performance Scores (from supervisor) */}
-      {latestRating && (
-        <motion.div variants={itemVariants}>
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
-                  {t('dashboard.myPerformanceScore')}
-                </CardTitle>
-                <div className="text-right">
-                  <p className="text-2xl font-bold text-(--primary)">
-                    {latestRating.overallRating.toFixed(1)}
-                    <span className="text-sm font-normal text-(--text-muted)">/5</span>
-                  </p>
-                  <p className="text-xs text-(--text-muted)">
-                    {t('performance.by')} {latestRating.supervisor?.name ?? t('roles.supervisor')} ·{' '}
-                    {latestRating.ratingPeriod}
-                  </p>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {[
-                { label: t('dashboard.qualityOfWork'), value: latestRating.qualityOfWork },
-                { label: t('dashboard.efficiency'), value: latestRating.efficiency },
-                { label: t('dashboard.teamwork'), value: latestRating.teamwork },
-                { label: t('dashboard.initiative'), value: latestRating.initiative },
-                { label: t('dashboard.communication'), value: latestRating.communication },
-                { label: t('dashboard.reliability'), value: latestRating.reliability },
-              ].map(({ label, value }) => (
-                <div key={label} className="flex items-center justify-between">
-                  <span className="text-sm text-(--text-muted) w-36">{label}</span>
-                  <div className="flex items-center gap-2">
-                    <div className="flex">
-                      <StarRating rating={value} />
-                    </div>
-                    <span
-                      className="text-sm font-semibold w-6 text-right"
-                      style={{ color: 'var(--text-primary)' }}
-                    >
-                      {value}
-                    </span>
+      {/* Performance + balances side by side */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-5 items-stretch">
+        {/* My Performance Scores (from supervisor) */}
+        {latestRating && (
+          <motion.div variants={itemVariants}>
+            <Card className="h-full">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Star className="w-5 h-5 text-(--warning-text) fill-yellow-400" />
+                    {t('dashboard.myPerformanceScore')}
+                  </CardTitle>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-(--primary)">
+                      {latestRating.overallRating.toFixed(1)}
+                      <span className="text-sm font-normal text-(--text-muted)">/5</span>
+                    </p>
+                    <p className="text-xs text-(--text-muted)">
+                      {t('performance.by')} {latestRating.supervisor?.name ?? t('roles.supervisor')}{' '}
+                      · {latestRating.ratingPeriod}
+                    </p>
                   </div>
                 </div>
-              ))}
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {[
+                  { label: t('dashboard.qualityOfWork'), value: latestRating.qualityOfWork },
+                  { label: t('dashboard.efficiency'), value: latestRating.efficiency },
+                  { label: t('dashboard.teamwork'), value: latestRating.teamwork },
+                  { label: t('dashboard.initiative'), value: latestRating.initiative },
+                  { label: t('dashboard.communication'), value: latestRating.communication },
+                  { label: t('dashboard.reliability'), value: latestRating.reliability },
+                ].map(({ label, value }) => (
+                  <div key={label} className="flex items-center justify-between">
+                    <span className="text-sm text-(--text-muted) w-36">{label}</span>
+                    <div className="flex items-center gap-2">
+                      <div className="flex">
+                        <StarRating rating={value} />
+                      </div>
+                      <span
+                        className="text-sm font-semibold w-6 text-right"
+                        style={{ color: 'var(--text-primary)' }}
+                      >
+                        {value}
+                      </span>
+                    </div>
+                  </div>
+                ))}
 
-              {latestRating.strengths && (
-                <div className="mt-3 p-3 rounded-lg bg-green-50 dark:bg-green-950">
-                  <p className="text-xs font-semibold text-green-700 dark:text-green-300 mb-1">
-                    💪 {t('dashboard.strengths')}
-                  </p>
-                  <p className="text-sm text-green-700 dark:text-green-300">
-                    {latestRating.strengths}
-                  </p>
-                </div>
-              )}
-              {latestRating.areasForImprovement && (
-                <div className="mt-2 p-3 rounded-lg bg-orange-50 dark:bg-orange-950">
-                  <p className="text-xs font-semibold text-orange-700 dark:text-orange-300 mb-1">
-                    📈 {t('dashboard.areasForImprovement')}
-                  </p>
-                  <p className="text-sm text-orange-700 dark:text-orange-300">
-                    {latestRating.areasForImprovement}
-                  </p>
-                </div>
-              )}
-              {latestRating.generalComments && (
-                <div className="mt-2 p-3 rounded-lg bg-(--background-subtle)">
-                  <p className="text-xs font-semibold text-(--text-muted) mb-1">
-                    💬 {t('dashboard.comments')}
-                  </p>
-                  <p className="text-sm text-(--text-primary)">{latestRating.generalComments}</p>
-                </div>
-              )}
+                {latestRating.strengths && (
+                  <div className="mt-3 p-3 rounded-lg bg-(--success-quiet) dark:bg-(--success-solid)">
+                    <p className="text-xs font-semibold text-(--success-text) dark:text-(--success-text) mb-1">
+                      💪 {t('dashboard.strengths')}
+                    </p>
+                    <p className="text-sm text-(--success-text) dark:text-(--success-text)">
+                      {latestRating.strengths}
+                    </p>
+                  </div>
+                )}
+                {latestRating.areasForImprovement && (
+                  <div className="mt-2 p-3 rounded-lg bg-(--warning-quiet) dark:bg-(--warning-solid)">
+                    <p className="text-xs font-semibold text-(--warning-text) dark:text-(--warning-text) mb-1">
+                      📈 {t('dashboard.areasForImprovement')}
+                    </p>
+                    <p className="text-sm text-(--warning-text) dark:text-(--warning-text)">
+                      {latestRating.areasForImprovement}
+                    </p>
+                  </div>
+                )}
+                {latestRating.generalComments && (
+                  <div className="mt-2 p-3 rounded-lg bg-(--background-subtle)">
+                    <p className="text-xs font-semibold text-(--text-muted) mb-1">
+                      💬 {t('dashboard.comments')}
+                    </p>
+                    <p className="text-sm text-(--text-primary)">{latestRating.generalComments}</p>
+                  </div>
+                )}
 
-              <Button asChild variant="ghost" size="sm" className="w-full mt-2">
-                <Link href="/attendance">{t('dashboard.viewFullAttendance')}</Link>
-              </Button>
-            </CardContent>
-          </Card>
-        </motion.div>
-      )}
+                <Button asChild variant="ghost" size="sm" className="w-full mt-2">
+                  <Link href="/attendance">{t('dashboard.viewFullAttendance')}</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
-      {/* No rating yet message */}
-      {latestRating === null && (
-        <motion.div variants={itemVariants}>
-          <Card className="border-dashed">
-            <CardContent className="p-6 text-center">
-              <Star className="w-10 h-10 text-(--text-muted) mx-auto mb-2 opacity-30" />
-              <p className="text-sm text-(--text-muted)">{t('dashboard.noPerformanceRating')}</p>
-              <p className="text-xs text-(--text-muted) mt-1">
-                {t('dashboard.supervisorWillRate')}
-              </p>
-            </CardContent>
-          </Card>
-        </motion.div>
-      )}
-
-      {/* Leave Balances */}
-      <motion.div variants={itemVariants}>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">{t('dashboard.leaveBalances')}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-              <div className="text-center p-4 rounded-lg bg-(--background-subtle)">
-                <p className="text-2xl font-bold text-[#2563eb]">
-                  {userData?.paidLeaveBalance ?? 0}
+        {/* No rating yet message */}
+        {latestRating === null && (
+          <motion.div variants={itemVariants}>
+            <Card className="border-dashed h-full">
+              <CardContent className="p-6 text-center">
+                <Star className="w-10 h-10 text-(--text-muted) mx-auto mb-2 opacity-30" />
+                <p className="text-sm text-(--text-muted)">{t('dashboard.noPerformanceRating')}</p>
+                <p className="text-xs text-(--text-muted) mt-1">
+                  {t('dashboard.supervisorWillRate')}
                 </p>
-                <p className="text-xs text-(--text-muted) mt-1">{t('dashboard.paidLeave')}</p>
-              </div>
-              <div className="text-center p-4 rounded-lg bg-(--background-subtle)">
-                <p className="text-2xl font-bold text-[#ef4444]">
-                  {userData?.sickLeaveBalance ?? 0}
-                </p>
-                <p className="text-xs text-(--text-muted) mt-1">{t('dashboard.sickLeave')}</p>
-              </div>
-              <div className="text-center p-4 rounded-lg bg-(--background-subtle)">
-                <p className="text-2xl font-bold text-[#10b981]">
-                  {userData?.familyLeaveBalance ?? 0}
-                </p>
-                <p className="text-xs text-(--text-muted) mt-1">{t('dashboard.familyLeave')}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
 
-      {/* Quick Stats - Leave */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* Leave Balances */}
         <motion.div variants={itemVariants}>
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-[#f59e0b]/10 flex items-center justify-center">
-                  <Clock className="w-6 h-6 text-[#f59e0b]" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-(--text-primary)">
-                    {leaveStats.pendingLeaves.length}
+          <Card className="h-full">
+            <CardHeader>
+              <CardTitle className="text-base">{t('dashboard.leaveBalances')}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                <div className="text-center p-4 rounded-lg bg-(--background-subtle)">
+                  <p className="text-2xl font-bold text-(--brand-text)">
+                    {userData?.paidLeaveBalance ?? 0}
                   </p>
-                  <p className="text-sm text-(--text-muted)">{t('dashboard.pending')}</p>
+                  <p className="text-xs text-(--text-muted) mt-1">{t('dashboard.paidLeave')}</p>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        <motion.div variants={itemVariants}>
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-[#10b981]/10 flex items-center justify-center">
-                  <CheckCircle className="w-6 h-6 text-[#10b981]" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-(--text-primary)">
-                    {leaveStats.approvedLeaves.length}
+                <div className="text-center p-4 rounded-lg bg-(--background-subtle)">
+                  <p className="text-2xl font-bold text-(--danger-text)">
+                    {userData?.sickLeaveBalance ?? 0}
                   </p>
-                  <p className="text-sm text-(--text-muted)">{t('dashboard.approved')}</p>
+                  <p className="text-xs text-(--text-muted) mt-1">{t('dashboard.sickLeave')}</p>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        <motion.div variants={itemVariants}>
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-[#ef4444]/10 flex items-center justify-center">
-                  <XCircle className="w-6 h-6 text-[#ef4444]" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-(--text-primary)">
-                    {leaveStats.rejectedLeaves.length}
+                <div className="text-center p-4 rounded-lg bg-(--background-subtle)">
+                  <p className="text-2xl font-bold text-(--success-text)">
+                    {userData?.familyLeaveBalance ?? 0}
                   </p>
-                  <p className="text-sm text-(--text-muted)">{t('dashboard.rejected')}</p>
+                  <p className="text-xs text-(--text-muted) mt-1">{t('dashboard.familyLeave')}</p>
                 </div>
               </div>
             </CardContent>
@@ -436,64 +367,125 @@ export function EmployeeDashboard() {
         </motion.div>
       </div>
 
-      {/* My Leave Requests */}
-      <motion.div variants={itemVariants}>
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base">{t('dashboard.myLeaveRequests')}</CardTitle>
-              <Button asChild size="sm">
-                <Link href="/leaves">
-                  <Plus className="w-4 h-4" />
-                  {t('dashboard.newRequest')}
-                </Link>
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {leaveStats.myLeaves.length === 0 ? (
-              <div className="text-center py-8">
-                <CalendarIcon className="w-12 h-12 text-(--text-muted) mx-auto mb-3 opacity-40" />
-                <p className="text-sm text-(--text-muted)">{t('dashboard.noLeaveRequests')}</p>
-                <Button asChild size="sm" className="mt-4">
+      {/* Leave overview — counts and my requests side by side */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-5 items-stretch">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 content-start">
+          <motion.div variants={itemVariants}>
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-full bg-(--warning-quiet) flex items-center justify-center">
+                    <Clock className="w-6 h-6 text-(--warning-text)" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-(--text-primary)">
+                      {leaveStats.pendingLeaves.length}
+                    </p>
+                    <p className="text-sm text-(--text-muted)">{t('dashboard.pending')}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div variants={itemVariants}>
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-full bg-(--success-quiet) flex items-center justify-center">
+                    <CheckCircle className="w-6 h-6 text-(--success-text)" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-(--text-primary)">
+                      {leaveStats.approvedLeaves.length}
+                    </p>
+                    <p className="text-sm text-(--text-muted)">{t('dashboard.approved')}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div variants={itemVariants}>
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-full bg-(--danger-quiet) flex items-center justify-center">
+                    <XCircle className="w-6 h-6 text-(--danger-text)" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-(--text-primary)">
+                      {leaveStats.rejectedLeaves.length}
+                    </p>
+                    <p className="text-sm text-(--text-muted)">{t('dashboard.rejected')}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+
+        {/* My Leave Requests */}
+        <motion.div variants={itemVariants} className="xl:col-span-1">
+          <Card className="h-full">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base">{t('dashboard.myLeaveRequests')}</CardTitle>
+                <Button asChild size="sm">
                   <Link href="/leaves">
                     <Plus className="w-4 h-4" />
-                    {t('dashboard.createFirstRequest')}
+                    {t('dashboard.newRequest')}
                   </Link>
                 </Button>
               </div>
-            ) : (
-              <div className="space-y-3">
-                {leaveStats.myLeaves.slice(0, 5).map((leave) => (
-                  <div
-                    key={leave._id}
-                    className="flex items-center justify-between p-3 rounded-lg border border-(--border) hover:bg-(--background-subtle) transition-colors"
-                  >
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-(--text-primary)">
-                        {getLeaveTypeLabel(leave.type as LeaveType, t)}
-                      </p>
-                      <p className="text-xs text-(--text-muted) mt-0.5">
-                        {format(new Date(leave.startDate), 'MMM d', { locale: dateFnsLocale })} –{' '}
-                        {format(new Date(leave.endDate), 'MMM d, yyyy', { locale: dateFnsLocale })}{' '}
-                        ({leave.days} {t('ui.days').toLowerCase()})
-                      </p>
-                    </div>
-                    <StatusBadge status={leave.status as LeaveStatus} />
-                  </div>
-                ))}
-                {leaveStats.myLeaves.length > 5 && (
-                  <Button asChild variant="ghost" size="sm" className="w-full">
+            </CardHeader>
+            <CardContent>
+              {leaveStats.myLeaves.length === 0 ? (
+                <div className="text-center py-8">
+                  <CalendarIcon className="w-12 h-12 text-(--text-muted) mx-auto mb-3 opacity-40" />
+                  <p className="text-sm text-(--text-muted)">{t('dashboard.noLeaveRequests')}</p>
+                  <Button asChild size="sm" className="mt-4">
                     <Link href="/leaves">
-                      {t('dashboard.viewAllRequests', { count: leaveStats.myLeaves.length })}
+                      <Plus className="w-4 h-4" />
+                      {t('dashboard.createFirstRequest')}
                     </Link>
                   </Button>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </motion.div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {leaveStats.myLeaves.slice(0, 5).map((leave) => (
+                    <div
+                      key={leave._id}
+                      className="flex items-center justify-between p-3 rounded-lg border border-(--border) hover:bg-(--background-subtle) transition-colors"
+                    >
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-(--text-primary)">
+                          {getLeaveTypeLabel(leave.type as LeaveType, t)}
+                        </p>
+                        <p className="text-xs text-(--text-muted) mt-0.5">
+                          {format(new Date(leave.startDate), 'MMM d', { locale: dateFnsLocale })} –{' '}
+                          {format(new Date(leave.endDate), 'MMM d, yyyy', {
+                            locale: dateFnsLocale,
+                          })}{' '}
+                          ({leave.days} {t('ui.days').toLowerCase()})
+                        </p>
+                      </div>
+                      <StatusBadge status={leave.status as LeaveStatus} />
+                    </div>
+                  ))}
+                  {leaveStats.myLeaves.length > 5 && (
+                    <Button asChild variant="ghost" size="sm" className="w-full">
+                      <Link href="/leaves">
+                        {t('dashboard.viewAllRequests', { count: leaveStats.myLeaves.length })}
+                      </Link>
+                    </Button>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
     </motion.div>
   );
 }

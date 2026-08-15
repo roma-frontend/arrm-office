@@ -156,7 +156,7 @@ export function ModulesMenu() {
                     onClick={() => setActiveSection(idx)}
                     className={`w-full flex items-center justify-between px-3.5 py-2 text-[13px] font-medium transition-colors ${
                       sectionActive
-                        ? 'bg-(--background-subtle) text-[#2563eb]'
+                        ? 'bg-(--background-subtle) text-(--brand-text)'
                         : 'text-(--text-muted) hover:text-(--text-primary) hover:bg-(--background-subtle)'
                     }`}
                   >
@@ -180,14 +180,14 @@ export function ModulesMenu() {
                       onClick={() => navigate(item.href)}
                       className={`w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors ${
                         active
-                          ? 'bg-[#2563eb]/10 text-[#2563eb]'
+                          ? 'bg-(--brand)/10 text-(--brand-text)'
                           : 'text-(--text-primary) hover:bg-(--background-subtle)'
                       }`}
                     >
                       <item.icon className="w-4 h-4 shrink-0 opacity-80" />
                       <span className="truncate">{t(item.labelKey)}</span>
                       {item.badge && (
-                        <span className="ml-auto text-[9px] font-bold tracking-wider bg-[#2563eb]/10 text-[#2563eb] rounded px-1.5 py-0.5">
+                        <span className="ml-auto text-[9px] font-bold tracking-wider bg-(--brand)/10 text-(--brand-text) rounded px-1.5 py-0.5">
                           {item.badge}
                         </span>
                       )}
@@ -203,7 +203,7 @@ export function ModulesMenu() {
                               onClick={() => navigate(child.href)}
                               className={`w-full flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs transition-colors ${
                                 childActive
-                                  ? 'text-[#2563eb] font-medium'
+                                  ? 'text-(--brand-text) font-medium'
                                   : 'text-(--text-muted) hover:text-(--text-primary) hover:bg-(--background-subtle)'
                               }`}
                             >

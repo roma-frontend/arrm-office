@@ -69,21 +69,21 @@ export function RequestDriverWizard({ userId, onComplete, onCancel }: RequestDri
               title: t('driverWizard.types.airport'),
               description: t('driverWizard.types.airportDesc'),
               icon: <Calendar className="w-6 h-6" />,
-              color: 'bg-blue-500/10 text-blue-600',
+              color: 'bg-(--brand-quiet) text-(--brand-text)',
             },
             {
               value: 'office_transfer',
               title: t('driverWizard.types.officeTransfer'),
               description: t('driverWizard.types.officeTransferDesc'),
               icon: <MapPin className="w-6 h-6" />,
-              color: 'bg-green-500/10 text-green-600',
+              color: 'bg-(--success-quiet) text-(--success-text)',
             },
             {
               value: 'client_meeting',
               title: t('driverWizard.types.clientMeeting'),
               description: t('driverWizard.types.clientMeetingDesc'),
               icon: <Users className="w-6 h-6" />,
-              color: 'bg-purple-500/10 text-purple-600',
+              color: 'bg-(--purple-quiet) text-(--purple-text)',
             },
           ]}
           columns={3}
@@ -158,7 +158,7 @@ export function RequestDriverWizard({ userId, onComplete, onCancel }: RequestDri
                 title: driver.userName,
                 description: driver.userPosition || '',
                 icon: <Car className="w-6 h-6" />,
-                color: 'bg-blue-500/10 text-blue-600',
+                color: 'bg-(--brand-quiet) text-(--brand-text)',
               }))}
             columns={2}
             required

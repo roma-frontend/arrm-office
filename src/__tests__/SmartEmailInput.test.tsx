@@ -133,7 +133,7 @@ describe('SmartEmailInput', () => {
     const input = screen.getByLabelText(/Email/);
     type(input, 'bad');
     expect(screen.getByText('Bad format')).toBeInTheDocument();
-    expect(input.className).toContain('border-red-500');
+    expect(input.className).toContain('border-(--danger-outline)');
     expect(screen.getByText('user@example.com')).toBeInTheDocument();
   });
 
@@ -165,7 +165,7 @@ describe('SmartEmailInput', () => {
     renderInput();
     const input = screen.getByLabelText(/Email/);
     type(input, 'a@b.com');
-    expect(input.className).toContain('border-green-500');
+    expect(input.className).toContain('border-(--success-outline)');
   });
 
   it('applies the red border for an invalid value without feedback', () => {
@@ -173,8 +173,8 @@ describe('SmartEmailInput', () => {
     renderInput();
     const input = screen.getByLabelText(/Email/);
     type(input, 'x');
-    expect(input.className).toContain('border-red-500');
-    expect(input.className).not.toContain('border-green-500');
+    expect(input.className).toContain('border-(--danger-outline)');
+    expect(input.className).not.toContain('border-(--success-outline)');
   });
 
   it('applies the suggestion on click and clears it', () => {

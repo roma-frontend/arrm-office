@@ -615,7 +615,7 @@ export default function SecurityDashboard() {
                                 className="w-10 h-10 sm:w-12 sm:h-12 rounded-full"
                               />
                             ) : (
-                              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-linear-to-br from-red-500 to-orange-600 flex items-center justify-center text-white text-base sm:text-lg font-bold">
+                              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-linear-to-br from-(--danger-solid) to-(--warning-solid) flex items-center justify-center text-white text-base sm:text-lg font-bold">
                                 {user.name.charAt(0)}
                               </div>
                             )}

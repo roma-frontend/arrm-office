@@ -61,8 +61,8 @@ function SLASettings() {
     <Card className="border-(--border) bg-(--card)">
       <CardHeader>
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
-            <Settings className="w-5 h-5 text-blue-500" />
+          <div className="w-10 h-10 rounded-lg bg-(--brand-quiet) flex items-center justify-center">
+            <Settings className="w-5 h-5 text-(--brand-text)" />
           </div>
           <div>
             <CardTitle className="text-lg font-bold text-(--text-primary)">
@@ -147,10 +147,10 @@ function SLASettings() {
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex items-start gap-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg"
+            className="flex items-start gap-2 p-3 bg-(--warning-quiet) border border-(--warning-outline) rounded-lg"
           >
-            <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-            <div className="text-sm text-amber-600 dark:text-amber-400">
+            <AlertCircle className="w-5 h-5 text-(--warning-text) shrink-0 mt-0.5" />
+            <div className="text-sm text-(--warning-text) dark:text-(--warning-text)">
               {t('sla.thresholdError')}
             </div>
           </motion.div>

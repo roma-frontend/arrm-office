@@ -111,7 +111,7 @@ export default function BreakReminderService({
           <div className="w-12 h-12 rounded-xl bg-(--primary) flex items-center justify-center shadow-lg">
             <Coffee className="w-6 h-6 text-white" />
           </div>
-          <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+          <div className="absolute -top-1 -right-1 w-3 h-3 bg-(--success-solid) rounded-full animate-pulse"></div>
         </div>
         <div className="flex-1">
           <p className="font-semibold text-(--foreground) text-base">

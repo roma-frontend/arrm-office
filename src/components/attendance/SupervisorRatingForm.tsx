@@ -175,8 +175,8 @@ export function SupervisorRatingForm({
                       <Star
                         className={`w-6 h-6 ${
                           value <= (ratings[category.key] ?? 0)
-                            ? 'fill-yellow-400 text-yellow-400'
-                            : 'text-gray-300'
+                            ? 'fill-yellow-400 text-(--warning-text)'
+                            : 'text-(--text-3)'
                         }`}
                       />
                     </button>
@@ -200,8 +200,8 @@ export function SupervisorRatingForm({
               {t('rating.overallAverage', 'Overall Average')}
             </span>
             <div className="flex items-center gap-2">
-              <Star className="w-6 h-6 fill-yellow-400 text-yellow-400" />
-              <span className="text-3xl font-bold text-sky-500 dark:text-sky-400">
+              <Star className="w-6 h-6 fill-yellow-400 text-(--warning-text)" />
+              <span className="text-3xl font-bold text-(--brand-text) dark:text-(--brand-text)">
                 {averageRating.toFixed(1)}
               </span>
               <span className="text-sm text-(--text-muted)">/ 5.0</span>

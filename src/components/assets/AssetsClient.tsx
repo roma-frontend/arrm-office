@@ -239,7 +239,9 @@ function AssignmentDetails({
         {asset.expectedReturnAt != null && (
           <div className="flex items-center justify-between gap-2">
             <span className="text-(--text-muted)">{t('assets.expectedReturn')}</span>
-            <span className={overdue ? 'font-medium text-red-500' : 'text-(--text-primary)'}>
+            <span
+              className={overdue ? 'font-medium text-(--danger-text)' : 'text-(--text-primary)'}
+            >
               {formatDate(asset.expectedReturnAt, language)}
               {overdue ? ` · ${t('assets.overdue')}` : ''}
             </span>
@@ -704,11 +706,11 @@ function AssetDetailCard({
 
         {/* Assignment Info */}
         {isAssigned && (
-          <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
+          <div className="bg-(--brand-quiet) border border-(--brand-outline) rounded-xl p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
-                  <UserPlus className="w-5 h-5 text-blue-500" />
+                <div className="w-10 h-10 rounded-full bg-(--brand-quiet) flex items-center justify-center">
+                  <UserPlus className="w-5 h-5 text-(--brand-text)" />
                 </div>
                 <div>
                   <p className="text-sm font-medium text-foreground">
@@ -762,7 +764,7 @@ function AssetDetailCard({
                   return (
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-emerald-500" />
+                        <FileText className="w-4 h-4 text-(--success-text)" />
                         <Link
                           href="/signatures"
                           className="text-sm text-primary hover:underline font-medium"
@@ -902,9 +904,9 @@ function AssetDetailCard({
                 >
                   <div className="flex items-center gap-2">
                     {a.status === 'active' ? (
-                      <ArrowUpRight className="w-3.5 h-3.5 text-blue-500" />
+                      <ArrowUpRight className="w-3.5 h-3.5 text-(--brand-text)" />
                     ) : (
-                      <ArrowDownLeft className="w-3.5 h-3.5 text-emerald-500" />
+                      <ArrowDownLeft className="w-3.5 h-3.5 text-(--success-text)" />
                     )}
                     <span className="text-foreground">{a.userName || t('common.unknown')}</span>
                   </div>
@@ -1243,28 +1245,28 @@ export default function AssetsClient() {
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
             <TabsList className="w-full mb-4 gap-2 bg-transparent p-0 h-auto grid grid-cols-2 md:grid-cols-4">
               <TabsTrigger
-                className="w-full px-3 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-(--background-subtle) shadow-sm font-medium flex items-center justify-center gap-2 text-sm"
+                className="w-full px-3 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-(--background-subtle) shadow-sm font-medium flex items-center justify-center gap-2 text-sm"
                 value="catalog"
               >
                 <Monitor className="w-4 h-4 flex-shrink-0" />
                 <span className="hidden sm:inline">{t('assets.tabs.catalog')}</span>
               </TabsTrigger>
               <TabsTrigger
-                className="w-full px-3 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-(--background-subtle) shadow-sm font-medium flex items-center justify-center gap-2 text-sm"
+                className="w-full px-3 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-(--background-subtle) shadow-sm font-medium flex items-center justify-center gap-2 text-sm"
                 value="myAssets"
               >
                 <UserPlus className="w-4 h-4 flex-shrink-0" />
                 <span className="hidden sm:inline">{t('assets.tabs.myAssets')}</span>
               </TabsTrigger>
               <TabsTrigger
-                className="w-full px-3 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-(--background-subtle) shadow-sm font-medium flex items-center justify-center gap-2 text-sm"
+                className="w-full px-3 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-(--background-subtle) shadow-sm font-medium flex items-center justify-center gap-2 text-sm"
                 value="requests"
               >
                 <ClipboardCheck className="w-4 h-4 flex-shrink-0" />
                 <span className="hidden sm:inline">{t('assets.tabs.requests')}</span>
               </TabsTrigger>
               <TabsTrigger
-                className="w-full px-3 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-(--background-subtle) shadow-sm font-medium flex items-center justify-center gap-2 text-sm"
+                className="w-full px-3 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-(--background-subtle) shadow-sm font-medium flex items-center justify-center gap-2 text-sm"
                 value="maintenance"
               >
                 <Wrench className="w-4 h-4 flex-shrink-0" />
@@ -1292,7 +1294,7 @@ export default function AssetsClient() {
                           <button
                             type="button"
                             onClick={() => setViewMode('grid')}
-                            className={`p-2 transition-colors ${viewMode === 'grid' ? 'bg-[#3b82f6] text-white' : 'bg-transparent text-muted-foreground hover:text-foreground'}`}
+                            className={`p-2 transition-colors ${viewMode === 'grid' ? 'bg-(--brand) text-white' : 'bg-transparent text-muted-foreground hover:text-foreground'}`}
                             title={t('assets.gridView', 'Grid')}
                           >
                             <LayoutGrid className="w-4 h-4" />
@@ -1300,7 +1302,7 @@ export default function AssetsClient() {
                           <button
                             type="button"
                             onClick={() => setViewMode('list')}
-                            className={`p-2 transition-colors ${viewMode === 'list' ? 'bg-[#3b82f6] text-white' : 'bg-transparent text-muted-foreground hover:text-foreground'}`}
+                            className={`p-2 transition-colors ${viewMode === 'list' ? 'bg-(--brand) text-white' : 'bg-transparent text-muted-foreground hover:text-foreground'}`}
                             title={t('assets.listView', 'List')}
                           >
                             <List className="w-4 h-4" />
@@ -1597,7 +1599,7 @@ export default function AssetsClient() {
                                         <p
                                           className={`text-xs ${
                                             asset.isReturnOverdue
-                                              ? 'font-medium text-red-500'
+                                              ? 'font-medium text-(--danger-text)'
                                               : 'text-(--text-muted)'
                                           }`}
                                         >
@@ -1779,14 +1781,14 @@ export default function AssetsClient() {
                                   {a.movementFormStatus === 'pending' && (
                                     <Link
                                       href="/signatures"
-                                      className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 transition-colors"
+                                      className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-(--warning-quiet) text-(--warning-text) dark:text-(--warning-text) hover:bg-(--warning-quiet) transition-colors"
                                     >
                                       <FileSignature className="w-3 h-3" />
                                       {t('assets.movementForm.status.pending')}
                                     </Link>
                                   )}
                                   {a.movementFormStatus === 'signed' && (
-                                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-(--success-quiet) text-(--success-text) dark:text-(--success-text)">
                                       <FileText className="w-3 h-3" />
                                       {t('assets.movementForm.status.signed')}
                                     </span>
@@ -1909,9 +1911,9 @@ export default function AssetsClient() {
                       <div className="space-y-3">
                         {requests.map((req) => {
                           const urgencyColors: Record<string, string> = {
-                            low: 'bg-slate-500/15 text-slate-500',
-                            medium: 'bg-amber-500/15 text-amber-500',
-                            high: 'bg-red-500/15 text-red-500',
+                            low: 'bg-(--surface-2) text-(--text-3)',
+                            medium: 'bg-(--warning-quiet) text-(--warning-text)',
+                            high: 'bg-(--danger-quiet) text-(--danger-text)',
                           };
                           return (
                             <div
@@ -2201,9 +2203,9 @@ export default function AssetsClient() {
                   )}
                 </DialogDescription>
               </DialogHeader>
-              <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 my-4">
+              <div className="bg-(--warning-quiet) border border-(--warning-outline) rounded-xl p-4 my-4">
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0 mt-0.5">
+                  <div className="w-8 h-8 rounded-full bg-(--warning-quiet) flex items-center justify-center shrink-0 mt-0.5">
                     <span className="text-(--warning-text) text-sm font-bold">!</span>
                   </div>
                   <div>

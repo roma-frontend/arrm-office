@@ -31,7 +31,7 @@ export default function TestI18nClient() {
   return (
     <div className="container mx-auto p-8">
       <Card className="p-6 max-w-2xl mx-auto">
-        <div className="mb-4 p-3 bg-blue-100 dark:bg-blue-900 rounded text-sm space-y-2">
+        <div className="mb-4 p-3 bg-(--brand-quiet) dark:bg-(--brand) rounded text-sm space-y-2">
           <p>
             Current Language: <strong>{i18n.language}</strong>
           </p>
@@ -60,7 +60,7 @@ export default function TestI18nClient() {
 
         <div className="space-y-4">
           <p className="text-lg">Dashboard welcome: {t('dashboard.welcome')}</p>
-          <p className="text-lg bg-yellow-100 dark:bg-yellow-900 p-2 rounded">
+          <p className="text-lg bg-(--warning-quiet) dark:bg-(--warning-solid) p-2 rounded">
             Testing direct: {JSON.stringify(t('common.save'))}
           </p>
 
@@ -92,11 +92,11 @@ export default function TestI18nClient() {
             </div>
           </div>
 
-          <div className="mt-6 p-4 border border-green-500 rounded-lg bg-green-50 dark:bg-green-950">
-            <p className="text-green-800 dark:text-green-200 font-semibold">
+          <div className="mt-6 p-4 border border-(--success-outline) rounded-lg bg-(--success-quiet) dark:bg-(--success-solid)">
+            <p className="text-(--success-text) dark:text-(--success-text) font-semibold">
               ✅ Если вы видите армянский текст после переключения языка - i18n работает!
             </p>
-            <p className="text-sm text-green-700 dark:text-green-300 mt-2">
+            <p className="text-sm text-(--success-text) dark:text-(--success-text) mt-2">
               Используйте Language Switcher (🌐) в Navbar сверху
             </p>
           </div>

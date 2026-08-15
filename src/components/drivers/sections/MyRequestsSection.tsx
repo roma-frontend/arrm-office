@@ -91,10 +91,10 @@ const RequestItem = memo(function RequestItem({
   const lang = i18n.language || 'en';
   const dateFnsLocale = lang === 'ru' ? ru : lang === 'hy' ? hy : enUS;
   const statusColors: Record<string, string> = {
-    completed: 'bg-green-500',
-    pending: 'bg-amber-500',
-    approved: 'bg-blue-500',
-    cancelled: 'bg-gray-400',
+    completed: 'bg-(--success-solid)',
+    pending: 'bg-(--warning-solid)',
+    approved: 'bg-(--brand)',
+    cancelled: 'bg-(--surface-3)',
   };
 
   return (
@@ -107,7 +107,7 @@ const RequestItem = memo(function RequestItem({
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3 flex-1 min-w-0">
           <div
-            className={`w-2 h-2 rounded-full mt-2 shrink-0 ${statusColors[request.status] || 'bg-gray-400'}`}
+            className={`w-2 h-2 rounded-full mt-2 shrink-0 ${statusColors[request.status] || 'bg-(--surface-3)'}`}
           />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -145,7 +145,7 @@ const RequestItem = memo(function RequestItem({
             size="sm"
             variant="ghost"
             onClick={onViewDetails}
-            className="gap-1.5 rounded-lg hover:bg-blue-500/10 hover:text-blue-500 transition-all duration-200 group"
+            className="gap-1.5 rounded-lg hover:bg-(--brand-quiet) hover:text-(--brand-text) transition-all duration-200 group"
           >
             <Eye className="w-3.5 h-3.5 group-hover:scale-110 transition-transform duration-200" />
           </Button>
@@ -154,7 +154,7 @@ const RequestItem = memo(function RequestItem({
               size="sm"
               variant="ghost"
               onClick={onRate}
-              className="rounded-lg hover:bg-yellow-500/10 hover:text-yellow-500 transition-all duration-200 group"
+              className="rounded-lg hover:bg-(--warning-quiet) hover:text-(--warning-text) transition-all duration-200 group"
             >
               <Star className="w-3.5 h-3.5 group-hover:scale-110 transition-transform duration-200" />
             </Button>
@@ -164,7 +164,7 @@ const RequestItem = memo(function RequestItem({
               size="sm"
               variant="ghost"
               onClick={onEdit}
-              className="rounded-lg hover:bg-purple-500/10 hover:text-purple-500 transition-all duration-200 group"
+              className="rounded-lg hover:bg-(--purple-quiet) hover:text-(--purple-text) transition-all duration-200 group"
             >
               <Pencil className="w-3.5 h-3.5 group-hover:scale-110 transition-transform duration-200" />
             </Button>
@@ -174,7 +174,7 @@ const RequestItem = memo(function RequestItem({
               size="sm"
               variant="ghost"
               onClick={onCancel}
-              className="rounded-lg hover:bg-red-500/10 hover:text-red-500 transition-all duration-200 group"
+              className="rounded-lg hover:bg-(--danger-quiet) hover:text-(--danger-text) transition-all duration-200 group"
             >
               <XCircle className="w-3.5 h-3.5 group-hover:scale-110 transition-transform duration-200" />
             </Button>
@@ -184,7 +184,7 @@ const RequestItem = memo(function RequestItem({
               size="sm"
               variant="ghost"
               onClick={onDelete}
-              className="rounded-lg hover:bg-red-500/10 hover:text-red-500 transition-all duration-200 group"
+              className="rounded-lg hover:bg-(--danger-quiet) hover:text-(--danger-text) transition-all duration-200 group"
             >
               <Trash2 className="w-3.5 h-3.5 group-hover:scale-110 transition-transform duration-200" />
             </Button>
@@ -240,7 +240,7 @@ const RecurringTripItem = memo(function RecurringTripItem({
             size="sm"
             variant="outline"
             onClick={onToggle}
-            className="rounded-lg hover:bg-emerald-500/10 hover:text-emerald-500 hover:border-emerald-500/30 transition-all duration-200 group"
+            className="rounded-lg hover:bg-(--success-quiet) hover:text-(--success-text) hover:border-(--success-outline) transition-all duration-200 group"
           >
             <CheckCircle className="w-3.5 h-3.5 group-hover:scale-110 transition-transform duration-200" />
           </Button>
@@ -248,7 +248,7 @@ const RecurringTripItem = memo(function RecurringTripItem({
             size="sm"
             variant="ghost"
             onClick={onDelete}
-            className="rounded-lg hover:bg-red-500/10 hover:text-red-500 transition-all duration-200 group"
+            className="rounded-lg hover:bg-(--danger-quiet) hover:text-(--danger-text) transition-all duration-200 group"
           >
             <Trash2 className="w-3.5 h-3.5 group-hover:scale-110 transition-transform duration-200" />
           </Button>
@@ -291,21 +291,21 @@ export const MyRequestsSection = memo(function MyRequestsSection({
           <TabsList className="grid w-full grid-cols-3 mb-4">
             <TabsTrigger
               value="active"
-              className="gap-2 flex items-center justify-center data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white"
+              className="gap-2 flex items-center justify-center data-[state=active]:bg-(--brand) data-[state=active]:text-white"
             >
               <Clock className="w-4 h-4 sm:mr-2" />
               <span className="hidden sm:inline">{t('driver.active', 'Active')}</span>
             </TabsTrigger>
             <TabsTrigger
               value="history"
-              className="gap-2 flex items-center justify-center data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white"
+              className="gap-2 flex items-center justify-center data-[state=active]:bg-(--brand) data-[state=active]:text-white"
             >
               <History className="w-4 h-4 sm:mr-2" />
               <span className="hidden sm:inline">{t('driver.history', 'History')}</span>
             </TabsTrigger>
             <TabsTrigger
               value="recurring"
-              className="gap-2 flex items-center justify-center data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white"
+              className="gap-2 flex items-center justify-center data-[state=active]:bg-(--brand) data-[state=active]:text-white"
             >
               <Repeat className="w-4 h-4 sm:mr-2" />
               <span className="hidden sm:inline">{t('driver.recurring', 'Recurring')}</span>

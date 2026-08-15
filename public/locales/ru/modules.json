@@ -96,7 +96,8 @@
     "noRecordsToday": "Нет записей о посещаемости",
     "allEmployeesRated": "Все сотрудники оценены в этом месяце! ✅",
     "checkBackNextMonth": "Вернитесь в следующем месяце",
-    "lastMonth": "Прошлый месяц"
+    "lastMonth": "Прошлый месяц",
+    "viewDetails": "Подробнее"
   },
   "attendanceExtra": {
     "daysWorked": "Отработано дней",

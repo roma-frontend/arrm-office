@@ -123,10 +123,10 @@ export default function AdminPage() {
 
             {/* Currently Selected Organization Badge */}
             {selectedOrgId && (
-              <div className="flex items-center justify-between p-3 rounded-lg bg-blue-500/10 border border-blue-500/30 mb-3">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-(--brand-quiet) border border-(--brand-outline) mb-3">
                 <div className="flex items-center gap-2">
-                  <Eye className="w-4 h-4 text-blue-500" />
-                  <span className="text-sm text-blue-500 font-medium">
+                  <Eye className="w-4 h-4 text-(--brand-text)" />
+                  <span className="text-sm text-(--brand-text) font-medium">
                     {t('superadmin.viewingOrganization')}:{' '}
                     {
                       organizations?.find((o: Doc<'organizations'>) => o._id === selectedOrgId)
@@ -138,7 +138,7 @@ export default function AdminPage() {
                   variant="ghost"
                   size="sm"
                   onClick={clearSelection}
-                  className="text-blue-500 hover:text-blue-400"
+                  className="text-(--brand-text) hover:text-(--brand-text)"
                 >
                   <LogOut className="w-4 h-4" />
                 </Button>
@@ -169,7 +169,7 @@ export default function AdminPage() {
                     </p>
                   </div>
                   {selectedOrgId === org._id && (
-                    <CheckCircle className="w-4 h-4 text-green-500 shrink-0 ml-2" />
+                    <CheckCircle className="w-4 h-4 text-(--success-text) shrink-0 ml-2" />
                   )}
                 </Button>
               ))}

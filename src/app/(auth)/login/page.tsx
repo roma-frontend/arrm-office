@@ -597,11 +597,11 @@ export default function LoginPage() {
             <div className="fixed inset-0 pointer-events-none overflow-hidden">
               <div
                 className="absolute -top-40 -right-40 w-96 h-96 rounded-full blur-3xl opacity-20"
-                style={{ background: 'radial-gradient(circle, #2563eb, transparent)' }}
+                style={{ background: 'radial-gradient(circle, var(--brand), transparent)' }}
               />
               <div
                 className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full blur-3xl opacity-20"
-                style={{ background: 'radial-gradient(circle, #0ea5e9, transparent)' }}
+                style={{ background: 'radial-gradient(circle, var(--brand-hover), transparent)' }}
               />
             </div>
 
@@ -640,7 +640,10 @@ export default function LoginPage() {
                     <div className="flex flex-col items-center mb-2">
                       <div
                         className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3"
-                        style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}
+                        style={{
+                          background:
+                            'linear-gradient(135deg, var(--success-solid), var(--success-text))',
+                        }}
                       >
                         <ShieldCheck className="w-6 h-6 text-white" />
                       </div>
@@ -679,7 +682,7 @@ export default function LoginPage() {
                             setTwoFactorError(null);
                           }}
                           placeholder={isBackupCode ? 'XXXXXXXX' : '000000'}
-                          className="w-full text-center text-2xl tracking-[0.5em] font-mono py-3 px-4 rounded-xl border focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full text-center text-2xl tracking-[0.5em] font-mono py-3 px-4 rounded-xl border focus:outline-none focus:ring-2 focus:ring-(--brand-text)"
                           style={{
                             background: 'var(--surface-hover)',
                             borderColor: twoFactorError ? '#ef4444' : 'var(--border)',
@@ -695,7 +698,7 @@ export default function LoginPage() {
                             initial={{ opacity: 0, y: -4 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -4 }}
-                            className="flex items-center gap-2 text-sm text-red-500"
+                            className="flex items-center gap-2 text-sm text-(--danger-text)"
                           >
                             <AlertCircle className="w-4 h-4" />
                             {twoFactorError}
@@ -723,7 +726,7 @@ export default function LoginPage() {
                           setTimeout(() => totpInputRef.current?.focus(), 100);
                         }}
                         className="text-xs hover:underline"
-                        style={{ color: '#2563eb' }}
+                        style={{ color: 'var(--brand-text)' }}
                       >
                         {isBackupCode ? 'Use authenticator code instead' : 'Use a backup code'}
                       </Button>
@@ -865,7 +868,7 @@ export default function LoginPage() {
                               <Link
                                 href="/forgot-password"
                                 className="text-xs hover:underline"
-                                style={{ color: '#2563eb' }}
+                                style={{ color: 'var(--brand-text)' }}
                               >
                                 {mounted ? t('auth.forgotPassword') : 'Forgot password?'}
                               </Link>
@@ -907,7 +910,7 @@ export default function LoginPage() {
                     <Link
                       href="/register"
                       className="font-semibold hover:underline"
-                      style={{ color: '#2563eb' }}
+                      style={{ color: 'var(--brand-text)' }}
                     >
                       {mounted ? t('auth.joinExistingTeam') : 'Join your team'}
                     </Link>

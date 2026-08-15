@@ -126,7 +126,7 @@ export default function ProbationCard({ employeeId }: ProbationCardProps) {
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <CardTitle className="text-sm flex items-center gap-2">
-              <Hourglass className="w-4 h-4 text-blue-500" />
+              <Hourglass className="w-4 h-4 text-(--brand-text)" />
               {t('employees.probation.title')}
             </CardTitle>
           </div>
@@ -167,7 +167,7 @@ export default function ProbationCard({ employeeId }: ProbationCardProps) {
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm flex items-center gap-2">
-            <Hourglass className="w-4 h-4 text-blue-500" />
+            <Hourglass className="w-4 h-4 text-(--brand-text)" />
             {t('employees.probation.title')}
           </CardTitle>
           {statusBadge}
@@ -186,7 +186,7 @@ export default function ProbationCard({ employeeId }: ProbationCardProps) {
               </span>
               <span
                 className={
-                  remaining <= 5 ? 'text-red-500 font-semibold' : 'text-(--text-secondary)'
+                  remaining <= 5 ? 'text-(--danger-text) font-semibold' : 'text-(--text-secondary)'
                 }
               >
                 {t('employees.probation.daysLeft', { count: Math.max(0, remaining) })}

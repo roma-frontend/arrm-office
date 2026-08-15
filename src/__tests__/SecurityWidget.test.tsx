@@ -42,7 +42,14 @@ jest.mock('next/link', () => {
 // ── Lucide icons mock ────────────────────────────────────────────────────────
 jest.mock('lucide-react', () => {
   const Icon = (props: any) => <span data-testid="lucide-icon" {...props} />;
-  return { ShieldCheck: Icon, ShieldAlert: Icon, Activity: Icon, XCircle: Icon, ArrowRight: Icon };
+  return {
+    ShieldCheck: Icon,
+    ShieldAlert: Icon,
+    Activity: Icon,
+    XCircle: Icon,
+    ArrowRight: Icon,
+    ChevronRight: Icon,
+  };
 });
 
 // ── Module under test ──
@@ -71,20 +78,12 @@ describe('SecurityWidget', () => {
     expect(screen.getByText('landingExtra.securityNormal')).toBeInTheDocument();
   });
 
-  it('renders total logins count', () => {
+  it('renders the normal threat level for low-risk stats', () => {
     render(<SecurityWidget securityStats={defaultSecurityStats} />);
-    // Total is rendered via t() — returns key with mock
-    expect(screen.getByText('150 landingExtra.logins24h')).toBeInTheDocument();
-  });
-
-  it('renders failed logins count', () => {
-    render(<SecurityWidget securityStats={defaultSecurityStats} />);
-    expect(screen.getByText('5 landingExtra.failedLogins')).toBeInTheDocument();
-  });
-
-  it('renders high risk alerts count', () => {
-    render(<SecurityWidget securityStats={defaultSecurityStats} />);
-    expect(screen.getByText('1 landingExtra.highRiskAlerts')).toBeInTheDocument();
+    // The compact widget shows the title and the threat badge, not per-metric
+    // counters — those live on the /superadmin/security page.
+    expect(screen.getByText('landingExtra.securityCenter')).toBeInTheDocument();
+    expect(screen.getByText('landingExtra.securityNormal')).toBeInTheDocument();
   });
 
   // ── Elevated threat level ──────────────────────────────────────────────
@@ -156,9 +155,9 @@ describe('SecurityWidget', () => {
       suspicious: [],
     };
     render(<SecurityWidget securityStats={zeroStats} />);
-    expect(screen.getByText('0 landingExtra.logins24h')).toBeInTheDocument();
-    expect(screen.getByText('0 landingExtra.failedLogins')).toBeInTheDocument();
-    expect(screen.getByText('0 landingExtra.highRiskAlerts')).toBeInTheDocument();
+    // Zero risk still renders the strip, with a normal badge.
+    expect(screen.getByText('landingExtra.securityCenter')).toBeInTheDocument();
+    expect(screen.getByText('landingExtra.securityNormal')).toBeInTheDocument();
   });
 
   // ── Icon rendering ────────────────────────────────────────────────────

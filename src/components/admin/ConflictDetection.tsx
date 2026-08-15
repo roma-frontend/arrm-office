@@ -38,7 +38,7 @@ export default function ConflictDetection({ organizationId }: ConflictDetectionP
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-orange-500" />
+            <AlertTriangle className="h-5 w-5 text-(--warning-text)" />
             {t('conflicts.title')}
           </CardTitle>
           <div className="flex gap-2">
@@ -58,7 +58,7 @@ export default function ConflictDetection({ organizationId }: ConflictDetectionP
       <CardContent className="space-y-3">
         {conflicts.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-8 text-center">
-            <Users className="mb-3 h-12 w-12 text-green-500 opacity-50" />
+            <Users className="mb-3 h-12 w-12 text-(--success-text) opacity-50" />
             <p className="text-sm font-medium text-(--text-primary)">
               {t('conflicts.noConflicts')}
             </p>
@@ -71,8 +71,8 @@ export default function ConflictDetection({ organizationId }: ConflictDetectionP
                 key={conflict.id}
                 className={`rounded-lg border p-3 ${
                   conflict.severity === 'critical'
-                    ? 'border-red-500/30 bg-red-500/5'
-                    : 'border-orange-500/30 bg-orange-500/5'
+                    ? 'border-(--danger-outline) bg-(--danger-quiet)'
+                    : 'border-(--warning-outline) bg-(--warning-quiet)'
                 }`}
               >
                 <div className="mb-2 flex items-start justify-between">

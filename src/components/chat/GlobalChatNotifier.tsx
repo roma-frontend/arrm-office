@@ -44,7 +44,7 @@ export function GlobalChatNotifier() {
     if (totalUnread > prevCountRef.current && !isChatPage) {
       playChatMessageSound();
       toast('New message', {
-        icon: React.createElement(MessageCircle, { className: 'w-4 h-4 text-blue-500' }),
+        icon: React.createElement(MessageCircle, { className: 'w-4 h-4 text-(--brand-text)' }),
         duration: 4000,
       });
     }

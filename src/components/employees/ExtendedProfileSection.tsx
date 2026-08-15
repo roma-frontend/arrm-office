@@ -103,17 +103,17 @@ const WORK_FORMAT_MAP: Record<string, { label: string; icon: string; color: stri
   remote: {
     label: 'extendedProfile.workFormatRemote',
     icon: '🏠',
-    color: 'bg-blue-500/10 text-blue-500',
+    color: 'bg-(--brand-quiet) text-(--brand-text)',
   },
   office: {
     label: 'extendedProfile.workFormatOffice',
     icon: '🏢',
-    color: 'bg-amber-500/10 text-amber-500',
+    color: 'bg-(--warning-quiet) text-(--warning-text)',
   },
   hybrid: {
     label: 'extendedProfile.workFormatHybrid',
     icon: '🔄',
-    color: 'bg-purple-500/10 text-purple-500',
+    color: 'bg-(--purple-quiet) text-(--purple-text)',
   },
 };
 
@@ -433,7 +433,7 @@ export default function ExtendedProfileSection({
                 href={profile.socialLinks.linkedin}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 transition-all"
+                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-(--brand-quiet) text-(--brand-text) dark:text-(--brand-text) hover:bg-(--brand-quiet) transition-all"
               >
                 <Linkedin className="w-3.5 h-3.5" />
                 LinkedIn
@@ -445,7 +445,7 @@ export default function ExtendedProfileSection({
                 href={profile.socialLinks.github}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-gray-500/10 text-gray-700 dark:text-gray-300 hover:bg-gray-500/20 transition-all"
+                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-(--surface-2) text-(--text-3) dark:text-(--text-3) hover:bg-(--surface-2) transition-all"
               >
                 <Github className="w-3.5 h-3.5" />
                 GitHub
@@ -457,7 +457,7 @@ export default function ExtendedProfileSection({
                 href={profile.socialLinks.portfolio}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-all"
+                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-(--success-quiet) text-(--success-text) dark:text-(--success-text) hover:bg-(--success-quiet) transition-all"
               >
                 <Briefcase className="w-3.5 h-3.5" />
                 {t('extendedProfile.portfolio', 'Portfolio')}
@@ -508,8 +508,8 @@ export default function ExtendedProfileSection({
               >
                 {entry.gpa && (
                   <div className="mt-1 flex items-center gap-1">
-                    <Award className="w-3 h-3 text-amber-500" />
-                    <span className="text-[11px] text-amber-600 dark:text-amber-400 font-medium">
+                    <Award className="w-3 h-3 text-(--warning-text)" />
+                    <span className="text-[11px] text-(--warning-text) dark:text-(--warning-text) font-medium">
                       GPA: {entry.gpa}
                     </span>
                   </div>

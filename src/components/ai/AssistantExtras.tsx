@@ -117,7 +117,7 @@ export function WebSearchCard({ query }: { query: string }) {
   return (
     <div className="mt-2 rounded-xl border border-(--border) bg-(--background-subtle) p-3 space-y-2">
       <div className="flex items-center gap-2 text-xs font-medium text-(--text-primary)">
-        <Globe className="w-3.5 h-3.5 text-[#2563eb]" />
+        <Globe className="w-3.5 h-3.5 text-(--brand-text)" />
         {query}
       </div>
       {results === null ? (
@@ -134,11 +134,11 @@ export function WebSearchCard({ query }: { query: string }) {
               href={r.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="block rounded-lg border border-(--border) bg-(--card) p-2 hover:border-[#2563eb]/40 transition-colors"
+              className="block rounded-lg border border-(--border) bg-(--card) p-2 hover:border-(--brand)/40 transition-colors"
             >
               <p className="text-xs font-medium text-(--text-primary) truncate">{r.title}</p>
               <p className="text-[10px] text-(--text-muted) line-clamp-2">{r.snippet}</p>
-              <p className="text-[10px] text-[#2563eb] truncate">{r.source}</p>
+              <p className="text-[10px] text-(--brand-text) truncate">{r.source}</p>
             </a>
           ))}
         </div>
@@ -198,14 +198,14 @@ if (__C) ReactDOM.createRoot(document.getElementById('root')).render(React.creat
           <>
             <button
               onClick={() => setMode('preview')}
-              className={`p-1 rounded ${mode === 'preview' ? 'text-[#2563eb] bg-[#2563eb]/10' : 'text-(--text-muted)'}`}
+              className={`p-1 rounded ${mode === 'preview' ? 'text-(--brand-text) bg-(--brand)/10' : 'text-(--text-muted)'}`}
               title="Preview"
             >
               <Eye className="w-3 h-3" />
             </button>
             <button
               onClick={() => setMode('code')}
-              className={`p-1 rounded ${mode === 'code' ? 'text-[#2563eb] bg-[#2563eb]/10' : 'text-(--text-muted)'}`}
+              className={`p-1 rounded ${mode === 'code' ? 'text-(--brand-text) bg-(--brand)/10' : 'text-(--text-muted)'}`}
               title="Code"
             >
               <Code className="w-3 h-3" />
@@ -213,7 +213,11 @@ if (__C) ReactDOM.createRoot(document.getElementById('root')).render(React.creat
           </>
         )}
         <button onClick={copy} className="p-1 rounded text-(--text-muted)" title="Copy">
-          {copied ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+          {copied ? (
+            <Check className="w-3 h-3 text-(--success-text)" />
+          ) : (
+            <Copy className="w-3 h-3" />
+          )}
         </button>
       </div>
       {mode === 'preview' && srcDoc ? (

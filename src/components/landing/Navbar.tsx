@@ -185,7 +185,7 @@ export default function Navbar() {
         >
           <div
             className="w-10 h-10 rounded-xl flex items-center justify-center logo-spin"
-            style={{ background: 'linear-gradient(135deg, #2563eb, #93c5fd)' }}
+            style={{ background: 'linear-gradient(135deg, var(--brand), var(--brand-hover))' }}
             aria-hidden="true"
           >
             <ShieldIcon />
@@ -283,7 +283,7 @@ export default function Navbar() {
                 <button className="flex items-center gap-2 rounded-xl px-2 py-1.5 md:px-3 md:py-2 transition-all outline-none focus-visible:outline-none focus:outline-none hover:bg-(--background-subtle)">
                   <Avatar className="w-7 h-7 md:w-8 md:h-8">
                     {user.avatar && <AvatarImage src={user.avatar} alt={user.name} />}
-                    <AvatarFallback className="text-xs bg-linear-to-br from-blue-500 to-blue-600 text-white font-semibold">
+                    <AvatarFallback className="text-xs bg-linear-to-br from-(--brand) to-(--brand) text-white font-semibold">
                       {getInitials(user.name)}
                     </AvatarFallback>
                   </Avatar>
@@ -481,7 +481,7 @@ export default function Navbar() {
                       transition={{ duration: 0.2, delay: 0.4, ease: 'easeOut' }}
                     >
                       <DropdownMenuItem
-                        className="text-red-500 cursor-pointer rounded-xl px-3 py-2.5 gap-3 transition-all duration-200 hover:bg-red-500/10 focus:bg-red-500/10 hover:text-red-600 focus:text-red-600 dark:hover:text-red-400 dark:focus:text-red-400"
+                        className="text-(--danger-text) cursor-pointer rounded-xl px-3 py-2.5 gap-3 transition-all duration-200 hover:bg-(--danger-quiet) focus:bg-(--danger-quiet) hover:text-(--danger-text) focus:text-(--danger-text) dark:hover:text-(--danger-text) dark:focus:text-(--danger-text)"
                         onClick={handleLogout}
                       >
                         <svg
@@ -506,7 +506,7 @@ export default function Navbar() {
             <>
               <Link
                 href="/login"
-                className="hidden lg:inline-flex text-sm transition-colors font-medium px-3 lg:px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                className="hidden lg:inline-flex text-sm transition-colors font-medium px-3 lg:px-4 py-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-(--brand-text)"
                 style={{ color: 'var(--landing-navbar-text)', backgroundColor: 'transparent' }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.color = 'var(--landing-navbar-text-hover)';
@@ -521,9 +521,9 @@ export default function Navbar() {
               </Link>
               <Link
                 href="/register"
-                className="hidden lg:inline-flex items-center gap-2 text-sm font-semibold px-4 lg:px-5 py-2.5 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                className="hidden lg:inline-flex items-center gap-2 text-sm font-semibold px-4 lg:px-5 py-2.5 rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/50 focus:outline-none focus:ring-2 focus:ring-(--brand-text)"
                 style={{
-                  background: 'linear-gradient(135deg, #2563eb, #93c5fd)',
+                  background: 'linear-gradient(135deg, var(--brand), var(--brand-hover))',
                   color: 'var(--primary-foreground)',
                 }}
               >
@@ -541,7 +541,7 @@ export default function Navbar() {
               </Link>
               <button
                 onClick={() => setIsMobileMenuOpen(true)}
-                className="lg:hidden w-11 h-11 rounded-xl transition-colors flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                className="lg:hidden w-11 h-11 rounded-xl transition-colors flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-(--brand-text)"
                 style={{
                   backgroundColor: 'var(--landing-card-bg)',
                   border: '1px solid var(--landing-card-border)',

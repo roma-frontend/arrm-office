@@ -38,7 +38,7 @@ export default function CostAnalysis({ organizationId }: CostAnalysisProps) {
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5 text-green-500" />
+            <DollarSign className="h-5 w-5 text-(--success-text)" />
             {t('costAnalysis.title')}
           </CardTitle>
           <div className="flex gap-2">
@@ -68,7 +68,7 @@ export default function CostAnalysis({ organizationId }: CostAnalysisProps) {
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Total Cost */}
-        <div className="rounded-lg bg-linear-to-br from-green-500/10 to-emerald-500/10 p-4">
+        <div className="rounded-lg bg-linear-to-br from-(--success-solid) to-(--success-solid) p-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-(--text-secondary)">{t('costAnalysis.totalCost')}</p>
@@ -100,7 +100,7 @@ export default function CostAnalysis({ organizationId }: CostAnalysisProps) {
                   </div>
                   <div className="h-2 overflow-hidden rounded-full bg-(--background-subtle)">
                     <div
-                      className="h-full rounded-full bg-linear-to-r from-green-500 to-emerald-500"
+                      className="h-full rounded-full bg-linear-to-r from-(--success-solid) to-(--success-solid)"
                       style={{ width: `${dept.percentage}%` }}
                     />
                   </div>
@@ -127,7 +127,7 @@ export default function CostAnalysis({ organizationId }: CostAnalysisProps) {
                   </div>
                   <div className="h-2 overflow-hidden rounded-full bg-(--background-subtle)">
                     <div
-                      className="h-full rounded-full bg-linear-to-r from-blue-500 to-cyan-500"
+                      className="h-full rounded-full bg-linear-to-r from-(--brand) to-(--cyan)"
                       style={{ width: `${typeData.percentage}%` }}
                     />
                   </div>

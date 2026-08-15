@@ -527,7 +527,7 @@ export const MessageBubble = React.memo(function MessageBubble({
                 <span className="text-lg">{icon}</span>
                 <span
                   className="font-semibold text-sm tracking-wide"
-                  style={{ color: 'var(--warning, #f59e0b)' }}
+                  style={{ color: 'var(--warning, var(--warning-solid))' }}
                 >
                   {message.broadcastTitle || 'СЕРВИСНОЕ ОБЪЯВЛЕНИЕ'}
                 </span>
@@ -562,7 +562,8 @@ export const MessageBubble = React.memo(function MessageBubble({
   if (message.type === 'call') {
     const icon =
       message.callType === 'video' ? <Video className="w-4 h-4" /> : <Phone className="w-4 h-4" />;
-    const statusColor = message.callStatus === 'answered' ? 'text-green-500' : 'text-red-500';
+    const statusColor =
+      message.callStatus === 'answered' ? 'text-(--success-text)' : 'text-(--danger-text)';
     const statusText =
       message.callStatus === 'answered'
         ? `${message.callDuration ? Math.floor(message.callDuration / 60) + 'm ' + (message.callDuration % 60) + 's' : ''}`
@@ -1448,7 +1449,7 @@ function MenuItem({
     <button
       onClick={onClick}
       className="w-full flex items-center gap-2 px-3 py-1.5 text-xs transition-all duration-150 hover:opacity-80"
-      style={{ color: danger ? '#ef4444' : 'var(--text-primary)' }}
+      style={{ color: danger ? 'var(--danger-text)' : 'var(--text-primary)' }}
       onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--sidebar-item-hover)')}
       onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
     >

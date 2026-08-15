@@ -89,7 +89,7 @@ export function RatingDialog({
       <SheetContent side="right" size="sm" closeLabel={t('common.close', 'Close')}>
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
-            <Star className="w-5 h-5 text-yellow-500" />
+            <Star className="w-5 h-5 text-(--warning-text)" />
             {t('driver.rateDriver', 'Rate Your Driver')}
           </SheetTitle>
         </SheetHeader>
@@ -108,7 +108,7 @@ export function RatingDialog({
               >
                 <Star
                   className={`w-8 h-8 ${
-                    star <= rating ? 'fill-yellow-500 text-yellow-500' : 'text-gray-300'
+                    star <= rating ? 'fill-yellow-500 text-(--warning-text)' : 'text-(--text-3)'
                   }`}
                 />
               </button>

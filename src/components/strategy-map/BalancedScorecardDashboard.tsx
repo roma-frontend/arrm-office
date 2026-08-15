@@ -177,7 +177,7 @@ function NorthStarSection({ data }: { data: BalancedScorecardData }) {
   const cfg = gradeConfig[overallGrade];
 
   return (
-    <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 shadow-xl shadow-black/20">
+    <Card className="relative overflow-hidden border-0 bg-(--primary) shadow-xl shadow-black/20">
       {/* Background decorative elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-24 -right-24 w-64 h-64 rounded-full bg-(--success-solid)/10 blur-3xl" />
@@ -459,7 +459,7 @@ function PerspectiveCard({
                 </div>
               ))}
             </div>
-            <div className="flex items-center justify-center mt-1.5 text-[10px] text-(--text-muted) hover:text-(--text) transition-colors">
+            <div className="flex items-center justify-center mt-1.5 text-[10px] text-(--text-muted) hover:text-(--text-1) transition-colors">
               <ChevronRight
                 className={`w-3 h-3 transition-transform ${expanded ? 'rotate-90' : ''}`}
               />
@@ -522,7 +522,7 @@ function StrategyHeatMap({ data }: { data: BalancedScorecardData }) {
               />
 
               <div className="relative p-3 text-center">
-                <p className="text-xs font-medium text-(--text) truncate mb-1">{item.name}</p>
+                <p className="text-xs font-medium text-(--text-1) truncate mb-1">{item.name}</p>
                 <p
                   className={`text-2xl font-bold ${
                     item.health === 'excellent'

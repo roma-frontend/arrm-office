@@ -495,7 +495,7 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
                 className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
                 style={{ background: 'rgba(239,68,68,0.1)' }}
               >
-                <AlertTriangle className="w-7 h-7" style={{ color: '#ef4444' }} />
+                <AlertTriangle className="w-7 h-7" style={{ color: 'var(--danger-text)' }} />
               </div>
               <h3 className="text-lg font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
                 {t('editEmployee.accessDenied')}
@@ -506,7 +506,7 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
               <button
                 onClick={onClose}
                 className="w-full py-2 rounded-xl text-sm font-semibold text-white"
-                style={{ background: '#2563eb' }}
+                style={{ background: 'var(--brand)' }}
               >
                 {t('common.close')}
               </button>
@@ -538,7 +538,7 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
                 className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
                 style={{ background: 'rgba(239,68,68,0.1)' }}
               >
-                <AlertTriangle className="w-7 h-7" style={{ color: '#ef4444' }} />
+                <AlertTriangle className="w-7 h-7" style={{ color: 'var(--danger-text)' }} />
               </div>
               <h3 className="text-lg font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
                 {t('editEmployee.accessDenied')}
@@ -549,7 +549,7 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
               <button
                 onClick={onClose}
                 className="w-full py-2 rounded-xl text-sm font-semibold text-white"
-                style={{ background: '#2563eb' }}
+                style={{ background: 'var(--brand)' }}
               >
                 {t('common.close')}
               </button>
@@ -721,7 +721,9 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
                     <Building2 className="w-3.5 h-3.5" /> {t('employees.organization')} *
                   </label>
                   <Select value={selectedOrgId} onValueChange={setSelectedOrgId}>
-                    <SelectTrigger className={errors.organization ? 'border-red-500' : ''}>
+                    <SelectTrigger
+                      className={errors.organization ? 'border-(--danger-outline)' : ''}
+                    >
                       <SelectValue placeholder={t('employees.selectOrganization')} />
                     </SelectTrigger>
                     <SelectContent>
@@ -733,7 +735,7 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
                     </SelectContent>
                   </Select>
                   {errors.organization && (
-                    <p className="text-xs text-red-500">{errors.organization}</p>
+                    <p className="text-xs text-(--danger-text)">{errors.organization}</p>
                   )}
                 </div>
               </motion.div>
@@ -881,7 +883,7 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
                           }
                           className={`relative flex flex-col items-center gap-1 p-3 rounded-xl border-2 text-sm font-medium transition-all ${
                             selected
-                              ? 'btn-gradient border-transparent text-white shadow-md ring-[3px] ring-blue-500/30'
+                              ? 'btn-gradient border-transparent text-white shadow-md ring-[3px] ring-(--brand-text)'
                               : 'border-(--border) bg-(--background-subtle) text-(--text-muted) hover:border-(--border-subtle)'
                           }`}
                         >
@@ -930,7 +932,7 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
                         ...(departments ?? []).map((d) => ({ value: d._id, label: d.name })),
                       ]}
                       triggerClassName={`w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all ${
-                        errors.department ? 'border-red-500' : ''
+                        errors.department ? 'border-(--danger-outline)' : ''
                       }`}
                       dropdownClassName="bg-[var(--input)] border-[var(--border)] text-[var(--text-primary)]"
                     />
@@ -938,7 +940,7 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
                       <p className="text-xs text-(--text-muted)">{t('employees.noDepartments')}</p>
                     )}
                     {errors.department && (
-                      <p className="text-xs text-red-500">{errors.department}</p>
+                      <p className="text-xs text-(--danger-text)">{errors.department}</p>
                     )}
                   </div>
                   <div className="space-y-1.5">
@@ -952,14 +954,16 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
                         ...(positions ?? []).map((p) => ({ value: p._id, label: p.title })),
                       ]}
                       triggerClassName={`w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all ${
-                        errors.position ? 'border-red-500' : ''
+                        errors.position ? 'border-(--danger-outline)' : ''
                       }`}
                       dropdownClassName="bg-[var(--input)] border-[var(--border)] text-[var(--text-primary)]"
                     />
                     {positions?.length === 0 && (
                       <p className="text-xs text-(--text-muted)">{t('employees.noPositions')}</p>
                     )}
-                    {errors.position && <p className="text-xs text-red-500">{errors.position}</p>}
+                    {errors.position && (
+                      <p className="text-xs text-(--danger-text)">{errors.position}</p>
+                    )}
                   </div>
                 </div>
 
@@ -1109,7 +1113,7 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
                       travelAllowancePolicy?.enabled ? String(policyTravelAllowance) : '0'
                     }
                     className={`w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all ${
-                      errors.travelAllowance ? 'border-red-500' : ''
+                      errors.travelAllowance ? 'border-(--danger-outline)' : ''
                     }`}
                     style={{
                       background: 'var(--input)',
@@ -1125,7 +1129,7 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
                       : t('employees.travelAllowanceHintNoPolicy')}
                   </p>
                   {errors.travelAllowance && (
-                    <p className="text-xs text-red-500">{errors.travelAllowance}</p>
+                    <p className="text-xs text-(--danger-text)">{errors.travelAllowance}</p>
                   )}
                 </div>
               </motion.div>
@@ -1142,7 +1146,7 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
                 className="space-y-4"
               >
                 <div className="flex items-center gap-2 mb-1">
-                  <IdCard className="w-4 h-4 text-sky-500" />
+                  <IdCard className="w-4 h-4 text-(--brand-text)" />
                   <h3 className="text-sm font-semibold">
                     {t('wizard.identityInfo') || 'Identity Documents'}
                   </h3>
@@ -1276,7 +1280,7 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
                       type="button"
                       onClick={() => setForm((p) => ({ ...p, isActive: !p.isActive }))}
                       className="w-12 h-6 rounded-full transition-all relative"
-                      style={{ background: form.isActive ? '#2563eb' : 'var(--border)' }}
+                      style={{ background: form.isActive ? 'var(--brand)' : 'var(--border)' }}
                     >
                       <div
                         className="absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all"

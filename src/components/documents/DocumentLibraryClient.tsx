@@ -339,13 +339,13 @@ export default function DocumentLibraryClient() {
                 {template?.signature && (
                   <div className="mt-10 grid grid-cols-2 gap-8">
                     <div>
-                      <div className="border-b border-gray-400 h-8" />
+                      <div className="border-b border-(--border-default) h-8" />
                       <div className="text-xs text-(--text-3) mt-1">
                         {labels.name} / {labels.position}
                       </div>
                     </div>
                     <div>
-                      <div className="border-b border-gray-400 h-8" />
+                      <div className="border-b border-(--border-default) h-8" />
                       <div className="text-xs text-(--text-3) mt-1">{labels.date}</div>
                     </div>
                   </div>

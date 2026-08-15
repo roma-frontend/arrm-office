@@ -32,13 +32,13 @@ export default function SmartSuggestions({ organizationId }: SmartSuggestionsPro
   const getCategoryColor = (category: string) => {
     switch (category) {
       case 'optimization':
-        return 'bg-blue-500/10 text-blue-500 border-blue-500/30';
+        return 'bg-(--brand-quiet) text-(--brand-text) border-(--brand-outline)';
       case 'cost':
-        return 'bg-green-500/10 text-green-500 border-green-500/30';
+        return 'bg-(--success-quiet) text-(--success-text) border-(--success-outline)';
       case 'conflict':
-        return 'bg-red-500/10 text-red-500 border-red-500/30';
+        return 'bg-(--danger-quiet) text-(--danger-text) border-(--danger-outline)';
       case 'policy':
-        return 'bg-sky-400/10 text-sky-400 border-sky-400/30';
+        return 'bg-(--brand-quiet) text-(--brand-text) border-(--brand-outline)';
       default:
         return 'bg-(--surface-3) text-(--text-3) border-(--border-default)';
     }
@@ -48,14 +48,14 @@ export default function SmartSuggestions({ organizationId }: SmartSuggestionsPro
     <Card className="border-(--border)">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-sky-400" />
+          <Sparkles className="h-5 w-5 text-(--brand-text)" />
           {t('aiSuggestions.title')}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         {suggestions.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-8 text-center">
-            <Lightbulb className="mb-3 h-12 w-12 text-sky-400 opacity-50" />
+            <Lightbulb className="mb-3 h-12 w-12 text-(--brand-text) opacity-50" />
             <p className="text-sm font-medium text-(--text-primary)">
               {t('aiSuggestions.noSuggestions')}
             </p>

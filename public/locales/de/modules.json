@@ -96,7 +96,8 @@
     "noRecordsToday": "Keine Aufzeichnungen für heute",
     "allEmployeesRated": "Alle Mitarbeiter in diesem Monat bewertet! ✅",
     "checkBackNextMonth": "Kommen Sie nächsten Monat wieder, um die Bewertungen zu sehen",
-    "lastMonth": "Last Month"
+    "lastMonth": "Last Month",
+    "viewDetails": "Details ansehen"
   },
   "attendanceExtra": {
     "daysWorked": "Gearbeitete Tage",

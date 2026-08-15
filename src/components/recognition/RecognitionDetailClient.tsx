@@ -134,7 +134,7 @@ export default function RecognitionDetailClient() {
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Heart className="h-4 w-4 text-red-500" />
+              <Heart className="h-4 w-4 text-(--danger-text)" />
               <span className="text-sm">
                 {kudo.reactions?.length || 0} {t('recognition.reactions')}
               </span>

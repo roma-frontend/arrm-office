@@ -53,33 +53,33 @@ const StatusBadge = ({ status }: { status: string }) => {
   const { t } = useTranslation();
   const variant = {
     pending: {
-      bg: 'bg-yellow-100 dark:bg-yellow-900/30',
-      text: 'text-yellow-700 dark:text-yellow-400',
+      bg: 'bg-(--warning-quiet) dark:bg-(--warning-quiet)',
+      text: 'text-(--warning-text) dark:text-(--warning-text)',
       Icon: Clock,
     },
     in_progress: {
-      bg: 'bg-blue-100 dark:bg-blue-900/30',
-      text: 'text-blue-700 dark:text-blue-400',
+      bg: 'bg-(--brand-quiet) dark:bg-(--brand-quiet)',
+      text: 'text-(--brand-text) dark:text-(--brand-text)',
       Icon: AlertCircle,
     },
     review: {
-      bg: 'bg-purple-100 dark:bg-purple-900/30',
-      text: 'text-purple-700 dark:text-purple-400',
+      bg: 'bg-(--purple-quiet) dark:bg-(--purple-quiet)',
+      text: 'text-(--purple-text) dark:text-(--purple-text)',
       Icon: FileText,
     },
     completed: {
-      bg: 'bg-green-100 dark:bg-green-900/30',
-      text: 'text-green-700 dark:text-green-400',
+      bg: 'bg-(--success-quiet) dark:bg-(--success-quiet)',
+      text: 'text-(--success-text) dark:text-(--success-text)',
       Icon: CheckCircle,
     },
     cancelled: {
-      bg: 'bg-gray-100 dark:bg-gray-900/30',
-      text: 'text-gray-700 dark:text-gray-400',
+      bg: 'bg-(--surface-2) dark:bg-(--surface-2)',
+      text: 'text-(--text-3) dark:text-(--text-3)',
       Icon: XCircle,
     },
   }[status] ?? {
-    bg: 'bg-yellow-100 dark:bg-yellow-900/30',
-    text: 'text-yellow-700 dark:text-yellow-400',
+    bg: 'bg-(--warning-quiet) dark:bg-(--warning-quiet)',
+    text: 'text-(--warning-text) dark:text-(--warning-text)',
     Icon: Clock,
   };
 
@@ -104,11 +104,14 @@ const PriorityBadge = ({ priority }: { priority: string }) => {
   const { t } = useTranslation();
   const variant =
     {
-      urgent: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
-      high: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400',
-      medium: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400',
-      low: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
-    }[priority] ?? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400';
+      urgent:
+        'bg-(--danger-quiet) dark:bg-(--danger-quiet) text-(--danger-text) dark:text-(--danger-text)',
+      high: 'bg-(--warning-quiet) dark:bg-(--warning-quiet) text-(--warning-text) dark:text-(--warning-text)',
+      medium:
+        'bg-(--warning-quiet) dark:bg-(--warning-quiet) text-(--warning-text) dark:text-(--warning-text)',
+      low: 'bg-(--success-quiet) dark:bg-(--success-quiet) text-(--success-text) dark:text-(--success-text)',
+    }[priority] ??
+    'bg-(--warning-quiet) dark:bg-(--warning-quiet) text-(--warning-text) dark:text-(--warning-text)';
 
   const label =
     {
@@ -311,7 +314,7 @@ export default function TaskDetailClient({
             {deadline && (
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">{t('tasksClient.deadline')}</span>
-                <span className={`font-medium ${isOverdue ? 'text-red-500' : ''}`}>
+                <span className={`font-medium ${isOverdue ? 'text-(--danger-text)' : ''}`}>
                   {format(deadline, 'dd MMM yyyy', { locale: dateLocale })}
                   {isOverdue && ` (${t('tasksClient.overdueTag')})`}
                 </span>
@@ -359,7 +362,9 @@ export default function TaskDetailClient({
                 <span className="text-sm text-muted-foreground">
                   {t('tasksClient.daysRemaining')}
                 </span>
-                <span className={`font-medium ${isOverdue ? 'text-red-500' : 'text-green-500'}`}>
+                <span
+                  className={`font-medium ${isOverdue ? 'text-(--danger-text)' : 'text-(--success-text)'}`}
+                >
                   {isOverdue
                     ? `${Math.ceil((now - deadline.getTime()) / (1000 * 60 * 60 * 24))} ${t('tasksClient.daysOverdue')}`
                     : `${Math.ceil((deadline.getTime() - now) / (1000 * 60 * 60 * 24))} ${t('tasksClient.daysLeft')}`}
@@ -423,7 +428,7 @@ export default function TaskDetailClient({
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <FolderKanban className="h-5 w-5 text-blue-500" />
+              <FolderKanban className="h-5 w-5 text-(--brand-text)" />
               {t('tasksClient.linkedProject', 'Linked Project')}
             </CardTitle>
             <CardDescription>
@@ -432,12 +437,12 @@ export default function TaskDetailClient({
           </CardHeader>
           <CardContent>
             <div
-              className="flex items-center justify-between p-3 rounded-lg border border-blue-500/20 bg-blue-500/5
-                hover:bg-blue-500/10 hover:border-blue-500/40 transition-all duration-200 cursor-pointer group"
+              className="flex items-center justify-between p-3 rounded-lg border border-(--brand-outline) bg-(--brand-quiet)
+                hover:bg-(--brand-quiet) hover:border-(--brand-outline) transition-all duration-200 cursor-pointer group"
               onClick={() => router.push(`/projects/${task.projectId}`)}
             >
               <div className="flex items-center gap-3 min-w-0">
-                <div className="p-1.5 rounded-lg bg-gradient-to-br from-blue-500 to-sky-500 shadow-sm">
+                <div className="p-1.5 rounded-lg bg-gradient-to-br from-(--brand) to-(--brand) shadow-sm">
                   <FolderKanban className="w-4 h-4 text-white" />
                 </div>
                 <div className="min-w-0">
@@ -457,7 +462,7 @@ export default function TaskDetailClient({
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Target className="h-5 w-5 text-purple-500" />
+              <Target className="h-5 w-5 text-(--purple-text)" />
               {t('tasksClient.linkedObjective', 'Linked Goal')}
             </CardTitle>
             <CardDescription>
@@ -467,12 +472,12 @@ export default function TaskDetailClient({
           <CardContent className="space-y-3">
             {/* Main Objective Card */}
             <div
-              className="flex items-center justify-between p-3 rounded-lg border border-blue-500/20 bg-blue-500/5
-                hover:bg-blue-500/10 hover:border-blue-500/40 transition-all duration-200 cursor-pointer group"
+              className="flex items-center justify-between p-3 rounded-lg border border-(--brand-outline) bg-(--brand-quiet)
+                hover:bg-(--brand-quiet) hover:border-(--brand-outline) transition-all duration-200 cursor-pointer group"
               onClick={() => router.push(`/goals/${linkedObjective._id}`)}
             >
               <div className="flex items-center gap-3 min-w-0">
-                <div className="p-1.5 rounded-lg bg-gradient-to-br from-purple-500 to-blue-500 shadow-sm">
+                <div className="p-1.5 rounded-lg bg-gradient-to-br from-(--purple) to-(--brand) shadow-sm">
                   <Target className="w-4 h-4 text-white" />
                 </div>
                 <div className="min-w-0">
@@ -491,10 +496,10 @@ export default function TaskDetailClient({
                     <div
                       className={`h-full rounded-full transition-all ${
                         linkedObjective.progress >= 70
-                          ? 'bg-emerald-500'
+                          ? 'bg-(--success-solid)'
                           : linkedObjective.progress >= 40
-                            ? 'bg-amber-500'
-                            : 'bg-red-500'
+                            ? 'bg-(--warning-solid)'
+                            : 'bg-(--danger-solid)'
                       }`}
                       style={{ width: `${linkedObjective.progress}%` }}
                     />
@@ -514,10 +519,10 @@ export default function TaskDetailClient({
                 );
                 if (!linkedKr) return null;
                 return (
-                  <div className="p-3 rounded-lg border border-purple-500/20 bg-purple-500/5">
+                  <div className="p-3 rounded-lg border border-(--purple-outline) bg-(--purple-quiet)">
                     <div className="flex items-center gap-2 mb-2">
-                      <BarChart3 className="w-3.5 h-3.5 text-purple-500" />
-                      <span className="text-xs font-medium text-purple-600 dark:text-purple-400">
+                      <BarChart3 className="w-3.5 h-3.5 text-(--purple-text)" />
+                      <span className="text-xs font-medium text-(--purple-text) dark:text-(--purple-text)">
                         {t('tasksClient.linkedKeyResult', 'Linked Key Result')}
                       </span>
                     </div>
@@ -621,7 +626,7 @@ export default function TaskDetailClient({
                 e.preventDefault();
                 void handleConfirmDelete();
               }}
-              className="bg-red-600 text-white hover:bg-red-700"
+              className="bg-(--danger-solid) text-white hover:bg-(--danger-solid)"
             >
               {isDeleting ? t('tasksClient.taskDeleting') : t('tasksClient.deleteTask')}
             </AlertDialogAction>

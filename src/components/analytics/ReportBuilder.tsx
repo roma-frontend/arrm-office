@@ -65,17 +65,27 @@ interface ReportWidget {
 
 const CHART_TYPES: { type: ChartType; icon: typeof BarChart3; label: string; gradient: string }[] =
   [
-    { type: 'bar', icon: BarChart3, label: 'Bar Chart', gradient: 'from-blue-500 to-blue-600' },
+    { type: 'bar', icon: BarChart3, label: 'Bar Chart', gradient: 'from-(--brand) to-(--brand)' },
     {
       type: 'line',
       icon: TrendingUp,
       label: 'Line Chart',
-      gradient: 'from-emerald-500 to-teal-600',
+      gradient: 'from-(--success-solid) to-(--success-solid)',
     },
-    { type: 'pie', icon: PieChart, label: 'Pie Chart', gradient: 'from-violet-500 to-purple-600' },
-    { type: 'area', icon: Activity, label: 'Area Chart', gradient: 'from-cyan-500 to-blue-600' },
-    { type: 'table', icon: Table, label: 'Data Table', gradient: 'from-slate-500 to-slate-600' },
-    { type: 'metric', icon: Layout, label: 'Metric Card', gradient: 'from-rose-500 to-pink-600' },
+    { type: 'pie', icon: PieChart, label: 'Pie Chart', gradient: 'from-(--purple) to-(--purple)' },
+    { type: 'area', icon: Activity, label: 'Area Chart', gradient: 'from-(--cyan) to-(--brand)' },
+    {
+      type: 'table',
+      icon: Table,
+      label: 'Data Table',
+      gradient: 'from-(--surface-3) to-(--surface-3)',
+    },
+    {
+      type: 'metric',
+      icon: Layout,
+      label: 'Metric Card',
+      gradient: 'from-(--danger-solid) to-(--pink)',
+    },
   ];
 
 const METRIC_FIELDS: { value: MetricField; icon: typeof Users; label: string }[] = [
@@ -200,14 +210,14 @@ export default function ReportBuilder() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-            <BarChart3 className="w-6 h-6 text-emerald-500" />
+          <div className="p-2.5 rounded-xl bg-(--success-quiet) border border-(--success-outline)">
+            <BarChart3 className="w-6 h-6 text-(--success-text)" />
           </div>
           <div>
             <input
               value={reportName}
               onChange={(e) => setReportName(e.target.value)}
-              className="text-xl font-bold text-(--text-primary) bg-transparent border-none outline-none focus:border-b focus:border-blue-500/50"
+              className="text-xl font-bold text-(--text-primary) bg-transparent border-none outline-none focus:border-b focus:border-(--brand-outline)"
               placeholder="Report Name"
             />
             <p className="text-sm text-(--text-muted)">
@@ -251,7 +261,7 @@ export default function ReportBuilder() {
         </Button>
         <div className="w-px h-6 bg-(--border)" />
         <div className="flex items-center gap-1 text-xs text-(--text-muted)">
-          <RefreshCw className={`w-3 h-3 ${autoRefresh ? 'text-emerald-500' : ''}`} />
+          <RefreshCw className={`w-3 h-3 ${autoRefresh ? 'text-(--success-text)' : ''}`} />
           {t('reportBuilder.autoRefresh', 'Auto-refresh')}
           <Switch
             checked={autoRefresh}
@@ -286,7 +296,7 @@ export default function ReportBuilder() {
               onClick={() => setSelectedWidget(widget.id)}
               className={`p-3 rounded-xl border cursor-pointer transition-all ${
                 selectedWidget === widget.id
-                  ? 'border-blue-500/50 bg-blue-500/5 shadow-sm'
+                  ? 'border-(--brand-outline) bg-(--brand-quiet) shadow-sm'
                   : 'border-(--border) bg-(--card) hover:border-(--border)/80 hover:shadow-sm'
               }`}
             >
@@ -302,7 +312,7 @@ export default function ReportBuilder() {
                   }}
                   className="opacity-0 hover:opacity-100 transition-opacity"
                 >
-                  <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                  <Trash2 className="w-3.5 h-3.5 text-(--danger-text)" />
                 </button>
               </div>
               <p className="text-sm font-medium text-(--text-primary) truncate">{widget.title}</p>
@@ -327,7 +337,7 @@ export default function ReportBuilder() {
           {selectedWidget && !previewMode ? (
             <Card className="p-5 border border-(--border) bg-(--card)">
               <h3 className="font-semibold text-(--text-primary) mb-4 flex items-center gap-2">
-                <Settings2 className="w-4 h-4 text-emerald-500" />
+                <Settings2 className="w-4 h-4 text-(--success-text)" />
                 {t('reportBuilder.widgetSettings', 'Widget Settings')}
               </h3>
               <div className="space-y-4">
@@ -339,7 +349,7 @@ export default function ReportBuilder() {
                   <input
                     value={widgets.find((w) => w.id === selectedWidget)?.title || ''}
                     onChange={(e) => updateWidget(selectedWidget, { title: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg bg-(--background) border border-(--border) text-sm text-(--text-primary) outline-none focus:border-blue-500/50"
+                    className="w-full px-3 py-2 rounded-lg bg-(--background) border border-(--border) text-sm text-(--text-primary) outline-none focus:border-(--brand-outline)"
                   />
                 </div>
 
@@ -359,7 +369,7 @@ export default function ReportBuilder() {
                           onClick={() => updateWidget(selectedWidget, { type: chart.type })}
                           className={`flex flex-col items-center gap-1 p-2.5 rounded-lg border text-xs transition-all ${
                             isActive
-                              ? 'border-blue-500/50 bg-blue-500/5 text-blue-600'
+                              ? 'border-(--brand-outline) bg-(--brand-quiet) text-(--brand-text)'
                               : 'border-(--border) bg-(--background) text-(--text-muted) hover:border-(--border)/80'
                           }`}
                         >
@@ -382,7 +392,7 @@ export default function ReportBuilder() {
                       onChange={(e) =>
                         updateWidget(selectedWidget, { metric: e.target.value as MetricField })
                       }
-                      className="w-full px-3 py-2 rounded-lg bg-(--background) border border-(--border) text-sm text-(--text-primary) outline-none focus:border-blue-500/50"
+                      className="w-full px-3 py-2 rounded-lg bg-(--background) border border-(--border) text-sm text-(--text-primary) outline-none focus:border-(--brand-outline)"
                     >
                       {METRIC_FIELDS.map((f) => (
                         <option key={f.value} value={f.value}>
@@ -402,7 +412,7 @@ export default function ReportBuilder() {
                           period: e.target.value as ReportWidget['period'],
                         })
                       }
-                      className="w-full px-3 py-2 rounded-lg bg-(--background) border border-(--border) text-sm text-(--text-primary) outline-none focus:border-blue-500/50"
+                      className="w-full px-3 py-2 rounded-lg bg-(--background) border border-(--border) text-sm text-(--text-primary) outline-none focus:border-(--brand-outline)"
                     >
                       <option value="daily">{t('reportBuilder.daily', 'Daily')}</option>
                       <option value="weekly">{t('reportBuilder.weekly', 'Weekly')}</option>
@@ -425,7 +435,7 @@ export default function ReportBuilder() {
                         groupBy: e.target.value as ReportWidget['groupBy'],
                       })
                     }
-                    className="w-full px-3 py-2 rounded-lg bg-(--background) border border-(--border) text-sm text-(--text-primary) outline-none focus:border-blue-500/50"
+                    className="w-full px-3 py-2 rounded-lg bg-(--background) border border-(--border) text-sm text-(--text-primary) outline-none focus:border-(--brand-outline)"
                   >
                     <option value="department">
                       {t('reportBuilder.department', 'Department')}
@@ -452,7 +462,7 @@ export default function ReportBuilder() {
                           onClick={() => updateWidget(selectedWidget, { color })}
                           className={`w-7 h-7 rounded-lg transition-all ${
                             isActive
-                              ? 'ring-2 ring-offset-2 ring-offset-(--background) ring-blue-500 scale-110'
+                              ? 'ring-2 ring-offset-2 ring-offset-(--background) ring-(--brand-text) scale-110'
                               : ''
                           }`}
                           style={{ backgroundColor: color }}

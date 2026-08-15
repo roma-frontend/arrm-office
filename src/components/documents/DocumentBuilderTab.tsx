@@ -489,7 +489,7 @@ function BlueprintCard({
           )}
           {blueprint.version === 0 && (
             <Button variant="ghost" size="sm" onClick={onRemove} disabled={busy}>
-              <Trash2 className="mr-1.5 h-4 w-4 text-red-500" />
+              <Trash2 className="mr-1.5 h-4 w-4 text-(--danger-text)" />
               {t('docBuilder.delete', 'Delete')}
             </Button>
           )}

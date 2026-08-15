@@ -53,14 +53,14 @@ export function CreateIncidentWizard({ userId, onComplete, onCancel }: CreateInc
               title: t('incidentWizard.severity.medium'),
               description: t('incidentWizard.severity.mediumDesc'),
               icon: <AlertCircle className="w-6 h-6" />,
-              color: 'bg-yellow-500/10 text-yellow-600',
+              color: 'bg-(--warning-quiet) text-(--warning-text)',
             },
             {
               value: 'high',
               title: t('incidentWizard.severity.high'),
               description: t('incidentWizard.severity.highDesc'),
               icon: <AlertTriangle className="w-6 h-6" />,
-              color: 'bg-orange-500/10 text-orange-600',
+              color: 'bg-(--warning-quiet) text-(--warning-text)',
             },
             {
               value: 'critical',
@@ -119,8 +119,8 @@ export function CreateIncidentWizard({ userId, onComplete, onCancel }: CreateInc
               placeholder="0"
             />
           </div>
-          <div className="p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
-            <p className="text-sm text-yellow-700 dark:text-yellow-300">
+          <div className="p-4 rounded-lg bg-(--warning-quiet) border border-(--warning-outline)">
+            <p className="text-sm text-(--warning-text) dark:text-(--warning-text)">
               ⚠️ {t('incidentWizard.steps.impact.notice')}
             </p>
           </div>

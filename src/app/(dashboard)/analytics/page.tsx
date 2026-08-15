@@ -181,12 +181,12 @@ export default function AnalyticsPage() {
                 <p className="text-xs sm:text-sm text-(--text-muted)">
                   {t('analytics.pendingLeaves')}
                 </p>
-                <p className="text-xl sm:text-2xl font-bold text-yellow-600 dark:text-yellow-500 mt-1">
+                <p className="text-xl sm:text-2xl font-bold text-(--warning-text) dark:text-(--warning-text) mt-1">
                   {pendingLeaves}
                 </p>
               </div>
-              <div className="p-2 sm:p-3 bg-yellow-500/20 dark:bg-yellow-500/30 rounded-xl">
-                <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-600 dark:text-yellow-500" />
+              <div className="p-2 sm:p-3 bg-(--warning-quiet) dark:bg-(--warning-quiet) rounded-xl">
+                <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-(--warning-text) dark:text-(--warning-text)" />
               </div>
             </div>
           </div>
@@ -197,12 +197,12 @@ export default function AnalyticsPage() {
                 <p className="text-xs sm:text-sm text-(--text-muted)">
                   {t('analytics.approvedLeaves')}
                 </p>
-                <p className="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-500 mt-1">
+                <p className="text-xl sm:text-2xl font-bold text-(--success-text) dark:text-(--success-text) mt-1">
                   {approvedLeaves}
                 </p>
               </div>
-              <div className="p-2 sm:p-3 bg-green-500/20 dark:bg-green-500/30 rounded-xl">
-                <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-green-600 dark:text-green-500" />
+              <div className="p-2 sm:p-3 bg-(--success-quiet) dark:bg-(--success-quiet) rounded-xl">
+                <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-(--success-text) dark:text-(--success-text)" />
               </div>
             </div>
           </div>
@@ -213,12 +213,12 @@ export default function AnalyticsPage() {
                 <p className="text-xs sm:text-sm text-(--text-muted)">
                   {t('analytics.approvalRate')}
                 </p>
-                <p className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-500 mt-1">
+                <p className="text-xl sm:text-2xl font-bold text-(--brand-text) dark:text-(--brand-text) mt-1">
                   {approvalRate}%
                 </p>
               </div>
-              <div className="p-2 sm:p-3 bg-blue-500/20 dark:bg-blue-500/30 rounded-xl">
-                <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 dark:text-blue-500" />
+              <div className="p-2 sm:p-3 bg-(--brand-quiet) dark:bg-(--brand-quiet) rounded-xl">
+                <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-(--brand-text) dark:text-(--brand-text)" />
               </div>
             </div>
           </div>

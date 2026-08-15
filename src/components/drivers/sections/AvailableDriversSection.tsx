@@ -114,13 +114,13 @@ export const AvailableDriversSection = memo(function AvailableDriversSection({
                   variant="ghost"
                   size="sm"
                   onClick={() => router.push('/drivers/favorites')}
-                  className="gap-1.5 h-8 text-xs rounded-xl hover:bg-red-500/10 hover:text-red-500 transition-all p-1.5 sm:p-0"
+                  className="gap-1.5 h-8 text-xs rounded-xl hover:bg-(--danger-quiet) hover:text-(--danger-text) transition-all p-1.5 sm:p-0"
                 >
-                  <Heart className="w-3.5 h-3.5 fill-red-500 text-red-500" />
+                  <Heart className="w-3.5 h-3.5 fill-red-500 text-(--danger-text)" />
                   <span className="hidden sm:inline">
                     {t('driver.favorites.title', 'Favorites')}
                   </span>
-                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-red-500/20 text-red-500 text-[10px] font-bold">
+                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-(--danger-quiet) text-(--danger-text) text-[10px] font-bold">
                     {favoriteIds.size}
                   </span>
                 </Button>

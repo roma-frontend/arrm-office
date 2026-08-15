@@ -215,8 +215,11 @@ function QuestionResultCard({
               </div>
             </div>
             <div className="flex h-2 rounded-full overflow-hidden bg-muted">
-              <div className="bg-green-500 transition-all" style={{ width: `${yesPct}%` }} />
-              <div className="bg-red-500 transition-all" style={{ width: `${noPct}%` }} />
+              <div
+                className="bg-(--success-solid) transition-all"
+                style={{ width: `${yesPct}%` }}
+              />
+              <div className="bg-(--danger-solid) transition-all" style={{ width: `${noPct}%` }} />
             </div>
           </div>
         );
@@ -358,10 +361,10 @@ function SurveyTrendsChart({ trends }: { trends: SurveyTrend[] }) {
                   <div
                     className={`h-full rounded-full transition-all ${
                       trend.status === 'active'
-                        ? 'bg-green-500'
+                        ? 'bg-(--success-solid)'
                         : trend.status === 'closed'
-                          ? 'bg-red-500'
-                          : 'bg-gray-400'
+                          ? 'bg-(--danger-solid)'
+                          : 'bg-(--surface-3)'
                     }`}
                     style={{ width: `${barWidth}%` }}
                   />

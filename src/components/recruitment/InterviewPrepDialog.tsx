@@ -114,7 +114,7 @@ export function InterviewPrepDialog({
     <SheetContent side="right" size="lg" closeLabel={t('common.close', 'Close')}>
       <SheetHeader>
         <SheetTitle className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-purple-500" />
+          <Sparkles className="h-4 w-4 text-(--purple-text)" />
           {t('interviewPrep.title', 'Interview Prep')}
           {candidate?.vacancy && (
             <span className="text-sm font-normal text-muted-foreground">
@@ -172,7 +172,7 @@ export function InterviewPrepDialog({
             <>
               {/* Opening tips */}
               {prep.openingTips && (
-                <div className="rounded-lg border border-blue-200 bg-blue-50 dark:bg-blue-950/30 p-3">
+                <div className="rounded-lg border border-(--brand-outline) bg-(--brand-quiet) dark:bg-(--brand-quiet) p-3">
                   <p className="text-xs font-semibold flex items-center gap-1.5 mb-1">
                     <Lightbulb className="h-3.5 w-3.5 text-(--brand-text)" />
                     {t('interviewPrep.opening', 'Opening')}
@@ -232,7 +232,7 @@ export function InterviewPrepDialog({
 
               {/* Red flags */}
               {prep.redFlags.length > 0 && (
-                <div className="rounded-lg border border-red-200 bg-red-50 dark:bg-red-950/30 p-3">
+                <div className="rounded-lg border border-(--danger-outline) bg-(--danger-quiet) dark:bg-(--danger-quiet) p-3">
                   <p className="text-xs font-semibold flex items-center gap-1.5 mb-2">
                     <AlertTriangle className="h-3.5 w-3.5 text-(--danger-text)" />
                     {t('interviewPrep.redFlags', 'Red flags')}
@@ -240,7 +240,7 @@ export function InterviewPrepDialog({
                   <ul className="space-y-1">
                     {prep.redFlags.map((r, i) => (
                       <li key={i} className="text-xs text-muted-foreground flex gap-1.5">
-                        <span className="text-red-500">•</span>
+                        <span className="text-(--danger-text)">•</span>
                         {r}
                       </li>
                     ))}

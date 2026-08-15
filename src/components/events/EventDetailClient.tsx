@@ -29,13 +29,19 @@ import { enUS, ru, hy } from 'date-fns/locale';
 const EventTypeBadge = ({ type }: { type: string }) => {
   const { t } = useTranslation();
   const variants: Record<string, string> = {
-    meeting: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-    conference: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
-    training: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-    team_building: 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400',
-    holiday: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-    deadline: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-    other: 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400',
+    meeting:
+      'bg-(--brand-quiet) text-(--brand-text) dark:bg-(--brand-quiet) dark:text-(--brand-text)',
+    conference:
+      'bg-(--purple-quiet) text-(--purple-text) dark:bg-(--purple-quiet) dark:text-(--purple-text)',
+    training:
+      'bg-(--success-quiet) text-(--success-text) dark:bg-(--success-quiet) dark:text-(--success-text)',
+    team_building:
+      'bg-(--pink-quiet) text-(--pink-text) dark:bg-(--pink-quiet) dark:text-(--pink-text)',
+    holiday:
+      'bg-(--warning-quiet) text-(--warning-text) dark:bg-(--warning-quiet) dark:text-(--warning-text)',
+    deadline:
+      'bg-(--danger-quiet) text-(--danger-text) dark:bg-(--danger-quiet) dark:text-(--danger-text)',
+    other: 'bg-(--surface-2) text-(--text-3) dark:bg-(--surface-2) dark:text-(--text-3)',
   };
 
   return (
@@ -50,9 +56,10 @@ const PriorityBadge = ({ priority }: { priority?: string }) => {
   if (!priority) return null;
 
   const variants: Record<string, string> = {
-    high: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-    medium: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-    low: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+    high: 'bg-(--danger-quiet) text-(--danger-text) dark:bg-(--danger-quiet) dark:text-(--danger-text)',
+    medium:
+      'bg-(--warning-quiet) text-(--warning-text) dark:bg-(--warning-quiet) dark:text-(--warning-text)',
+    low: 'bg-(--success-quiet) text-(--success-text) dark:bg-(--success-quiet) dark:text-(--success-text)',
   };
 
   return (
@@ -290,9 +297,9 @@ export default function EventDetailClient() {
       )}
 
       {attendance && conflictCount > 0 && attendance.attendanceStatus && (
-        <Card className="border-yellow-200 dark:border-yellow-900">
+        <Card className="border-(--warning-outline) dark:border-(--warning-outline)">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400">
+            <CardTitle className="flex items-center gap-2 text-(--warning-text) dark:text-(--warning-text)">
               <AlertTriangle className="h-5 w-5" />
               {t('events.conflicts')}
             </CardTitle>
@@ -304,9 +311,9 @@ export default function EventDetailClient() {
                 .map((conflict, index: number) => (
                   <div
                     key={index}
-                    className="flex items-center gap-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg"
+                    className="flex items-center gap-3 p-3 bg-(--warning-quiet) dark:bg-(--warning-quiet) rounded-lg"
                   >
-                    <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                    <AlertTriangle className="h-4 w-4 text-(--warning-text) dark:text-(--warning-text)" />
                     <div>
                       <p className="font-medium">{conflict.userName}</p>
                       <p className="text-sm text-muted-foreground">{conflict.department}</p>

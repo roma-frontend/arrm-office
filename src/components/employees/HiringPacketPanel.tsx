@@ -1011,7 +1011,7 @@ export default function HiringPacketPanel({ userId, canManage }: HiringPacketPan
                         {signer.status === 'signed' ? (
                           <Check className="w-3 h-3 text-(--success-text)" />
                         ) : signer.status === 'declined' ? (
-                          <XCircle className="w-3 h-3 text-red-500" />
+                          <XCircle className="w-3 h-3 text-(--danger-text)" />
                         ) : (
                           <Loader2 className="w-3 h-3" />
                         )}

@@ -99,7 +99,7 @@ export function SalaryCalculatorStep({ value, onChange }: SalaryCalculatorStepPr
                 onClick={() => onChange({ mode: m })}
                 className={`relative flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all ${
                   selected
-                    ? 'btn-gradient border-transparent text-white shadow-md ring-[3px] ring-blue-500/30'
+                    ? 'btn-gradient border-transparent text-white shadow-md ring-[3px] ring-(--brand-text)'
                     : 'border-(--border) bg-(--background-subtle) text-(--text-muted) hover:border-(--border-subtle)'
                 }`}
               >

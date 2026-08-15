@@ -289,10 +289,10 @@ export function TeamSidebar({ userId, onToggle }: TeamSidebarProps) {
             index={0}
             isExpanded={!collapsedSections.overview}
             isMobile={isMobile}
-            className="p-2 sm:p-3 rounded-xl bg-blue-500/10 border border-blue-500/20"
+            className="p-2 sm:p-3 rounded-xl bg-(--brand-quiet) border border-(--brand-outline)"
           >
             <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
-              <UserCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-blue-500" />
+              <UserCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-(--brand-text)" />
               <span className="text-[10px] sm:text-xs text-(--brand-text) font-medium">
                 {t('employees.active')}
               </span>
@@ -304,7 +304,7 @@ export function TeamSidebar({ userId, onToggle }: TeamSidebarProps) {
             index={1}
             isExpanded={!collapsedSections.overview}
             isMobile={isMobile}
-            className="p-2 sm:p-3 rounded-xl bg-gray-500/10 border border-gray-500/20"
+            className="p-2 sm:p-3 rounded-xl bg-(--surface-2) border border-(--border-default)"
           >
             <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
               <UserX className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-(--text-3)" />
@@ -434,7 +434,7 @@ export function TeamSidebar({ userId, onToggle }: TeamSidebarProps) {
                 }}
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-(--background-subtle) transition-colors"
               >
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full overflow-hidden shrink-0 flex items-center justify-center font-bold text-white text-[10px] sm:text-xs bg-linear-to-br from-blue-500 to-sky-500">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full overflow-hidden shrink-0 flex items-center justify-center font-bold text-white text-[10px] sm:text-xs bg-linear-to-br from-(--brand) to-(--brand)">
                   {emp.avatarUrl ? (
                     <Image
                       src={emp.avatarUrl}

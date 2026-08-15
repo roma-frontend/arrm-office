@@ -106,9 +106,17 @@ const TONE_CLASSES: Record<TimelineTone, { text: string; bg: string; ring: strin
     ring: 'ring-(--border)',
   },
   accent: { text: 'text-(--primary)', bg: 'bg-(--primary)/10', ring: 'ring-(--primary)/30' },
-  success: { text: 'text-emerald-600', bg: 'bg-emerald-500/10', ring: 'ring-emerald-500/30' },
-  warning: { text: 'text-amber-600', bg: 'bg-amber-500/10', ring: 'ring-amber-500/30' },
-  danger: { text: 'text-red-600', bg: 'bg-red-500/10', ring: 'ring-red-500/30' },
+  success: {
+    text: 'text-(--success-text)',
+    bg: 'bg-(--success-quiet)',
+    ring: 'ring-(--success-text)',
+  },
+  warning: {
+    text: 'text-(--warning-text)',
+    bg: 'bg-(--warning-quiet)',
+    ring: 'ring-(--warning-text)',
+  },
+  danger: { text: 'text-(--danger-text)', bg: 'bg-(--danger-quiet)', ring: 'ring-(--danger-text)' },
 };
 
 const BADGE_VARIANTS: Record<TimelineTone, 'secondary' | 'success' | 'warning' | 'danger'> = {
@@ -355,8 +363,8 @@ function PhasePill({ phase }: { phase: EventTimeline['phase'] }) {
     return (
       <span className="inline-flex items-center gap-1.5 rounded-full bg-(--success-quiet) px-2.5 py-0.5 text-[10px] font-semibold text-(--success-text)">
         <span className="relative flex h-1.5 w-1.5">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
-          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-(--success-solid) opacity-75" />
+          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-(--success-solid)" />
         </span>
         {t('eventTimeline.phase.live')}
       </span>
@@ -437,7 +445,7 @@ function MilestoneRail({
                     {milestone.label}
                   </p>
                   {milestone.state === 'done' && !isNow && (
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                    <CheckCircle2 className="h-3.5 w-3.5 text-(--success-text)" />
                   )}
                 </div>
                 <p className="mt-0.5 text-xs text-(--text-muted)">

@@ -264,7 +264,7 @@ export default function AccessTokensClient() {
                         onClick={() => copyToClipboard(createdCredentials.email, 'email')}
                       >
                         {copied === 'email' ? (
-                          <Check className="w-4 h-4 text-green-500" />
+                          <Check className="w-4 h-4 text-(--success-text)" />
                         ) : (
                           <Copy className="w-4 h-4" />
                         )}
@@ -287,7 +287,7 @@ export default function AccessTokensClient() {
                         onClick={() => copyToClipboard(createdCredentials.password, 'password')}
                       >
                         {copied === 'password' ? (
-                          <Check className="w-4 h-4 text-green-500" />
+                          <Check className="w-4 h-4 text-(--success-text)" />
                         ) : (
                           <Copy className="w-4 h-4" />
                         )}
@@ -514,9 +514,9 @@ export default function AccessTokensClient() {
               />
             </div>
 
-            <div className="p-3 rounded bg-yellow-500/10 border border-yellow-500/30">
+            <div className="p-3 rounded bg-(--warning-quiet) border border-(--warning-outline)">
               <div className="flex items-start gap-2">
-                <AlertTriangle className="w-4 h-4 text-yellow-500 mt-0.5 shrink-0" />
+                <AlertTriangle className="w-4 h-4 text-(--warning-text) mt-0.5 shrink-0" />
                 <div className="text-xs text-(--warning-text)">
                   <p className="font-semibold mb-1">{t('admin:accessTokens.securityNotice')}</p>
                   <ul className="list-disc list-inside space-y-1">

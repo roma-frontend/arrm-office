@@ -475,7 +475,7 @@ function FeaturedCard({ item }: { item: FeedItem }) {
       <CardContent className={`relative p-5 space-y-3 ${item.imageUrl ? 'text-white' : ''}`}>
         <div className="flex flex-wrap items-center gap-2">
           {item.isUrgent && (
-            <Badge className="gap-1 bg-red-500 text-white hover:bg-red-500">
+            <Badge className="gap-1 bg-(--danger-solid) text-white hover:bg-(--danger-solid)">
               <Zap className="h-3 w-3" />
               {t('news.urgent')}
             </Badge>

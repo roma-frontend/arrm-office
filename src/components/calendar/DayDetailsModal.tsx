@@ -358,7 +358,7 @@ export function DayDetailsModal({
                     >
                       <div
                         className="w-10 h-10 rounded-xl flex items-center justify-center text-white text-sm font-bold shrink-0"
-                        style={{ background: LEAVE_TYPE_BG[leave.type] || '#6b7280' }}
+                        style={{ background: LEAVE_TYPE_BG[leave.type] || 'var(--text-4)' }}
                       >
                         {getInitials(leave.userName ?? '?')}
                       </div>
@@ -407,9 +407,9 @@ export function DayDetailsModal({
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.05 }}
                       {...rowProps({ source: 'custom', data: evt })}
-                      className="flex items-start gap-3 p-3 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-500/5 hover:border-blue-400 transition-colors cursor-pointer"
+                      className="flex items-start gap-3 p-3 rounded-xl border border-(--brand-outline) dark:border-(--brand-outline) bg-(--brand-quiet) hover:border-(--brand-outline) transition-colors cursor-pointer"
                     >
-                      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-blue-500 text-white">
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-(--brand) text-white">
                         <CalendarPlus className="w-5 h-5" />
                       </div>
                       <div className="min-w-0 flex-1">
@@ -453,9 +453,9 @@ export function DayDetailsModal({
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.05 }}
                       {...rowProps({ source: 'google', data: evt })}
-                      className="flex items-start gap-3 p-3 rounded-xl border border-purple-200 dark:border-purple-800 bg-purple-500/5 hover:border-purple-400 transition-colors cursor-pointer"
+                      className="flex items-start gap-3 p-3 rounded-xl border border-(--purple-outline) dark:border-(--purple-outline) bg-(--purple-quiet) hover:border-(--purple-outline) transition-colors cursor-pointer"
                     >
-                      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-purple-500 text-white">
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-(--purple) text-white">
                         <ExternalLink className="w-5 h-5" />
                       </div>
                       <div className="min-w-0 flex-1">
@@ -501,9 +501,9 @@ export function DayDetailsModal({
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.05 }}
                       {...rowProps({ source: 'driver', data: evt })}
-                      className="flex items-start gap-3 p-3 rounded-xl border border-orange-200 dark:border-orange-800 bg-orange-500/5 hover:border-orange-400 transition-colors cursor-pointer"
+                      className="flex items-start gap-3 p-3 rounded-xl border border-(--warning-outline) dark:border-(--warning-outline) bg-(--warning-quiet) hover:border-(--warning-outline) transition-colors cursor-pointer"
                     >
-                      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-orange-500 text-white">
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-(--warning-solid) text-white">
                         <Car className="w-5 h-5" />
                       </div>
                       <div className="min-w-0 flex-1">

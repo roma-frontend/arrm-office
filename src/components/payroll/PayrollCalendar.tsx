@@ -67,30 +67,30 @@ const STATUS_CONFIG: Record<
     labelKey: 'payroll.draft',
   },
   calculated: {
-    color: 'text-blue-500',
-    bg: 'bg-blue-500/10',
-    border: 'border-blue-500/30',
+    color: 'text-(--brand-text)',
+    bg: 'bg-(--brand-quiet)',
+    border: 'border-(--brand-outline)',
     icon: AlertCircle,
     labelKey: 'payroll.calculated',
   },
   approved: {
-    color: 'text-emerald-500',
-    bg: 'bg-emerald-500/10',
-    border: 'border-emerald-500/30',
+    color: 'text-(--success-text)',
+    bg: 'bg-(--success-quiet)',
+    border: 'border-(--success-outline)',
     icon: CheckCircle2,
     labelKey: 'payroll.approved',
   },
   paid: {
     color: 'text-(--success-text)',
-    bg: 'bg-green-500/15',
-    border: 'border-green-500/40',
+    bg: 'bg-(--success-quiet)',
+    border: 'border-(--success-outline)',
     icon: CheckCircle2,
     labelKey: 'payroll.paid',
   },
   cancelled: {
-    color: 'text-rose-500',
-    bg: 'bg-rose-500/10',
-    border: 'border-rose-500/30',
+    color: 'text-(--danger-text)',
+    bg: 'bg-(--danger-quiet)',
+    border: 'border-(--danger-outline)',
     icon: XCircle,
     labelKey: 'payroll.cancelled',
   },
@@ -162,15 +162,15 @@ function MonthCard({ monthData, currency }: { monthData: PayrollCalendarMonth; c
       whileHover={{ y: -3, transition: { duration: 0.2 } }}
       className={`relative group rounded-2xl border transition-all duration-300 ${
         isCurrent
-          ? 'border-blue-400/50 shadow-md shadow-blue-500/10 bg-(--card)/70 dark:bg-(--card)/80 backdrop-blur-md'
+          ? 'border-(--brand-outline) shadow-md shadow-blue-500/10 bg-(--card)/70 dark:bg-(--card)/80 backdrop-blur-md'
           : hasRun
-            ? 'border-(--border) hover:border-blue-400/30 hover:shadow-md bg-(--card)/70 dark:bg-(--card)/80 backdrop-blur-md'
+            ? 'border-(--border) hover:border-(--brand-outline) hover:shadow-md bg-(--card)/70 dark:bg-(--card)/80 backdrop-blur-md'
             : 'border-(--border)/50 bg-(--background-subtle)/30'
       }`}
     >
       {/* Current month indicator */}
       {isCurrent && (
-        <div className="absolute -top-2.5 left-4 px-2 py-0.5 rounded-full bg-blue-500 text-[10px] font-bold text-white shadow-sm">
+        <div className="absolute -top-2.5 left-4 px-2 py-0.5 rounded-full bg-(--brand) text-[10px] font-bold text-white shadow-sm">
           {t('payroll.current', 'Current')}
         </div>
       )}
@@ -187,14 +187,14 @@ function MonthCard({ monthData, currency }: { monthData: PayrollCalendarMonth; c
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <div
-              className={`p-1.5 rounded-lg ${isCurrent ? 'bg-blue-500/20' : 'bg-(--background-subtle)'}`}
+              className={`p-1.5 rounded-lg ${isCurrent ? 'bg-(--brand-quiet)' : 'bg-(--background-subtle)'}`}
             >
               <Calendar
-                className={`w-4 h-4 ${isCurrent ? 'text-blue-500' : 'text-(--text-muted)'}`}
+                className={`w-4 h-4 ${isCurrent ? 'text-(--brand-text)' : 'text-(--text-muted)'}`}
               />
             </div>
             <span
-              className={`font-bold text-sm ${isCurrent ? 'text-blue-500' : 'text-(--text-primary)'}`}
+              className={`font-bold text-sm ${isCurrent ? 'text-(--brand-text)' : 'text-(--text-primary)'}`}
             >
               {monthName(monthData.month)}
             </span>
@@ -246,14 +246,14 @@ function MonthCard({ monthData, currency }: { monthData: PayrollCalendarMonth; c
                   <div
                     className={`h-full rounded-full transition-all duration-500 ${
                       status === 'paid'
-                        ? 'bg-green-500'
+                        ? 'bg-(--success-solid)'
                         : status === 'approved'
-                          ? 'bg-emerald-400'
+                          ? 'bg-(--success-solid)'
                           : status === 'calculated'
-                            ? 'bg-blue-400'
+                            ? 'bg-(--brand)'
                             : status === 'draft'
                               ? 'bg-(--text-muted)/30'
-                              : 'bg-rose-400'
+                              : 'bg-(--danger-solid)'
                     }`}
                     style={{
                       width:
@@ -341,7 +341,7 @@ export default function PayrollCalendar() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-(--text-primary) flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-blue-500" />
+            <Calendar className="w-5 h-5 text-(--brand-text)" />
             {t('payroll.calendarTitle', 'Payroll Calendar')}
           </h2>
           <p className="text-sm text-(--text-muted) mt-1">
@@ -382,22 +382,22 @@ export default function PayrollCalendar() {
               label: t('payroll.yearTotalGross', 'Year Gross'),
               value: formatCurrency(yearlyStats.totalGross, yearlyStats.currency),
               icon: DollarSign,
-              color: 'text-emerald-500',
-              bg: 'bg-emerald-500/10',
+              color: 'text-(--success-text)',
+              bg: 'bg-(--success-quiet)',
             },
             {
               label: t('payroll.yearTotalNet', 'Year Net'),
               value: formatCurrency(yearlyStats.totalNet, yearlyStats.currency),
               icon: BarChart3,
-              color: 'text-blue-500',
-              bg: 'bg-blue-500/10',
+              color: 'text-(--brand-text)',
+              bg: 'bg-(--brand-quiet)',
             },
             {
               label: t('payroll.completedMonths', 'Completed'),
               value: `${yearlyStats.completedMonths}/${yearlyStats.totalMonths}`,
               icon: CheckCircle2,
-              color: 'text-green-500',
-              bg: 'bg-green-500/10',
+              color: 'text-(--success-text)',
+              bg: 'bg-(--success-quiet)',
             },
             {
               label: t('payroll.payFrequency', 'Frequency'),
@@ -405,8 +405,8 @@ export default function PayrollCalendar() {
                 yearlyStats.payFrequency.charAt(0).toUpperCase() +
                 yearlyStats.payFrequency.slice(1),
               icon: Clock,
-              color: 'text-purple-500',
-              bg: 'bg-purple-500/10',
+              color: 'text-(--purple-text)',
+              bg: 'bg-(--purple-quiet)',
             },
           ].map((stat, idx) => {
             const Icon = stat.icon;

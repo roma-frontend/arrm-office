@@ -419,8 +419,8 @@ export function RoomBookingModal({
               availability === undefined
                 ? 'border-(--border) bg-(--background-subtle) text-(--text-muted)'
                 : availability.available
-                  ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
-                  : 'border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-400',
+                  ? 'border-(--success-outline) bg-(--success-quiet) text-(--success-text) dark:text-(--success-text)'
+                  : 'border-(--danger-outline) bg-(--danger-quiet) text-(--danger-text) dark:text-(--danger-text)',
             )}
             aria-live="polite"
           >
@@ -474,7 +474,7 @@ export function RoomBookingModal({
             <span
               className={cn(
                 'text-xs font-medium',
-                fits ? 'text-(--text-muted)' : 'text-red-600 dark:text-red-400',
+                fits ? 'text-(--text-muted)' : 'text-(--danger-text) dark:text-(--danger-text)',
               )}
             >
               <Users className="mr-1 inline h-3.5 w-3.5" />

@@ -164,7 +164,7 @@ export default function FeaturesClient() {
         <div className="relative max-w-6xl mx-auto px-6 text-center">
           <span
             className="inline-flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-full mb-6"
-            style={{ background: 'rgba(37,99,235,0.1)', color: '#2563eb' }}
+            style={{ background: 'var(--brand-quiet)', color: 'var(--brand-text)' }}
           >
             <Zap className="w-3.5 h-3.5" />
             {t('featuresPage.badge')}
@@ -301,7 +301,7 @@ export default function FeaturesClient() {
                     className="inline-flex items-center justify-center w-11 h-11 rounded-xl mb-4"
                     style={{ background: 'rgba(37,99,235,0.1)' }}
                   >
-                    <Icon className="w-5 h-5" style={{ color: '#2563eb' }} />
+                    <Icon className="w-5 h-5" style={{ color: 'var(--brand-text)' }} />
                   </div>
                   <h4 className="font-bold mb-1.5" style={{ color: 'var(--landing-text-primary)' }}>
                     {t(`featuresPage.platform.${feat.id}.title`)}
@@ -334,7 +334,7 @@ export default function FeaturesClient() {
               }}
             />
             <div className="relative">
-              <Shield className="w-12 h-12 mx-auto mb-6" style={{ color: '#2563eb' }} />
+              <Shield className="w-12 h-12 mx-auto mb-6" style={{ color: 'var(--brand-text)' }} />
               <h2
                 className="text-3xl font-black mb-4"
                 style={{ color: 'var(--landing-text-primary)' }}
@@ -352,7 +352,9 @@ export default function FeaturesClient() {
                   <Link
                     href="/dashboard"
                     className="px-8 py-3.5 rounded-xl font-semibold text-white transition-all hover:opacity-90 hover:shadow-lg shadow-md"
-                    style={{ background: 'linear-gradient(135deg, #2563eb, #60a5fa)' }}
+                    style={{
+                      background: 'linear-gradient(135deg, var(--brand), var(--brand-hover))',
+                    }}
                   >
                     {t('landing.goToDashboard')}
                   </Link>
@@ -360,7 +362,9 @@ export default function FeaturesClient() {
                   <Link
                     href="/register"
                     className="px-8 py-3.5 rounded-xl font-semibold text-white transition-all hover:opacity-90 hover:shadow-lg shadow-md"
-                    style={{ background: 'linear-gradient(135deg, #2563eb, #60a5fa)' }}
+                    style={{
+                      background: 'linear-gradient(135deg, var(--brand), var(--brand-hover))',
+                    }}
                   >
                     {t('featuresPage.ctaButton')}
                   </Link>

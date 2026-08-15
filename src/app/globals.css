@@ -257,6 +257,33 @@ html.light {
   color-scheme: light;
 }
 
+/* ── Dark-theme signature effects (ported from caron) ───────────────────────
+   Two rules make the graphite theme read as calm rather than flat:
+
+   • a soft radial glow pinned behind the top of the page — the one place the
+     eye rests first. Caron paints it on `body`; here the app shell owns the
+     surface, so the glow lives on it via the ambient layer instead. The orbs
+     already drift there; this adds the wash beneath them.
+   • a glow on `:focus-visible`, so the keyboard ring is a light source rather
+     than a hard outline on a dark surface.
+   ─────────────────────────────────────────────────────────────────────────── */
+.dark .dashboard-ambient::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 80% 60% at 50% -20%, rgb(44 140 213 / 18%), transparent);
+  pointer-events: none;
+}
+
+.dark *:focus-visible {
+  box-shadow:
+    0 0 0 2px var(--ring),
+    0 0 20px rgb(44 140 213 / 35%);
+  box-shadow:
+    0 0 0 2px var(--ring),
+    0 0 20px color-mix(in srgb, var(--ring) 35%, transparent);
+}
+
 /* ── Palettes ───────────────────────────────────────────────────────────────
    Both themes now live in src/styles/tokens.css. They were lifted out of here
    verbatim in role terms — every one of the 181 custom properties this file used
@@ -1242,98 +1269,6 @@ body {
    landing's depth: drifting colour orbs behind glass cards.
    ═══════════════════════════════════════════════════════════════ */
 
-.dashboard-ambient {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  overflow: hidden;
-}
-
-.ambient-orb {
-  position: absolute;
-  border-radius: 9999px;
-  filter: blur(90px);
-  will-change: transform;
-}
-
-@keyframes ambient-drift-1 {
-  0% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-
-  33% {
-    transform: translate3d(4vw, -6vh, 0) scale(1.12);
-  }
-
-  66% {
-    transform: translate3d(-3vw, 4vh, 0) scale(0.94);
-  }
-
-  100% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-}
-
-@keyframes ambient-drift-2 {
-  0% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-
-  40% {
-    transform: translate3d(-5vw, 5vh, 0) scale(1.08);
-  }
-
-  75% {
-    transform: translate3d(3vw, -3vh, 0) scale(0.9);
-  }
-
-  100% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-}
-
-@keyframes ambient-drift-3 {
-  0% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-
-  50% {
-    transform: translate3d(6vw, 3vh, 0) scale(1.15);
-  }
-
-  100% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-}
-
-.ambient-orb-1 {
-  top: -12%;
-  left: -6%;
-  width: 42vw;
-  height: 42vw;
-  background: radial-gradient(circle, var(--landing-orb-1) 0%, transparent 70%);
-  animation: ambient-drift-1 26s ease-in-out infinite;
-}
-
-.ambient-orb-2 {
-  bottom: -14%;
-  right: -8%;
-  width: 46vw;
-  height: 46vw;
-  background: radial-gradient(circle, var(--landing-orb-2) 0%, transparent 70%);
-  animation: ambient-drift-2 32s ease-in-out infinite;
-}
-
-.ambient-orb-3 {
-  top: 38%;
-  left: 42%;
-  width: 30vw;
-  height: 30vw;
-  background: radial-gradient(circle, var(--landing-orb-3) 0%, transparent 70%);
-  animation: ambient-drift-3 38s ease-in-out infinite;
-}
-
 /* Glass panel — the dashboard's card surface. Semi-transparent so the orbs
    drift behind it, with a blur so the text stays crisp over the motion. */
 .glass-panel {
@@ -1346,9 +1281,11 @@ body {
 /* Dark theme: keep the panel solid and readable — the harshness came from
    `saturate(1.4)` reflecting what sits behind the glass, not from opacity.
    Solid dark surface + strong blur + no saturation boost = frosted, not
-   mirror, and nothing behind bleeds through to fight the text. */
+   mirror, and nothing behind bleeds through to fight the text. On the
+   graphite palette the panel is the card colour (caron's L 27%), the same
+   surface the plain cards use, so glass panels and cards read as one family. */
 .dark .glass-panel {
-  background: rgb(6 14 30 / 86%);
+  background: rgb(36 39 41 / 88%);
   -webkit-backdrop-filter: blur(18px) saturate(1);
   backdrop-filter: blur(18px) saturate(1);
 }
@@ -1356,19 +1293,14 @@ body {
 /* Dark theme: give the dashboard the same ambient depth as the landing.
    On a flat near-black canvas the drifting orbs read as bright blobs — the
    glare that "sparkles". The landing looks calm because its background is a
-   soft navy gradient (canvas → card → canvas) the orbs melt into. Paint that
+   soft gradient (canvas → card → canvas) the orbs melt into. Paint that
    same gradient behind the orbs here; the orbs sit above it (later in DOM),
    so they become atmosphere instead of spots. */
 .dark .dashboard-ambient::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    135deg,
-    var(--navy-canvas) 0%,
-    var(--navy-card) 50%,
-    var(--navy-canvas) 100%
-  );
+  background: linear-gradient(135deg, var(--canvas) 0%, var(--surface-1) 50%, var(--canvas) 100%);
 }
 
 /* The same gradient, far more transparent, so the orbs are quieter than on

@@ -63,7 +63,7 @@ export function SmartEmailInput({
         className="flex items-center gap-1 whitespace-nowrap text-sm font-medium text-(--text-primary)"
       >
         {resolvedLabel}
-        {required && <span className="text-red-500">*</span>}
+        {required && <span className="text-(--danger-text)">*</span>}
       </Label>
 
       <div className="relative">
@@ -82,9 +82,9 @@ export function SmartEmailInput({
           autoFocus={autoFocus}
           className={`pl-10 pr-10 transition-all duration-200 ${
             validation?.isValid
-              ? 'border-green-500 focus:border-green-500 focus:ring-green-500'
+              ? 'border-(--success-outline) focus:border-(--success-outline) focus:ring-(--success-text)'
               : validation && !validation.isValid && value
-                ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
+                ? 'border-(--danger-outline) focus:border-(--danger-outline) focus:ring-(--danger-text)'
                 : ''
           }`}
         />
@@ -100,9 +100,9 @@ export function SmartEmailInput({
               className="absolute right-3 top-1/2 -translate-y-1/2"
             >
               {validation.isValid ? (
-                <Check className="w-4 h-4 text-green-500" />
+                <Check className="w-4 h-4 text-(--success-text)" />
               ) : (
-                <AlertCircle className="w-4 h-4 text-red-500" />
+                <AlertCircle className="w-4 h-4 text-(--danger-text)" />
               )}
             </motion.div>
           )}
@@ -118,12 +118,12 @@ export function SmartEmailInput({
             exit={{ opacity: 0, y: -10 }}
             className={`flex items-start gap-2 text-xs p-2 rounded-lg ${
               validation.feedback.type === 'success'
-                ? 'bg-(--success-quiet) text-(--success-text) dark:text-green-400'
+                ? 'bg-(--success-quiet) text-(--success-text) dark:text-(--success-text)'
                 : validation.feedback.type === 'error'
-                  ? 'bg-(--danger-quiet) text-(--danger-text) dark:text-red-400'
+                  ? 'bg-(--danger-quiet) text-(--danger-text) dark:text-(--danger-text)'
                   : validation.feedback.type === 'warning'
-                    ? 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400'
-                    : 'bg-(--brand-quiet) text-(--brand-text) dark:text-blue-400'
+                    ? 'bg-(--warning-quiet) text-(--warning-text) dark:text-(--warning-text)'
+                    : 'bg-(--brand-quiet) text-(--brand-text) dark:text-(--brand-text)'
             }`}
           >
             <p className="flex-1 leading-relaxed">{validation.feedback.message}</p>
@@ -139,7 +139,7 @@ export function SmartEmailInput({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             onClick={handleSuggestionClick}
-            className="w-full flex items-center gap-2 p-3 rounded-xl border border-blue-500/20 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 transition-all group"
+            className="w-full flex items-center gap-2 p-3 rounded-xl border border-(--brand-outline) bg-(--brand-quiet) hover:bg-(--brand-quiet) text-(--brand-text) dark:text-(--brand-text) transition-all group"
           >
             <Sparkles className="w-4 h-4 shrink-0 group-hover:rotate-12 transition-transform" />
             <div className="flex-1 text-left">

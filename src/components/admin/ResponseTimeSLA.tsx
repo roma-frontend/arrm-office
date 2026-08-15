@@ -196,7 +196,7 @@ function ResponseTimeSLA({ startDate, endDate, organizationId }: SLAStatsProps) 
                   yAxisId="left"
                   type="monotone"
                   dataKey="avgResponseTime"
-                  stroke="#8884d8"
+                  stroke="var(--chart-4)"
                   name={t('responseSLA.avgResponseTime')}
                   strokeWidth={2}
                 />
@@ -204,7 +204,7 @@ function ResponseTimeSLA({ startDate, endDate, organizationId }: SLAStatsProps) 
                   yAxisId="right"
                   type="monotone"
                   dataKey="complianceRate"
-                  stroke="#82ca9d"
+                  stroke="var(--chart-2)"
                   name={t('responseSLA.complianceRate')}
                   strokeWidth={2}
                 />
@@ -249,10 +249,15 @@ function ResponseTimeSLA({ startDate, endDate, organizationId }: SLAStatsProps) 
                   labelStyle={{ color: tooltipColor }}
                 />
                 <Legend wrapperStyle={{ color: textColor }} />
-                <Bar dataKey="onTime" fill="#10b981" name={t('responseSLA.onTime')} stackId="a" />
+                <Bar
+                  dataKey="onTime"
+                  fill="var(--chart-2)"
+                  name={t('responseSLA.onTime')}
+                  stackId="a"
+                />
                 <Bar
                   dataKey="breached"
-                  fill="#ef4444"
+                  fill="var(--chart-7)"
                   name={t('responseSLA.breached')}
                   stackId="a"
                 />

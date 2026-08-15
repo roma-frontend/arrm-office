@@ -300,7 +300,7 @@ export default function ChatClient({
           className="fixed bottom-4 right-4 z-50 px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 animate-slide-up"
           style={{ background: 'var(--background-elevated)', border: '1px solid var(--border)' }}
         >
-          <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+          <div className="w-2 h-2 rounded-full bg-(--warning-solid) animate-pulse" />
           <div>
             <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
               {t('chat.noConnection')}

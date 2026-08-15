@@ -433,7 +433,7 @@ export function OnboardingTour({ steps, tourId, onComplete, onSkip }: Onboarding
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                className="absolute rounded-xl ring-4 ring-blue-500 ring-opacity-60 shadow-2xl"
+                className="absolute rounded-xl ring-4 ring-(--brand-text) ring-opacity-60 shadow-2xl"
                 style={{
                   left: targetRect.left - 8,
                   top: targetRect.top - 8,
@@ -464,7 +464,7 @@ export function OnboardingTour({ steps, tourId, onComplete, onSkip }: Onboarding
             {/* Progress bar */}
             <div className="h-0.5 rounded-t-2xl bg-muted">
               <motion.div
-                className="h-full bg-linear-to-r from-blue-500 to-cyan-500"
+                className="h-full bg-linear-to-r from-(--brand) to-(--cyan)"
                 initial={{ width: 0 }}
                 animate={{ width: `${progress}%` }}
                 transition={{ duration: 0.3 }}

@@ -145,17 +145,17 @@ function PayslipDocument({ payslip, locale }: { payslip: PayslipData; locale: st
         className="bg-(--card) border border-(--border) rounded-2xl shadow-sm overflow-hidden print:shadow-none print:border-(--border-strong) relative"
       >
         {payslip.status !== 'paid' && payslip.status !== 'viewed' && (
-          <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-[0.04] rotate-[-30deg] text-6xl font-black text-rose-500 select-none">
+          <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-[0.04] rotate-[-30deg] text-6xl font-black text-(--danger-text) select-none">
             NOT PAID
           </div>
         )}
 
         {/* Header */}
-        <div className="relative border-b border-(--border) bg-gradient-to-r from-blue-500/5 via-transparent to-blue-500/5 p-6 sm:p-8">
+        <div className="relative border-b border-(--border) bg-gradient-to-r from-(--brand) via-transparent to-(--brand) p-6 sm:p-8">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-blue-500/10">
-                <Building2 className="w-6 h-6 text-blue-500" />
+              <div className="p-2.5 rounded-xl bg-(--brand-quiet)">
+                <Building2 className="w-6 h-6 text-(--brand-text)" />
               </div>
               <div>
                 <h2 className="text-lg font-bold text-(--text-primary)">Payroll Slip</h2>
@@ -222,7 +222,7 @@ function PayslipDocument({ payslip, locale }: { payslip: PayslipData; locale: st
             {/* Earnings */}
             <div>
               <h3 className="text-sm font-semibold text-(--text-primary) mb-3 flex items-center gap-2">
-                <div className="w-1 h-5 rounded-full bg-emerald-500" />
+                <div className="w-1 h-5 rounded-full bg-(--success-solid)" />
                 Earnings
               </h3>
               <div className="rounded-xl border border-(--border) overflow-hidden">
@@ -246,7 +246,7 @@ function PayslipDocument({ payslip, locale }: { payslip: PayslipData; locale: st
                         </td>
                       </tr>
                     ))}
-                    <tr className="bg-emerald-500/5 border-t-2 border-emerald-500/20">
+                    <tr className="bg-(--success-quiet) border-t-2 border-(--success-outline)">
                       <td className="px-4 py-3 font-bold text-(--text-primary)">Gross Salary</td>
                       <td className="px-4 py-3 text-right font-bold text-(--success-text) text-base">
                         {formatCurrency(gross, currency)}
@@ -260,7 +260,7 @@ function PayslipDocument({ payslip, locale }: { payslip: PayslipData; locale: st
             {/* Deductions */}
             <div>
               <h3 className="text-sm font-semibold text-(--text-primary) mb-3 flex items-center gap-2">
-                <div className="w-1 h-5 rounded-full bg-rose-500" />
+                <div className="w-1 h-5 rounded-full bg-(--danger-solid)" />
                 Deductions
               </h3>
               <div className="rounded-xl border border-(--border) overflow-hidden">
@@ -280,7 +280,7 @@ function PayslipDocument({ payslip, locale }: { payslip: PayslipData; locale: st
                       deductionItems.map((item, idx) => (
                         <tr key={idx} className="border-b border-(--border)/50 last:border-0">
                           <td className="px-4 py-2.5 text-(--text-primary)">{item.label}</td>
-                          <td className="px-4 py-2.5 text-right font-medium text-rose-500">
+                          <td className="px-4 py-2.5 text-right font-medium text-(--danger-text)">
                             -{formatCurrency(item.value, currency)}
                           </td>
                         </tr>
@@ -295,7 +295,7 @@ function PayslipDocument({ payslip, locale }: { payslip: PayslipData; locale: st
                         </td>
                       </tr>
                     )}
-                    <tr className="bg-rose-500/5 border-t-2 border-rose-500/20">
+                    <tr className="bg-(--danger-quiet) border-t-2 border-(--danger-outline)">
                       <td className="px-4 py-3 font-bold text-(--text-primary)">
                         Total Deductions
                       </td>
@@ -310,7 +310,7 @@ function PayslipDocument({ payslip, locale }: { payslip: PayslipData; locale: st
           </div>
 
           {/* Net Pay */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 via-emerald-600 to-green-700 p-6 sm:p-8">
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-(--success-solid) via-(--success-solid) bg-(--success-solid) p-6 sm:p-8">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
             <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
             <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -395,7 +395,7 @@ export default function PayslipViewer() {
     >
       <div>
         <h2 className="text-xl font-bold text-(--text-primary) flex items-center gap-2">
-          <FileText className="w-5 h-5 text-blue-500" />
+          <FileText className="w-5 h-5 text-(--brand-text)" />
           {t('payroll.myPayslips', 'My Payslips')}
         </h2>
         <p className="text-sm text-(--text-muted) mt-1">
@@ -428,18 +428,18 @@ export default function PayslipViewer() {
             {myPayslips.map((payslip) => (
               <div
                 key={payslip._id}
-                className="group bg-(--card)/70 dark:bg-(--card)/80 backdrop-blur-md border border-(--border) rounded-xl p-4 hover:shadow-md hover:border-blue-400/30 hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
+                className="group bg-(--card)/70 dark:bg-(--card)/80 backdrop-blur-md border border-(--border) rounded-xl p-4 hover:shadow-md hover:border-(--brand-outline) hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
                 onClick={() =>
                   setSelectedPayslip(selectedPayslip?._id === payslip._id ? null : payslip)
                 }
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-blue-500/10">
-                      <FileText className="w-4 h-4 text-blue-500" />
+                    <div className="p-2 rounded-lg bg-(--brand-quiet)">
+                      <FileText className="w-4 h-4 text-(--brand-text)" />
                     </div>
                     <div>
-                      <p className="font-medium text-(--text-primary) group-hover:text-blue-400 transition-colors">
+                      <p className="font-medium text-(--text-primary) group-hover:text-(--brand-text) transition-colors">
                         {payslip.period}
                       </p>
                       <p className="text-xs text-(--text-muted)">

@@ -274,7 +274,7 @@ export default function LeaveEditClient() {
                         className={cn(
                           'w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-200 shrink-0',
                           isCompleted
-                            ? 'bg-blue-500 border-(--primary) text-white'
+                            ? 'bg-(--brand) border-(--primary) text-white'
                             : isCurrent
                               ? 'border-(--primary) bg-(--background) text-(--primary) scale-110'
                               : 'border-(--border) bg-(--background) text-(--text-muted)',
@@ -323,7 +323,8 @@ export default function LeaveEditClient() {
               <div className="space-y-3">
                 <div>
                   <p className="text-sm font-medium text-(--text-primary)">
-                    {t('labels.leaveType', 'Leave Type')} <span className="text-red-500">*</span>
+                    {t('labels.leaveType', 'Leave Type')}{' '}
+                    <span className="text-(--danger-text)">*</span>
                   </p>
                   <p className="text-xs text-(--text-muted) mt-1">
                     {t('leaveWizard.selectType', 'What type of leave are you requesting?')}
@@ -438,10 +439,10 @@ function TypeStep({ value, onChange }: { value: LeaveType; onChange: (v: LeaveTy
   ];
 
   const colorMap: Record<string, string> = {
-    yellow: 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400',
-    red: 'bg-(--danger-quiet) text-(--danger-text) dark:text-red-400',
-    purple: 'bg-(--purple-quiet) text-(--purple-text) dark:text-purple-400',
-    gray: 'bg-gray-500/10 text-gray-600 dark:text-gray-400',
+    yellow: 'bg-(--warning-quiet) text-(--warning-text) dark:text-(--warning-text)',
+    red: 'bg-(--danger-quiet) text-(--danger-text) dark:text-(--danger-text)',
+    purple: 'bg-(--purple-quiet) text-(--purple-text) dark:text-(--purple-text)',
+    gray: 'bg-(--surface-2) text-(--text-3) dark:text-(--text-3)',
   };
 
   return (
@@ -464,7 +465,7 @@ function TypeStep({ value, onChange }: { value: LeaveType; onChange: (v: LeaveTy
               className={cn(
                 'p-2.5 rounded-full',
                 isSelected
-                  ? 'bg-blue-500 text-white shadow-lg shadow-(--primary)/30'
+                  ? 'bg-(--brand) text-white shadow-lg shadow-(--primary)/30'
                   : colorMap[type.color],
               )}
             >
@@ -484,7 +485,7 @@ function TypeStep({ value, onChange }: { value: LeaveType; onChange: (v: LeaveTy
               </p>
             </div>
             {isSelected && (
-              <Badge className="bg-blue-500 text-white text-[10px] px-2 py-0.5 mt-1 shadow-sm">
+              <Badge className="bg-(--brand) text-white text-[10px] px-2 py-0.5 mt-1 shadow-sm">
                 ✓{' '}
                 {i18n.language === 'ru'
                   ? 'Выбрано'
@@ -522,7 +523,7 @@ function DatesStep({
     <div className="space-y-4">
       <div>
         <p className="text-sm font-medium text-(--text-primary)">
-          {t('labels.dates', 'Dates')} <span className="text-red-500">*</span>
+          {t('labels.dates', 'Dates')} <span className="text-(--danger-text)">*</span>
         </p>
         <p className="text-xs text-(--text-muted) mt-1">
           {t('leaveWizard.selectDates', 'Choose start and end dates for your leave')}
@@ -647,7 +648,7 @@ function DetailsStep({
       {/* Reason */}
       <div className="space-y-2">
         <label className="text-sm font-medium text-(--text-primary)">
-          {t('labels.reason', 'Reason')} <span className="text-red-500">*</span>
+          {t('labels.reason', 'Reason')} <span className="text-(--danger-text)">*</span>
         </label>
         <textarea
           value={reason}

@@ -267,21 +267,21 @@ export default function ReportsPage() {
               <TabsList className="w-full mb-6 gap-2 bg-transparent p-0 h-auto grid grid-cols-3">
                 <TabsTrigger
                   value="overview"
-                  className="w-full px-5 py-3 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
+                  className="w-full px-5 py-3 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
                 >
                   <FileText className="w-4 h-4 sm:mr-2" />
                   <span className="hidden sm:inline">{t('reports.overview')}</span>
                 </TabsTrigger>
                 <TabsTrigger
                   value="departments"
-                  className="w-full px-5 py-3 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
+                  className="w-full px-5 py-3 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
                 >
                   <Users className="w-4 h-4 sm:mr-2" />
                   <span className="hidden sm:inline">{t('reportsExtended.departments')}</span>
                 </TabsTrigger>
                 <TabsTrigger
                   value="trends"
-                  className="w-full px-5 py-3 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
+                  className="w-full px-5 py-3 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
                 >
                   <TrendingUp className="w-4 h-4 sm:mr-2" />
                   <span className="hidden sm:inline">{t('reportsExtended.trends')}</span>
@@ -456,14 +456,14 @@ export default function ReportsPage() {
                             <Bar
                               dataKey="approved"
                               name={t('statuses.approved')}
-                              fill="#10b981"
+                              fill="var(--chart-2)"
                               radius={[4, 4, 0, 0]}
                               stackId="a"
                             />
                             <Bar
                               dataKey="pending"
                               name={t('statuses.pending')}
-                              fill="#f59e0b"
+                              fill="var(--chart-3)"
                               radius={[4, 4, 0, 0]}
                               stackId="a"
                             />
@@ -529,12 +529,12 @@ export default function ReportsPage() {
                         >
                           <defs>
                             <linearGradient id="colorApproved" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                              <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                              <stop offset="5%" stopColor="var(--chart-2)" stopOpacity={0.3} />
+                              <stop offset="95%" stopColor="var(--chart-2)" stopOpacity={0} />
                             </linearGradient>
                             <linearGradient id="colorPending" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3} />
-                              <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
+                              <stop offset="5%" stopColor="var(--chart-3)" stopOpacity={0.3} />
+                              <stop offset="95%" stopColor="var(--chart-3)" stopOpacity={0} />
                             </linearGradient>
                           </defs>
                           <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
@@ -564,7 +564,7 @@ export default function ReportsPage() {
                             type="monotone"
                             dataKey="approved"
                             name={t('statuses.approved')}
-                            stroke="#10b981"
+                            stroke="var(--chart-2)"
                             fill="url(#colorApproved)"
                             strokeWidth={2}
                           />
@@ -572,7 +572,7 @@ export default function ReportsPage() {
                             type="monotone"
                             dataKey="pending"
                             name={t('statuses.pending')}
-                            stroke="#f59e0b"
+                            stroke="var(--chart-3)"
                             fill="url(#colorPending)"
                             strokeWidth={2}
                           />
@@ -619,8 +619,8 @@ export default function ReportsPage() {
                             type="monotone"
                             dataKey="cumulative"
                             name={t('leave.requests')}
-                            stroke="#2563eb"
-                            fill="#2563eb"
+                            stroke="var(--chart-1)"
+                            fill="var(--chart-1)"
                             fillOpacity={0.1}
                             strokeWidth={2}
                           />
@@ -628,8 +628,8 @@ export default function ReportsPage() {
                             type="monotone"
                             dataKey="days"
                             name={t('leave.days')}
-                            stroke="#0ea5e9"
-                            fill="#0ea5e9"
+                            stroke="var(--chart-5)"
+                            fill="var(--chart-5)"
                             fillOpacity={0.1}
                             strokeWidth={2}
                           />

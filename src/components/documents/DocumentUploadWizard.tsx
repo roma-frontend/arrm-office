@@ -79,17 +79,17 @@ interface LocalFile {
 }
 
 const FILE_ICONS: Record<string, React.ReactNode> = {
-  'application/pdf': <FileText className="w-10 h-10 text-red-400" />,
-  'image/': <ImageIcon className="w-10 h-10 text-blue-400" />,
-  'video/': <Video className="w-10 h-10 text-purple-400" />,
-  'audio/': <Music className="w-10 h-10 text-green-400" />,
+  'application/pdf': <FileText className="w-10 h-10 text-(--danger-text)" />,
+  'image/': <ImageIcon className="w-10 h-10 text-(--brand-text)" />,
+  'video/': <Video className="w-10 h-10 text-(--purple-text)" />,
+  'audio/': <Music className="w-10 h-10 text-(--success-text)" />,
 };
 
 function getFileIcon(type: string): React.ReactNode {
   for (const [key, icon] of Object.entries(FILE_ICONS)) {
     if (type.startsWith(key)) return icon;
   }
-  return <File className="w-10 h-10 text-gray-400" />;
+  return <File className="w-10 h-10 text-(--text-3)" />;
 }
 
 function formatSize(bytes: number): string {
@@ -105,32 +105,32 @@ function getCategories(t: (key: string, fallback: string) => string) {
     {
       value: 'policy' as DocumentCategory,
       label: t('documents.categoryPolicy', 'Policy'),
-      icon: <FileText className="w-4 h-4 text-blue-500" />,
+      icon: <FileText className="w-4 h-4 text-(--brand-text)" />,
     },
     {
       value: 'contract' as DocumentCategory,
       label: t('documents.categoryContract', 'Contract'),
-      icon: <FileText className="w-4 h-4 text-green-500" />,
+      icon: <FileText className="w-4 h-4 text-(--success-text)" />,
     },
     {
       value: 'report' as DocumentCategory,
       label: t('documents.categoryReport', 'Report'),
-      icon: <FileText className="w-4 h-4 text-purple-500" />,
+      icon: <FileText className="w-4 h-4 text-(--purple-text)" />,
     },
     {
       value: 'template' as DocumentCategory,
       label: t('documents.categoryTemplate', 'Template'),
-      icon: <FileText className="w-4 h-4 text-orange-500" />,
+      icon: <FileText className="w-4 h-4 text-(--warning-text)" />,
     },
     {
       value: 'form' as DocumentCategory,
       label: t('documents.categoryForm', 'Form'),
-      icon: <FileText className="w-4 h-4 text-cyan-500" />,
+      icon: <FileText className="w-4 h-4 text-(--cyan-text)" />,
     },
     {
       value: 'certificate' as DocumentCategory,
       label: t('documents.categoryCertificate', 'Certificate'),
-      icon: <FileText className="w-4 h-4 text-yellow-500" />,
+      icon: <FileText className="w-4 h-4 text-(--warning-text)" />,
     },
     {
       value: 'other' as DocumentCategory,
@@ -572,7 +572,7 @@ export default function DocumentUploadWizard({
             )}
 
             {uploadedFile && (
-              <div className="flex items-center gap-4 p-4 rounded-lg border border-green-500/30 bg-green-500/5">
+              <div className="flex items-center gap-4 p-4 rounded-lg border border-(--success-outline) bg-(--success-quiet)">
                 {uploadedFile.type.startsWith('image/') ? (
                   <Image
                     src={uploadedFile.url}
@@ -590,7 +590,7 @@ export default function DocumentUploadWizard({
                     {formatSize(uploadedFile.size)}
                   </p>
                 </div>
-                <CheckCircle className="w-5 h-5 text-green-500" />
+                <CheckCircle className="w-5 h-5 text-(--success-text)" />
               </div>
             )}
           </div>
@@ -601,7 +601,7 @@ export default function DocumentUploadWizard({
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="title">
-                {t('documents.title', 'Title')} <span className="text-red-500">*</span>
+                {t('documents.title', 'Title')} <span className="text-(--danger-text)">*</span>
               </Label>
               <Input
                 id="title"

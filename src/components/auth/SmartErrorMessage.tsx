@@ -36,17 +36,20 @@ export function SmartErrorMessage({ error, className = '' }: SmartErrorMessagePr
   const Icon = icons[errorObj.type];
 
   const colorClasses = {
-    error: 'bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400',
-    warning: 'bg-yellow-500/10 border-yellow-500/20 text-yellow-600 dark:text-yellow-400',
-    info: 'bg-blue-500/10 border-blue-500/20 text-blue-600 dark:text-blue-400',
-    success: 'bg-green-500/10 border-green-500/20 text-green-600 dark:text-green-400',
+    error:
+      'bg-(--danger-quiet) border-(--danger-outline) text-(--danger-text) dark:text-(--danger-text)',
+    warning:
+      'bg-(--warning-quiet) border-(--warning-outline) text-(--warning-text) dark:text-(--warning-text)',
+    info: 'bg-(--brand-quiet) border-(--brand-outline) text-(--brand-text) dark:text-(--brand-text)',
+    success:
+      'bg-(--success-quiet) border-(--success-outline) text-(--success-text) dark:text-(--success-text)',
   };
 
   const iconColors = {
-    error: 'text-red-500',
-    warning: 'text-yellow-500',
-    info: 'text-blue-500',
-    success: 'text-green-500',
+    error: 'text-(--danger-text)',
+    warning: 'text-(--warning-text)',
+    info: 'text-(--brand-text)',
+    success: 'text-(--success-text)',
   };
 
   return (

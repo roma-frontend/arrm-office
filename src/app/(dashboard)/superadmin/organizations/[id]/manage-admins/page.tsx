@@ -217,7 +217,7 @@ export default function ManageAdminsPage() {
               <h1 className="text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>
                 {organization.name}
               </h1>
-              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">
+              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-(--brand-quiet) text-(--brand-text) border border-(--brand-outline)">
                 {organization.plan.toUpperCase()}
               </span>
             </div>
@@ -229,8 +229,8 @@ export default function ManageAdminsPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <div className="p-4 rounded-xl border" style={{ background: 'var(--card)' }}>
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-blue-500/10 dark:bg-blue-500/20">
-                <Users className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+              <div className="p-2 rounded-lg bg-(--brand-quiet) dark:bg-(--brand-quiet)">
+                <Users className="w-5 h-5 text-(--brand-text) dark:text-(--brand-text)" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">{t('manageAdmins.totalMembers')}</p>
@@ -241,8 +241,8 @@ export default function ManageAdminsPage() {
 
           <div className="p-4 rounded-xl border" style={{ background: 'var(--card)' }}>
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-purple-500/10 dark:bg-purple-500/20">
-                <Shield className="w-5 h-5 text-purple-500 dark:text-purple-400" />
+              <div className="p-2 rounded-lg bg-(--purple-quiet) dark:bg-(--purple-quiet)">
+                <Shield className="w-5 h-5 text-(--purple-text) dark:text-(--purple-text)" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">{t('manageAdmins.admins')}</p>
@@ -253,8 +253,8 @@ export default function ManageAdminsPage() {
 
           <div className="p-4 rounded-xl border" style={{ background: 'var(--card)' }}>
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-green-500/10 dark:bg-green-500/20">
-                <UserCheck className="w-5 h-5 text-green-500 dark:text-green-400" />
+              <div className="p-2 rounded-lg bg-(--success-quiet) dark:bg-(--success-quiet)">
+                <UserCheck className="w-5 h-5 text-(--success-text) dark:text-(--success-text)" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">{t('manageAdmins.active')}</p>
@@ -271,7 +271,7 @@ export default function ManageAdminsPage() {
               className="text-2xl sm:text-3xl font-bold flex items-center gap-2 mb-4"
               style={{ color: 'var(--text-primary)' }}
             >
-              <Shield className="w-6 h-6 text-purple-500" />
+              <Shield className="w-6 h-6 text-(--purple-text)" />
               {t('manageAdmins.currentAdmins')}
             </h2>
           </div>
@@ -296,8 +296,8 @@ export default function ManageAdminsPage() {
                       />
                     )}
                     {!admin.avatarUrl && (
-                      <div className="w-12 h-12 rounded-full bg-purple-500/20 border border-purple-500/40 flex items-center justify-center">
-                        <Shield className="w-6 h-6 text-purple-500" />
+                      <div className="w-12 h-12 rounded-full bg-(--purple-quiet) border border-(--purple-outline) flex items-center justify-center">
+                        <Shield className="w-6 h-6 text-(--purple-text)" />
                       </div>
                     )}
                     <div className="flex-1">
@@ -306,7 +306,7 @@ export default function ManageAdminsPage() {
                         style={{ color: 'var(--text-primary)' }}
                       >
                         {admin.name}
-                        <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-500/20 text-purple-400">
+                        <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-(--purple-quiet) text-(--purple-text)">
                           {t('manageAdmins.admin')}
                         </span>
                       </h3>
@@ -323,7 +323,7 @@ export default function ManageAdminsPage() {
                   <button
                     onClick={() => handleAction(admin._id, 'demote')}
                     disabled={isLoading}
-                    className="p-2 rounded-lg hover:bg-red-500/10 text-red-500 transition-colors disabled:opacity-50"
+                    className="p-2 rounded-lg hover:bg-(--danger-quiet) text-(--danger-text) transition-colors disabled:opacity-50"
                     title={t('superadmin.removeAdminRole')}
                   >
                     <UserX className="w-5 h-5" />
@@ -336,7 +336,7 @@ export default function ManageAdminsPage() {
               className="p-6 rounded-xl border text-center"
               style={{ background: 'var(--card)' }}
             >
-              <AlertCircle className="w-12 h-12 mx-auto mb-3 text-yellow-500 opacity-50" />
+              <AlertCircle className="w-12 h-12 mx-auto mb-3 text-(--warning-text) opacity-50" />
               <p className="text-muted-foreground">{t('manageAdmins.noAdminsYet')}</p>
               <p className="text-xs text-muted-foreground mt-1">{t('manageAdmins.noAdminsHint')}</p>
             </div>
@@ -349,7 +349,7 @@ export default function ManageAdminsPage() {
             className="text-2xl sm:text-3xl font-bold flex items-center gap-2 mb-4"
             style={{ color: 'var(--text-primary)' }}
           >
-            <Users className="w-6 h-6 text-blue-500" />
+            <Users className="w-6 h-6 text-(--brand-text)" />
             {t('manageAdmins.employees')} {employees.length > 0 && `(${employees.length})`}
           </h2>
 
@@ -373,8 +373,8 @@ export default function ManageAdminsPage() {
                       />
                     )}
                     {!employee.avatarUrl && (
-                      <div className="w-12 h-12 rounded-full bg-blue-500/20 border border-blue-500/40 flex items-center justify-center">
-                        <Users className="w-6 h-6 text-blue-500" />
+                      <div className="w-12 h-12 rounded-full bg-(--brand-quiet) border border-(--brand-outline) flex items-center justify-center">
+                        <Users className="w-6 h-6 text-(--brand-text)" />
                       </div>
                     )}
                     <div className="flex-1">
@@ -390,13 +390,13 @@ export default function ManageAdminsPage() {
                           </p>
                         )}
                         {!employee.isApproved && (
-                          <span className="px-2 py-0.5 rounded text-xs font-semibold bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 flex items-center gap-1">
+                          <span className="px-2 py-0.5 rounded text-xs font-semibold bg-(--warning-quiet) text-(--warning-text) dark:text-(--warning-text) flex items-center gap-1">
                             <Clock className="w-3 h-3" />
                             {t('manageAdmins.pendingApproval')}
                           </span>
                         )}
                         {!employee.isActive && (
-                          <span className="px-2 py-0.5 rounded text-xs font-semibold bg-(--danger-quiet) text-(--danger-text) dark:text-red-400">
+                          <span className="px-2 py-0.5 rounded text-xs font-semibold bg-(--danger-quiet) text-(--danger-text) dark:text-(--danger-text)">
                             {t('manageAdmins.inactive')}
                           </span>
                         )}
@@ -407,7 +407,7 @@ export default function ManageAdminsPage() {
                   <button
                     onClick={() => handleAction(employee._id, 'promote')}
                     disabled={isLoading || !employee.isApproved || !employee.isActive}
-                    className="p-2 rounded-lg hover:bg-green-500/10 text-green-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="p-2 rounded-lg hover:bg-(--success-quiet) text-(--success-text) transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     title={
                       !employee.isApproved
                         ? t('manageAdmins.cannotPromoteUnapproved')
@@ -426,7 +426,7 @@ export default function ManageAdminsPage() {
               className="p-6 rounded-xl border text-center"
               style={{ background: 'var(--card)' }}
             >
-              <Users className="w-12 h-12 mx-auto mb-3 text-blue-500 opacity-50" />
+              <Users className="w-12 h-12 mx-auto mb-3 text-(--brand-text) opacity-50" />
               <p className="text-muted-foreground">{t('manageAdmins.noEmployees')}</p>
               <p className="text-xs text-muted-foreground mt-1">
                 {t('manageAdmins.noEmployeesHint')}
@@ -457,9 +457,9 @@ export default function ManageAdminsPage() {
                 }}
               >
                 {actionType === 'promote' ? (
-                  <ShieldCheck className="w-7 h-7 text-green-600 dark:text-green-400" />
+                  <ShieldCheck className="w-7 h-7 text-(--success-text) dark:text-(--success-text)" />
                 ) : (
-                  <ShieldAlert className="w-7 h-7 text-red-600 dark:text-red-400" />
+                  <ShieldAlert className="w-7 h-7 text-(--danger-text) dark:text-(--danger-text)" />
                 )}
               </div>
 

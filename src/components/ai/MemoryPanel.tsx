@@ -64,7 +64,7 @@ export function MemoryPanel({
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-md rounded-2xl border border-(--border) bg-(--card) shadow-2xl overflow-hidden">
         <div className="flex items-center gap-2 px-4 py-3 border-b border-(--border)">
-          <Brain className="w-4 h-4 text-[#2563eb]" />
+          <Brain className="w-4 h-4 text-(--brand-text)" />
           <h3 className="text-sm font-semibold text-(--text-primary) flex-1">
             {t('aiChat.memory.title', { defaultValue: 'Assistant memory' })}
           </h3>
@@ -105,7 +105,7 @@ export function MemoryPanel({
                   <span className="flex-1 text-xs text-(--text-primary)">{m.content}</span>
                   <button
                     onClick={() => handleDelete(m._id)}
-                    className="p-1 rounded hover:bg-red-500/10 text-(--text-muted) hover:text-red-500 transition-colors shrink-0"
+                    className="p-1 rounded hover:bg-(--danger-quiet) text-(--text-muted) hover:text-(--danger-text) transition-colors shrink-0"
                     aria-label="Delete memory"
                   >
                     <Trash2 className="w-3 h-3" />

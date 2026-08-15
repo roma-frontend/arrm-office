@@ -185,16 +185,16 @@ function SortableStepNode({
 
   const paletteItem = STEP_PALETTE.find((p) => p.type === step.type);
   const colorClasses: Record<string, string> = {
-    amber: 'border-amber-500/30 bg-amber-500/5',
-    blue: 'border-blue-500/30 bg-blue-500/5',
-    purple: 'border-purple-500/30 bg-purple-500/5',
-    green: 'border-green-500/30 bg-green-500/5',
+    amber: 'border-(--warning-outline) bg-(--warning-quiet)',
+    blue: 'border-(--brand-outline) bg-(--brand-quiet)',
+    purple: 'border-(--purple-outline) bg-(--purple-quiet)',
+    green: 'border-(--success-outline) bg-(--success-quiet)',
   };
   const iconColorClasses: Record<string, string> = {
-    amber: 'text-amber-500',
-    blue: 'text-blue-500',
-    purple: 'text-purple-500',
-    green: 'text-green-500',
+    amber: 'text-(--warning-text)',
+    blue: 'text-(--brand-text)',
+    purple: 'text-(--purple-text)',
+    green: 'text-(--success-text)',
   };
 
   return (
@@ -750,7 +750,7 @@ export default function WorkflowBuilderClient() {
             <Card className="flex-1 min-h-[500px]">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
-                  <Zap className="w-5 h-5 text-amber-500" />
+                  <Zap className="w-5 h-5 text-(--warning-text)" />
                   {t('automation.builder.steps')}
                 </CardTitle>
               </CardHeader>
@@ -803,7 +803,7 @@ export default function WorkflowBuilderClient() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Zap className="w-5 h-5 text-amber-500" />
+                <Zap className="w-5 h-5 text-(--warning-text)" />
                 {t('automation.builder.savedWorkflows')}
               </CardTitle>
             </CardHeader>
@@ -818,7 +818,7 @@ export default function WorkflowBuilderClient() {
                       <div className="flex items-center gap-3">
                         <div
                           className={`w-2 h-2 rounded-full ${
-                            workflow.isActive ? 'bg-green-500' : 'bg-gray-400'
+                            workflow.isActive ? 'bg-(--success-solid)' : 'bg-(--surface-3)'
                           }`}
                         />
                         <div>

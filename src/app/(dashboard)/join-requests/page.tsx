@@ -97,7 +97,7 @@ export default function JoinRequestsPage() {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center space-y-2">
-          <AlertCircle className="w-8 h-8 text-amber-500 mx-auto" />
+          <AlertCircle className="w-8 h-8 text-(--warning-text) mx-auto" />
           <p className="text-(--text-muted)">{t('joinRequestsPage.orgNotAssigned')}</p>
         </div>
       </div>
@@ -166,7 +166,7 @@ export default function JoinRequestsPage() {
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6 max-w-5xl mx-auto">
+    <div className="space-y-4 sm:space-y-6">
       {/* Sticky Header */}
       <div className="sticky top-0 z-10 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 mb-4 bg-(--background)/95 backdrop-blur supports-[backdrop-filter]:bg-(--background)/60 border-b border-(--border)">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -174,7 +174,7 @@ export default function JoinRequestsPage() {
             <h1 className="text-2xl sm:text-3xl font-bold text-(--text-primary) flex items-center gap-2">
               {t('joinRequestsPage.title')}
               {(pendingCount ?? 0) > 0 && (
-                <span className="ml-1 px-2 py-0.5 text-xs font-bold rounded-full bg-red-500 text-white">
+                <span className="ml-1 px-2 py-0.5 text-xs font-bold rounded-full bg-(--danger-solid) text-white">
                   {pendingCount}
                 </span>
               )}
@@ -210,7 +210,7 @@ export default function JoinRequestsPage() {
                   className="p-1.5 rounded-lg hover:bg-(--background-subtle) transition-colors"
                 >
                   {inviteCopied ? (
-                    <Check className="w-4 h-4 text-emerald-500" />
+                    <Check className="w-4 h-4 text-(--success-text)" />
                   ) : (
                     <Copy className="w-4 h-4 text-(--text-muted)" />
                   )}

@@ -28,7 +28,7 @@ export const AGENTS: AgentDefinition[] = [
     shortName: 'Recruitment',
     icon: '🎯',
     description: 'Специалист по рекрутингу и найму',
-    color: 'from-blue-500 to-cyan-500',
+    color: 'from-(--brand) to-(--cyan)',
   },
   {
     id: 'policy',
@@ -36,7 +36,7 @@ export const AGENTS: AgentDefinition[] = [
     shortName: 'Policy',
     icon: '📜',
     description: 'Эксперт по политикам и документам компании',
-    color: 'from-amber-500 to-orange-500',
+    color: 'from-(--warning-solid) to-(--warning-solid)',
   },
   {
     id: 'analytics',
@@ -44,7 +44,7 @@ export const AGENTS: AgentDefinition[] = [
     shortName: 'Analytics',
     icon: '📊',
     description: 'Аналитик данных и отчётов',
-    color: 'from-emerald-500 to-teal-500',
+    color: 'from-(--success-solid) to-(--success-solid)',
   },
   {
     id: 'kpi',
@@ -52,7 +52,7 @@ export const AGENTS: AgentDefinition[] = [
     shortName: 'KPI',
     icon: '🎯',
     description: 'Специалист по OKR, KPI и стратегии',
-    color: 'from-purple-500 to-violet-500',
+    color: 'from-(--purple) to-(--purple)',
   },
   {
     id: 'general',
@@ -60,7 +60,7 @@ export const AGENTS: AgentDefinition[] = [
     shortName: 'General',
     icon: '🤖',
     description: 'Общий ассистент по всем вопросам',
-    color: 'from-slate-500 to-slate-600',
+    color: 'from-(--surface-3) to-(--surface-3)',
   },
 ];
 

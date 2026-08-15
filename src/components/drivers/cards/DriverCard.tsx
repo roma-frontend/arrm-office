@@ -56,7 +56,7 @@ export const DriverCard = memo(function DriverCard({
               <AvatarFallback className="text-xs">{initials}</AvatarFallback>
             </Avatar>
             {driver.isOnShift && (
-              <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-green-500 border-2 border-(--card) drivers-dot-pulse" />
+              <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-(--success-solid) border-2 border-(--card) drivers-dot-pulse" />
             )}
           </div>
 
@@ -69,8 +69,8 @@ export const DriverCard = memo(function DriverCard({
               <p className="text-sm text-(--text-muted)">{driver.userPosition}</p>
             )}
             <div className="flex items-center gap-1 mt-2">
-              <Star className="w-4 h-4 fill-yellow-500 text-yellow-500 drivers-icon-target" />
-              <span className="text-sm font-medium text-yellow-500">
+              <Star className="w-4 h-4 fill-yellow-500 text-(--warning-text) drivers-icon-target" />
+              <span className="text-sm font-medium text-(--warning-text)">
                 {driver.rating.toFixed(1)}
               </span>
               <span className="text-xs text-(--text-muted)">
@@ -117,7 +117,7 @@ export const DriverCard = memo(function DriverCard({
               aria-label={t('driver.viewCalendar', 'View Calendar')}
               data-testid="driver-calendar-button"
             >
-              <Calendar className="w-4 h-4 text-blue-400" />
+              <Calendar className="w-4 h-4 text-(--brand-text)" />
             </Button>
             <Button
               size="sm"
@@ -129,7 +129,7 @@ export const DriverCard = memo(function DriverCard({
                 key={String(isFavorite)}
                 className={`w-4 h-4 transition-all duration-200 ${
                   isFavorite
-                    ? 'fill-red-500 text-red-500 scale-110'
+                    ? 'fill-red-500 text-(--danger-text) scale-110'
                     : 'text-muted-foreground scale-100'
                 }`}
               />

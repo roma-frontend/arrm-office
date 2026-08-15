@@ -49,16 +49,16 @@ type StatusStyle = { label: string; color: string; bg: string };
 
 const STATUS_FALLBACK: StatusStyle = {
   label: 'Planning',
-  color: 'text-blue-500',
-  bg: 'bg-blue-500/10',
+  color: 'text-(--brand-text)',
+  bg: 'bg-(--brand-quiet)',
 };
 
 const STATUS_CONFIG: Record<string, StatusStyle> = {
-  planning: { label: 'Planning', color: 'text-blue-500', bg: 'bg-blue-500/10' },
-  active: { label: 'Active', color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-  on_hold: { label: 'On Hold', color: 'text-amber-500', bg: 'bg-amber-500/10' },
-  completed: { label: 'Completed', color: 'text-green-500', bg: 'bg-green-500/10' },
-  cancelled: { label: 'Cancelled', color: 'text-rose-500', bg: 'bg-rose-500/10' },
+  planning: { label: 'Planning', color: 'text-(--brand-text)', bg: 'bg-(--brand-quiet)' },
+  active: { label: 'Active', color: 'text-(--success-text)', bg: 'bg-(--success-quiet)' },
+  on_hold: { label: 'On Hold', color: 'text-(--warning-text)', bg: 'bg-(--warning-quiet)' },
+  completed: { label: 'Completed', color: 'text-(--success-text)', bg: 'bg-(--success-quiet)' },
+  cancelled: { label: 'Cancelled', color: 'text-(--danger-text)', bg: 'bg-(--danger-quiet)' },
 };
 
 export default function ProjectsClient({ userRole }: { userId: string; userRole: string }) {
@@ -217,7 +217,9 @@ export default function ProjectsClient({ userRole }: { userId: string; userRole:
               <span className="text-sm font-medium">
                 {t('projects.overallProgress', 'Overall Progress')}
               </span>
-              <span className="text-sm font-bold text-emerald-500">{stats.overallProgress}%</span>
+              <span className="text-sm font-bold text-(--success-text)">
+                {stats.overallProgress}%
+              </span>
             </div>
             <Progress value={stats.overallProgress} className="h-2" />
           </CardContent>

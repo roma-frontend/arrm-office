@@ -92,7 +92,7 @@ export default function AutomationClient() {
     () => (
       <div className="flex items-center justify-center h-full min-h-100">
         <div className="text-center">
-          <AlertTriangle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
+          <AlertTriangle className="w-12 h-12 text-(--warning-text) mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-(--text-primary) mb-2">
             {t('common.accessDenied') || 'Access Denied'}
           </h2>
@@ -183,7 +183,7 @@ export default function AutomationClient() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Zap className="w-5 h-5 text-yellow-500" />
+                <Zap className="w-5 h-5 text-(--warning-text)" />
                 {t('automation.activeWorkflows') || 'Active Workflows'}
               </CardTitle>
             </CardHeader>
@@ -198,7 +198,7 @@ export default function AutomationClient() {
                       <div className="flex items-center gap-3">
                         <div
                           className={`w-2 h-2 rounded-full ${
-                            workflow.isActive ? 'bg-green-500' : 'bg-gray-400'
+                            workflow.isActive ? 'bg-(--success-solid)' : 'bg-(--surface-3)'
                           }`}
                         />
                         <div>
@@ -234,7 +234,7 @@ export default function AutomationClient() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <FileText className="w-5 h-5 text-blue-500" />
+                <FileText className="w-5 h-5 text-(--brand-text)" />
                 {t('automation.recentTasks') || 'Recent Tasks'}
               </CardTitle>
             </CardHeader>
@@ -302,7 +302,7 @@ function StatsCard({
   const colorClasses: Record<string, string> = {
     blue: 'bg-(--brand-quiet) text-(--brand-text)',
     green: 'bg-(--success-quiet) text-(--success-text)',
-    yellow: 'bg-yellow-500/10 text-yellow-600',
+    yellow: 'bg-(--warning-quiet) text-(--warning-text)',
     red: 'bg-(--danger-quiet) text-(--danger-text)',
   };
 
@@ -334,10 +334,10 @@ function StatsCard({
 function StatusIcon({ status }: { status: string }) {
   switch (status) {
     case 'completed':
-      return <CheckCircle className="w-4 h-4 text-green-500" />;
+      return <CheckCircle className="w-4 h-4 text-(--success-text)" />;
     case 'failed':
-      return <AlertTriangle className="w-4 h-4 text-red-500" />;
+      return <AlertTriangle className="w-4 h-4 text-(--danger-text)" />;
     default:
-      return <Clock className="w-4 h-4 text-yellow-500" />;
+      return <Clock className="w-4 h-4 text-(--warning-text)" />;
   }
 }

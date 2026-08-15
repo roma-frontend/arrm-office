@@ -265,7 +265,7 @@ export default function SelectOrganizationPage() {
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 h-72 overflow-hidden -z-0"
       >
-        <div className="absolute -top-32 left-1/2 -translate-x-1/2 h-72 w-[40rem] rounded-full opacity-30 blur-3xl bg-gradient-to-br from-(--primary-hover) via-blue-500 to-blue-300" />
+        <div className="absolute -top-32 left-1/2 -translate-x-1/2 h-72 w-[40rem] rounded-full opacity-30 blur-3xl bg-gradient-to-br from-(--primary-hover) via-(--brand) bg-(--brand)" />
       </div>
 
       <div className="relative mx-auto max-w-3xl px-4 sm:px-6 py-10 sm:py-14 animate-fade-in">
@@ -407,7 +407,7 @@ function OrgCard({
         {/* Left: logo + info */}
         <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
           {/* Logo */}
-          <div className="relative h-12 w-12 sm:h-14 sm:w-14 shrink-0 overflow-hidden rounded-xl bg-gradient-to-br from-(--primary-hover) to-blue-400 flex items-center justify-center shadow-sm">
+          <div className="relative h-12 w-12 sm:h-14 sm:w-14 shrink-0 overflow-hidden rounded-xl bg-gradient-to-br from-(--primary-hover) to-(--brand) flex items-center justify-center shadow-sm">
             {org.logoUrl ? (
               <Image src={org.logoUrl} alt={org.name} fill sizes="56px" className="object-cover" />
             ) : (

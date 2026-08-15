@@ -420,20 +420,20 @@ export function Sidebar() {
                               className={cn(
                                 'absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full text-white text-[9px] font-bold flex items-center justify-center shadow-lg',
                                 badgeBlinks
-                                  ? 'bg-linear-to-r from-red-500 to-red-600 animate-chat-badge'
-                                  : 'bg-linear-to-r from-red-500 to-red-600 animate-pulse',
+                                  ? 'bg-linear-to-r from-(--danger-solid) to-(--danger-solid) animate-chat-badge'
+                                  : 'bg-linear-to-r from-(--danger-solid) to-(--danger-solid) animate-pulse',
                               )}
                             >
                               {badgeCount > 9 ? '9+' : badgeCount}
                             </span>
                           )}
                           {item.badge === 'AI' && (
-                            <span className="absolute -top-1 -right-1 px-1 py-0.5 rounded bg-linear-to-r from-purple-500 to-pink-500 text-white text-[8px] font-bold shadow-lg">
+                            <span className="absolute -top-1 -right-1 px-1 py-0.5 rounded bg-linear-to-r from-(--purple) to-(--pink) text-white text-[8px] font-bold shadow-lg">
                               AI
                             </span>
                           )}
                           {item.badge === 'SEC' && (
-                            <span className="absolute -top-1 -right-1 px-1 py-0.5 rounded bg-linear-to-r from-blue-600 to-cyan-500 text-white text-[8px] font-bold shadow-lg">
+                            <span className="absolute -top-1 -right-1 px-1 py-0.5 rounded bg-linear-to-r from-(--brand) to-(--cyan) text-white text-[8px] font-bold shadow-lg">
                               🛡
                             </span>
                           )}
@@ -484,20 +484,20 @@ export function Sidebar() {
                               className={cn(
                                 'absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full text-white text-[9px] font-bold flex items-center justify-center shadow-lg',
                                 badgeBlinks
-                                  ? 'bg-linear-to-r from-red-500 to-red-600 animate-chat-badge'
-                                  : 'bg-linear-to-r from-red-500 to-red-600 animate-pulse',
+                                  ? 'bg-linear-to-r from-(--danger-solid) to-(--danger-solid) animate-chat-badge'
+                                  : 'bg-linear-to-r from-(--danger-solid) to-(--danger-solid) animate-pulse',
                               )}
                             >
                               {badgeCount > 9 ? '9+' : badgeCount}
                             </span>
                           )}
                           {item.badge === 'AI' && (
-                            <span className="absolute -top-1 -right-1 px-1 py-0.5 rounded bg-linear-to-r from-purple-500 to-pink-500 text-white text-[8px] font-bold shadow-lg">
+                            <span className="absolute -top-1 -right-1 px-1 py-0.5 rounded bg-linear-to-r from-(--purple) to-(--pink) text-white text-[8px] font-bold shadow-lg">
                               AI
                             </span>
                           )}
                           {item.badge === 'SEC' && (
-                            <span className="absolute -top-1 -right-1 px-1 py-0.5 rounded bg-linear-to-r from-blue-600 to-cyan-500 text-white text-[8px] font-bold shadow-lg">
+                            <span className="absolute -top-1 -right-1 px-1 py-0.5 rounded bg-linear-to-r from-(--brand) to-(--cyan) text-white text-[8px] font-bold shadow-lg">
                               🛡
                             </span>
                           )}
@@ -553,20 +553,20 @@ export function Sidebar() {
                             className={cn(
                               'absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full text-white text-[9px] font-bold flex items-center justify-center shadow-lg',
                               badgeBlinks
-                                ? 'bg-linear-to-r from-red-500 to-red-600 animate-chat-badge'
-                                : 'bg-linear-to-r from-red-500 to-red-600 animate-pulse',
+                                ? 'bg-linear-to-r from-(--danger-solid) to-(--danger-solid) animate-chat-badge'
+                                : 'bg-linear-to-r from-(--danger-solid) to-(--danger-solid) animate-pulse',
                             )}
                           >
                             {badgeCount > 9 ? '9+' : badgeCount}
                           </span>
                         )}
                         {item.badge === 'AI' && (
-                          <span className="absolute -top-1 -right-1 px-1 py-0.5 rounded bg-linear-to-r from-purple-500 to-pink-500 text-white text-[8px] font-bold shadow-lg">
+                          <span className="absolute -top-1 -right-1 px-1 py-0.5 rounded bg-linear-to-r from-(--purple) to-(--pink) text-white text-[8px] font-bold shadow-lg">
                             AI
                           </span>
                         )}
                         {item.badge === 'SEC' && (
-                          <span className="absolute -top-1 -right-1 px-1 py-0.5 rounded bg-linear-to-r from-blue-600 to-cyan-500 text-white text-[8px] font-bold shadow-lg">
+                          <span className="absolute -top-1 -right-1 px-1 py-0.5 rounded bg-linear-to-r from-(--brand) to-(--cyan) text-white text-[8px] font-bold shadow-lg">
                             🛡
                           </span>
                         )}
@@ -669,7 +669,7 @@ export function Sidebar() {
                         {showChildBadge && (
                           <span
                             className={cn(
-                              'absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full text-white text-[9px] font-bold flex items-center justify-center shadow-lg bg-linear-to-r from-red-500 to-red-600 animate-pulse',
+                              'absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full text-white text-[9px] font-bold flex items-center justify-center shadow-lg bg-linear-to-r from-(--danger-solid) to-(--danger-solid) animate-pulse',
                             )}
                           >
                             {signatureBadgeCount > 9 ? '9+' : signatureBadgeCount}
@@ -1096,17 +1096,17 @@ export function MobileSidebar() {
                             }}
                           />
                           {mobileBadge > 0 && (
-                            <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-linear-to-r from-red-500 to-red-600 text-white text-[9px] font-bold flex items-center justify-center shadow-lg animate-pulse">
+                            <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-linear-to-r from-(--danger-solid) to-(--danger-solid) text-white text-[9px] font-bold flex items-center justify-center shadow-lg animate-pulse">
                               {mobileBadge > 9 ? '9+' : mobileBadge}
                             </span>
                           )}
                           {item.badge === 'AI' && (
-                            <span className="absolute -top-1 -right-1 px-1 py-0.5 rounded bg-linear-to-r from-purple-500 to-pink-500 text-white text-[8px] font-bold shadow-lg">
+                            <span className="absolute -top-1 -right-1 px-1 py-0.5 rounded bg-linear-to-r from-(--purple) to-(--pink) text-white text-[8px] font-bold shadow-lg">
                               AI
                             </span>
                           )}
                           {item.badge === 'SEC' && (
-                            <span className="absolute -top-1 -right-1 px-1 py-0.5 rounded bg-linear-to-r from-blue-600 to-cyan-500 text-white text-[8px] font-bold shadow-lg">
+                            <span className="absolute -top-1 -right-1 px-1 py-0.5 rounded bg-linear-to-r from-(--brand) to-(--cyan) text-white text-[8px] font-bold shadow-lg">
                               🛡
                             </span>
                           )}
@@ -1160,17 +1160,17 @@ export function MobileSidebar() {
                             }}
                           />
                           {mobileBadge > 0 && (
-                            <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-linear-to-r from-red-500 to-red-600 text-white text-[9px] font-bold flex items-center justify-center shadow-lg animate-pulse">
+                            <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-linear-to-r from-(--danger-solid) to-(--danger-solid) text-white text-[9px] font-bold flex items-center justify-center shadow-lg animate-pulse">
                               {mobileBadge > 9 ? '9+' : mobileBadge}
                             </span>
                           )}
                           {item.badge === 'AI' && (
-                            <span className="absolute -top-1 -right-1 px-1 py-0.5 rounded bg-linear-to-r from-purple-500 to-pink-500 text-white text-[8px] font-bold shadow-lg">
+                            <span className="absolute -top-1 -right-1 px-1 py-0.5 rounded bg-linear-to-r from-(--purple) to-(--pink) text-white text-[8px] font-bold shadow-lg">
                               AI
                             </span>
                           )}
                           {item.badge === 'SEC' && (
-                            <span className="absolute -top-1 -right-1 px-1 py-0.5 rounded bg-linear-to-r from-blue-600 to-cyan-500 text-white text-[8px] font-bold shadow-lg">
+                            <span className="absolute -top-1 -right-1 px-1 py-0.5 rounded bg-linear-to-r from-(--brand) to-(--cyan) text-white text-[8px] font-bold shadow-lg">
                               🛡
                             </span>
                           )}
@@ -1262,7 +1262,7 @@ export function MobileSidebar() {
                           }}
                         />
                         {showChildBadge && (
-                          <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-linear-to-r from-red-500 to-red-600 text-white text-[9px] font-bold flex items-center justify-center shadow-lg animate-pulse">
+                          <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-linear-to-r from-(--danger-solid) to-(--danger-solid) text-white text-[9px] font-bold flex items-center justify-center shadow-lg animate-pulse">
                             {mobileSignatureCount > 9 ? '9+' : mobileSignatureCount}
                           </span>
                         )}

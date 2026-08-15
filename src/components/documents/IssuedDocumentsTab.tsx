@@ -451,7 +451,7 @@ export default function IssuedDocumentsTab({
         );
       case 'sent':
         return (
-          <Badge className="border-blue-500/20 bg-blue-500/10 text-blue-600">
+          <Badge className="border-(--brand-outline) bg-(--brand-quiet) text-(--brand-text)">
             {t('issued.statusSent', 'Awaiting signature')}
           </Badge>
         );
@@ -661,7 +661,7 @@ export default function IssuedDocumentsTab({
                         }
                         title={t('issued.delete', 'Delete')}
                       >
-                        <Trash2 className="h-4 w-4 text-red-500" />
+                        <Trash2 className="h-4 w-4 text-(--danger-text)" />
                       </Button>
                     )}
                   </div>

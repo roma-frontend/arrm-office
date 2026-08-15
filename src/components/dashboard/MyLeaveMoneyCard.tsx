@@ -89,7 +89,7 @@ export function MyLeaveMoneyCard({ userId }: { userId: Id<'users'> }) {
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-base flex items-center gap-2">
-            <Wallet className="w-5 h-5 text-[#2563eb]" />
+            <Wallet className="w-5 h-5 text-(--brand-text)" />
             {t('dashboard.leaveMoney.title')}
           </CardTitle>
           <Button

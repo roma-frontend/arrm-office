@@ -1363,7 +1363,7 @@ export default function AIChatPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className={`h-6 w-6 p-0 ${message.feedback === 'up' ? 'text-green-500' : ''}`}
+                            className={`h-6 w-6 p-0 ${message.feedback === 'up' ? 'text-(--success-text)' : ''}`}
                             onClick={() => handleFeedback(message, 'up')}
                           >
                             <ThumbsUp className="w-3 h-3" />
@@ -1371,7 +1371,7 @@ export default function AIChatPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className={`h-6 w-6 p-0 ${message.feedback === 'down' ? 'text-red-500' : ''}`}
+                            className={`h-6 w-6 p-0 ${message.feedback === 'down' ? 'text-(--danger-text)' : ''}`}
                             onClick={() => handleFeedback(message, 'down')}
                           >
                             <ThumbsDown className="w-3 h-3" />

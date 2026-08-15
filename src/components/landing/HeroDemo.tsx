@@ -611,7 +611,7 @@ function ChatScreen({ t }: { t: TFunction }) {
         <div className="flex justify-end">
           <p
             className="max-w-[80%] rounded-2xl rounded-br-md px-3.5 py-2 text-xs font-medium demo-bubble"
-            style={{ background: 'var(--primary)', color: '#ffffff' }}
+            style={{ background: 'var(--primary)', color: 'var(--brand-contrast)' }}
           >
             {t('landing.demoUserAsk')}
           </p>
@@ -683,7 +683,7 @@ function ChatScreen({ t }: { t: TFunction }) {
             <div className="flex justify-end">
               <p
                 className="max-w-[80%] rounded-2xl rounded-br-md px-3.5 py-2 text-xs font-medium demo-bubble"
-                style={{ background: 'var(--primary)', color: '#ffffff' }}
+                style={{ background: 'var(--primary)', color: 'var(--brand-contrast)' }}
               >
                 {t('landing.demoUserAsk2')}
               </p>
@@ -710,7 +710,7 @@ function ChatScreen({ t }: { t: TFunction }) {
         </span>
         <span
           className="flex items-center justify-center w-6 h-6 rounded-lg"
-          style={{ background: 'var(--primary)', color: '#fff' }}
+          style={{ background: 'var(--primary)', color: 'var(--brand-contrast)' }}
         >
           <SendIcon />
         </span>

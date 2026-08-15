@@ -439,19 +439,19 @@ describe('Alert', () => {
   it('renders with warning variant', () => {
     render(<Alert variant="warning">Warning</Alert>);
     const alert = screen.getByRole('alert');
-    expect(alert.className).toContain('amber');
+    expect(alert.className).toContain('--warning');
   });
 
   it('renders with info variant', () => {
     render(<Alert variant="info">Info</Alert>);
     const alert = screen.getByRole('alert');
-    expect(alert.className).toContain('blue');
+    expect(alert.className).toContain('--brand');
   });
 
   it('renders with success variant', () => {
     render(<Alert variant="success">Success</Alert>);
     const alert = screen.getByRole('alert');
-    expect(alert.className).toContain('green');
+    expect(alert.className).toContain('--success');
   });
 });
 

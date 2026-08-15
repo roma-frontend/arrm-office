@@ -1748,7 +1748,7 @@ export function ESignaturesClient() {
   };
 
   return (
-    <div className="p-0 md:p-6 py-4">
+    <div>
       {/* Header */}
       <div className="sticky top-0 z-10 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 mb-4 bg-(--background)/95 backdrop-blur supports-[backdrop-filter]:bg-(--background)/60 border-b border-(--border)">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -1833,7 +1833,7 @@ export function ESignaturesClient() {
       <Tabs defaultValue="pending">
         <TabsList className="w-full mb-4 gap-2 bg-transparent p-0 h-auto grid grid-cols-2">
           <TabsTrigger
-            className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
+            className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
             value="pending"
           >
             {t('signatures.tabs.mySignatures', 'My Signatures')}
@@ -1847,7 +1847,7 @@ export function ESignaturesClient() {
             )}
           </TabsTrigger>
           <TabsTrigger
-            className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
+            className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
             value="documents"
           >
             {t('signatures.tabs.documents', 'Documents')}
@@ -1861,7 +1861,7 @@ export function ESignaturesClient() {
           ) : myPending.length === 0 ? (
             <Card>
               <CardContent className="p-8 text-center">
-                <CheckCircle className="w-12 h-12 mx-auto text-green-500 mb-3" />
+                <CheckCircle className="w-12 h-12 mx-auto text-(--success-text) mb-3" />
                 <p className="font-medium">{t('signatures.noPending', 'No documents to sign')}</p>
                 <p className="text-sm text-muted-foreground mt-1">
                   {t('signatures.noPendingHint')}

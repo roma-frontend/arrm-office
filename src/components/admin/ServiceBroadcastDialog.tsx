@@ -332,8 +332,8 @@ export function ServiceBroadcastDialog({
   const renderAudienceStep = () => (
     <div className="space-y-6">
       <div className="text-center mb-6">
-        <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center mx-auto mb-3">
-          <Users className="w-8 h-8 text-blue-400" />
+        <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-(--brand) to-(--purple) flex items-center justify-center mx-auto mb-3">
+          <Users className="w-8 h-8 text-(--brand-text)" />
         </div>
         <h3 className="text-lg font-semibold">{t('broadcastDialog.whoGetsMessage')}</h3>
         <p className="text-sm text-(--text-muted) mt-1">{t('broadcastDialog.selectAudience')}</p>
@@ -346,7 +346,7 @@ export function ServiceBroadcastDialog({
           className={cn(
             'w-full p-4 rounded-xl border-2 transition-all text-left',
             broadcastScope === 'all'
-              ? 'border-blue-500 bg-blue-500/10'
+              ? 'border-(--brand-outline) bg-(--brand-quiet)'
               : 'border-(--border) hover:border-(--border-hover,var(--border))',
           )}
         >
@@ -354,7 +354,9 @@ export function ServiceBroadcastDialog({
             <div
               className={cn(
                 'w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all',
-                broadcastScope === 'all' ? 'border-blue-500 bg-blue-500' : 'border-(--border)',
+                broadcastScope === 'all'
+                  ? 'border-(--brand-outline) bg-(--brand)'
+                  : 'border-(--border)',
               )}
             >
               {broadcastScope === 'all' && <Check className="w-3 h-3 text-white" />}
@@ -374,7 +376,7 @@ export function ServiceBroadcastDialog({
           className={cn(
             'w-full p-4 rounded-xl border-2 transition-all text-left',
             broadcastScope === 'specific'
-              ? 'border-blue-500 bg-blue-500/10'
+              ? 'border-(--brand-outline) bg-(--brand-quiet)'
               : 'border-(--border) hover:border-(--border-hover,var(--border))',
           )}
         >
@@ -382,7 +384,9 @@ export function ServiceBroadcastDialog({
             <div
               className={cn(
                 'w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all',
-                broadcastScope === 'specific' ? 'border-blue-500 bg-blue-500' : 'border-(--border)',
+                broadcastScope === 'specific'
+                  ? 'border-(--brand-outline) bg-(--brand)'
+                  : 'border-(--border)',
               )}
             >
               {broadcastScope === 'specific' && <Check className="w-3 h-3 text-white" />}
@@ -410,7 +414,7 @@ export function ServiceBroadcastDialog({
                   count: org.activeEmployees ?? org.memberCount ?? 0,
                 })} ${t('broadcastDialog.employees', { defaultValue: 'employees' })})`,
               }))}
-              triggerClassName="w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+              triggerClassName="w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-(--brand-text)"
               dropdownClassName="border-[var(--border)] bg-[var(--background-subtle)] text-[var(--text-primary)]"
             />{' '}
             {selectedOrg && (
@@ -431,8 +435,8 @@ export function ServiceBroadcastDialog({
   const renderMessageStep = () => (
     <div className="space-y-6">
       <div className="text-center mb-6">
-        <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center mx-auto mb-3">
-          <MessageSquare className="w-8 h-8 text-purple-400" />
+        <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-(--purple) to-(--pink) flex items-center justify-center mx-auto mb-3">
+          <MessageSquare className="w-8 h-8 text-(--purple-text)" />
         </div>
         <h3 className="text-lg font-semibold">{t('broadcastDialog.messageContent')}</h3>
         <p className="text-sm text-(--text-muted) mt-1">{t('broadcastDialog.writeTitleAndText')}</p>
@@ -510,8 +514,8 @@ export function ServiceBroadcastDialog({
   const renderScheduleStep = () => (
     <div className="space-y-6">
       <div className="text-center mb-6">
-        <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-orange-500/20 to-red-500/20 flex items-center justify-center mx-auto mb-3">
-          <Calendar className="w-8 h-8 text-orange-400" />
+        <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-(--warning-solid) to-(--danger-solid) flex items-center justify-center mx-auto mb-3">
+          <Calendar className="w-8 h-8 text-(--warning-text)" />
         </div>
         <h3 className="text-lg font-semibold">{t('broadcastDialog.maintenanceSchedule')}</h3>
         <p className="text-sm text-(--text-muted) mt-1">
@@ -525,7 +529,7 @@ export function ServiceBroadcastDialog({
         className={cn(
           'w-full p-4 rounded-xl border-2 transition-all text-left',
           scheduleMaintenance
-            ? 'border-orange-500 bg-orange-500/10'
+            ? 'border-(--warning-outline) bg-(--warning-quiet)'
             : 'border-(--border) hover:border-(--border-hover,var(--border))',
         )}
       >
@@ -533,7 +537,9 @@ export function ServiceBroadcastDialog({
           <div
             className={cn(
               'w-10 h-6 rounded-full transition-all flex items-center',
-              scheduleMaintenance ? 'bg-orange-500 justify-end' : 'bg-(--border) justify-start',
+              scheduleMaintenance
+                ? 'bg-(--warning-solid) justify-end'
+                : 'bg-(--border) justify-start',
             )}
           >
             <div className="w-5 h-5 rounded-full bg-white shadow-sm mx-0.5" />
@@ -542,11 +548,11 @@ export function ServiceBroadcastDialog({
             <div className="flex items-center gap-2">
               <Power
                 className="w-4 h-4"
-                style={{ color: scheduleMaintenance ? '#f97316' : 'var(--text-muted)' }}
+                style={{ color: scheduleMaintenance ? 'var(--warning-text)' : 'var(--text-muted)' }}
               />
               <p
                 className="font-medium text-sm"
-                style={{ color: scheduleMaintenance ? '#f97316' : undefined }}
+                style={{ color: scheduleMaintenance ? 'var(--warning-text)' : undefined }}
               >
                 {t('broadcastDialog.scheduleMaintenanceToggle')}
               </p>
@@ -581,8 +587,8 @@ export function ServiceBroadcastDialog({
                 className="text-base"
               />
               {scheduleDateTime && (
-                <div className="mt-2 p-3 rounded-lg bg-orange-500/10 border border-orange-500/20">
-                  <p className="text-xs text-orange-400">
+                <div className="mt-2 p-3 rounded-lg bg-(--warning-quiet) border border-(--warning-outline)">
+                  <p className="text-xs text-(--warning-text)">
                     ⏰{' '}
                     {t('broadcastDialog.maintenanceStartsAt', {
                       time: new Date(scheduleDateTime).toLocaleString(locale, {
@@ -611,7 +617,7 @@ export function ServiceBroadcastDialog({
                     className={cn(
                       'px-3 py-2.5 rounded-xl border-2 text-sm transition-all font-medium',
                       estimatedDuration === option.value
-                        ? 'border-orange-500 bg-orange-500/10 text-orange-400'
+                        ? 'border-(--warning-outline) bg-(--warning-quiet) text-(--warning-text)'
                         : 'border-(--border) bg-(--background-subtle) text-(--text-secondary) hover:border-(--border-hover,var(--border))',
                     )}
                   >
@@ -630,8 +636,8 @@ export function ServiceBroadcastDialog({
   const renderReviewStep = () => (
     <div className="space-y-6">
       <div className="text-center mb-6">
-        <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-emerald-500/20 to-teal-500/20 flex items-center justify-center mx-auto mb-3">
-          <Send className="w-8 h-8 text-emerald-400" />
+        <div className="w-16 h-16 rounded-2xl bg-linear-to-br from-(--success-solid) to-(--success-solid) flex items-center justify-center mx-auto mb-3">
+          <Send className="w-8 h-8 text-(--success-text)" />
         </div>
         <h3 className="text-lg font-semibold">{t('broadcastDialog.checkAndSend')}</h3>
         <p className="text-sm text-(--text-muted) mt-1">{t('broadcastDialog.makeSureCorrect')}</p>
@@ -668,8 +674,8 @@ export function ServiceBroadcastDialog({
 
         {/* Schedule info */}
         {scheduleMaintenance && scheduleDateTime && (
-          <div className="p-4 border-t border-(--border) bg-orange-500/5">
-            <div className="flex items-center gap-2 text-xs text-orange-400">
+          <div className="p-4 border-t border-(--border) bg-(--warning-quiet)">
+            <div className="flex items-center gap-2 text-xs text-(--warning-text)">
               <Clock className="w-3.5 h-3.5" />
               <span>
                 {t('broadcastDialog.maintenanceSchedule')}:{' '}
@@ -742,9 +748,9 @@ export function ServiceBroadcastDialog({
                       className={cn(
                         'w-10 h-10 rounded-full flex items-center justify-center transition-all',
                         isActive
-                          ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30'
+                          ? 'bg-(--brand) text-white shadow-lg shadow-blue-500/30'
                           : isCompleted
-                            ? 'bg-emerald-500 text-white'
+                            ? 'bg-(--success-solid) text-white'
                             : 'bg-(--background-subtle) text-(--text-muted)',
                       )}
                     >
@@ -753,7 +759,7 @@ export function ServiceBroadcastDialog({
                     <span
                       className={cn(
                         'text-[10px] font-medium hidden sm:block',
-                        isActive ? 'text-blue-400' : 'text-(--text-muted)',
+                        isActive ? 'text-(--brand-text)' : 'text-(--text-muted)',
                       )}
                     >
                       {step.label}
@@ -763,7 +769,7 @@ export function ServiceBroadcastDialog({
                     <div
                       className={cn(
                         'flex-1 h-0.5 rounded-full transition-all mb-5',
-                        isCompleted ? 'bg-emerald-500' : 'bg-(--border)',
+                        isCompleted ? 'bg-(--success-solid)' : 'bg-(--border)',
                       )}
                     />
                   )}
@@ -858,7 +864,7 @@ export function ServiceBroadcastDialog({
                 disabled={loading || status === 'success'}
                 className="gap-2"
                 style={{
-                  backgroundColor: scheduleMaintenance ? '#f97316' : 'var(--primary)',
+                  backgroundColor: scheduleMaintenance ? 'var(--warning-solid)' : 'var(--primary)',
                   color: 'white',
                 }}
               >

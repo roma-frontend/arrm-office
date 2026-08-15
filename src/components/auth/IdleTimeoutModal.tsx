@@ -77,14 +77,14 @@ export function IdleTimeoutModal() {
           <div
             className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center border ${
               isCountingDown
-                ? 'bg-amber-500/10 border-amber-500/30'
-                : 'bg-blue-500/10 border-blue-500/30'
+                ? 'bg-(--warning-quiet) border-(--warning-outline)'
+                : 'bg-(--brand-quiet) border-(--brand-outline)'
             }`}
           >
             {isCountingDown ? (
-              <Clock className="w-8 h-8 text-amber-500 animate-pulse" />
+              <Clock className="w-8 h-8 text-(--warning-text) animate-pulse" />
             ) : (
-              <Shield className="w-8 h-8 text-blue-500" />
+              <Shield className="w-8 h-8 text-(--brand-text)" />
             )}
           </div>
           <DialogTitle className="text-center text-xl font-semibold text-(--text-primary)">
@@ -101,7 +101,7 @@ export function IdleTimeoutModal() {
                     'You have been inactive for a while. Your session will expire in:',
                   )}
                 </p>
-                <div className="text-3xl font-mono font-bold text-amber-500 py-2">
+                <div className="text-3xl font-mono font-bold text-(--warning-text) py-2">
                   {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
                 </div>
                 <p className="text-(--text-muted)">

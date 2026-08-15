@@ -226,7 +226,7 @@ export default function PayrollRecordsTable() {
                       <td className="py-3 px-4 text-right font-medium text-(--text-primary)">
                         {formatCurrency(record.grossSalary)}
                       </td>
-                      <td className="py-3 px-4 text-right font-medium text-emerald-500">
+                      <td className="py-3 px-4 text-right font-medium text-(--success-text)">
                         {formatCurrency(record.netSalary)}
                       </td>
                       <td className="py-3 px-4 text-center">{getStatusBadge(record.status, t)}</td>

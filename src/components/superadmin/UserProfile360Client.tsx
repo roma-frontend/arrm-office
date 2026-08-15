@@ -167,7 +167,7 @@ export default function UserProfile360Page() {
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white">
+                <div className="flex items-center gap-2 data-[state=active]:bg-(--brand) data-[state=active]:text-white">
                   <Button variant="outline" size="sm" className="gap-2">
                     <MessageSquare className="w-4 h-4" />
                     {t('superadmin.users.writeMessage')}
@@ -250,49 +250,49 @@ export default function UserProfile360Page() {
           <TabsList className="grid grid-cols-2 md:grid-cols-5 lg:grid-cols-7 h-auto">
             <TabsTrigger
               value="leaves"
-              className="flex items-center gap-2 data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white"
+              className="flex items-center gap-2 data-[state=active]:bg-(--brand) data-[state=active]:text-white"
             >
               <Calendar className="w-4 h-4" />
               <span className="hidden sm:inline">Отпуска</span>
             </TabsTrigger>
             <TabsTrigger
               value="tasks"
-              className="flex items-center gap-2 data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white"
+              className="flex items-center gap-2 data-[state=active]:bg-(--brand) data-[state=active]:text-white"
             >
               <Briefcase className="w-4 h-4" />
               <span className="hidden sm:inline">Задачи</span>
             </TabsTrigger>
             <TabsTrigger
               value="drivers"
-              className="flex items-center gap-2 data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white"
+              className="flex items-center gap-2 data-[state=active]:bg-(--brand) data-[state=active]:text-white"
             >
               <Car className="w-4 h-4" />
               <span className="hidden sm:inline">Поездки</span>
             </TabsTrigger>
             <TabsTrigger
               value="tickets"
-              className="flex items-center gap-2 data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white"
+              className="flex items-center gap-2 data-[state=active]:bg-(--brand) data-[state=active]:text-white"
             >
               <Ticket className="w-4 h-4" />
               <span className="hidden sm:inline">Тикеты</span>
             </TabsTrigger>
             <TabsTrigger
               value="activity"
-              className="flex items-center gap-2 data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white"
+              className="flex items-center gap-2 data-[state=active]:bg-(--brand) data-[state=active]:text-white"
             >
               <Clock className="w-4 h-4" />
               <span className="hidden sm:inline">Активность</span>
             </TabsTrigger>
             <TabsTrigger
               value="security"
-              className="flex items-center gap-2 data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white"
+              className="flex items-center gap-2 data-[state=active]:bg-(--brand) data-[state=active]:text-white"
             >
               <Shield className="w-4 h-4" />
               <span className="hidden sm:inline">Безопасность</span>
             </TabsTrigger>
             <TabsTrigger
               value="chat"
-              className="flex items-center gap-2 data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white"
+              className="flex items-center gap-2 data-[state=active]:bg-(--brand) data-[state=active]:text-white"
             >
               <MessageSquare className="w-4 h-4" />
               <span className="hidden sm:inline">Чат</span>
@@ -592,10 +592,10 @@ export default function UserProfile360Page() {
                   {data.notifications?.slice(0, 20).map((notif) => (
                     <div
                       key={notif._id}
-                      className={`p-3 rounded-lg border flex items-start gap-3 ${!notif.isRead ? 'bg-blue-500/5 border-blue-500/30' : ''}`}
+                      className={`p-3 rounded-lg border flex items-start gap-3 ${!notif.isRead ? 'bg-(--brand-quiet) border-(--brand-outline)' : ''}`}
                       style={{ background: 'var(--background-subtle)' }}
                     >
-                      <div className="w-2 h-2 rounded-full mt-2 bg-blue-500 shrink-0" />
+                      <div className="w-2 h-2 rounded-full mt-2 bg-(--brand) shrink-0" />
                       <div className="flex-1">
                         <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
                           {notif.title}
@@ -630,16 +630,16 @@ export default function UserProfile360Page() {
                   {loginAttempts?.slice(0, 20).map((attempt) => (
                     <div
                       key={attempt._id}
-                      className={`p-3 rounded-lg border flex items-start gap-3 ${!attempt.success ? 'bg-red-500/5 border-red-500/30' : ''}`}
+                      className={`p-3 rounded-lg border flex items-start gap-3 ${!attempt.success ? 'bg-(--danger-quiet) border-(--danger-outline)' : ''}`}
                       style={{ background: 'var(--background-subtle)' }}
                     >
                       {attempt.success ? (
-                        <CheckCircle className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
+                        <CheckCircle className="w-5 h-5 text-(--success-text) shrink-0 mt-0.5" />
                       ) : (
-                        <AlertTriangle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                        <AlertTriangle className="w-5 h-5 text-(--danger-text) shrink-0 mt-0.5" />
                       )}
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white">
+                        <div className="flex items-center gap-2 data-[state=active]:bg-(--brand) data-[state=active]:text-white">
                           <span
                             className="text-sm font-medium"
                             style={{ color: 'var(--text-primary)' }}
@@ -658,7 +658,9 @@ export default function UserProfile360Page() {
                               Риск:{' '}
                               <span
                                 className={
-                                  attempt.riskScore > 50 ? 'text-red-500' : 'text-green-500'
+                                  attempt.riskScore > 50
+                                    ? 'text-(--danger-text)'
+                                    : 'text-(--success-text)'
                                 }
                               >
                                 {attempt.riskScore}
@@ -738,12 +740,12 @@ function StatCard({
   color: string;
 }) {
   const colorClasses: Record<string, string> = {
-    blue: 'text-blue-500',
-    green: 'text-green-500',
-    red: 'text-red-500',
-    purple: 'text-purple-500',
-    gray: 'text-gray-500',
-    orange: 'text-orange-500',
+    blue: 'text-(--brand-text)',
+    green: 'text-(--success-text)',
+    red: 'text-(--danger-text)',
+    purple: 'text-(--purple-text)',
+    gray: 'text-(--text-3)',
+    orange: 'text-(--warning-text)',
   };
 
   return (

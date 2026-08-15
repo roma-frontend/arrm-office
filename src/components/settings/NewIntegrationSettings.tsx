@@ -489,11 +489,11 @@ export default function NewIntegrationSettings() {
                 <div className="flex items-center justify-between p-3 rounded-lg bg-(--background-subtle)">
                   <div className="flex items-center gap-2">
                     {isSyncing ? (
-                      <RefreshCw className="w-4 h-4 text-blue-500 animate-spin" />
+                      <RefreshCw className="w-4 h-4 text-(--brand-text) animate-spin" />
                     ) : syncStatus === 'success' ? (
-                      <Check className="w-4 h-4 text-emerald-500" />
+                      <Check className="w-4 h-4 text-(--success-text)" />
                     ) : syncStatus === 'error' ? (
-                      <X className="w-4 h-4 text-red-500" />
+                      <X className="w-4 h-4 text-(--danger-text)" />
                     ) : (
                       <RefreshCw className="w-4 h-4 text-(--text-muted)" />
                     )}
@@ -508,7 +508,7 @@ export default function NewIntegrationSettings() {
                               : t('admin.integrations.notConnected', 'Not connected')}
                       </span>
                       {syncStatus === 'error' && config?.lastError && (
-                        <p className="text-[11px] text-red-500 mt-0.5 line-clamp-2 break-words">
+                        <p className="text-[11px] text-(--danger-text) mt-0.5 line-clamp-2 break-words">
                           {config.lastError}
                         </p>
                       )}
@@ -557,9 +557,9 @@ export default function NewIntegrationSettings() {
                       syncLogs.map((log) => (
                         <div key={log._id} className="p-3 flex items-start gap-2">
                           {log.status === 'success' ? (
-                            <Check className="w-3.5 h-3.5 text-emerald-500 mt-0.5 shrink-0" />
+                            <Check className="w-3.5 h-3.5 text-(--success-text) mt-0.5 shrink-0" />
                           ) : log.status === 'error' ? (
-                            <X className="w-3.5 h-3.5 text-red-500 mt-0.5 shrink-0" />
+                            <X className="w-3.5 h-3.5 text-(--danger-text) mt-0.5 shrink-0" />
                           ) : (
                             <SkipForward className="w-3.5 h-3.5 text-(--text-muted) mt-0.5 shrink-0" />
                           )}
@@ -609,7 +609,7 @@ export default function NewIntegrationSettings() {
                               title={t('admin.integrations.clearSecret', 'Remove saved value')}
                               onClick={() => handleClearSecret(provider.id, field.key)}
                             >
-                              <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                              <Trash2 className="w-3.5 h-3.5 text-(--danger-text)" />
                             </Button>
                           )}
                         </div>
@@ -622,7 +622,7 @@ export default function NewIntegrationSettings() {
                           </p>
                         )}
                         {pendingClear && (
-                          <p className="text-[11px] text-amber-500 mt-1">
+                          <p className="text-[11px] text-(--warning-text) mt-1">
                             {t(
                               'admin.integrations.secretWillClear',
                               'Will be removed when you save',
@@ -724,7 +724,7 @@ export default function NewIntegrationSettings() {
                                 <Copy className="w-3.5 h-3.5" />
                               </Button>
                             </div>
-                            <p className="text-[11px] text-amber-500 mt-1">
+                            <p className="text-[11px] text-(--warning-text) mt-1">
                               {t(
                                 'admin.integrations.webhookSecretOnce',
                                 'Copy this now — it is shown only once and rotating replaces it.',
@@ -746,7 +746,7 @@ export default function NewIntegrationSettings() {
                         )}
 
                         {!config && (
-                          <p className="text-[11px] text-amber-500 mt-1">
+                          <p className="text-[11px] text-(--warning-text) mt-1">
                             {t(
                               'admin.integrations.webhookSaveFirst',
                               'Save the configuration before generating a secret.',
@@ -801,7 +801,7 @@ export default function NewIntegrationSettings() {
                     href={provider.docUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs text-blue-500 hover:underline flex items-center gap-1"
+                    className="text-xs text-(--brand-text) hover:underline flex items-center gap-1"
                   >
                     <ExternalLink className="w-3 h-3" />{' '}
                     {t('admin.integrations.viewDocs', 'View documentation')}

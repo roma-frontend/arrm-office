@@ -180,7 +180,7 @@ export function DocumentSheet({
   accentHex?: string;
 }) {
   return (
-    <div className="mx-auto w-full max-w-[820px] rounded-xl border border-(--border) bg-white p-8 shadow-sm dark:bg-neutral-950">
+    <div className="mx-auto w-full max-w-[820px] rounded-xl border border-(--border) bg-white p-8 shadow-sm dark:bg-(--surface-3)">
       <div className="mb-6 border-b-2 pb-3" style={{ borderColor: accentHex ?? 'var(--border)' }}>
         <h3 className="text-center text-sm font-semibold uppercase tracking-wide text-(--text-primary)">
           {title || '—'}

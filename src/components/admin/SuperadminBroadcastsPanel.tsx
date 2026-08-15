@@ -52,14 +52,14 @@ export function SuperadminBroadcastsPanel({
       {/* Broadcast creation card */}
       <Card
         style={{
-          borderColor: '#f97316',
+          borderColor: 'var(--warning-text)',
           backgroundColor: 'rgba(249, 115, 22, 0.08)',
         }}
       >
         <CardHeader>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between">
             <div className="flex items-center gap-2">
-              <AlertCircle className="w-5 h-5" style={{ color: '#f97316' }} />
+              <AlertCircle className="w-5 h-5" style={{ color: 'var(--warning-text)' }} />
               <div>
                 <CardTitle>{t('broadcasts.title')}</CardTitle>
                 <CardDescription>{t('broadcasts.description')}</CardDescription>

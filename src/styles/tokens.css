@@ -162,6 +162,8 @@
 
   --cyan-400: #22d3ee;
   --cyan-500: #06b6d4;
+  --cyan-400-ch: 34 211 238;
+  --cyan-500-ch: 6 182 212;
 
   /* ── Radius ───────────────────────────────────────────────────────────────
      A separate namespace on purpose. Overriding Tailwind's own `--radius-lg`
@@ -226,6 +228,7 @@
   --surface-1: var(--n-0); /* cards, panels, popovers */
   --surface-2: var(--n-50); /* hover on white */
   --surface-3: var(--n-100); /* pressed, selected-neutral */
+  --surface-sunken: var(--n-100); /* dark-mode chip wells (dark: variant) */
   --sunken: var(--n-25); /* inputs, tab tracks, wells */
 
   /* ── Borders ────────────────────────────────────────────────────────────
@@ -245,18 +248,22 @@
      `quiet` is the tinted surface used for selected rows and soft badges;
      `contrast` is the only text colour allowed on it. Opacities are the ones
      the original badge and secondary-button tokens used. */
-  --brand: var(--brand-600);
-  --brand-hover: var(--brand-700);
-  --brand-active: var(--brand-800);
+  /* Brand — same azure (голубой) as the dark theme, so buttons and accents
+     match across modes. Hover steps *deeper* on white (more contrast), the
+     opposite direction from dark mode where it lightens. `--brand-text` keeps
+     a readable azure for links/icons — the raw #2c8cd5 is too pale on white. */
+  --brand: #2c8cd5;
+  --brand-hover: #2586c9;
+  --brand-active: #1d73b0;
   --brand-contrast: var(--n-0);
-  --brand-quiet: rgb(var(--brand-600-ch) / 10%);
-  --brand-quiet-hover: rgb(var(--brand-600-ch) / 15%);
-  --brand-outline: rgb(var(--brand-600-ch) / 20%);
-  --brand-text: var(--brand-600);
-  /* Large brand surfaces — page heroes, full-bleed card headers. Unchanged from
-     the original light theme: on white, a bright fill is the *contrast* and does
-     not glare. The dark theme overrides this with a much deeper pair. */
-  --brand-panel: linear-gradient(135deg, var(--brand-600), var(--brand-400));
+  --brand-quiet: rgb(44 140 213 / 12%);
+  --brand-quiet-hover: rgb(44 140 213 / 18%);
+  --brand-outline: rgb(44 140 213 / 25%);
+  --brand-text: #1d73b0;
+  /* Large brand surfaces — page heroes, full-bleed card headers. One step
+     deeper than the button brand so a 200px banner does not read as a light
+     source on white; the dark theme deepens it further. */
+  --brand-panel: linear-gradient(135deg, #1d73b0, #2c8cd5);
   --brand-panel-contrast: var(--n-0);
 
   /* ── Chat bubbles ───────────────────────────────────────────────────────
@@ -322,6 +329,12 @@
   --pink-quiet: rgb(var(--pink-500-ch) / 10%);
   --pink-outline: rgb(var(--pink-500-ch) / 20%);
 
+  --cyan: var(--cyan-500);
+  --cyan-text: var(--cyan-500);
+  --cyan-quiet: rgb(6 182 212 / 10%);
+  --cyan-quiet-hover: rgb(6 182 212 / 15%);
+  --cyan-outline: rgb(6 182 212 / 20%);
+
   /* ── Charts ─────────────────────────────────────────────────────────────
      Categorical, ordered by how often a series is the "primary" one. Was
      copy-pasted as a literal array in six components; those read tokens now. */
@@ -379,8 +392,8 @@
   --primary: var(--brand);
   --primary-hover: var(--brand-hover);
   --primary-foreground: var(--brand-contrast);
-  --primary-rgb: 37, 99, 235;
-  --primary-gradient: linear-gradient(135deg, var(--brand-600), var(--brand-400));
+  --primary-rgb: 44, 140, 213;
+  --primary-gradient: linear-gradient(135deg, var(--brand), var(--brand-hover));
 
   /* Tabs */
   --tab-active-bg: var(--brand);
@@ -517,89 +530,87 @@
 /* ───────────────────────────────────────────────────────────────────────────
    LAYER 2 + 3 — DARK THEME
 
-   The product's original dark theme, restored verbatim: a saturated navy with a
-   bright blue accent. Every value below is the one that shipped.
+   Ported from the caron design system's dark theme: a neutral graphite, not the
+   old saturated navy. The navy was the app's identity for a long time, but on a
+   dense dashboard it reads as glare — bright blue-tinted cards against a
+   near-black canvas, with blue-tinted borders between them. The graphite keeps
+   the same hue family (a cool ~250° cast) at a fraction of the chroma, so the
+   surfaces recede and the brand blue — caron's cyan-adjacent #2c8cd5 — is the
+   only saturated thing on the page.
 
-   Three redesigns of this palette were tried and all three were rejected — they
-   traded the navy for grey. The saturation is what makes this theme recognisable,
-   so it stays.
-
-   One thing was genuinely wrong and is fixed without touching the palette: large
-   brand surfaces (page heroes, full-bleed card headers) used the same bright
-   `--primary` as a 36px button, which across 200px reads as a light source. Those
-   now use `--brand-panel`, a deeper step of the same hue. See `.brand-panel` in
-   spark.css.
+   The signature relationship, taken from caron: cards are *lighter* than the
+   canvas (L 27% vs L 22%), which is the opposite of the old navy where cards
+   floated darker than a black canvas. That, plus a soft radial glow behind the
+   body and a glow on :focus-visible, is what makes the theme read as calm
+   instead of contrasty. See the `.dark` rules in globals.css.
    ─────────────────────────────────────────────────────────────────────────── */
 .dark {
-  /* The original four navy surfaces. `sunken` is *lighter* than `surface-1`
-     here, not darker — see the note on `--navy-well` in the primitives. */
-  --canvas: var(--navy-canvas);
-  --surface-1: var(--navy-card);
-  --surface-2: var(--navy-raised);
-  --surface-3: var(--navy-pressed);
-  --sunken: var(--navy-well);
+  /* Surfaces — caron's graphite ramp. `sunken` is a hair darker than the card
+     so an input reads as a recess rather than a hole; `surface-3` matches the
+     border step so pressed controls stay on the same plane as dividers. */
+  --canvas: #191b1d;
+  --surface-1: #242729;
+  --surface-2: #2e3133;
+  --surface-3: #36383b;
+  --surface-sunken: #2e3133; /* chip wells on dark */
+  --sunken: #1e2123;
 
-  /* `subtle` is the card colour itself: in this theme an internal divider is a
-     shift in surface, not a visible line. */
-  --border-subtle: var(--navy-card);
-  --border-default: var(--navy-border);
-  --border-strong: var(--navy-border-strong);
+  /* `subtle` is the card colour itself: an internal divider is a shift in
+     surface, not a visible line — same rule the light theme uses. */
+  --border-subtle: var(--surface-2);
+  --border-default: #36383b;
+  --border-strong: #494e52;
 
-  /* The original blue-white ink. Every step is tinted toward the accent, which
-     is what ties the theme together — a neutral grey label on a navy card is the
-     single most common way this palette gets broken. */
-  --text-1: #e8f0fe;
-  --text-2: #bdd4fa;
-  --text-3: #7ab3f5;
-  --text-4: #2d5a9e;
+  /* Neutral ink on graphite. Text is a cool white; the muted step is caron's
+     exact muted-foreground so labels stay legible without shouting. */
+  --text-1: #f0f2f4;
+  --text-2: #d3d7da;
+  --text-3: #9a9fa4;
+  --text-4: #51565b;
 
-  /* Tailwind's blue ramp, as the original dark theme used: #2563eb is too dark
-     to read as an action on a navy surface, so the solid step is 500 and text on
-     quiet surfaces is 400. */
-  --brand: var(--blue-500);
-  --brand-hover: var(--blue-600);
-  --brand-active: var(--blue-800);
-  --brand-contrast: var(--n-0);
-  --brand-quiet: rgb(var(--blue-500-ch) / 15%);
-  --brand-quiet-hover: rgb(var(--blue-500-ch) / 20%);
-  --brand-outline: rgb(var(--blue-500-ch) / 30%);
-  --brand-text: var(--blue-400);
-  /* Large brand surfaces — page heroes, full-bleed card headers. Area changes
-     what a colour does: `--brand` is right on a 36px button and reads as a lit
-     slab across a 200px banner. Same hue, two steps deeper. This is the only
-     addition to the restored palette. */
-  --brand-panel: linear-gradient(135deg, #142a5c, #1e40af);
-  --brand-panel-contrast: var(--n-0);
+  /* Brand — caron's primary is a cyan-leaning blue (#2c8cd5) that reads
+     brighter than the old #3b82f6 on graphite. Text on quiet surfaces uses the
+     light step (#58acf1) for contrast, exactly as caron does. */
+  --brand: #2c8cd5;
+  --brand-hover: #58acf1;
+  --brand-active: #006db4;
+  --brand-contrast: #ffffff;
+  --brand-quiet: rgb(44 140 213 / 15%);
+  --brand-quiet-hover: rgb(44 140 213 / 22%);
+  --brand-outline: rgb(44 140 213 / 30%);
+  --brand-text: #58acf1;
+  /* Large brand surfaces — one step deeper than `--brand`, as the light theme
+     does, so a 200px banner does not read as a light source. */
+  --brand-panel: linear-gradient(135deg, #006db4, #2c8cd5);
+  --brand-panel-contrast: #ffffff;
 
-  /* Chat bubbles — same reasoning as the light theme, one step deeper than
-     `--brand` so a thread of them does not light up the navy canvas. The
-     incoming bubble stays the card colour, which on this canvas already reads
-     as a raised surface without a border. */
-  --chat-own: #1b3f8f;
-  --chat-own-contrast: var(--n-0);
+  /* Chat bubbles — own bubbles sit one step deeper than the button brand so a
+     thread of them does not light up the page; incoming stays the card colour. */
+  --chat-own: #1a6fb5;
+  --chat-own-contrast: #ffffff;
   --chat-own-inset: rgb(255 255 255 / 10%);
   --chat-own-inset-border: rgb(255 255 255 / 18%);
   --chat-other: var(--surface-2);
   --chat-other-border: var(--border-default);
 
-  /* Plain black ink, as the original three shadows were. On a saturated navy a
-     tinted shadow turns to mud; black keeps the edge clean. `--elev-4` is new
-     (sheets and the command palette need a step above `--shadow-lg`) and
-     extends the same recipe. */
-  --elev-1: 0 1px 3px rgb(0 0 0 / 40%);
-  --elev-2: 0 4px 6px rgb(0 0 0 / 50%);
-  --elev-3: 0 10px 15px rgb(0 0 0 / 60%);
-  --elev-4: 0 28px 64px -16px rgb(0 0 0 / 70%), 0 8px 20px -8px rgb(0 0 0 / 50%);
-  --elev-brand: 0 1px 2px rgb(0 0 0 / 40%), 0 6px 18px -6px rgb(var(--blue-500-ch) / 45%);
+  /* Elevation — neutral black, softened to caron's recipe. On a lighter
+     graphite canvas the old 60%-black shadows read as holes; these keep the
+     depth without the drop. */
+  --elev-1: 0 1px 3px rgb(0 0 0 / 25%), 0 1px 2px -1px rgb(0 0 0 / 25%);
+  --elev-2: 0 4px 6px -1px rgb(0 0 0 / 30%), 0 2px 4px -2px rgb(0 0 0 / 30%);
+  --elev-3: 0 10px 15px -3px rgb(0 0 0 / 35%), 0 4px 6px -4px rgb(0 0 0 / 35%);
+  --elev-4: 0 20px 25px -5px rgb(0 0 0 / 40%), 0 8px 10px -6px rgb(0 0 0 / 40%);
+  --elev-brand: 0 1px 2px rgb(0 0 0 / 30%), 0 6px 16px -6px rgb(44 140 213 / 35%);
   --inner-highlight: inset 0 1px 0 rgb(255 255 255 / 8%);
 
   /* Glass takes the canvas value, so a floating layer still belongs to the same
-     family as what it floats over. `strong` is the original navbar's 88%. */
-  --glass-surface: rgb(6 14 30 / 80%);
-  --glass-surface-strong: rgb(6 14 30 / 88%);
-  --glass-border: rgb(26 52 96 / 60%);
+     family as what it floats over. `strong` is the navbar's 88%. */
+  --glass-surface: rgb(25 27 29 / 80%);
+  --glass-surface-strong: rgb(25 27 29 / 88%);
+  --glass-border: rgb(54 56 59 / 60%);
 
-  /* The original status colours: the 400 step of each hue on a 15% wash. */
+  /* Status — the 400 step of each hue on a 15% wash, kept from the old theme
+     because they read correctly on graphite. */
   --success-solid: var(--green-400);
   --success-text: var(--green-400);
   --success-quiet: rgb(var(--green-400-ch) / 15%);
@@ -615,7 +626,6 @@
   --danger-quiet: rgb(var(--red-400-ch) / 15%);
   --danger-outline: rgb(var(--red-400-ch) / 30%);
 
-  /* The original dark purple was #a855f7 — a step brighter than the violet ramp. */
   --purple-text: #a855f7;
   --purple-quiet: rgb(168 85 247 / 15%);
   --purple-outline: rgb(168 85 247 / 30%);
@@ -624,7 +634,13 @@
   --pink-quiet: rgb(var(--pink-400-ch) / 15%);
   --pink-outline: rgb(var(--pink-400-ch) / 34%);
 
-  --chart-1: var(--blue-400);
+  --cyan: var(--cyan-400);
+  --cyan-text: var(--cyan-400);
+  --cyan-quiet: rgb(var(--cyan-400-ch) / 15%);
+  --cyan-quiet-hover: rgb(var(--cyan-400-ch) / 22%);
+  --cyan-outline: rgb(var(--cyan-400-ch) / 30%);
+
+  --chart-1: var(--brand-text);
   --chart-2: #34d399;
   --chart-3: #fbbf24;
   --chart-4: #a78bfa;
@@ -635,10 +651,10 @@
   --chart-grid: rgb(255 255 255 / 8%);
   --chart-axis: var(--text-3);
 
-  /* Legacy aliases — the original dark values. */
+  /* Legacy aliases — caron dark values. */
   --background: var(--canvas);
   --background-subtle: var(--surface-1);
-  --background-subtle-calendar: var(--navy-calendar); /* #29436f */
+  --background-subtle-calendar: var(--surface-3);
   --foreground: var(--text-1);
 
   --card: var(--surface-1);
@@ -656,45 +672,45 @@
   --popover-foreground: var(--text-1);
 
   --border: var(--border-default);
-  --input: var(--sunken); /* #0f2447 */
-  --input-border: var(--blue-600); /* #2563eb — a lit edge, as it shipped */
-  --ring: var(--blue-400);
+  --input: var(--sunken);
+  --input-border: var(--brand); /* a lit edge, as the old theme's blue-600 */
+  --ring: var(--brand);
 
   --primary: var(--brand);
   --primary-hover: var(--brand-hover);
   --primary-foreground: var(--brand-contrast);
-  --primary-rgb: 59, 130, 246;
-  --primary-gradient: linear-gradient(135deg, var(--blue-500), var(--blue-400));
+  --primary-rgb: 44, 140, 213;
+  --primary-gradient: linear-gradient(135deg, var(--brand), var(--brand-hover));
 
-  --tab-active-bg: var(--blue-600);
-  --tab-active-text: var(--n-0);
+  --tab-active-bg: var(--brand);
+  --tab-active-text: #ffffff;
 
-  --secondary: var(--surface-1);
-  --secondary-foreground: var(--blue-300);
-  --muted: var(--surface-1);
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--text-2);
+  --muted: var(--surface-2);
   --muted-foreground: var(--text-3);
-  /* The original dark `--accent` was a deep cyan-blue, not a neutral hover. */
-  --accent: #01579b;
-  --accent-foreground: var(--n-0);
+  /* caron's accent is a blue-tinted surface — the neutral hover role. */
+  --accent: #273a4c;
+  --accent-foreground: #d6e7f8;
 
-  --loader-color: var(--blue-400);
+  --loader-color: var(--brand-text);
 
   --destructive: var(--danger-solid);
-  --destructive-foreground: var(--n-0);
+  --destructive-foreground: #ffffff;
   --success: var(--success-solid);
-  --success-foreground: var(--n-0);
+  --success-foreground: #ffffff;
   --warning: var(--warning-solid);
-  --warning-foreground: var(--n-0);
-  --info: var(--blue-400);
-  --info-foreground: var(--n-0);
+  --warning-foreground: #ffffff;
+  --info: var(--brand);
+  --info-foreground: #ffffff;
   --purple: #a855f7;
   --pink: var(--pink-400);
 
   --button-primary-bg: var(--brand);
   --button-primary-hover: var(--brand-hover);
   --button-primary-text: var(--brand-contrast);
-  --button-secondary-bg: rgb(var(--blue-500-ch) / 12%);
-  --button-secondary-hover: var(--brand-quiet-hover);
+  --button-secondary-bg: rgb(44 140 213 / 12%);
+  --button-secondary-hover: rgb(44 140 213 / 20%);
   --button-secondary-text: var(--brand-text);
   --button-secondary-border: var(--brand-outline);
   --button-danger-bg: rgb(var(--red-400-ch) / 12%);
@@ -713,9 +729,9 @@
   --badge-primary-bg: var(--brand-quiet);
   --badge-primary-text: var(--brand-text);
   --badge-primary-border: var(--brand-outline);
-  --badge-info-bg: rgb(var(--blue-400-ch) / 15%);
-  --badge-info-text: var(--blue-400);
-  --badge-info-border: rgb(var(--blue-400-ch) / 30%);
+  --badge-info-bg: rgb(88 172 241 / 15%);
+  --badge-info-text: var(--brand-text);
+  --badge-info-border: rgb(88 172 241 / 30%);
   --badge-success-bg: var(--success-quiet);
   --badge-success-text: var(--success-text);
   --badge-success-border: var(--success-outline);
@@ -725,9 +741,9 @@
   --badge-danger-bg: var(--danger-quiet);
   --badge-danger-text: var(--danger-text);
   --badge-danger-border: var(--danger-outline);
-  --badge-secondary-bg: rgb(var(--blue-300-ch) / 10%);
-  --badge-secondary-text: var(--blue-300);
-  --badge-secondary-border: rgb(var(--blue-300-ch) / 20%);
+  --badge-secondary-bg: rgb(88 172 241 / 10%);
+  --badge-secondary-text: var(--brand-text);
+  --badge-secondary-border: rgb(88 172 241 / 20%);
   --badge-purple-bg: var(--purple-quiet);
   --badge-purple-text: var(--purple-text);
   --badge-purple-border: var(--purple-outline);
@@ -737,17 +753,19 @@
   --text-muted: var(--text-3);
   --text-disabled: var(--text-4);
 
-  --sidebar-bg: var(--canvas);
+  /* Sidebar — caron's sidebar is a step *darker* than the canvas (#141619 vs
+     #191b1d), which makes the chrome recede behind the content. */
+  --sidebar-bg: #141619;
   --sidebar-border: var(--border-subtle);
-  --sidebar-item-hover: var(--surface-1);
-  --sidebar-item-active: rgb(var(--blue-500-ch) / 18%);
+  --sidebar-item-hover: var(--surface-2);
+  --sidebar-item-active: rgb(44 140 213 / 18%);
   --sidebar-item-active-text: var(--brand-text);
   --sidebar-text: var(--text-3);
   --sidebar-text-muted: var(--text-4);
 
   --navbar-bg: var(--glass-surface-strong);
   --navbar-border: var(--border-subtle);
-  --navbar-button-hover: var(--surface-1);
+  --navbar-button-hover: var(--surface-2);
 
   --shadow: var(--elev-1);
   --shadow-md: var(--elev-2);
@@ -760,33 +778,27 @@
   --status-rejected-bg: var(--danger-quiet);
   --status-rejected-text: var(--danger-text);
 
-  /* Plain black at 70%, as it shipped. */
   --overlay-bg: rgb(0 0 0 / 70%);
 
-  --accent-gradient: linear-gradient(135deg, var(--blue-800), var(--blue-600), var(--blue-500));
-  --text-on-accent: var(--n-0);
+  --accent-gradient: linear-gradient(135deg, #006db4, #2c8cd5, #58acf1);
+  --text-on-accent: #ffffff;
   --text-on-accent-secondary: rgb(255 255 255 / 90%);
 
-  --landing-bg: linear-gradient(
-    135deg,
-    var(--navy-canvas) 0%,
-    var(--navy-card) 50%,
-    var(--navy-canvas) 100%
-  );
+  --landing-bg: linear-gradient(135deg, #191b1d 0%, #242729 50%, #191b1d 100%);
   --landing-text-primary: var(--text-1);
   --landing-text-secondary: var(--text-2);
   --landing-text-muted: var(--text-3);
   --landing-navbar-bg: var(--glass-surface-strong);
-  --landing-navbar-bg-rgb: 6, 14, 30;
+  --landing-navbar-bg-rgb: 25, 27, 29;
   --landing-navbar-text: var(--text-2);
-  --landing-navbar-text-hover: var(--blue-400);
-  --landing-card-bg: rgb(13 30 56 / 40%);
-  --landing-card-border: rgb(26 52 96 / 30%);
-  --landing-modal-bg: #0f1f3d;
-  --landing-gradient-from: var(--blue-600);
-  --landing-gradient-to: var(--blue-300);
-  --landing-orb-1: rgb(var(--brand-600-ch) / 25%);
-  --landing-orb-2: rgb(var(--blue-400-ch) / 20%);
+  --landing-navbar-text-hover: var(--brand-text);
+  --landing-card-bg: rgb(36 39 41 / 40%);
+  --landing-card-border: rgb(54 56 59 / 30%);
+  --landing-modal-bg: #242729;
+  --landing-gradient-from: var(--brand);
+  --landing-gradient-to: var(--brand-text);
+  --landing-orb-1: rgb(44 140 213 / 25%);
+  --landing-orb-2: rgb(88 172 241 / 20%);
   --landing-orb-3: rgb(56 189 248 / 15%);
 }
 

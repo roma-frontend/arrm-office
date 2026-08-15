@@ -136,8 +136,8 @@ describe('StatCard (direct)', () => {
     const { container } = render(<StatCard label="X" value={1} icon={CarIcon} />);
     // jsdom chokes on `#`+parentheses in one attribute selector, so match the
     // default color hex and the icon background separately.
-    expect(container.querySelector('[style*="#6366f1"]')).not.toBeNull();
-    expect(container.querySelector('[style*="rgba(99, 102, 241, 0.1)"]')).not.toBeNull();
+    expect(container.querySelector('[style*="var(--purple)"]')).not.toBeNull();
+    expect(container.querySelector('[style*="var(--purple-quiet)"]')).not.toBeNull();
     expect(screen.getByText('X')).toBeInTheDocument();
   });
 });

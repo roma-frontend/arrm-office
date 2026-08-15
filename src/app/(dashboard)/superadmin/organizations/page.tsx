@@ -125,13 +125,13 @@ export default function OrganizationsPage() {
   const getPlanBadgeColor = (plan: string) => {
     switch (plan) {
       case 'enterprise':
-        return 'bg-purple-500/10 text-purple-400 border-purple-500/20 dark:bg-purple-500/20 dark:text-purple-300 dark:border-purple-500/30';
+        return 'bg-(--purple-quiet) text-(--purple-text) border-(--purple-outline) dark:bg-(--purple-quiet) dark:text-(--purple-text) dark:border-(--purple-outline)';
       case 'professional':
-        return 'bg-blue-500/10 text-blue-400 border-blue-500/20 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-500/30';
+        return 'bg-(--brand-quiet) text-(--brand-text) border-(--brand-outline) dark:bg-(--brand-quiet) dark:text-(--brand-text) dark:border-(--brand-outline)';
       case 'starter':
-        return 'bg-green-500/10 text-green-400 border-green-500/20 dark:bg-green-500/20 dark:text-green-300 dark:border-green-500/30';
+        return 'bg-(--success-quiet) text-(--success-text) border-(--success-outline) dark:bg-(--success-quiet) dark:text-(--success-text) dark:border-(--success-outline)';
       default:
-        return 'bg-gray-500/10 text-gray-400 border-gray-500/20 dark:bg-gray-500/20 dark:text-gray-300 dark:border-gray-500/30';
+        return 'bg-(--surface-2) text-(--text-3) border-(--border-default) dark:bg-(--surface-2) dark:text-(--text-3) dark:border-(--border-default)';
     }
   };
 
@@ -158,7 +158,7 @@ export default function OrganizationsPage() {
           >
             <TabsTrigger
               value="organizations"
-              className="flex items-center justify-center gap-2 py-2.5 data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white"
+              className="flex items-center justify-center gap-2 py-2.5 data-[state=active]:bg-(--brand) data-[state=active]:text-white"
             >
               <Building2 className="w-4 h-4" />
               <span className="hidden sm:inline">{t('superadmin.organizations.title')}</span>
@@ -166,7 +166,7 @@ export default function OrganizationsPage() {
             </TabsTrigger>
             <TabsTrigger
               value="announcements"
-              className="flex items-center justify-center gap-2 py-2.5 data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white"
+              className="flex items-center justify-center gap-2 py-2.5 data-[state=active]:bg-(--brand) data-[state=active]:text-white"
             >
               <MessageSquare className="w-4 h-4" />
               <span className="hidden sm:inline">{t('superadmin.announcements.title')}</span>
@@ -174,7 +174,7 @@ export default function OrganizationsPage() {
             </TabsTrigger>
             <TabsTrigger
               value="maintenance"
-              className="flex items-center justify-center gap-2 py-2.5 data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white"
+              className="flex items-center justify-center gap-2 py-2.5 data-[state=active]:bg-(--brand) data-[state=active]:text-white"
             >
               <Wrench className="w-4 h-4" />
               <span className="hidden sm:inline">{t('superadmin.maintenance.title')}</span>
@@ -191,7 +191,7 @@ export default function OrganizationsPage() {
                 style={{ background: 'var(--background-subtle)' }}
               >
                 <div className="flex items-center gap-2 mb-2">
-                  <Building2 className="w-4 h-4 text-blue-500" />
+                  <Building2 className="w-4 h-4 text-(--brand-text)" />
                   <p className="text-xs text-muted-foreground">
                     {t('superadmin.organizations.stats.totalOrgs')}
                   </p>
@@ -206,12 +206,12 @@ export default function OrganizationsPage() {
                 style={{ background: 'var(--background-subtle)' }}
               >
                 <div className="flex items-center gap-2 mb-2">
-                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  <CheckCircle className="w-4 h-4 text-(--success-text)" />
                   <p className="text-xs text-muted-foreground">
                     {t('superadmin.organizations.stats.active')}
                   </p>
                 </div>
-                <p className="text-2xl font-bold text-green-500">
+                <p className="text-2xl font-bold text-(--success-text)">
                   {filteredOrgs?.filter((o) => o.isActive).length || 0}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
@@ -223,7 +223,7 @@ export default function OrganizationsPage() {
                 style={{ background: 'var(--background-subtle)' }}
               >
                 <div className="flex items-center gap-2 mb-2">
-                  <Users className="w-4 h-4 text-orange-500" />
+                  <Users className="w-4 h-4 text-(--warning-text)" />
                   <p className="text-xs text-muted-foreground">
                     {t('superadmin.organizations.stats.viewed')}
                   </p>
@@ -240,12 +240,12 @@ export default function OrganizationsPage() {
                 style={{ background: 'var(--background-subtle)' }}
               >
                 <div className="flex items-center gap-2 mb-2">
-                  <XCircle className="w-4 h-4 text-red-500" />
+                  <XCircle className="w-4 h-4 text-(--danger-text)" />
                   <p className="text-xs text-muted-foreground">
                     {t('superadmin.organizations.stats.inactive')}
                   </p>
                 </div>
-                <p className="text-2xl font-bold text-red-500">
+                <p className="text-2xl font-bold text-(--danger-text)">
                   {filteredOrgs?.filter((o) => !o.isActive).length || 0}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
@@ -298,9 +298,9 @@ export default function OrganizationsPage() {
 
             {/* Currently Viewing Badge */}
             {selectedOrgId && (
-              <div className="flex items-center gap-2 p-3 rounded-lg bg-blue-500/10 border border-blue-500/30">
-                <Eye className="w-4 h-4 text-blue-500" />
-                <span className="text-sm text-blue-500 font-medium">
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-(--brand-quiet) border border-(--brand-outline)">
+                <Eye className="w-4 h-4 text-(--brand-text)" />
+                <span className="text-sm text-(--brand-text) font-medium">
                   {t('superadmin.viewingOrganization')}:{' '}
                   {organizations?.find((o) => o._id === selectedOrgId)?.name}
                 </span>
@@ -321,7 +321,7 @@ export default function OrganizationsPage() {
               {organizations?.map((org) => (
                 <div
                   key={org._id}
-                  className="p-4 rounded-lg border hover:border-blue-400/50 transition-all hover:shadow-md"
+                  className="p-4 rounded-lg border hover:border-(--brand-outline) transition-all hover:shadow-md"
                   style={{ background: 'var(--card)' }}
                 >
                   {/* Title Row */}
@@ -344,11 +344,11 @@ export default function OrganizationsPage() {
                         {org.plan.toUpperCase()}
                       </span>
                       {org.isActive ? (
-                        <span className="px-2 py-1 rounded text-xs font-semibold bg-green-500/10 text-green-500 border border-green-500/30">
+                        <span className="px-2 py-1 rounded text-xs font-semibold bg-(--success-quiet) text-(--success-text) border border-(--success-outline)">
                           {t('superadmin.organizations.card.statusActive')}
                         </span>
                       ) : (
-                        <span className="px-2 py-1 rounded text-xs font-semibold bg-red-500/10 text-red-500 border border-red-500/30">
+                        <span className="px-2 py-1 rounded text-xs font-semibold bg-(--danger-quiet) text-(--danger-text) border border-(--danger-outline)">
                           {t('superadmin.organizations.card.statusInactive')}
                         </span>
                       )}
@@ -370,7 +370,7 @@ export default function OrganizationsPage() {
                       <p className="text-xs text-muted-foreground">
                         {t('superadmin.organizations.card.activeEmployees')}
                       </p>
-                      <p className="font-bold text-green-500">{org.activeEmployees}</p>
+                      <p className="font-bold text-(--success-text)">{org.activeEmployees}</p>
                     </div>
                     <div className="text-center">
                       <p className="text-xs text-muted-foreground">
@@ -394,7 +394,7 @@ export default function OrganizationsPage() {
                           {org.adminNames.map((name, idx) => (
                             <span
                               key={idx}
-                              className="px-2 py-1 rounded text-xs bg-blue-500/10 text-blue-500 border border-blue-500/30 whitespace-nowrap"
+                              className="px-2 py-1 rounded text-xs bg-(--brand-quiet) text-(--brand-text) border border-(--brand-outline) whitespace-nowrap"
                             >
                               👤 {name}
                             </span>
@@ -407,7 +407,7 @@ export default function OrganizationsPage() {
                         onClick={() =>
                           router.push(`/superadmin/organizations/${org._id}/manage-admins`)
                         }
-                        className="p-2 rounded hover:bg-blue-500/10 text-blue-500 transition-colors"
+                        className="p-2 rounded hover:bg-(--brand-quiet) text-(--brand-text) transition-colors"
                         title={t('superadmin.organizations.card.manageAdmins')}
                       >
                         <Shield className="w-4 h-4" />

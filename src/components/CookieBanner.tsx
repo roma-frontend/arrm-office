@@ -75,14 +75,14 @@ export default function CookieBanner() {
             }}
           >
             {/* Decorative gradient overlay */}
-            <div className="absolute inset-0 bg-linear-to-br from-[#2563eb]/10 via-transparent to-[#0ea5e9]/10" />
+            <div className="absolute inset-0 bg-linear-to-br from-(--brand)/10 via-transparent to-(--brand-hover)/10" />
 
             <div className="relative px-6 py-6 sm:px-8 sm:py-8">
               <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                 {/* Left section - Icon & Text */}
                 <div className="flex flex-col sm:flex-row items-start gap-4">
                   <div className="text-left shrink-0">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-linear-to-br from-[#2563eb] to-[#0ea5e9] shadow-lg">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-linear-to-br from-(--brand) to-(--brand-hover) shadow-lg">
                       <Cookie className="h-6 w-6 text-white" />
                     </div>
                   </div>
@@ -113,7 +113,7 @@ export default function CookieBanner() {
 
                     {/* Cookie categories preview */}
                     <div className="mt-4 flex flex-wrap gap-2">
-                      <div className="flex items-center gap-1.5 rounded-full bg-[#1a3460] px-3 py-1 text-xs font-medium text-white">
+                      <div className="flex items-center gap-1.5 rounded-full bg-(--border-default) px-3 py-1 text-xs font-medium text-white">
                         <Shield className="h-3 w-3" />
                         {t('cookies.essential')}
                       </div>

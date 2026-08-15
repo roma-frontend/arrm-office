@@ -219,18 +219,18 @@ describe('MessageActions', () => {
     render(<MessageActions content="hi" onPin={jest.fn()} />);
     const up = screen.getByTitle('Helpful');
     fireEvent.click(up);
-    expect(up.className).toContain('text-green-500');
+    expect(up.className).toContain('text-(--success-text)');
     fireEvent.click(up);
-    expect(up.className).not.toContain('text-green-500');
+    expect(up.className).not.toContain('text-(--success-text)');
   });
 
   it('toggles the thumbs-down reaction independently', () => {
     render(<MessageActions content="hi" onPin={jest.fn()} />);
     const down = screen.getByTitle('Not helpful');
     fireEvent.click(down);
-    expect(down.className).toContain('text-red-500');
+    expect(down.className).toContain('text-(--danger-text)');
     fireEvent.click(down);
-    expect(down.className).not.toContain('text-red-500');
+    expect(down.className).not.toContain('text-(--danger-text)');
   });
 
   it('copies the content to the clipboard and shows the check mark, then resets', async () => {
@@ -253,7 +253,7 @@ describe('MessageActions', () => {
 
   it('highlights the pin button when already pinned', () => {
     render(<MessageActions content="hi" onPin={jest.fn()} isPinned />);
-    expect(screen.getByTitle('Pin').className).toContain('text-[#2563eb]');
+    expect(screen.getByTitle('Pin').className).toContain('text-(--brand-text)');
   });
 
   it('speaks the cleaned content and stops when clicked again', () => {

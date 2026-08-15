@@ -31,21 +31,21 @@ const GRADIENTS = [
 ];
 
 const BADGE_GRADIENTS = [
-  'from-purple-500 to-violet-600',
-  'from-blue-500 to-indigo-600',
-  'from-cyan-500 to-blue-600',
-  'from-emerald-500 to-teal-600',
-  'from-amber-500 to-orange-600',
-  'from-rose-500 to-pink-600',
+  'from-(--purple) to-(--purple)',
+  'from-(--brand) to-(--purple)',
+  'from-(--cyan) to-(--brand)',
+  'from-(--success-solid) to-(--success-solid)',
+  'from-(--warning-solid) to-(--warning-solid)',
+  'from-(--danger-solid) to-(--pink)',
 ];
 
 const DOT_COLORS = [
-  'bg-purple-500',
-  'bg-blue-500',
-  'bg-cyan-500',
-  'bg-emerald-500',
-  'bg-amber-500',
-  'bg-rose-500',
+  'bg-(--purple)',
+  'bg-(--brand)',
+  'bg-(--cyan)',
+  'bg-(--success-solid)',
+  'bg-(--warning-solid)',
+  'bg-(--danger-solid)',
 ];
 
 export default function StrategyCascadeSection({
@@ -85,7 +85,7 @@ export default function StrategyCascadeSection({
         <div className="text-center mb-14">
           <span
             className="inline-flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-full mb-4"
-            style={{ background: 'rgba(139,92,246,0.1)', color: '#8b5cf6' }}
+            style={{ background: 'var(--purple-quiet)', color: 'var(--purple-text)' }}
           >
             <svg
               width="14"

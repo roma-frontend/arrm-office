@@ -65,7 +65,7 @@ export function SmartPasswordInput({
           className="flex items-center gap-1 whitespace-nowrap text-sm font-medium text-(--text-primary)"
         >
           {resolvedLabel}
-          {required && <span className="text-red-500">*</span>}
+          {required && <span className="text-(--danger-text)">*</span>}
         </Label>
 
         {forgotPasswordLink && <div className="ml-2">{forgotPasswordLink}</div>}
@@ -76,7 +76,7 @@ export function SmartPasswordInput({
             whileTap={{ scale: 0.98 }}
             onClick={handleGeneratePassword}
             type="button"
-            className="flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium group ml-2"
+            className="flex items-center gap-1.5 text-xs text-(--brand-text) dark:text-(--brand-text) hover:underline font-medium group ml-2"
           >
             <RefreshCw className="w-3.5 h-3.5 group-hover:rotate-180 transition-transform duration-500" />
             {t('auth.passwordInput.generate', 'Сгенерировать')}
@@ -123,7 +123,7 @@ export function SmartPasswordInput({
                     animate={{ scale: 1, rotate: 0 }}
                   >
                     <svg
-                      className="w-4 h-4 text-green-500"
+                      className="w-4 h-4 text-(--success-text)"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -188,7 +188,7 @@ export function SmartPasswordInput({
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1.5"
+            className="text-xs text-(--success-text) dark:text-(--success-text) flex items-center gap-1.5"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path

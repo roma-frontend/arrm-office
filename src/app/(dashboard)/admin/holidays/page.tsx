@@ -174,7 +174,7 @@ export default function HolidaysPage() {
                       <Button
                         size="icon-sm"
                         variant="ghost"
-                        className="text-red-500"
+                        className="text-(--danger-text)"
                         onClick={() => handleDelete(h._id)}
                       >
                         <Trash2 className="w-4 h-4" />
@@ -220,7 +220,7 @@ export default function HolidaysPage() {
                       <Button
                         size="icon-sm"
                         variant="ghost"
-                        className="text-red-500"
+                        className="text-(--danger-text)"
                         onClick={() => handleDelete(h._id)}
                       >
                         <Trash2 className="w-4 h-4" />

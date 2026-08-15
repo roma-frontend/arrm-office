@@ -596,8 +596,8 @@ export function FaceLogin() {
     <Card className="p-6 bg-[var(--surface-base)] border-[var(--border-primary)]">
       <div className="space-y-6">
         <div className="text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-500/10 mb-4">
-            <ScanFace className="w-8 h-8 text-blue-500" />
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-(--brand-quiet) mb-4">
+            <ScanFace className="w-8 h-8 text-(--brand-text)" />
           </div>
           <h3 className="text-lg font-semibold text-(--text-primary)">
             {t('faceLogin.title', 'Face ID Login')}
@@ -653,22 +653,22 @@ export function FaceLogin() {
               {/* Face detection indicator */}
               <div className="absolute top-4 right-4 space-y-2">
                 {modelStatus.error ? (
-                  <div className="flex items-center gap-2 bg-red-600/90 text-white px-3 py-1.5 rounded-full text-sm">
+                  <div className="flex items-center gap-2 bg-(--danger-solid) text-white px-3 py-1.5 rounded-full text-sm">
                     <XCircle className="w-4 h-4" />
                     {t('faceLogin.modelsFailed', 'Failed to load face recognition models')}
                   </div>
                 ) : !modelStatus.canDetect ? (
-                  <div className="flex items-center gap-2 bg-blue-500/90 text-white px-3 py-1.5 rounded-full text-sm">
+                  <div className="flex items-center gap-2 bg-(--brand) text-white px-3 py-1.5 rounded-full text-sm">
                     <ShieldLoader size="xs" variant="inline" />
                     {t('faceLogin.preparing', 'Preparing detection')} {modelStatus.progress}%
                   </div>
                 ) : faceDetected ? (
-                  <div className="flex items-center gap-2 bg-green-500/90 text-white px-3 py-1.5 rounded-full text-sm animate-pulse">
+                  <div className="flex items-center gap-2 bg-(--success-solid) text-white px-3 py-1.5 rounded-full text-sm animate-pulse">
                     <CheckCircle className="w-4 h-4" />
                     {t('faceLogin.faceDetected', 'Face detected')}
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2 bg-red-500/90 text-white px-3 py-1.5 rounded-full text-sm">
+                  <div className="flex items-center gap-2 bg-(--danger-solid) text-white px-3 py-1.5 rounded-full text-sm">
                     <XCircle className="w-4 h-4" />
                     {t('faceLogin.noFace', 'No face')}
                   </div>
@@ -679,10 +679,10 @@ export function FaceLogin() {
                   <div
                     className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs text-white ${
                       detectionQuality === 'excellent'
-                        ? 'bg-green-600/90'
+                        ? 'bg-(--success-solid)'
                         : detectionQuality === 'good'
-                          ? 'bg-yellow-600/90'
-                          : 'bg-orange-600/90'
+                          ? 'bg-(--warning-solid)'
+                          : 'bg-(--warning-solid)'
                     }`}
                   >
                     {detectionQuality === 'excellent' && '✓ Excellent'}
@@ -696,19 +696,19 @@ export function FaceLogin() {
               {matchStatus !== 'idle' && (
                 <div className="absolute bottom-4 left-1/2 -translate-x-1/2">
                   {matchStatus === 'searching' && (
-                    <div className="flex items-center gap-2 bg-blue-500/90 text-white px-4 py-2 rounded-full text-sm">
+                    <div className="flex items-center gap-2 bg-(--brand) text-white px-4 py-2 rounded-full text-sm">
                       <ShieldLoader size="xs" variant="inline" />
                       Searching for match...
                     </div>
                   )}
                   {matchStatus === 'found' && matchedUser && (
-                    <div className="flex items-center gap-2 bg-green-500/90 text-white px-4 py-2 rounded-full text-sm">
+                    <div className="flex items-center gap-2 bg-(--success-solid) text-white px-4 py-2 rounded-full text-sm">
                       <CheckCircle className="w-4 h-4" />
                       Welcome, {matchedUser}!
                     </div>
                   )}
                   {matchStatus === 'not_found' && (
-                    <div className="flex items-center gap-2 bg-red-500/90 text-white px-4 py-2 rounded-full text-sm">
+                    <div className="flex items-center gap-2 bg-(--danger-solid) text-white px-4 py-2 rounded-full text-sm">
                       <XCircle className="w-4 h-4" />
                       Face not recognized
                     </div>
@@ -722,20 +722,20 @@ export function FaceLogin() {
                   <div
                     className={`w-64 h-80 border-4 rounded-2xl transition-all duration-300 ${
                       faceDetected
-                        ? 'border-green-500/70 shadow-[0_0_20px_rgba(34,197,94,0.5)]'
+                        ? 'border-(--success-outline) shadow-[0_0_20px_rgba(34,197,94,0.5)]'
                         : 'border-white/50'
                     }`}
                   >
                     {faceDetected && scanningProgress > 0 && (
                       <>
                         <div
-                          className="absolute left-0 right-0 h-1 bg-linear-to-r from-transparent via-green-400 to-transparent animate-pulse"
+                          className="absolute left-0 right-0 h-1 bg-linear-to-r from-transparent via-(--success-solid) to-transparent animate-pulse"
                           style={{ top: `${scanningProgress}%`, transition: 'top 0.35s ease-out' }}
                         />
-                        <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-green-400 animate-pulse" />
-                        <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-green-400 animate-pulse" />
-                        <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-green-400 animate-pulse" />
-                        <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-green-400 animate-pulse" />
+                        <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-(--success-outline) animate-pulse" />
+                        <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-(--success-outline) animate-pulse" />
+                        <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-(--success-outline) animate-pulse" />
+                        <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-(--success-outline) animate-pulse" />
                       </>
                     )}
                   </div>
@@ -771,7 +771,7 @@ export function FaceLogin() {
               placeholder="you@example.com"
               className="w-full px-3 py-2 rounded-lg border border-[var(--border-primary)] bg-[var(--surface-base)] text-(--text-primary) text-sm"
             />
-            <p className="text-xs text-(--text-tertiary)">
+            <p className="text-xs text-(--text-3)">
               {t(
                 'faceLogin.emailHelper',
                 'Your face is verified against this account only. Descriptors of other users are never sent to your browser.',
@@ -802,8 +802,8 @@ export function FaceLogin() {
 
         {/* Attempts counter */}
         {failedAttempts > 0 && !isBlocked && (
-          <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-3">
-            <p className="text-sm text-orange-600 dark:text-orange-400 text-center">
+          <div className="bg-(--warning-quiet) border border-(--warning-outline) rounded-lg p-3">
+            <p className="text-sm text-(--warning-text) dark:text-(--warning-text) text-center">
               ⚠️ Failed attempts: {failedAttempts} of 3
             </p>
           </div>
@@ -811,11 +811,11 @@ export function FaceLogin() {
 
         {/* Blocked warning */}
         {isBlocked && (
-          <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-            <p className="text-sm text-red-600 dark:text-red-400 text-center font-medium">
+          <div className="bg-(--danger-quiet) border border-(--danger-outline) rounded-lg p-4">
+            <p className="text-sm text-(--danger-text) dark:text-(--danger-text) text-center font-medium">
               🚫 Face ID Blocked
             </p>
-            <p className="text-xs text-red-600/80 dark:text-red-400/80 text-center mt-1">
+            <p className="text-xs text-(--danger-text) dark:text-(--danger-text) text-center mt-1">
               Too many failed attempts. Please use email/password login.
             </p>
           </div>
@@ -833,14 +833,14 @@ export function FaceLogin() {
           {isWebcamActive && !isBlocked && (
             <>
               {isProcessing ? (
-                <div className="flex-1 flex items-center justify-center gap-2 bg-blue-500/10 text-blue-600 dark:text-blue-400 px-4 py-3 rounded-lg border border-blue-500/20">
+                <div className="flex-1 flex items-center justify-center gap-2 bg-(--brand-quiet) text-(--brand-text) dark:text-(--brand-text) px-4 py-3 rounded-lg border border-(--brand-outline)">
                   <ShieldLoader size="xs" variant="inline" />
                   <span className="text-sm font-medium">
                     {t('faceLogin.authenticating', 'Authenticating...')}
                   </span>
                 </div>
               ) : (
-                <div className="flex-1 flex items-center justify-center gap-2 bg-green-500/10 text-green-600 dark:text-green-400 px-4 py-3 rounded-lg border border-green-500/20">
+                <div className="flex-1 flex items-center justify-center gap-2 bg-(--success-quiet) text-(--success-text) dark:text-(--success-text) px-4 py-3 rounded-lg border border-(--success-outline)">
                   <ScanFace className="w-4 h-4" />
                   <span className="text-sm font-medium">
                     {scanningProgress >= 100
@@ -863,7 +863,7 @@ export function FaceLogin() {
         </div>
 
         {/* Info */}
-        <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+        <div className="bg-(--brand-quiet) border border-(--brand-outline) rounded-lg p-4">
           <p className="text-xs text-(--text-secondary)">
             {t(
               'faceLogin.autoLoginInfo',

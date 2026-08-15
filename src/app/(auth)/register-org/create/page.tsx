@@ -126,11 +126,11 @@ export default function CreateStarterOrgPage() {
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div
           className="absolute -top-40 -right-40 w-96 h-96 rounded-full blur-3xl opacity-20"
-          style={{ background: 'radial-gradient(circle, #10b981, transparent)' }}
+          style={{ background: 'radial-gradient(circle, var(--success-solid), transparent)' }}
         />
         <div
           className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full blur-3xl opacity-20"
-          style={{ background: 'radial-gradient(circle, #22c55e, transparent)' }}
+          style={{ background: 'radial-gradient(circle, var(--success-solid), transparent)' }}
         />
       </div>
 
@@ -378,7 +378,7 @@ export default function CreateStarterOrgPage() {
                 initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="flex items-center gap-2 p-3 rounded-xl text-sm"
-                style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}
+                style={{ background: 'var(--danger-quiet)', color: 'var(--danger-text)' }}
               >
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 {error}

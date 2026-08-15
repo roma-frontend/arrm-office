@@ -52,7 +52,7 @@ export default function AgentSelector({
           {activeAgent.id !== 'general' && (
             <span
               className="flex h-1.5 w-1.5 rounded-full"
-              style={{ backgroundColor: AGENT_COLORS[activeAgent.id] ?? '#64748b' }}
+              style={{ backgroundColor: AGENT_COLORS[activeAgent.id] ?? 'var(--text-4)' }}
             />
           )}
           <ChevronDown className="w-3 h-3 text-(--text-muted)" />

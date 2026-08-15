@@ -687,8 +687,8 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
                   className="space-y-5"
                 >
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
-                      <User className="w-5 h-5 text-blue-500" />
+                    <div className="w-10 h-10 rounded-xl bg-(--brand-quiet) flex items-center justify-center">
+                      <User className="w-5 h-5 text-(--brand-text)" />
                     </div>
                     <div>
                       <h3 className="font-semibold text-(--text-primary)">
@@ -760,8 +760,8 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
                   className="space-y-5"
                 >
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                      <Briefcase className="w-5 h-5 text-amber-500" />
+                    <div className="w-10 h-10 rounded-xl bg-(--warning-quiet) flex items-center justify-center">
+                      <Briefcase className="w-5 h-5 text-(--warning-text)" />
                     </div>
                     <div>
                       <h3 className="font-semibold text-(--text-primary)">
@@ -849,8 +849,8 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
                   className="space-y-5"
                 >
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
-                      <Shield className="w-5 h-5 text-purple-500" />
+                    <div className="w-10 h-10 rounded-xl bg-(--purple-quiet) flex items-center justify-center">
+                      <Shield className="w-5 h-5 text-(--purple-text)" />
                     </div>
                     <div>
                       <h3 className="font-semibold text-(--text-primary)">
@@ -894,7 +894,7 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
                             onClick={() => setType(empType)}
                             className={`relative flex items-center justify-center gap-2 px-4 py-3 rounded-xl border-2 text-sm font-medium transition-all ${
                               selected
-                                ? 'btn-gradient border-transparent text-white shadow-md ring-[3px] ring-blue-500/30'
+                                ? 'btn-gradient border-transparent text-white shadow-md ring-[3px] ring-(--brand-text)'
                                 : 'border-(--border) bg-(--background-subtle) text-(--text-muted) hover:border-(--border-subtle)'
                             }`}
                           >
@@ -931,8 +931,8 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
                   className="space-y-5"
                 >
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-                      <DollarSign className="w-5 h-5 text-emerald-500" />
+                    <div className="w-10 h-10 rounded-xl bg-(--success-quiet) flex items-center justify-center">
+                      <DollarSign className="w-5 h-5 text-(--success-text)" />
                     </div>
                     <div>
                       <h3 className="font-semibold text-(--text-primary)">
@@ -963,7 +963,7 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
                       }}
                       placeholder={travelAllowancePolicy?.enabled ? String(allowance) : '0'}
                       className={`w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all ${
-                        errors.travelAllowance ? 'border-red-500' : ''
+                        errors.travelAllowance ? 'border-(--danger-outline)' : ''
                       }`}
                       style={{
                         background: 'var(--input)',
@@ -979,7 +979,7 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
                         : t('employees.travelAllowanceHintNoPolicy')}
                     </p>
                     {errors.travelAllowance && (
-                      <p className="text-xs text-red-500">{errors.travelAllowance}</p>
+                      <p className="text-xs text-(--danger-text)">{errors.travelAllowance}</p>
                     )}
                   </div>
                 </motion.div>
@@ -993,8 +993,8 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
                   className="space-y-5"
                 >
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-xl bg-sky-500/10 flex items-center justify-center">
-                      <IdCard className="w-5 h-5 text-sky-500" />
+                    <div className="w-10 h-10 rounded-xl bg-(--brand-quiet) flex items-center justify-center">
+                      <IdCard className="w-5 h-5 text-(--brand-text)" />
                     </div>
                     <div>
                       <h3 className="font-semibold text-(--text-primary)">
@@ -1108,10 +1108,10 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
                             key={doc.id}
                             className="flex items-center gap-2 text-xs text-(--text-muted)"
                           >
-                            <CheckCircle className="w-3 h-3 text-emerald-500 shrink-0" />
+                            <CheckCircle className="w-3 h-3 text-(--success-text) shrink-0" />
                             <span className="truncate">{doc.title}</span>
                             {doc.mandatory && (
-                              <span className="ml-auto shrink-0 rounded bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-600">
+                              <span className="ml-auto shrink-0 rounded bg-(--warning-quiet) px-1.5 py-0.5 text-[10px] font-medium text-(--warning-text)">
                                 {t('hiringPacket.mandatory', 'required')}
                               </span>
                             )}
@@ -1131,8 +1131,8 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
                   className="space-y-5"
                 >
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center">
-                      <CheckCircle className="w-5 h-5 text-green-500" />
+                    <div className="w-10 h-10 rounded-xl bg-(--success-quiet) flex items-center justify-center">
+                      <CheckCircle className="w-5 h-5 text-(--success-text)" />
                     </div>
                     <div>
                       <h3 className="font-semibold text-(--text-primary)">

@@ -365,8 +365,8 @@ NEW: "the new className value with your fix"
 
 EXAMPLE:
 PATCH: src/components/dashboard/DashboardClient.tsx
-OLD: "border-blue-200 hover:bg-blue-50 dark:hover:bg-blue-950"
-NEW: "border-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40"
+OLD: "border-(--brand-outline) hover:bg-(--brand-quiet) dark:hover:bg-(--brand)"
+NEW: "border-(--brand-outline) hover:bg-(--brand-quiet) dark:hover:bg-(--brand)"
 
 RULES:
 - Find the className attribute in the file that needs changing

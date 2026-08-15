@@ -206,9 +206,9 @@ export function RegisterDriverModal({
                     animate={{ scale: isCurrent ? 1.1 : 1 }}
                     className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-300 ${
                       isCompleted
-                        ? 'bg-emerald-500 text-white'
+                        ? 'bg-(--success-solid) text-white'
                         : isCurrent
-                          ? 'bg-emerald-500/20 text-emerald-500 ring-2 ring-emerald-500'
+                          ? 'bg-(--success-quiet) text-(--success-text) ring-2 ring-(--success-text)'
                           : 'bg-(--background-subtle) text-(--text-muted)'
                     }`}
                   >
@@ -221,7 +221,7 @@ export function RegisterDriverModal({
                   {idx < steps.length - 1 && (
                     <div
                       className={`w-12 sm:w-20 h-0.5 mx-2 transition-colors duration-300 ${
-                        idx < currentStep ? 'bg-emerald-500' : 'bg-(--border)'
+                        idx < currentStep ? 'bg-(--success-solid)' : 'bg-(--border)'
                       }`}
                     />
                   )}
@@ -359,7 +359,7 @@ export function RegisterDriverModal({
                         onClick={() => setFormData((p) => ({ ...p, vehicleType: type.id }))}
                         className={`p-3 rounded-xl border text-center transition-all duration-200 ${
                           formData.vehicleType === type.id
-                            ? 'border-emerald-500 bg-emerald-500/10'
+                            ? 'border-(--success-outline) bg-(--success-quiet)'
                             : 'border-(--border) bg-(--background-subtle) hover:border-(--primary)/50'
                         }`}
                       >
@@ -432,12 +432,12 @@ export function RegisterDriverModal({
                       }
                       className={`p-3 rounded-xl border text-center transition-all duration-200 ${
                         formData.availability[day]
-                          ? 'border-emerald-500 bg-emerald-500/10'
+                          ? 'border-(--success-outline) bg-(--success-quiet)'
                           : 'border-(--border) bg-(--background-subtle)'
                       }`}
                     >
                       <Clock
-                        className={`w-4 h-4 mx-auto mb-1 ${formData.availability[day] ? 'text-emerald-500' : 'text-(--text-muted)'}`}
+                        className={`w-4 h-4 mx-auto mb-1 ${formData.availability[day] ? 'text-(--success-text)' : 'text-(--text-muted)'}`}
                       />
                       <p className="text-xs font-medium">{dayLabels[day]}</p>
                     </motion.button>

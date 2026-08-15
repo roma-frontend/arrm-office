@@ -46,31 +46,31 @@ const STATUS_COLORS: Record<
     labelKey: 'tasks.status.pending',
   },
   in_progress: {
-    bar: 'bg-blue-500',
-    text: 'text-blue-500',
-    bg: 'bg-blue-500/10',
-    border: 'border-blue-500/30',
+    bar: 'bg-(--brand)',
+    text: 'text-(--brand-text)',
+    bg: 'bg-(--brand-quiet)',
+    border: 'border-(--brand-outline)',
     labelKey: 'tasks.status.inProgress',
   },
   review: {
-    bar: 'bg-amber-500',
-    text: 'text-amber-500',
-    bg: 'bg-amber-500/10',
-    border: 'border-amber-500/30',
+    bar: 'bg-(--warning-solid)',
+    text: 'text-(--warning-text)',
+    bg: 'bg-(--warning-quiet)',
+    border: 'border-(--warning-outline)',
     labelKey: 'tasks.status.review',
   },
   completed: {
-    bar: 'bg-emerald-500',
-    text: 'text-emerald-500',
-    bg: 'bg-emerald-500/10',
-    border: 'border-emerald-500/30',
+    bar: 'bg-(--success-solid)',
+    text: 'text-(--success-text)',
+    bg: 'bg-(--success-quiet)',
+    border: 'border-(--success-outline)',
     labelKey: 'tasks.status.completed',
   },
   cancelled: {
-    bar: 'bg-rose-400/50',
-    text: 'text-rose-400',
-    bg: 'bg-rose-500/10',
-    border: 'border-rose-500/30',
+    bar: 'bg-(--danger-solid)',
+    text: 'text-(--danger-text)',
+    bg: 'bg-(--danger-quiet)',
+    border: 'border-(--danger-outline)',
     labelKey: 'tasks.status.cancelled',
   },
 };
@@ -84,9 +84,9 @@ const TOOLTIP_WIDTH = 260;
 
 const PRIORITY_DOT: Record<Priority, string> = {
   low: 'bg-(--text-muted)',
-  medium: 'bg-blue-500',
-  high: 'bg-orange-500',
-  urgent: 'bg-rose-500',
+  medium: 'bg-(--brand)',
+  high: 'bg-(--warning-solid)',
+  urgent: 'bg-(--danger-solid)',
 };
 
 // ── Date helpers ──
@@ -302,13 +302,13 @@ export default function TimelineView({ tasks, onOpen }: TimelineViewProps) {
   const statusIcon = (status: Status) => {
     switch (status) {
       case 'completed':
-        return <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />;
+        return <CheckCircle2 className="w-3.5 h-3.5 text-(--success-text)" />;
       case 'cancelled':
-        return <Circle className="w-3.5 h-3.5 text-rose-400" />;
+        return <Circle className="w-3.5 h-3.5 text-(--danger-text)" />;
       case 'in_progress':
-        return <Clock className="w-3.5 h-3.5 text-blue-500" />;
+        return <Clock className="w-3.5 h-3.5 text-(--brand-text)" />;
       case 'review':
-        return <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />;
+        return <AlertTriangle className="w-3.5 h-3.5 text-(--warning-text)" />;
       default:
         return <Clock className="w-3.5 h-3.5 text-(--text-muted)" />;
     }
@@ -331,7 +331,7 @@ export default function TimelineView({ tasks, onOpen }: TimelineViewProps) {
               onClick={() => setScale(s)}
               className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
                 scale === s
-                  ? 'bg-blue-500 text-white shadow-sm'
+                  ? 'bg-(--brand) text-white shadow-sm'
                   : 'text-(--text-muted) hover:text-(--text-primary)'
               }`}
             >
@@ -377,7 +377,7 @@ export default function TimelineView({ tasks, onOpen }: TimelineViewProps) {
                 >
                   {statusIcon(task.status)}
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-(--text-primary) truncate group-hover:text-blue-400 transition-colors">
+                    <p className="text-sm font-medium text-(--text-primary) truncate group-hover:text-(--brand-text) transition-colors">
                       {localizedTaskTitle(t, task)}
                     </p>
                     <p className="text-[10px] text-(--text-muted) truncate">
@@ -411,7 +411,9 @@ export default function TimelineView({ tasks, onOpen }: TimelineViewProps) {
                 <div
                   key={idx}
                   className={`flex-shrink-0 flex items-center justify-center text-[10px] font-medium border-r border-(--border)/50 ${
-                    col.isToday ? 'bg-blue-500/10 text-blue-600 font-bold' : 'text-(--text-muted)'
+                    col.isToday
+                      ? 'bg-(--brand-quiet) text-(--brand-text) font-bold'
+                      : 'text-(--text-muted)'
                   }`}
                   style={{
                     width:
@@ -438,10 +440,10 @@ export default function TimelineView({ tasks, onOpen }: TimelineViewProps) {
             {/* Today marker line */}
             {todayOffset !== null && (
               <div
-                className="absolute top-0 bottom-0 w-0.5 bg-blue-500/60 z-20 pointer-events-none"
+                className="absolute top-0 bottom-0 w-0.5 bg-(--brand) z-20 pointer-events-none"
                 style={{ left: todayOffset }}
               >
-                <div className="w-2 h-2 bg-blue-500 rounded-full -ml-[3px]" />
+                <div className="w-2 h-2 bg-(--brand) rounded-full -ml-[3px]" />
               </div>
             )}
 
@@ -484,7 +486,7 @@ export default function TimelineView({ tasks, onOpen }: TimelineViewProps) {
                       <div
                         className={`absolute top-1/2 -translate-y-1/2 h-7 rounded-lg transition-all duration-200 group-hover:shadow-lg group-hover:scale-y-110 ${
                           isCancelled ? 'opacity-50' : ''
-                        } ${isOverdue ? 'ring-2 ring-rose-500/30' : ''}`}
+                        } ${isOverdue ? 'ring-2 ring-(--danger-text)' : ''}`}
                         style={{
                           left: leftOffset,
                           width: Math.max(barWidth, 20),
@@ -528,7 +530,9 @@ export default function TimelineView({ tasks, onOpen }: TimelineViewProps) {
                             {task.deadline && (
                               <>
                                 <span>·</span>
-                                <span className={isOverdue ? 'text-rose-500 font-medium' : ''}>
+                                <span
+                                  className={isOverdue ? 'text-(--danger-text) font-medium' : ''}
+                                >
                                   {formatShort(new Date(task.deadline), locale)}
                                 </span>
                               </>
@@ -541,7 +545,7 @@ export default function TimelineView({ tasks, onOpen }: TimelineViewProps) {
                                 e.stopPropagation();
                                 router.push(`/projects/${task.projectId}`);
                               }}
-                              className="text-[11px] text-(--text-muted) hover:text-blue-500 cursor-pointer pointer-events-auto mt-1"
+                              className="text-[11px] text-(--text-muted) hover:text-(--brand-text) cursor-pointer pointer-events-auto mt-1"
                             >
                               📁 {task.projectName}
                             </button>
@@ -551,7 +555,7 @@ export default function TimelineView({ tasks, onOpen }: TimelineViewProps) {
                               {task.tags.slice(0, 3).map((tag) => (
                                 <span
                                   key={tag}
-                                  className="text-[10px] bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded"
+                                  className="text-[10px] bg-(--brand-quiet) text-(--brand-text) px-1.5 py-0.5 rounded"
                                 >
                                   #{tag}
                                 </span>
@@ -579,7 +583,7 @@ export default function TimelineView({ tasks, onOpen }: TimelineViewProps) {
         ))}
         <div className="w-px h-3 bg-(--border)" />
         <div className="flex items-center gap-1.5">
-          <div className="w-0.5 h-3 bg-blue-500/60 rounded" />
+          <div className="w-0.5 h-3 bg-(--brand) rounded" />
           <span className="text-[10px] text-(--text-muted)">{t('tasksClient.today', 'Today')}</span>
         </div>
       </div>

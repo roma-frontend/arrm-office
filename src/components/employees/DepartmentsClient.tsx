@@ -51,8 +51,8 @@ const DEPARTMENT_COLORS = [
   { value: '#EF4444', label: 'Red', color: 'bg-(--danger-quiet) text-(--danger-text)' },
   { value: '#8B5CF6', label: 'Purple', color: 'bg-(--purple-quiet) text-(--purple-text)' },
   { value: '#EC4899', label: 'Pink', color: 'bg-(--pink-quiet) text-(--pink-text)' },
-  { value: '#06B6D4', label: 'Cyan', color: 'bg-cyan-500/10 text-cyan-600' },
-  { value: '#F97316', label: 'Orange', color: 'bg-orange-500/10 text-orange-600' },
+  { value: '#06B6D4', label: 'Cyan', color: 'bg-(--cyan-quiet) text-(--cyan-text)' },
+  { value: '#F97316', label: 'Orange', color: 'bg-(--warning-quiet) text-(--warning-text)' },
 ];
 
 interface DepartmentWizardProps {
@@ -78,7 +78,7 @@ function DepartmentWizard({
         ? {
             name: dept.name,
             description: dept.description || '',
-            color: dept.color || '#3B82F6',
+            color: dept.color || 'var(--brand)',
           }
         : { name: '', description: '', color: '#3B82F6' },
     [],
@@ -190,10 +190,10 @@ function DepartmentWizard({
                 <span className="flex items-center gap-2">
                   <div
                     className="w-4 h-4 rounded-full"
-                    style={{ backgroundColor: String(wizardData.color || '#3B82F6') }}
+                    style={{ backgroundColor: String(wizardData.color || 'var(--brand)') }}
                   />
                   <span className="font-medium text-text-primary">
-                    {String(wizardData.color || '#3B82F6')}
+                    {String(wizardData.color || 'var(--brand)')}
                   </span>
                 </span>
               </div>
@@ -360,8 +360,8 @@ export default function DepartmentsClient() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+    <div className="min-h-screen">
+      <div className="mx-auto max-w-7xl">
         {/* Header */}
         <div className="sticky top-0 z-10 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 mb-4 bg-(--background)/95 backdrop-blur supports-[backdrop-filter]:bg-(--background)/60 border-b border-(--border)">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -483,11 +483,11 @@ export default function DepartmentsClient() {
                       <div className="flex items-center gap-3">
                         <div
                           className="w-10 h-10 rounded-lg flex items-center justify-center"
-                          style={{ backgroundColor: `${dept.color || '#3B82F6'}20` }}
+                          style={{ backgroundColor: `${dept.color || 'var(--brand)'}20` }}
                         >
                           <Building2
                             className="w-5 h-5"
-                            style={{ color: dept.color || '#3B82F6' }}
+                            style={{ color: dept.color || 'var(--brand)' }}
                           />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -552,9 +552,12 @@ export default function DepartmentsClient() {
                     <CardContent className="flex items-center gap-4 py-4">
                       <div
                         className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
-                        style={{ backgroundColor: `${dept.color || '#3B82F6'}20` }}
+                        style={{ backgroundColor: `${dept.color || 'var(--brand)'}20` }}
                       >
-                        <Building2 className="w-5 h-5" style={{ color: dept.color || '#3B82F6' }} />
+                        <Building2
+                          className="w-5 h-5"
+                          style={{ color: dept.color || 'var(--brand)' }}
+                        />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-text-primary truncate">

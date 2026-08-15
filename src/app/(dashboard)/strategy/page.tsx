@@ -34,7 +34,7 @@ export default function StrategyPage() {
 
   return (
     <Tabs defaultValue="alignment-view" className="w-full">
-      <TabsList className="w-full sm:w-auto mb-6">
+      <TabsList className="w-full sm:w-auto my-6">
         <TabsTrigger value="alignment-view" className="gap-2">
           <ListChecks className="w-4 h-4" />
           {t('strategyPage.alignmentView', 'Alignment View')}

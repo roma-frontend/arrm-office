@@ -21,7 +21,7 @@ export default function ReportsPage() {
     <div className="space-y-6">
       <div className="sticky top-0 z-10 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 mb-6 bg-(--background)/95 backdrop-blur supports-[backdrop-filter]:bg-(--background)/60 border-b border-(--border)">
         <div className="flex items-center gap-3">
-          <BarChart3 className="w-6 h-6 text-emerald-500" />
+          <BarChart3 className="w-6 h-6 text-(--success-text)" />
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-(--text-primary)">
               Report Builder

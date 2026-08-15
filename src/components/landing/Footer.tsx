@@ -95,7 +95,7 @@ export default function Footer({ initialLanguage = 'en' }: { initialLanguage?: s
             >
               <div
                 className="w-10 h-10 rounded-xl flex items-center justify-center"
-                style={{ background: 'linear-gradient(135deg, #2563eb, #93c5fd)' }}
+                style={{ background: 'linear-gradient(135deg, var(--brand), var(--brand-hover))' }}
               >
                 <ShieldIcon />
               </div>

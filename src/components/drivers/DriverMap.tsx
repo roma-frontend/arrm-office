@@ -442,7 +442,7 @@ export function DriverMap({
       style={{ height, minHeight: '300px', position: 'relative' }}
     >
       {!ready ? (
-        <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-lg">
+        <div className="w-full h-full flex items-center justify-center bg-(--surface-2) dark:bg-(--surface-3) rounded-lg">
           <ShieldLoader size="sm" variant="inline" />
         </div>
       ) : (
@@ -463,27 +463,27 @@ export function DriverMap({
 
       {/* Legend */}
       {(pickupCoords || dropoffCoords || driverCoords) && (
-        <div className="absolute bottom-4 left-4 z-[1000] bg-white/90 dark:bg-gray-800/90 rounded-lg shadow-lg p-2.5 space-y-1.5 pointer-events-none">
+        <div className="absolute bottom-4 left-4 z-[1000] bg-white/90 dark:bg-(--surface-3) rounded-lg shadow-lg p-2.5 space-y-1.5 pointer-events-none">
           {pickupCoords && (
             <div className="flex items-center gap-2 text-xs">
-              <div className="w-3 h-3 rounded-full bg-emerald-500 shrink-0" />
-              <span className="text-gray-700 dark:text-gray-300">
+              <div className="w-3 h-3 rounded-full bg-(--success-solid) shrink-0" />
+              <span className="text-(--text-3) dark:text-(--text-3)">
                 {t('driver.pickup', 'Pickup')}
               </span>
             </div>
           )}
           {dropoffCoords && (
             <div className="flex items-center gap-2 text-xs">
-              <div className="w-3 h-3 rounded-full bg-red-500 shrink-0" />
-              <span className="text-gray-700 dark:text-gray-300">
+              <div className="w-3 h-3 rounded-full bg-(--danger-solid) shrink-0" />
+              <span className="text-(--text-3) dark:text-(--text-3)">
                 {t('driver.dropoff', 'Dropoff')}
               </span>
             </div>
           )}
           {driverCoords && (
             <div className="flex items-center gap-2 text-xs">
-              <div className="w-3 h-3 rounded-full bg-blue-500 shrink-0" />
-              <span className="text-gray-700 dark:text-gray-300">
+              <div className="w-3 h-3 rounded-full bg-(--brand) shrink-0" />
+              <span className="text-(--text-3) dark:text-(--text-3)">
                 {t('driver.driver', 'Driver')}
               </span>
             </div>
@@ -493,7 +493,7 @@ export function DriverMap({
 
       {/* Interactive hint */}
       {interactive && ready && (
-        <div className="absolute top-3 right-3 z-[1000] bg-white/90 dark:bg-gray-800/90 rounded-lg shadow-lg px-3 py-1.5 text-xs text-gray-600 dark:text-gray-400 pointer-events-none">
+        <div className="absolute top-3 right-3 z-[1000] bg-white/90 dark:bg-(--surface-3) rounded-lg shadow-lg px-3 py-1.5 text-xs text-(--text-3) dark:text-(--text-3) pointer-events-none">
           {!pickupCoords
             ? t('driver.clickPickup', 'Click to set pickup')
             : !dropoffCoords
@@ -573,7 +573,7 @@ function NavigatorButtons({
       {/* Toggle button */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg shadow-lg text-xs font-medium bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg shadow-lg text-xs font-medium bg-white dark:bg-(--surface-3) text-(--text-3) dark:text-(--text-3) border border-(--border-default) dark:border-(--border-default) hover:bg-(--surface-2) dark:hover:bg-(--surface-3) transition-colors"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
@@ -602,30 +602,30 @@ function NavigatorButtons({
 
       {/* Expanded panel */}
       {expanded && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-600 p-3 min-w-[200px] animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="bg-white dark:bg-(--surface-3) rounded-lg shadow-xl border border-(--border-default) dark:border-(--border-default) p-3 min-w-[200px] animate-in fade-in slide-in-from-top-2 duration-200">
           {/* Target toggle */}
           {pickupCoords && dropoffCoords && (
-            <div className="flex gap-1 mb-2.5 p-0.5 rounded-md bg-gray-100 dark:bg-gray-700">
+            <div className="flex gap-1 mb-2.5 p-0.5 rounded-md bg-(--surface-2) dark:bg-(--surface-3)">
               <button
                 onClick={() => setTarget('pickup')}
                 className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1 rounded text-xs font-medium transition-colors ${
                   target === 'pickup'
-                    ? 'bg-white dark:bg-gray-600 shadow-sm text-emerald-600 dark:text-emerald-400'
-                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
+                    ? 'bg-white dark:bg-(--surface-3) shadow-sm text-(--success-text) dark:text-(--success-text)'
+                    : 'text-(--text-3) dark:text-(--text-3) hover:text-(--text-3)'
                 }`}
               >
-                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                <span className="w-2 h-2 rounded-full bg-(--success-solid)" />
                 {t('driver.map.pickupTarget', 'Pickup')}
               </button>
               <button
                 onClick={() => setTarget('dropoff')}
                 className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1 rounded text-xs font-medium transition-colors ${
                   target === 'dropoff'
-                    ? 'bg-white dark:bg-gray-600 shadow-sm text-red-600 dark:text-red-400'
-                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
+                    ? 'bg-white dark:bg-(--surface-3) shadow-sm text-(--danger-text) dark:text-(--danger-text)'
+                    : 'text-(--text-3) dark:text-(--text-3) hover:text-(--text-3)'
                 }`}
               >
-                <span className="w-2 h-2 rounded-full bg-red-500" />
+                <span className="w-2 h-2 rounded-full bg-(--danger-solid)" />
                 {t('driver.map.dropoffTarget', 'Dropoff')}
               </button>
             </div>
@@ -639,12 +639,12 @@ function NavigatorButtons({
                 href={nav.buildUrl(coords.lat, coords.lng)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2.5 px-2.5 py-2 rounded-md text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                className="flex items-center gap-2.5 px-2.5 py-2 rounded-md text-sm text-(--text-3) dark:text-(--text-3) hover:bg-(--surface-2) dark:hover:bg-(--surface-3) transition-colors"
               >
                 <span className="text-base leading-none">{nav.icon}</span>
                 <span className="font-medium">{nav.name}</span>
                 <svg
-                  className="w-3.5 h-3.5 ml-auto text-gray-400"
+                  className="w-3.5 h-3.5 ml-auto text-(--text-3)"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"

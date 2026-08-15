@@ -57,28 +57,28 @@ export function CreateEventWizard({
               title: t('event.types.meeting'),
               description: t('event.types.meetingDesc'),
               icon: <Users className="w-6 h-6" />,
-              color: 'bg-blue-500/10 text-blue-600',
+              color: 'bg-(--brand-quiet) text-(--brand-text)',
             },
             {
               value: 'conference',
               title: t('event.types.conference'),
               description: t('event.types.conferenceDesc'),
               icon: <MapPin className="w-6 h-6" />,
-              color: 'bg-purple-500/10 text-purple-600',
+              color: 'bg-(--purple-quiet) text-(--purple-text)',
             },
             {
               value: 'training',
               title: t('event.types.training'),
               description: t('event.types.trainingDesc'),
               icon: <Clock className="w-6 h-6" />,
-              color: 'bg-green-500/10 text-green-600',
+              color: 'bg-(--success-quiet) text-(--success-text)',
             },
             {
               value: 'holiday',
               title: t('event.types.holiday'),
               description: t('event.types.holidayDesc'),
               icon: <Calendar className="w-6 h-6" />,
-              color: 'bg-orange-500/10 text-orange-600',
+              color: 'bg-(--warning-quiet) text-(--warning-text)',
             },
           ]}
           columns={2}

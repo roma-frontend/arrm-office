@@ -248,8 +248,8 @@ export function LessonPlayerDialog({
                     <div
                       className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center ${
                         quizResult.passed
-                          ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-400'
-                          : 'bg-red-100 text-red-600 dark:bg-red-900 dark:text-red-400'
+                          ? 'bg-(--success-quiet) text-(--success-text) dark:bg-(--success-solid) dark:text-(--success-text)'
+                          : 'bg-(--danger-quiet) text-(--danger-text) dark:bg-(--danger-solid) dark:text-(--danger-text)'
                       }`}
                     >
                       {quizResult.passed ? (

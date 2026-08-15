@@ -845,7 +845,7 @@ function TakeSurveyDialog({
                     onClick={() => handleAnswer(question._id, true)}
                     className={`flex items-center gap-1 px-4 py-2 rounded-md border text-sm transition-all ${
                       answers[question._id] === true
-                        ? 'border-green-500 bg-green-50 text-green-700 dark:bg-green-900/20'
+                        ? 'border-(--success-outline) bg-(--success-quiet) text-(--success-text) dark:bg-(--success-quiet)'
                         : 'border-border hover:bg-muted'
                     }`}
                   >
@@ -857,7 +857,7 @@ function TakeSurveyDialog({
                     onClick={() => handleAnswer(question._id, false)}
                     className={`flex items-center gap-1 px-4 py-2 rounded-md border text-sm transition-all ${
                       answers[question._id] === false
-                        ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-900/20'
+                        ? 'border-(--danger-outline) bg-(--danger-quiet) text-(--danger-text) dark:bg-(--danger-quiet)'
                         : 'border-border hover:bg-muted'
                     }`}
                   >
@@ -1034,7 +1034,7 @@ function SurveyResultsDialog({
                       </div>
                       <div className="bg-muted rounded-full h-3 overflow-hidden">
                         <div
-                          className="h-full bg-green-500 rounded-full transition-all duration-300"
+                          className="h-full bg-(--success-solid) rounded-full transition-all duration-300"
                           style={{
                             width: `${
                               qr.totalResponses > 0
@@ -1061,7 +1061,7 @@ function SurveyResultsDialog({
                       </div>
                       <div className="bg-muted rounded-full h-3 overflow-hidden">
                         <div
-                          className="h-full bg-red-500 rounded-full transition-all duration-300"
+                          className="h-full bg-(--danger-solid) rounded-full transition-all duration-300"
                           style={{
                             width: `${
                               qr.totalResponses > 0
@@ -1217,25 +1217,25 @@ export function SurveysClient() {
       >
         <TabsList className="w-full mb-4 gap-2 bg-transparent p-0 h-auto grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           <TabsTrigger
-            className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
+            className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
             value="all"
           >
             {t('surveys.filter.all')}
           </TabsTrigger>
           <TabsTrigger
-            className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
+            className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
             value="active"
           >
             {t('surveys.filter.active')}
           </TabsTrigger>
           <TabsTrigger
-            className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
+            className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
             value="draft"
           >
             {t('surveys.filter.draft')}
           </TabsTrigger>
           <TabsTrigger
-            className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-[#3b82f6] data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
+            className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center"
             value="closed"
           >
             {t('surveys.filter.closed')}

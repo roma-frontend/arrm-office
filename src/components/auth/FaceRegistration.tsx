@@ -370,12 +370,12 @@ export function FaceRegistration({ userId, onSuccess, onCancel }: FaceRegistrati
               {/* Face detection indicator */}
               <div className="absolute top-4 right-4">
                 {faceDetected ? (
-                  <div className="flex items-center gap-2 bg-green-500/90 text-white px-3 py-1.5 rounded-full text-sm">
+                  <div className="flex items-center gap-2 bg-(--success-solid) text-white px-3 py-1.5 rounded-full text-sm">
                     <CheckCircle className="w-4 h-4" />
                     {t('faceRegistration.faceDetected', 'Face Detected')}
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2 bg-red-500/90 text-white px-3 py-1.5 rounded-full text-sm">
+                  <div className="flex items-center gap-2 bg-(--danger-solid) text-white px-3 py-1.5 rounded-full text-sm">
                     <XCircle className="w-4 h-4" />
                     {t('faceRegistration.noFace', 'No Face')}
                   </div>
@@ -463,8 +463,8 @@ export function FaceRegistration({ userId, onSuccess, onCancel }: FaceRegistrati
         </div>
 
         {/* Instructions */}
-        <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
-          <h4 className="text-sm font-medium text-blue-400 mb-2">
+        <div className="bg-(--brand-quiet) border border-(--brand-outline) rounded-lg p-4">
+          <h4 className="text-sm font-medium text-(--brand-text) mb-2">
             {t('faceRegistration.instructions', 'Instructions:')}
           </h4>
           <ul className="text-xs text-(--text-secondary) space-y-1 list-disc list-inside">

@@ -31,11 +31,16 @@ const LeaveStatusBadge = ({ status }: { status: string }) => {
   const { t } = useTranslation();
   const variant =
     {
-      pending: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400',
-      approved: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
-      rejected: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
-      cancel_requested: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400',
-    }[status] ?? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400';
+      pending:
+        'bg-(--warning-quiet) dark:bg-(--warning-quiet) text-(--warning-text) dark:text-(--warning-text)',
+      approved:
+        'bg-(--success-quiet) dark:bg-(--success-quiet) text-(--success-text) dark:text-(--success-text)',
+      rejected:
+        'bg-(--danger-quiet) dark:bg-(--danger-quiet) text-(--danger-text) dark:text-(--danger-text)',
+      cancel_requested:
+        'bg-(--warning-quiet) dark:bg-(--warning-quiet) text-(--warning-text) dark:text-(--warning-text)',
+    }[status] ??
+    'bg-(--warning-quiet) dark:bg-(--warning-quiet) text-(--warning-text) dark:text-(--warning-text)';
 
   const label =
     {
@@ -415,7 +420,7 @@ export default function LeaveDetailClient({
             </div>
             {leave.status === 'cancel_requested' && (
               <div className="flex items-start gap-3">
-                <div className="mt-1 h-2 w-2 rounded-full bg-yellow-500" />
+                <div className="mt-1 h-2 w-2 rounded-full bg-(--warning-solid)" />
                 <div>
                   <p className="font-medium">{t('leave.cancellationRequested')}</p>
                   <p className="text-sm text-muted-foreground">{t('leave.cancelPendingHint')}</p>
@@ -425,7 +430,7 @@ export default function LeaveDetailClient({
             {leave.status !== 'pending' && leave.status !== 'cancel_requested' && (
               <div className="flex items-start gap-3">
                 <div
-                  className={`mt-1 h-2 w-2 rounded-full ${leave.status === 'approved' ? 'bg-green-500' : 'bg-red-500'}`}
+                  className={`mt-1 h-2 w-2 rounded-full ${leave.status === 'approved' ? 'bg-(--success-solid)' : 'bg-(--danger-solid)'}`}
                 />
                 <div>
                   <p className="font-medium">

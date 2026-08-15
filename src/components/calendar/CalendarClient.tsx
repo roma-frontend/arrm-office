@@ -369,9 +369,9 @@ function useDualClick() {
 }
 
 function StatusIcon({ status }: { status: LeaveStatus }) {
-  if (status === 'approved') return <CheckCircle className="w-3 h-3 text-emerald-500" />;
-  if (status === 'rejected') return <XCircle className="w-3 h-3 text-red-500" />;
-  return <Clock className="w-3 h-3 text-amber-500" />;
+  if (status === 'approved') return <CheckCircle className="w-3 h-3 text-(--success-text)" />;
+  if (status === 'rejected') return <XCircle className="w-3 h-3 text-(--danger-text)" />;
+  return <Clock className="w-3 h-3 text-(--warning-text)" />;
 }
 
 const LEAVE_TYPE_BG: Record<string, string> = {
@@ -385,10 +385,10 @@ const LEAVE_TYPE_BG: Record<string, string> = {
 // Days of week will be translated using i18n
 
 // --- Calendar Day Cell ---------------------------------------------------------
-const GOOGLE_EVENT_COLOR = '#8b5cf6';
-const DRIVER_EVENT_COLOR = '#f97316'; // orange for driver bookings
-const ROOM_EVENT_COLOR = '#0ea5e9'; // sky blue fallback when a room has no colour
-const COMPANY_EVENT_COLOR = '#0d9488'; // teal for organization-wide events
+const GOOGLE_EVENT_COLOR = 'var(--purple)';
+const DRIVER_EVENT_COLOR = 'var(--warning-solid)'; // orange for driver bookings
+const ROOM_EVENT_COLOR = 'var(--cyan)'; // sky blue fallback when a room has no colour
+const COMPANY_EVENT_COLOR = 'var(--chart-2)'; // teal for organization-wide events
 
 // A date is "past" if it is strictly before the start of today.
 // Past days can be viewed but not booked.
@@ -506,11 +506,11 @@ function DayCell({
               >
                 <span
                   className="w-1.5 h-1.5 rounded-full shrink-0"
-                  style={{ background: isSelected ? '#fff' : accent }}
+                  style={{ background: isSelected ? 'var(--n-0)' : accent }}
                 />
                 <span
                   className="text-[9px] font-semibold truncate hidden sm:block"
-                  style={{ color: isSelected ? '#fff' : accent }}
+                  style={{ color: isSelected ? 'var(--n-0)' : accent }}
                 >
                   {evt.name}
                 </span>
@@ -528,11 +528,11 @@ function DayCell({
             >
               <span
                 className="w-1.5 h-1.5 rounded-full shrink-0"
-                style={{ background: isSelected ? '#fff' : LEAVE_TYPE_BG[l.type] }}
+                style={{ background: isSelected ? 'var(--n-0)' : LEAVE_TYPE_BG[l.type] }}
               />
               <span
                 className="text-[9px] font-medium truncate hidden sm:block"
-                style={{ color: isSelected ? '#fff' : LEAVE_TYPE_BG[l.type] }}
+                style={{ color: isSelected ? 'var(--n-0)' : LEAVE_TYPE_BG[l.type] }}
               >
                 {(l.userName ?? t('calendar.unknown')).split(' ')[0]}
               </span>
@@ -549,11 +549,11 @@ function DayCell({
             >
               <span
                 className="w-1.5 h-1.5 rounded-full shrink-0"
-                style={{ background: isSelected ? '#fff' : DRIVER_EVENT_COLOR }}
+                style={{ background: isSelected ? 'var(--n-0)' : DRIVER_EVENT_COLOR }}
               />
               <span
                 className="text-[9px] font-medium truncate hidden sm:block"
-                style={{ color: isSelected ? '#fff' : DRIVER_EVENT_COLOR }}
+                style={{ color: isSelected ? 'var(--n-0)' : DRIVER_EVENT_COLOR }}
               >
                 {evt.driverName.split(' ')[0]}
               </span>
@@ -570,11 +570,11 @@ function DayCell({
             >
               <span
                 className="w-1.5 h-1.5 rounded-full shrink-0"
-                style={{ background: isSelected ? '#fff' : GOOGLE_EVENT_COLOR }}
+                style={{ background: isSelected ? 'var(--n-0)' : GOOGLE_EVENT_COLOR }}
               />
               <span
                 className="text-[9px] font-medium truncate hidden sm:block"
-                style={{ color: isSelected ? '#fff' : GOOGLE_EVENT_COLOR }}
+                style={{ color: isSelected ? 'var(--n-0)' : GOOGLE_EVENT_COLOR }}
               >
                 {evt.title}
               </span>
@@ -602,11 +602,11 @@ function DayCell({
                   >
                     <span
                       className="w-1.5 h-1.5 rounded-full shrink-0"
-                      style={{ background: isSelected ? '#fff' : '#3b82f6' }}
+                      style={{ background: isSelected ? 'var(--n-0)' : 'var(--brand)' }}
                     />
                     <span
                       className="text-[9px] font-medium truncate hidden sm:block"
-                      style={{ color: isSelected ? '#fff' : '#3b82f6' }}
+                      style={{ color: isSelected ? 'var(--n-0)' : 'var(--brand)' }}
                     >
                       {evt.title}
                     </span>
@@ -686,11 +686,11 @@ function DayCell({
               >
                 <span
                   className="w-1.5 h-1.5 rounded-full shrink-0"
-                  style={{ background: isSelected ? '#fff' : color }}
+                  style={{ background: isSelected ? 'var(--n-0)' : color }}
                 />
                 <span
                   className="text-[9px] font-medium truncate hidden sm:block"
-                  style={{ color: isSelected ? '#fff' : color }}
+                  style={{ color: isSelected ? 'var(--n-0)' : color }}
                 >
                   {evt.roomName}
                 </span>
@@ -1436,7 +1436,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
                   {/* Quick month stats */}
                   <div className="hidden sm:flex items-center gap-4 text-xs">
                     <div className="flex items-center gap-1.5">
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-(--success-solid)" />
                       <span className="text-(--text-muted)">
                         {
                           scopedLeaves.filter(
@@ -1449,7 +1449,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-(--warning-solid)" />
                       <span className="text-(--text-muted)">
                         {
                           scopedLeaves.filter(
@@ -1551,7 +1551,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
                               }
                               className="gap-2"
                             >
-                              <CalendarPlus className="w-4 h-4 text-blue-500" />
+                              <CalendarPlus className="w-4 h-4 text-(--brand-text)" />
                               {t('createMeeting.contextMenu.newEvent')}
                             </ContextMenuItem>
                             <ContextMenuItem
@@ -1564,7 +1564,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
                               }
                               className="gap-2"
                             >
-                              <CalendarDays className="w-4 h-4 text-emerald-500" />
+                              <CalendarDays className="w-4 h-4 text-(--success-text)" />
                               {t('createMeeting.contextMenu.newLeave')}
                             </ContextMenuItem>
                             <ContextMenuItem
@@ -1577,7 +1577,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
                               }
                               className="gap-2"
                             >
-                              <Car className="w-4 h-4 text-orange-500" />
+                              <Car className="w-4 h-4 text-(--warning-text)" />
                               {t('createMeeting.contextMenu.bookDriver')}
                             </ContextMenuItem>
                             <ContextMenuItem
@@ -1594,7 +1594,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
                               }
                               className="gap-2"
                             >
-                              <DoorOpen className="w-4 h-4 text-sky-500" />
+                              <DoorOpen className="w-4 h-4 text-(--brand-text)" />
                               {t('rooms.bookRoom')}
                             </ContextMenuItem>
                             <ContextMenuSeparator />
@@ -1992,7 +1992,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
                               0.04,
                           }}
                           title={t('eventTimeline.hints.doubleClick')}
-                          className="flex items-start gap-2.5 p-2.5 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-500/5 cursor-pointer hover:border-blue-400 transition-colors group"
+                          className="flex items-start gap-2.5 p-2.5 rounded-lg border border-(--brand-outline) dark:border-(--brand-outline) bg-(--brand-quiet) cursor-pointer hover:border-(--brand-outline) transition-colors group"
                           onClick={() =>
                             dualClick.single(() => {
                               setEditEvent(evt);
@@ -2005,7 +2005,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
                             )
                           }
                         >
-                          <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-blue-500 text-white">
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-(--brand) text-white">
                             <CalendarPlus className="w-4 h-4" />
                           </div>
                           <div className="min-w-0 flex-1">
@@ -2023,7 +2023,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
                               </p>
                             )}
                             <div className="flex items-center gap-1 mt-1">
-                              <span className="w-2 h-2 rounded-full shrink-0 bg-blue-500" />
+                              <span className="w-2 h-2 rounded-full shrink-0 bg-(--brand)" />
                               <span className="text-[10px] text-(--text-secondary)">
                                 {t('createMeeting.categories.' + evt.category, evt.category)}
                               </span>
@@ -2040,9 +2040,9 @@ export const CalendarClient = React.memo(function CalendarClient() {
                               e.stopPropagation();
                               void handleDeleteEvent(evt);
                             }}
-                            className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-500/10 transition-all shrink-0"
+                            className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-(--danger-quiet) transition-all shrink-0"
                           >
-                            <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                            <Trash2 className="w-3.5 h-3.5 text-(--danger-text)" />
                           </button>
                         </motion.div>
                       ))}
@@ -2526,11 +2526,11 @@ export const CalendarClient = React.memo(function CalendarClient() {
                             }}
                           >
                             {selectedLeave.status === 'approved' ? (
-                              <CheckCircle className="w-5 h-5 text-emerald-500" />
+                              <CheckCircle className="w-5 h-5 text-(--success-text)" />
                             ) : selectedLeave.status === 'rejected' ? (
-                              <XCircle className="w-5 h-5 text-red-500" />
+                              <XCircle className="w-5 h-5 text-(--danger-text)" />
                             ) : (
-                              <Clock className="w-5 h-5 text-amber-500" />
+                              <Clock className="w-5 h-5 text-(--warning-text)" />
                             )}
                             <span className="text-sm font-semibold text-(--text-primary)">
                               {selectedLeave.status === 'approved'
@@ -2713,7 +2713,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
                             </div>
                             <div className="bg-(--background-subtle) rounded-xl p-4 border border-(--border) space-y-3">
                               <div className="flex items-start gap-3">
-                                <div className="w-3 h-3 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
+                                <div className="w-3 h-3 rounded-full bg-(--success-solid) mt-1.5 shrink-0" />
                                 <div>
                                   <p className="text-[10px] text-(--text-muted) uppercase tracking-wider">
                                     {t('driver.pickup', 'Pickup')}
@@ -2725,7 +2725,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
                               </div>
                               <div className="ml-1.5 border-l-2 border-dashed border-(--border)/40 h-6" />
                               <div className="flex items-start gap-3">
-                                <div className="w-3 h-3 rounded-full bg-red-500 mt-1.5 shrink-0" />
+                                <div className="w-3 h-3 rounded-full bg-(--danger-solid) mt-1.5 shrink-0" />
                                 <div>
                                   <p className="text-[10px] text-(--text-muted) uppercase tracking-wider">
                                     {t('driver.dropoff', 'Dropoff')}
@@ -2837,11 +2837,11 @@ export const CalendarClient = React.memo(function CalendarClient() {
                             }}
                           >
                             {selectedDriverEvent.status === 'completed' ? (
-                              <CheckCircle className="w-5 h-5 text-emerald-500" />
+                              <CheckCircle className="w-5 h-5 text-(--success-text)" />
                             ) : selectedDriverEvent.status === 'cancelled' ? (
-                              <XCircle className="w-5 h-5 text-red-500" />
+                              <XCircle className="w-5 h-5 text-(--danger-text)" />
                             ) : (
-                              <Clock className="w-5 h-5 text-amber-500" />
+                              <Clock className="w-5 h-5 text-(--warning-text)" />
                             )}
                             <span className="text-sm font-semibold text-(--text-primary)">
                               {selectedDriverEvent.status === 'completed'

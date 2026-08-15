@@ -100,7 +100,7 @@ export default function AdminJoinRequestsClient() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold">{t('joinRequests.title', 'Join Requests')}</h1>
-        <p className="text-gray-500 dark:text-gray-400">
+        <p className="text-(--text-3) dark:text-(--text-3)">
           {t('joinRequests.desc', 'Review and approve join requests from new users')}
         </p>
       </div>
@@ -110,8 +110,8 @@ export default function AdminJoinRequestsClient() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-blue-100 dark:bg-blue-900 rounded-full">
-                <Clock className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              <div className="p-3 bg-(--brand-quiet) dark:bg-(--brand) rounded-full">
+                <Clock className="w-6 h-6 text-(--brand-text) dark:text-(--brand-text)" />
               </div>
               <div>
                 <p className="text-2xl font-bold">
@@ -126,8 +126,8 @@ export default function AdminJoinRequestsClient() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-green-100 dark:bg-green-900 rounded-full">
-                <CheckCircle2 className="w-6 h-6 text-green-600 dark:text-green-400" />
+              <div className="p-3 bg-(--success-quiet) dark:bg-(--success-solid) rounded-full">
+                <CheckCircle2 className="w-6 h-6 text-(--success-text) dark:text-(--success-text)" />
               </div>
               <div>
                 <p className="text-2xl font-bold">
@@ -142,8 +142,8 @@ export default function AdminJoinRequestsClient() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-red-100 dark:bg-red-900 rounded-full">
-                <XCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
+              <div className="p-3 bg-(--danger-quiet) dark:bg-(--danger-solid) rounded-full">
+                <XCircle className="w-6 h-6 text-(--danger-text) dark:text-(--danger-text)" />
               </div>
               <div>
                 <p className="text-2xl font-bold">
@@ -214,16 +214,16 @@ export default function AdminJoinRequestsClient() {
               <CardContent>
                 {request.status === 'pending' && (
                   <div className="space-y-4">
-                    <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-950 rounded-lg">
+                    <div className="flex items-start gap-2 p-3 bg-(--warning-quiet) dark:bg-(--warning-solid) rounded-lg">
                       <AlertCircle className="w-5 h-5 text-(--warning-text) mt-0.5" />
-                      <div className="text-sm text-amber-800 dark:text-amber-200">
+                      <div className="text-sm text-(--warning-text) dark:text-(--warning-text)">
                         <p className="font-medium">
                           {t(
                             'joinRequests.pendingInfo',
                             'This user is waiting to join your organization',
                           )}
                         </p>
-                        <p className="text-amber-600 dark:text-amber-400">
+                        <p className="text-(--warning-text) dark:text-(--warning-text)">
                           {t(
                             'joinRequests.pendingInfo2',
                             'Approve to grant access, or reject with a reason',
@@ -315,7 +315,7 @@ export default function AdminJoinRequestsClient() {
                       </span>
                     </div>
                     {request.rejectionReason && (
-                      <div className="p-3 bg-red-50 dark:bg-red-950 rounded-lg text-sm text-red-800 dark:text-red-200">
+                      <div className="p-3 bg-(--danger-quiet) dark:bg-(--danger-solid) rounded-lg text-sm text-(--danger-text) dark:text-(--danger-text)">
                         <strong>{t('joinRequests.reason', 'Reason')}:</strong>{' '}
                         {request.rejectionReason}
                       </div>

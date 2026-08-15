@@ -73,7 +73,7 @@ export function CreateSupportTicketWizard({
               title: t('supportWizard.types.bug'),
               description: t('supportWizard.types.bugDesc'),
               icon: <AlertCircle className="w-6 h-6" />,
-              color: 'bg-orange-500/10 text-orange-600',
+              color: 'bg-(--warning-quiet) text-(--warning-text)',
             },
             {
               value: 'feature',

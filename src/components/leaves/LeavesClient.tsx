@@ -74,11 +74,11 @@ function StatusBadge({ status }: { status: LeaveStatus }) {
 function LeaveTypeBadge({ type }: { type: LeaveType }) {
   const { t } = useTranslation();
   const colorMap: Record<LeaveType, string> = {
-    paid: 'bg-[#2563eb]/20 text-[#2563eb] border-[#2563eb]/30',
-    unpaid: 'bg-[#f59e0b]/20 text-[#f59e0b] border-[#f59e0b]/30',
-    sick: 'bg-[#ef4444]/20 text-[#ef4444] border-[#ef4444]/30',
-    family: 'bg-[#10b981]/20 text-[#10b981] border-[#10b981]/30',
-    doctor: 'bg-[#06b6d4]/20 text-[#06b6d4] border-[#06b6d4]/30',
+    paid: 'bg-(--brand)/20 text-(--brand-text) border-(--brand)/30',
+    unpaid: 'bg-(--warning-quiet) text-(--warning-text) border-(--warning-outline)',
+    sick: 'bg-(--danger-quiet) text-(--danger-text) border-(--danger-outline)',
+    family: 'bg-(--success-quiet) text-(--success-text) border-(--success-outline)',
+    doctor: 'bg-(--cyan-quiet) text-(--cyan-text) border-(--cyan-outline)',
   };
   return (
     <span
@@ -384,8 +384,8 @@ export function LeavesClient() {
                         onClick={() => openLeave(req)}
                       >
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-10 h-10 rounded-xl bg-[#2563eb]/20 flex items-center justify-center shrink-0">
-                            <span className="text-sm font-bold text-[#2563eb]">
+                          <div className="w-10 h-10 rounded-xl bg-(--brand)/20 flex items-center justify-center shrink-0">
+                            <span className="text-sm font-bold text-(--brand-text)">
                               {(req.userName ?? '?').charAt(0).toUpperCase()}
                             </span>
                           </div>
@@ -441,7 +441,7 @@ export function LeavesClient() {
                               <Button
                                 size="icon-sm"
                                 variant="ghost"
-                                className="text-emerald-500 hover:text-emerald-400 ml-auto"
+                                className="text-(--success-text) hover:text-(--success-text) ml-auto"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleApprove(req._id);
@@ -452,7 +452,7 @@ export function LeavesClient() {
                               <Button
                                 size="icon-sm"
                                 variant="ghost"
-                                className="text-red-500 hover:text-red-400"
+                                className="text-(--danger-text) hover:text-(--danger-text)"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleReject(req._id);
@@ -467,7 +467,7 @@ export function LeavesClient() {
                               <Button
                                 size="icon-sm"
                                 variant="ghost"
-                                className="text-emerald-500 hover:text-emerald-400 ml-auto"
+                                className="text-(--success-text) hover:text-(--success-text) ml-auto"
                                 title={t('leave.approveCancellation')}
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -479,7 +479,7 @@ export function LeavesClient() {
                               <Button
                                 size="icon-sm"
                                 variant="ghost"
-                                className="text-red-500 hover:text-red-400"
+                                className="text-(--danger-text) hover:text-(--danger-text)"
                                 title={t('leave.rejectCancellation')}
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -493,7 +493,7 @@ export function LeavesClient() {
                           <Button
                             size="icon-sm"
                             variant="ghost"
-                            className="text-(--text-muted) hover:text-red-400"
+                            className="text-(--text-muted) hover:text-(--danger-text)"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleDelete(req._id, req.userId === user?.id);
@@ -555,7 +555,7 @@ export function LeavesClient() {
                           <tr className="hover:bg-(--background-subtle) transition-colors">
                             <td className="px-6 py-3 cursor-pointer" onClick={() => openLeave(req)}>
                               <div>
-                                <p className="text-sm font-medium text-(--text-primary) hover:text-[#2563eb] transition-colors">
+                                <p className="text-sm font-medium text-(--text-primary) hover:text-(--brand-text) transition-colors">
                                   {req.userName}
                                 </p>
                                 <p className="text-xs text-(--text-muted)">{req.userDepartment}</p>
@@ -614,7 +614,7 @@ export function LeavesClient() {
                                       <Button
                                         size="icon-sm"
                                         variant="ghost"
-                                        className="text-emerald-500 hover:text-emerald-400"
+                                        className="text-(--success-text) hover:text-(--success-text)"
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           handleApprove(req._id);
@@ -625,7 +625,7 @@ export function LeavesClient() {
                                       <Button
                                         size="icon-sm"
                                         variant="ghost"
-                                        className="text-red-500 hover:text-red-400"
+                                        className="text-(--danger-text) hover:text-(--danger-text)"
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           handleReject(req._id);
@@ -640,7 +640,7 @@ export function LeavesClient() {
                                       <Button
                                         size="icon-sm"
                                         variant="ghost"
-                                        className="text-emerald-500 hover:text-emerald-400"
+                                        className="text-(--success-text) hover:text-(--success-text)"
                                         title={t('leave.approveCancellation')}
                                         onClick={(e) => {
                                           e.stopPropagation();
@@ -652,7 +652,7 @@ export function LeavesClient() {
                                       <Button
                                         size="icon-sm"
                                         variant="ghost"
-                                        className="text-red-500 hover:text-red-400"
+                                        className="text-(--danger-text) hover:text-(--danger-text)"
                                         title={t('leave.rejectCancellation')}
                                         onClick={(e) => {
                                           e.stopPropagation();
@@ -666,7 +666,7 @@ export function LeavesClient() {
                                   <Button
                                     size="icon-sm"
                                     variant="ghost"
-                                    className="text-(--text-muted) hover:text-red-400"
+                                    className="text-(--text-muted) hover:text-(--danger-text)"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       handleDelete(req._id, req.userId === user?.id);
@@ -702,7 +702,7 @@ export function LeavesClient() {
             {leavesStatus === 'CanLoadMore' && (
               <button
                 onClick={() => loadMoreLeaves(30)}
-                className="w-full mt-3 py-2 text-sm text-[#2563eb] hover:underline"
+                className="w-full mt-3 py-2 text-sm text-(--brand-text) hover:underline"
               >
                 {t('leaves.loadMore', { defaultValue: 'Load more requests' })}
               </button>

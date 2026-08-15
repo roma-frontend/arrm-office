@@ -173,7 +173,7 @@ export function DashboardBanners({
               'This login was from a new device or location. If this was not you, change your password immediately.',
             )
           }
-          icon={<Shield className="w-5 h-5 text-amber-500" />}
+          icon={<Shield className="w-5 h-5 text-(--warning-text)" />}
           action={{
             label: t('banners.reviewSecurity', 'Review security settings'),
             onClick: () => router.push('/settings'),
@@ -194,7 +194,7 @@ export function DashboardBanners({
             'banners.saveWork',
             'Save your work and extend your session to avoid losing changes.',
           )}
-          icon={<Timer className="w-5 h-5 text-amber-500" />}
+          icon={<Timer className="w-5 h-5 text-(--warning-text)" />}
           dismissable={false}
           action={{
             label: t('banners.extendSession', 'Extend session'),

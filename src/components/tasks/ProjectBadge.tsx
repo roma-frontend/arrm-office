@@ -37,7 +37,7 @@ export function ProjectBadge({ projectId, projectName, className }: ProjectBadge
           openProject(e);
         }
       }}
-      className={`font-medium text-(--text-secondary) bg-(--background-subtle) border border-(--border) px-2 py-0.5 rounded-full truncate cursor-pointer hover:text-blue-500 hover:border-blue-400/50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 ${className ?? ''}`}
+      className={`font-medium text-(--text-secondary) bg-(--background-subtle) border border-(--border) px-2 py-0.5 rounded-full truncate cursor-pointer hover:text-(--brand-text) hover:border-(--brand-outline) transition-colors focus:outline-none focus:ring-2 focus:ring-(--brand-text) ${className ?? ''}`}
     >
       📁 {projectName}
     </span>

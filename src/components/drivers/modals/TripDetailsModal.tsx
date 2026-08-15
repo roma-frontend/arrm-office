@@ -131,7 +131,7 @@ export function TripDetailsModal({
         {/* Header with gradient */}
         <div
           className={`relative p-6 shrink-0 ${
-            isTrip ? 'btn-gradient' : 'bg-linear-to-r from-amber-500 to-orange-500'
+            isTrip ? 'btn-gradient' : 'bg-linear-to-r from-(--warning-solid) to-(--warning-solid)'
           }`}
         >
           {/* Close button */}
@@ -213,14 +213,14 @@ export function TripDetailsModal({
                           onClick={() => openInMap('google')}
                           className="w-full px-3 py-2 text-left text-sm hover:bg-(--background-subtle) flex items-center gap-2 transition-colors"
                         >
-                          <span className="w-2 h-2 rounded-full bg-blue-500" />
+                          <span className="w-2 h-2 rounded-full bg-(--brand)" />
                           {t('driver.navigator.google', 'Google Maps')}
                         </button>
                         <button
                           onClick={() => openInMap('yandex')}
                           className="w-full px-3 py-2 text-left text-sm hover:bg-(--background-subtle) flex items-center gap-2 transition-colors"
                         >
-                          <span className="w-2 h-2 rounded-full bg-red-500" />
+                          <span className="w-2 h-2 rounded-full bg-(--danger-solid)" />
                           {t('driver.navigator.yandex', 'Yandex Maps')}
                         </button>
                         <button
@@ -234,14 +234,14 @@ export function TripDetailsModal({
                           onClick={() => openInMap('waze')}
                           className="w-full px-3 py-2 text-left text-sm hover:bg-(--background-subtle) flex items-center gap-2 transition-colors"
                         >
-                          <span className="w-2 h-2 rounded-full bg-cyan-500" />
+                          <span className="w-2 h-2 rounded-full bg-(--cyan)" />
                           {t('driver.navigator.waze', 'Waze')}
                         </button>
                         <button
                           onClick={() => openInMap('2gis')}
                           className="w-full px-3 py-2 text-left text-sm hover:bg-(--background-subtle) flex items-center gap-2 transition-colors"
                         >
-                          <span className="w-2 h-2 rounded-full bg-green-500" />
+                          <span className="w-2 h-2 rounded-full bg-(--success-solid)" />
                           {t('driver.navigator.2gis', '2GIS')}
                         </button>
                       </div>
@@ -250,7 +250,7 @@ export function TripDetailsModal({
                 </div>
                 <div className="space-y-4">
                   <div className="flex items-start gap-3">
-                    <div className="w-3 h-3 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
+                    <div className="w-3 h-3 rounded-full bg-(--success-solid) mt-1.5 shrink-0" />
                     <div>
                       <p className="text-xs text-muted-foreground">
                         {t('driver.pickup', 'Pickup')}
@@ -262,7 +262,7 @@ export function TripDetailsModal({
                   </div>
                   <div className="ml-1.5 border-l-2 border-dashed border-border/40 h-6" />
                   <div className="flex items-start gap-3">
-                    <div className="w-3 h-3 rounded-full bg-red-500 mt-1.5 shrink-0" />
+                    <div className="w-3 h-3 rounded-full bg-(--danger-solid) mt-1.5 shrink-0" />
                     <div>
                       <p className="text-xs text-muted-foreground">
                         {t('driver.dropoff', 'Dropoff')}

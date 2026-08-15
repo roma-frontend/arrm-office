@@ -78,7 +78,7 @@ export function MarkdownTable({ content }: { content: string }) {
 
   if (!table)
     return (
-      <pre className="whitespace-pre-wrap text-sm font-mono bg-[#f8fafc] p-3 rounded-lg">
+      <pre className="whitespace-pre-wrap text-sm font-mono bg-(--sunken) p-3 rounded-lg">
         {content}
       </pre>
     );
@@ -96,7 +96,7 @@ export function MarkdownTable({ content }: { content: string }) {
     <div className="my-4 rounded-xl overflow-hidden shadow-lg border border-(--border-default)">
       <table className="w-full border-collapse">
         <thead>
-          <tr className="bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800">
+          <tr className="bg-gradient-to-r bg-(--surface-3) bg-(--surface-3) bg-(--surface-3)">
             {table.headers.map((header, idx) => (
               <th
                 key={idx}

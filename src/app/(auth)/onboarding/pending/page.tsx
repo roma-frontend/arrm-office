@@ -72,32 +72,32 @@ export default function PendingApprovalPage() {
     );
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-amber-50 to-orange-100 dark:from-gray-900 dark:to-gray-800 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-br bg-(--warning-solid) bg-(--warning-solid) dark:bg-(--surface-3) dark:bg-(--surface-3) p-4">
       <div className="w-full max-w-lg">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white dark:bg-gray-800 shadow-lg mb-4">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white dark:bg-(--surface-3) shadow-lg mb-4">
             <Clock className="w-10 h-10 text-(--warning-text)" />
           </div>
           <h1 className="text-3xl font-bold mb-2">
             {t('onboarding.pendingApproval', 'Pending Approval')}
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-(--text-3) dark:text-(--text-3)">
             {t('onboarding.pendingDesc', 'Your request is being reviewed by administrators')}
           </p>
         </div>
 
         {/* Rejected Request */}
         {rejectedRequest && (
-          <Card className="mb-4 border-red-200 dark:border-red-800">
+          <Card className="mb-4 border-(--danger-outline) dark:border-(--danger-outline)">
             <CardHeader>
               <div className="flex items-center gap-2">
                 <XCircle className="w-5 h-5 text-(--danger-text)" />
-                <CardTitle className="text-red-800 dark:text-red-200">
+                <CardTitle className="text-(--danger-text) dark:text-(--danger-text)">
                   {t('onboarding.requestRejected', 'Request Rejected')}
                 </CardTitle>
               </div>
-              <CardDescription className="text-red-600 dark:text-red-300">
+              <CardDescription className="text-(--danger-text) dark:text-(--danger-text)">
                 {rejectedRequest.rejectionReason || t('onboarding.noReason', 'No reason provided')}
               </CardDescription>
             </CardHeader>
@@ -124,7 +124,7 @@ export default function PendingApprovalPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-950 rounded-lg">
+              <div className="flex items-center gap-3 p-3 bg-(--brand-quiet) dark:bg-(--brand) rounded-lg">
                 <Mail className="w-5 h-5 text-(--brand-text)" />
                 <div>
                   <p className="text-sm font-medium">{user?.email}</p>
@@ -134,8 +134,8 @@ export default function PendingApprovalPage() {
                 </div>
               </div>
 
-              <div className="p-4 bg-amber-50 dark:bg-amber-950 rounded-lg">
-                <p className="text-sm text-amber-800 dark:text-amber-200">
+              <div className="p-4 bg-(--warning-quiet) dark:bg-(--warning-solid) rounded-lg">
+                <p className="text-sm text-(--warning-text) dark:text-(--warning-text)">
                   💡{' '}
                   {t(
                     'onboarding.approvalTime',
@@ -146,7 +146,7 @@ export default function PendingApprovalPage() {
 
               <div className="space-y-2">
                 <h4 className="font-medium text-sm">{t('onboarding.nextSteps', 'Next Steps')}:</h4>
-                <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                <ul className="text-sm text-(--text-3) dark:text-(--text-3) space-y-1">
                   <li>1. ✅ {t('onboarding.step1', 'Request submitted')}</li>
                   <li>2. ⏳ {t('onboarding.step2', 'Wait for admin approval')}</li>
                   <li>3. 📧 {t('onboarding.step3', "You'll receive an email notification")}</li>

@@ -58,11 +58,11 @@ describe('analytics StatsCard', () => {
 
   it('applies the color variant classes for all colors', () => {
     const variants = [
-      ['blue', 'bg-blue-500/20', 'text-blue-600'],
-      ['green', 'bg-green-500/20', 'text-green-600'],
-      ['yellow', 'bg-yellow-500/20', 'text-yellow-600'],
-      ['red', 'bg-red-500/20', 'text-red-600'],
-      ['purple', 'bg-purple-500/20', 'text-purple-600'],
+      ['blue', 'bg-(--brand-quiet)', 'text-(--brand-text)'],
+      ['green', 'bg-(--success-quiet)', 'text-(--success-text)'],
+      ['yellow', 'bg-(--warning-quiet)', 'text-(--warning-text)'],
+      ['red', 'bg-(--danger-quiet)', 'text-(--danger-text)'],
+      ['purple', 'bg-(--purple-quiet)', 'text-(--purple-text)'],
     ] as const;
     const { rerender, container } = render(
       <StatsCard title="A" value={1} icon={icon} color="blue" />,
@@ -76,6 +76,6 @@ describe('analytics StatsCard', () => {
 
   it('renders with the default blue color when color is omitted', () => {
     const { container } = render(<StatsCard title="A" value={1} icon={icon} />);
-    expect(container.querySelector('[class*="bg-blue-500/20"]')).not.toBeNull();
+    expect(container.querySelector('[class*="bg-(--brand-quiet)"]')).not.toBeNull();
   });
 });

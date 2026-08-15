@@ -60,8 +60,8 @@ export default function ApprovalsClient() {
   if (user?.role !== 'admin' && user?.role !== 'superadmin') {
     return (
       <div className="flex flex-col items-center justify-center text-center min-h-[60vh] gap-4">
-        <div className="w-16 h-16 rounded-2xl bg-red-500/10 flex items-center justify-center">
-          <UserX className="w-8 h-8 text-red-500" />
+        <div className="w-16 h-16 rounded-2xl bg-(--danger-quiet) flex items-center justify-center">
+          <UserX className="w-8 h-8 text-(--danger-text)" />
         </div>
         <h2 className="text-xl font-bold text-(--text-primary)">{t('ui.accessDenied')}</h2>
         <p className="text-(--text-muted) text-sm">{t('ui.onlyAdminsCanAccess')}</p>
@@ -96,7 +96,7 @@ export default function ApprovalsClient() {
       ) : pendingUsers && pendingUsers.length === 0 ? (
         <Card>
           <CardContent className="p-6 sm:p-8 text-center">
-            <CheckCircle className="w-10 h-10 sm:w-12 sm:h-12 text-green-500 mx-auto mb-3" />
+            <CheckCircle className="w-10 h-10 sm:w-12 sm:h-12 text-(--success-text) mx-auto mb-3" />
             <h3 className="text-base sm:text-lg font-semibold text-(--text-primary) mb-1">
               {t('ui.allCaughtUp')}
             </h3>
@@ -113,7 +113,7 @@ export default function ApprovalsClient() {
             >
               <CardHeader className="pb-3 p-4 sm:p-6">
                 <div className="flex items-start gap-2 sm:gap-3">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-linear-to-br from-[#2563eb] to-[#0ea5e9] flex items-center justify-center text-white font-bold text-sm sm:text-lg shrink-0">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-linear-to-br from-(--brand) to-(--brand-hover) flex items-center justify-center text-white font-bold text-sm sm:text-lg shrink-0">
                     {(pendingUser as unknown as { avatarUrl?: string }).avatarUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img

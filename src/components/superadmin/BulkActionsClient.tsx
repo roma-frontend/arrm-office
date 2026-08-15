@@ -170,7 +170,7 @@ export default function BulkActionsClient() {
                   </p>
                   <p className="text-3xl font-bold">{leaves?.length || 0}</p>
                 </div>
-                <Calendar className="w-12 h-12 text-blue-500 opacity-30" />
+                <Calendar className="w-12 h-12 text-(--brand-text) opacity-30" />
               </div>
             </CardContent>
           </Card>
@@ -182,9 +182,9 @@ export default function BulkActionsClient() {
                   <p className="text-sm text-muted-foreground mb-1">
                     {t('superadmin.bulkActions.pending')}
                   </p>
-                  <p className="text-3xl font-bold text-orange-500">{pendingLeaves.length}</p>
+                  <p className="text-3xl font-bold text-(--warning-text)">{pendingLeaves.length}</p>
                 </div>
-                <AlertTriangle className="w-12 h-12 text-orange-500 opacity-30" />
+                <AlertTriangle className="w-12 h-12 text-(--warning-text) opacity-30" />
               </div>
             </CardContent>
           </Card>
@@ -196,9 +196,9 @@ export default function BulkActionsClient() {
                   <p className="text-sm text-muted-foreground mb-1">
                     {t('superadmin.bulkActions.selected')}
                   </p>
-                  <p className="text-3xl font-bold text-green-500">{selectedLeaves.size}</p>
+                  <p className="text-3xl font-bold text-(--success-text)">{selectedLeaves.size}</p>
                 </div>
-                <CheckSquare className="w-12 h-12 text-green-500 opacity-30" />
+                <CheckSquare className="w-12 h-12 text-(--success-text) opacity-30" />
               </div>
             </CardContent>
           </Card>
@@ -328,7 +328,7 @@ export default function BulkActionsClient() {
         <SheetContent side="right" size="sm" closeLabel={t('common.close', 'Close')}>
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-green-500" />
+              <CheckCircle className="w-5 h-5 text-(--success-text)" />
               {t('superadmin.bulkActions.approve.title')}
             </SheetTitle>
             <SheetDescription>
@@ -365,7 +365,7 @@ export default function BulkActionsClient() {
         <SheetContent side="right" size="sm" closeLabel={t('common.close', 'Close')}>
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
-              <XCircle className="w-5 h-5 text-red-500" />
+              <XCircle className="w-5 h-5 text-(--danger-text)" />
               {t('superadmin.bulkActions.reject.title')}
             </SheetTitle>
             <SheetDescription>

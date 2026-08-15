@@ -128,7 +128,7 @@ export function VoiceMessageRecorder({
             key={i}
             className={cn(
               'w-1 rounded-full transition-all duration-100',
-              isRecording ? 'bg-red-500 animate-pulse' : 'bg-gray-400',
+              isRecording ? 'bg-(--danger-solid) animate-pulse' : 'bg-(--surface-3)',
             )}
             style={{
               height: isRecording ? `${Math.random() * 24 + 8}px` : '4px',
@@ -151,7 +151,7 @@ export function VoiceMessageRecorder({
       {isRecording ? (
         <>
           {/* Recording indicator */}
-          <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
+          <div className="w-3 h-3 rounded-full bg-(--danger-solid) animate-pulse" />
 
           {/* Timer */}
           <span className="text-sm font-mono min-w-[50px]" style={{ color: 'var(--text-primary)' }}>
@@ -164,10 +164,10 @@ export function VoiceMessageRecorder({
           {/* Cancel button */}
           <button
             onClick={cancelRecording}
-            className="p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors"
+            className="p-2 rounded-lg hover:bg-(--danger-quiet) dark:hover:bg-(--danger-quiet) transition-colors"
             title={t('chat.voice.cancelRecording')}
           >
-            <Trash2 className="w-4 h-4 text-red-500" />
+            <Trash2 className="w-4 h-4 text-(--danger-text)" />
           </button>
 
           {/* Stop and send button */}
@@ -192,9 +192,9 @@ export function VoiceMessageRecorder({
           {/* Cancel */}
           <button
             onClick={cancelRecording}
-            className="p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors"
+            className="p-2 rounded-lg hover:bg-(--danger-quiet) dark:hover:bg-(--danger-quiet) transition-colors"
           >
-            <Trash2 className="w-4 h-4 text-red-500" />
+            <Trash2 className="w-4 h-4 text-(--danger-text)" />
           </button>
 
           {/* Send */}
@@ -215,12 +215,12 @@ export function VoiceMessageRecorder({
               'p-2 rounded-lg transition-colors',
               disabled
                 ? 'opacity-50 cursor-not-allowed'
-                : 'hover:bg-red-100 dark:hover:bg-red-900/20',
+                : 'hover:bg-(--danger-quiet) dark:hover:bg-(--danger-quiet)',
             )}
             style={{ background: 'transparent' }}
             title={t('chat.voice.record')}
           >
-            <Mic className={cn('w-4 h-4', disabled ? '' : 'text-red-500')} />
+            <Mic className={cn('w-4 h-4', disabled ? '' : 'text-(--danger-text)')} />
           </button>
           <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
             {t('chat.voice.voiceMessage')}

@@ -2341,5 +2341,29 @@
       "messagesRead_many": "Отмечено {{count}} сообщений прочитанными"
     }
   },
-  "unknownUser": "Неизвестно"
+  "unknownUser": "Неизвестно",
+  "toolDock": {
+    "title": "Ваши инструменты",
+    "overdue": "просрочено",
+    "pending": "на согласовании",
+    "pin": "Закрепить",
+    "unpin": "Открепить",
+    "myTasks": "Мои задачи",
+    "viewAll": "Все задачи",
+    "newTask": "Новая задача",
+    "noTasks": "Всё сделано",
+    "noTasksHint": "Сейчас ничего не требует внимания.",
+    "soon": "Скоро",
+    "completeTask": "Отметить выполненной",
+    "awaitingWork": "{{count}} назначенных вами открытых задач",
+    "allModules": "Все {{count}} модулей",
+    "collapse": "Свернуть",
+    "search": "Поиск",
+    "openPanel": "Открыть инструменты",
+    "all": "Все",
+    "fullscreen": "Во весь экран",
+    "exitFullscreen": "Выйти из полноэкранного",
+    "allModulesTitle": "Все модули",
+    "overdueCount": "{{count}} просрочено"
+  }
 }

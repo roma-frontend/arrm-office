@@ -50,10 +50,10 @@ interface UserPickerProps {
 }
 
 const ROLE_COLORS: Record<string, string> = {
-  admin: 'bg-blue-500/10 text-blue-600',
-  supervisor: 'bg-amber-500/10 text-amber-600',
-  employee: 'bg-emerald-500/10 text-emerald-600',
-  driver: 'bg-cyan-500/10 text-cyan-600',
+  admin: 'bg-(--brand-quiet) text-(--brand-text)',
+  supervisor: 'bg-(--warning-quiet) text-(--warning-text)',
+  employee: 'bg-(--success-quiet) text-(--success-text)',
+  driver: 'bg-(--cyan-quiet) text-(--cyan-text)',
 };
 
 function initials(name: string) {
@@ -245,7 +245,7 @@ export function UserPicker({
                           <span
                             className={cn(
                               'text-[10px] px-1.5 py-0.5 rounded font-medium shrink-0',
-                              ROLE_COLORS[user.role] ?? 'bg-gray-500/10 text-gray-600',
+                              ROLE_COLORS[user.role] ?? 'bg-(--surface-2) text-(--text-3)',
                             )}
                           >
                             {t(`roles.${user.role}`, user.role)}

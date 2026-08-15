@@ -198,7 +198,7 @@ export function AssignManagerModal({
                     className="w-10 h-10 rounded-xl flex items-center justify-center"
                     style={{ background: 'rgba(37,99,235,0.1)' }}
                   >
-                    <UserCog className="w-5 h-5 text-blue-500" />
+                    <UserCog className="w-5 h-5 text-(--brand-text)" />
                   </div>
                   <div>
                     <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
@@ -252,7 +252,7 @@ export function AssignManagerModal({
                     </span>
                   ))}
                   <ChevronRight className="w-3 h-3" style={{ color: 'var(--text-muted)' }} />
-                  <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-blue-500/10 text-blue-500">
+                  <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-(--brand-quiet) text-(--brand-text)">
                     {employeeName}
                   </span>
                 </div>
@@ -432,7 +432,7 @@ export function AssignManagerModal({
                               <motion.div
                                 initial={{ scale: 0 }}
                                 animate={{ scale: 1 }}
-                                className="absolute -top-1 -right-1 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center"
+                                className="absolute -top-1 -right-1 w-5 h-5 bg-(--brand) rounded-full flex items-center justify-center"
                               >
                                 <CheckCircle2 className="w-3.5 h-3.5 text-white" />
                               </motion.div>
@@ -449,7 +449,7 @@ export function AssignManagerModal({
                                 {manager.name}
                               </p>
                               {isCurrent && (
-                                <Badge className="text-[10px] py-0 px-1.5 bg-blue-500/10 text-blue-500 border-blue-500/30 shrink-0">
+                                <Badge className="text-[10px] py-0 px-1.5 bg-(--brand-quiet) text-(--brand-text) border-(--brand-outline) shrink-0">
                                   {t('common.current', 'Current')}
                                 </Badge>
                               )}
@@ -498,7 +498,7 @@ export function AssignManagerModal({
                               <motion.div
                                 initial={{ scale: 0 }}
                                 animate={{ scale: 1 }}
-                                className="w-2.5 h-2.5 rounded-full bg-blue-500"
+                                className="w-2.5 h-2.5 rounded-full bg-(--brand)"
                               />
                             )}
                           </div>

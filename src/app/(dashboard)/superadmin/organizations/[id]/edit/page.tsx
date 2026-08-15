@@ -384,7 +384,7 @@ export default function EditOrganizationPage() {
         {/* Danger zone — superadmin only: freeze or permanently delete */}
         {isSuperadmin && (
           <div
-            className="mt-6 space-y-4 rounded-xl border border-red-500/30 p-6 animate-fade-in"
+            className="mt-6 space-y-4 rounded-xl border border-(--danger-outline) p-6 animate-fade-in"
             style={{ background: 'var(--card)' }}
           >
             <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
@@ -393,10 +393,10 @@ export default function EditOrganizationPage() {
 
             {organization.frozenAt && (
               <p
-                className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-3 text-sm"
+                className="rounded-lg border border-(--brand-outline) bg-(--brand-quiet) p-3 text-sm"
                 style={{ color: 'var(--text-primary)' }}
               >
-                <Snowflake className="mr-1 inline h-4 w-4 text-blue-500" />
+                <Snowflake className="mr-1 inline h-4 w-4 text-(--brand-text)" />
                 {t('organization.frozenBanner', { reason: organization.frozenReason ?? '' })}
               </p>
             )}
@@ -417,7 +417,7 @@ export default function EditOrganizationPage() {
                       setDangerBusy(false);
                     }
                   }}
-                  className="flex-1 rounded-lg border border-blue-500/40 px-4 py-2.5 font-semibold text-blue-500 transition-all hover:bg-blue-500/10 disabled:opacity-50"
+                  className="flex-1 rounded-lg border border-(--brand-outline) px-4 py-2.5 font-semibold text-(--brand-text) transition-all hover:bg-(--brand-quiet) disabled:opacity-50"
                 >
                   {t('organization.unfreeze')}
                 </button>
@@ -429,7 +429,7 @@ export default function EditOrganizationPage() {
                     setFreezeReason('');
                     setFreezeOpen(true);
                   }}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-amber-500/40 px-4 py-2.5 font-semibold text-amber-500 transition-all hover:bg-amber-500/10 disabled:opacity-50"
+                  className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-(--warning-outline) px-4 py-2.5 font-semibold text-(--warning-text) transition-all hover:bg-(--warning-quiet) disabled:opacity-50"
                 >
                   <Snowflake className="h-4 w-4" />
                   {t('organization.freeze')}
@@ -443,7 +443,7 @@ export default function EditOrganizationPage() {
                   setConfirmSlug('');
                   setDeleteOpen(true);
                 }}
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-500 px-4 py-2.5 font-semibold text-white transition-all hover:bg-red-600 disabled:opacity-50"
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-(--danger-solid) px-4 py-2.5 font-semibold text-white transition-all hover:bg-(--danger-solid) disabled:opacity-50"
               >
                 <Trash2 className="h-4 w-4" />
                 {t('organization.delete')}
@@ -496,7 +496,7 @@ export default function EditOrganizationPage() {
                     setDangerBusy(false);
                   }
                 }}
-                className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                className="rounded-lg bg-(--warning-solid) px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
               >
                 {t('organization.freeze')}
               </button>
@@ -554,7 +554,7 @@ export default function EditOrganizationPage() {
                     setDangerBusy(false);
                   }
                 }}
-                className="rounded-lg bg-red-500 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                className="rounded-lg bg-(--danger-solid) px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
               >
                 {t('organization.delete')}
               </button>

@@ -85,7 +85,7 @@ function TestimonialCard({
           <Quote size={32} style={{ color: 'var(--primary)', opacity: 0.4 }} />
           <div className="flex gap-1">
             {Array.from({ length: testimonial.rating }).map((_, i) => (
-              <Star key={i} size={14} className="fill-yellow-400 text-yellow-400" />
+              <Star key={i} size={14} className="fill-yellow-400 text-(--warning-text)" />
             ))}
           </div>
         </div>

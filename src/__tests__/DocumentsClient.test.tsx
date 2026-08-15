@@ -483,12 +483,11 @@ describe('DocumentsClient', () => {
       { ...DOCS[0], _id: 'o1', category: 'other', title: 'O' },
     ];
     const { container } = render(<DocumentsClient />);
-    expect(container.querySelector('[class*="text-blue-500"]')).not.toBeNull();
-    expect(container.querySelector('[class*="text-green-500"]')).not.toBeNull();
-    expect(container.querySelector('[class*="text-purple-500"]')).not.toBeNull();
-    expect(container.querySelector('[class*="text-orange-500"]')).not.toBeNull();
-    expect(container.querySelector('[class*="text-cyan-500"]')).not.toBeNull();
-    expect(container.querySelector('[class*="text-yellow-500"]')).not.toBeNull();
+    expect(container.querySelector('[class*="text-(--brand-text)"]')).not.toBeNull();
+    expect(container.querySelector('[class*="text-(--success-text)"]')).not.toBeNull();
+    expect(container.querySelector('[class*="text-(--purple-text)"]')).not.toBeNull();
+    expect(container.querySelector('[class*="text-(--warning-text)"]')).not.toBeNull();
+    expect(container.querySelector('[class*="text-(--cyan-text)"]')).not.toBeNull();
     expect(container.querySelector('[class*="text-(--text-3)"]')).not.toBeNull();
   });
 

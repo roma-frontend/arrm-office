@@ -95,8 +95,8 @@ function FocusTile({ icon: Icon, tone, value, label, href }: FocusTileProps) {
     <Link
       href={href}
       className={cn(
-        'group flex min-w-0 items-center gap-3 rounded-card border border-(--border-subtle)',
-        'bg-(--card) px-3.5 py-3 shadow-sm',
+        'group flex min-w-0 items-center gap-2.5 rounded-card border border-(--border-subtle)',
+        'bg-(--card) px-3 py-2 shadow-sm',
         'transition-[border-color,box-shadow] duration-140 ease-spark',
         'hover:border-(--border-strong) hover:shadow-md',
         'focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/25',
@@ -104,7 +104,7 @@ function FocusTile({ icon: Icon, tone, value, label, href }: FocusTileProps) {
     >
       <span
         className={cn(
-          'flex size-9 shrink-0 items-center justify-center rounded-control',
+          'flex size-8 shrink-0 items-center justify-center rounded-control',
           TONE_CLASSES[tone],
         )}
       >
@@ -113,13 +113,13 @@ function FocusTile({ icon: Icon, tone, value, label, href }: FocusTileProps) {
       <span className="min-w-0">
         {/* Tabular figures: these counters change as data loads, and
             proportional digits make the row visibly twitch when they do. */}
-        <span className="num block text-title leading-none text-(--text-1)">{value}</span>
-        <span className="mt-1 block truncate text-caption font-normal tracking-normal normal-case text-(--text-3)">
+        <span className="num block text-base leading-none text-(--text-1)">{value}</span>
+        <span className="mt-0.5 block truncate text-[11px] font-normal tracking-normal normal-case text-(--text-3)">
           {label}
         </span>
       </span>
       <ArrowRight
-        className="ml-auto size-3.5 shrink-0 text-(--text-4) opacity-0 transition-opacity duration-140 group-hover:opacity-100"
+        className="ml-auto size-3 shrink-0 text-(--text-4) opacity-0 transition-opacity duration-140 group-hover:opacity-100"
         aria-hidden="true"
       />
     </Link>
@@ -283,16 +283,20 @@ export function FocusFeed({ onOpenSearch, className }: FocusFeedProps) {
           is the important part" without a heavy border or a solid fill. */}
       <div className="focus-feed-wash" aria-hidden="true" />
 
-      <div className="relative p-4 sm:p-5">
-        {/* ── Greeting row ── */}
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="min-w-0 flex-1">
-            <h2 className="truncate text-title text-(--text-1)">
+      <div className="relative p-3 sm:p-4">
+        {/* ── One compact greeting row — title, date chip, search. The date used
+            to sit on its own line under the title, which made the whole block
+            tall and left dead air under it on wide screens. Now it is a chip
+            beside the name, so the header is one line and the tiles follow. ── */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex min-w-0 items-baseline gap-2">
+            <h2 className="truncate text-[15px] font-semibold tracking-tight text-(--text-1)">
               {firstName ? `${greeting}, ${firstName}` : greeting}
             </h2>
-            <p className="mt-0.5 text-label text-(--text-3)">
-              {format(new Date(), 'EEEE, d MMMM', { locale })}
-            </p>
+            <span className="hidden shrink-0 items-center gap-1.5 rounded-full border border-(--border-subtle) bg-(--card) px-2 py-0.5 text-[11px] text-(--text-3) sm:inline-flex">
+              <CalendarDays className="size-3" aria-hidden="true" />
+              <span className="capitalize">{format(new Date(), 'EEEE, d MMMM', { locale })}</span>
+            </span>
           </div>
 
           {onOpenSearch && (
@@ -300,8 +304,8 @@ export function FocusFeed({ onOpenSearch, className }: FocusFeedProps) {
               type="button"
               onClick={onOpenSearch}
               className={cn(
-                'press-subtle hidden items-center gap-2 rounded-control border border-(--border-default)',
-                'bg-(--card) py-1.5 pl-2.5 pr-2 text-label text-(--text-3) shadow-sm sm:flex',
+                'press-subtle ml-auto hidden shrink-0 items-center gap-2 rounded-control border border-(--border-default)',
+                'bg-(--card) py-1 pl-2 pr-1.5 text-label text-(--text-3) shadow-sm sm:flex',
                 'transition-colors duration-140 ease-spark hover:border-(--border-strong) hover:text-(--text-2)',
                 'focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/25',
               )}
@@ -336,7 +340,7 @@ export function FocusFeed({ onOpenSearch, className }: FocusFeedProps) {
               </Link>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3 px-3.5 py-3">
+            <div className="flex flex-wrap items-center gap-3 px-3.5 py-2.5">
               <Avatar className="size-9 shrink-0">
                 {next.userAvatarUrl && <AvatarImage src={next.userAvatarUrl} alt="" />}
                 <AvatarFallback className="text-[11px]">
@@ -382,7 +386,7 @@ export function FocusFeed({ onOpenSearch, className }: FocusFeedProps) {
 
         {/* ── Everything else about today, one counter each ── */}
         {tiles.length > 0 && (
-          <div className="mt-3 grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+          <div className="mt-2.5 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
             {tiles.map((tile) => (
               <FocusTile key={`${tile.label}-${tile.href}`} {...tile} />
             ))}
@@ -393,7 +397,7 @@ export function FocusFeed({ onOpenSearch, className }: FocusFeedProps) {
             Reached only once the queries have resolved, so a slow connection
             never flashes "all caught up" before the real state arrives. */}
         {isQuiet && !isLoading && (
-          <div className="mt-4 flex items-center gap-3 rounded-card border border-(--border-subtle) glass-panel px-3.5 py-3">
+          <div className="mt-2.5 flex items-center gap-3 rounded-card border border-(--border-subtle) glass-panel px-3.5 py-2.5">
             <span className="flex size-9 shrink-0 items-center justify-center rounded-control bg-(--success-quiet) text-(--success-text)">
               <CheckCircle2 className="size-4" aria-hidden="true" />
             </span>
@@ -409,9 +413,9 @@ export function FocusFeed({ onOpenSearch, className }: FocusFeedProps) {
         )}
 
         {isQuiet && isLoading && (
-          <div className="mt-4 grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+          <div className="mt-2.5 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
             {[0, 1, 2, 3].map((i) => (
-              <div key={i} className="skeleton h-[3.75rem]" />
+              <div key={i} className="skeleton h-11" />
             ))}
           </div>
         )}

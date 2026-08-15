@@ -382,7 +382,7 @@ export default function ProfilePage() {
           </div>
 
           {/* Info note */}
-          <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-sm">
+          <div className="flex items-start gap-2 p-3 rounded-lg bg-(--brand-quiet) border border-(--brand-outline) text-(--brand-text) dark:text-(--brand-text) text-sm">
             <Shield className="w-4 h-4 shrink-0 mt-0.5" />
             <p>{t('profile.roleManagedByAdmin')}</p>
           </div>
@@ -502,7 +502,7 @@ export default function ProfilePage() {
                   className="w-16 h-16 rounded-full object-cover"
                 />
               ) : (
-                <div className="w-16 h-16 rounded-full bg-linear-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold">
+                <div className="w-16 h-16 rounded-full bg-linear-to-br from-(--brand) to-(--purple) flex items-center justify-center text-white text-2xl font-bold">
                   {user?.name?.charAt(0) || 'U'}
                 </div>
               )}

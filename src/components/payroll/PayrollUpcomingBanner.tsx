@@ -29,33 +29,33 @@ import Link from 'next/link';
 const URGENCY_CONFIG = {
   critical: {
     icon: XCircle,
-    color: 'text-red-500',
-    bg: 'bg-red-500/10 dark:bg-red-500/20',
-    border: 'border-red-500/30 dark:border-red-500/40',
+    color: 'text-(--danger-text)',
+    bg: 'bg-(--danger-quiet) dark:bg-(--danger-quiet)',
+    border: 'border-(--danger-outline) dark:border-(--danger-outline)',
     badge: 'destructive' as const,
     pulse: true,
   },
   warning: {
     icon: AlertTriangle,
-    color: 'text-amber-500',
-    bg: 'bg-amber-500/10 dark:bg-amber-500/20',
-    border: 'border-amber-500/30 dark:border-amber-500/40',
+    color: 'text-(--warning-text)',
+    bg: 'bg-(--warning-quiet) dark:bg-(--warning-quiet)',
+    border: 'border-(--warning-outline) dark:border-(--warning-outline)',
     badge: 'warning' as const,
     pulse: false,
   },
   info: {
     icon: CalendarDays,
-    color: 'text-blue-500',
-    bg: 'bg-blue-500/10 dark:bg-blue-500/20',
-    border: 'border-blue-500/20 dark:border-blue-500/30',
+    color: 'text-(--brand-text)',
+    bg: 'bg-(--brand-quiet) dark:bg-(--brand-quiet)',
+    border: 'border-(--brand-outline) dark:border-(--brand-outline)',
     badge: 'secondary' as const,
     pulse: false,
   },
   success: {
     icon: CheckCircle2,
-    color: 'text-emerald-500',
-    bg: 'bg-emerald-500/10 dark:bg-emerald-500/20',
-    border: 'border-emerald-500/30 dark:border-emerald-500/40',
+    color: 'text-(--success-text)',
+    bg: 'bg-(--success-quiet) dark:bg-(--success-quiet)',
+    border: 'border-(--success-outline) dark:border-(--success-outline)',
     badge: 'success' as const,
     pulse: false,
   },
@@ -275,7 +275,7 @@ export default function PayrollUpcomingBanner({ compact }: PayrollUpcomingBanner
             <ArrowRight className="w-4 h-4 text-(--text-muted) mt-1 group-hover:translate-x-0.5 transition-transform shrink-0" />
           </div>
           {mostUrgent.urgency === 'critical' && (
-            <div className="absolute inset-0 rounded-xl ring-1 ring-red-500/20 animate-pulse pointer-events-none" />
+            <div className="absolute inset-0 rounded-xl ring-1 ring-(--danger-text) animate-pulse pointer-events-none" />
           )}
         </Link>
       </motion.div>
@@ -291,13 +291,13 @@ export default function PayrollUpcomingBanner({ compact }: PayrollUpcomingBanner
     >
       <Card className="relative overflow-hidden border-(--border)">
         {/* Top gradient accent */}
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-amber-500 to-emerald-500" />
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-(--brand) via-(--warning-solid) to-(--success-solid)" />
 
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="p-1.5 rounded-lg bg-blue-500/10 dark:bg-blue-500/20">
-                <BellRing className="w-4 h-4 text-blue-500" />
+              <div className="p-1.5 rounded-lg bg-(--brand-quiet) dark:bg-(--brand-quiet)">
+                <BellRing className="w-4 h-4 text-(--brand-text)" />
               </div>
               <div>
                 <CardTitle className="text-base">
@@ -326,10 +326,10 @@ export default function PayrollUpcomingBanner({ compact }: PayrollUpcomingBanner
         <CardContent className="pb-3">
           {/* Current period summary */}
           {data.current && (
-            <div className="mb-4 p-3 rounded-xl bg-gradient-to-r from-blue-500/5 to-purple-500/5 dark:from-blue-500/10 dark:to-purple-500/10 border border-blue-500/20 dark:border-blue-500/30">
+            <div className="mb-4 p-3 rounded-xl bg-gradient-to-r from-(--brand) to-(--purple) dark:from-(--brand) dark:to-(--purple) border border-(--brand-outline) dark:border-(--brand-outline)">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-blue-500" />
+                  <Clock className="w-4 h-4 text-(--brand-text)" />
                   <span className="text-sm font-medium text-(--text-primary)">
                     {t('payroll.currentRun', 'Current Period')}
                   </span>
@@ -414,7 +414,7 @@ export default function PayrollUpcomingBanner({ compact }: PayrollUpcomingBanner
 
                   {/* Pulse ring for critical */}
                   {period.urgency === 'critical' && (
-                    <div className="absolute inset-0 rounded-xl ring-1 ring-red-500/20 animate-pulse pointer-events-none" />
+                    <div className="absolute inset-0 rounded-xl ring-1 ring-(--danger-text) animate-pulse pointer-events-none" />
                   )}
                 </motion.div>
               );
@@ -424,19 +424,19 @@ export default function PayrollUpcomingBanner({ compact }: PayrollUpcomingBanner
           {/* Legend */}
           <div className="flex items-center gap-4 mt-4 pt-3 border-t border-(--border) text-[10px] text-(--text-muted)">
             <span className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-red-500" />
+              <span className="w-2 h-2 rounded-full bg-(--danger-solid)" />
               {t('payroll.dueSoon', 'Due soon')}
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-amber-500" />
+              <span className="w-2 h-2 rounded-full bg-(--warning-solid)" />
               {t('payroll.approaching', 'Approaching')}
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-blue-500" />
+              <span className="w-2 h-2 rounded-full bg-(--brand)" />
               {t('payroll.planned', 'Planned')}
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span className="w-2 h-2 rounded-full bg-(--success-solid)" />
               {t('payroll.completed', 'Completed')}
             </span>
           </div>

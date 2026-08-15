@@ -10,7 +10,7 @@ export default function OfflinePage() {
   // with the user's detected locale. The text is semantically identical, only
   // a different language — mismatched text is harmless here.
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background">
+    <div className="flex items-center justify-center min-h-screen">
       <div className="text-center p-8">
         <h1 className="text-2xl font-bold mb-2" suppressHydrationWarning>
           {t('offline.title')}

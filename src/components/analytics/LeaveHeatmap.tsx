@@ -38,16 +38,16 @@ export function LeaveHeatmap({ leaves, month = new Date() }: LeaveHeatmapProps) 
   const maxCount = Math.max(...days.map(getLeaveCount), 1);
 
   const getColor = (count: number) => {
-    if (count === 0) return isDark ? 'bg-slate-800/50' : 'bg-slate-100';
+    if (count === 0) return isDark ? 'bg-(--surface-3)' : 'bg-(--surface-2)';
     const intensity = count / maxCount;
     if (intensity > 0.75) return 'bg-(--brand)';
-    if (intensity > 0.5) return isDark ? 'bg-blue-400' : 'bg-blue-500';
-    if (intensity > 0.25) return isDark ? 'bg-sky-400' : 'bg-sky-400';
-    return isDark ? 'bg-sky-500/60' : 'bg-sky-300';
+    if (intensity > 0.5) return isDark ? 'bg-(--brand)' : 'bg-(--brand)';
+    if (intensity > 0.25) return isDark ? 'bg-(--brand)' : 'bg-(--brand)';
+    return isDark ? 'bg-(--brand)' : 'bg-(--brand)';
   };
 
   const getTextColor = (count: number) => {
-    if (count === 0) return isDark ? 'text-slate-400' : 'text-slate-500';
+    if (count === 0) return isDark ? 'text-(--text-3)' : 'text-(--text-3)';
     return 'text-white';
   };
 
@@ -105,10 +105,10 @@ export function LeaveHeatmap({ leaves, month = new Date() }: LeaveHeatmapProps) 
       <div className="flex items-center gap-3 mt-6 text-xs text-(--text-muted)">
         <span>{t('leaveHeatmap.less')}</span>
         <div className="flex gap-1.5">
-          <div className={`w-5 h-5 rounded ${isDark ? 'bg-slate-800/50' : 'bg-slate-100'}`} />
-          <div className={`w-5 h-5 rounded ${isDark ? 'bg-sky-500/60' : 'bg-sky-300'}`} />
-          <div className={`w-5 h-5 rounded ${isDark ? 'bg-sky-400' : 'bg-sky-400'}`} />
-          <div className={`w-5 h-5 rounded ${isDark ? 'bg-blue-400' : 'bg-blue-500'}`} />
+          <div className={`w-5 h-5 rounded ${isDark ? 'bg-(--surface-3)' : 'bg-(--surface-2)'}`} />
+          <div className={`w-5 h-5 rounded ${isDark ? 'bg-(--brand)' : 'bg-(--brand)'}`} />
+          <div className={`w-5 h-5 rounded ${isDark ? 'bg-(--brand)' : 'bg-(--brand)'}`} />
+          <div className={`w-5 h-5 rounded ${isDark ? 'bg-(--brand)' : 'bg-(--brand)'}`} />
           <div className={`w-5 h-5 rounded bg-(--brand)`} />
         </div>
         <span>{t('leaveHeatmap.more')}</span>

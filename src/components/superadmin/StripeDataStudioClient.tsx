@@ -184,11 +184,11 @@ export default function StripeDataStudioClient() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'succeeded':
-        return <CheckCircle className="w-4 h-4 text-green-500" />;
+        return <CheckCircle className="w-4 h-4 text-(--success-text)" />;
       case 'failed':
-        return <XCircle className="w-4 h-4 text-red-500" />;
+        return <XCircle className="w-4 h-4 text-(--danger-text)" />;
       case 'pending':
-        return <Clock className="w-4 h-4 text-yellow-500" />;
+        return <Clock className="w-4 h-4 text-(--warning-text)" />;
       default:
         return <AlertCircle className="w-4 h-4 text-(--text-3)" />;
     }

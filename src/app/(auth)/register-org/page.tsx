@@ -25,7 +25,7 @@ export default function RegisterOrgPage() {
         : currency.starter.formatted + t('auth.plans.perMonth', '/mo'),
       description: t('auth.plans.starter.desc', 'Ideal for small teams getting started'),
       icon: Zap,
-      color: 'from-green-500 to-emerald-500',
+      color: 'from-(--success-solid) to-(--success-solid)',
       gradient: 'var(--green-500), var(--green-600)',
       features: [
         t('auth.plans.starter.employees', 'Up to 10 employees'),
@@ -45,7 +45,7 @@ export default function RegisterOrgPage() {
         : currency.professional.formatted + t('auth.plans.perMonth', '/mo'),
       description: t('auth.plans.professional.desc', 'For growing teams with advanced needs'),
       icon: Building2,
-      color: 'from-blue-500 to-cyan-500',
+      color: 'from-(--brand) to-(--cyan)',
       gradient: 'var(--brand-500), var(--cyan-500)',
       features: [
         t('auth.plans.professional.employees50', 'Up to 50 employees'),
@@ -65,7 +65,7 @@ export default function RegisterOrgPage() {
       price: t('auth.plans.custom', 'Custom'),
       description: t('auth.plans.enterprise.desc', 'Unlimited scale for large organizations'),
       icon: Crown,
-      color: 'from-purple-500 to-pink-500',
+      color: 'from-(--purple) to-(--pink)',
       gradient: 'var(--violet-500), var(--pink-500)',
       features: [
         t('auth.plans.enterprise.employees100', 'Unlimited employees'),
@@ -100,11 +100,11 @@ export default function RegisterOrgPage() {
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div
           className="absolute -top-40 -right-40 w-96 h-96 rounded-full blur-3xl opacity-20"
-          style={{ background: 'radial-gradient(circle, #2563eb, transparent)' }}
+          style={{ background: 'radial-gradient(circle, var(--brand), transparent)' }}
         />
         <div
           className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full blur-3xl opacity-20"
-          style={{ background: 'radial-gradient(circle, #0ea5e9, transparent)' }}
+          style={{ background: 'radial-gradient(circle, var(--brand-hover), transparent)' }}
         />
       </div>
 
@@ -133,8 +133,8 @@ export default function RegisterOrgPage() {
                 key={plan.id}
                 className={`relative rounded-2xl p-6 cursor-pointer border-2 hover:scale-105 transition-transform ${
                   selectedPlan === plan.id
-                    ? 'border-blue-500 shadow-xl'
-                    : 'border-transparent hover:border-blue-300'
+                    ? 'border-(--brand-outline) shadow-xl'
+                    : 'border-transparent hover:border-(--brand-outline)'
                 }`}
                 style={{
                   background: 'var(--card)',
@@ -144,7 +144,7 @@ export default function RegisterOrgPage() {
               >
                 {/* Popular badge */}
                 {plan.popular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-xs font-bold text-white text-center bg-linear-to-r from-blue-500 to-cyan-500">
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-xs font-bold text-white text-center bg-linear-to-r from-(--brand) to-(--cyan)">
                     {t('auth.mostPopular', 'Most Popular')}
                   </div>
                 )}
@@ -182,7 +182,7 @@ export default function RegisterOrgPage() {
                 <ul className="space-y-3 mb-6">
                   {plan.features.map((feature, i) => (
                     <li key={i} className="flex items-start gap-2 text-sm">
-                      <Check className="w-4 h-4 mt-0.5 text-green-500 shrink-0" />
+                      <Check className="w-4 h-4 mt-0.5 text-(--success-text) shrink-0" />
                       <span style={{ color: 'var(--text-secondary)' }}>{feature}</span>
                     </li>
                   ))}
@@ -211,7 +211,7 @@ export default function RegisterOrgPage() {
         <div className="text-center p-6">
           <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
             {t('auth.alreadyHaveOrg')}{' '}
-            <Link href="/register" className="font-semibold hover:underline text-blue-500">
+            <Link href="/register" className="font-semibold hover:underline text-(--brand-text)">
               {t('auth.joinExistingTeam')}
             </Link>
           </p>
