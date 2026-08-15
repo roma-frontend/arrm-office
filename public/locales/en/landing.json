@@ -311,7 +311,45 @@
           "desc": "See it in action, 60 seconds"
         }
       }
-    }
+    },
+    "meetAiEyebrow": "Meet the AI assistant",
+    "meetAiTitle": "Your team has a",
+    "meetAiTitleAccent": "copilot for everything HR",
+    "meetAiSubtitle": "Ask in plain language — leave balances, policy questions, report drafts, onboarding steps. Built on the same assistant that runs inside the app.",
+    "meetAiPoint1Title": "Answers in seconds",
+    "meetAiPoint1Desc": "Instant answers about leave, policies, payroll and more — no digging through folders.",
+    "meetAiPoint2Title": "Understands your org",
+    "meetAiPoint2Desc": "Role-aware replies grounded in your company data, not generic advice.",
+    "meetAiPoint3Title": "Works where you work",
+    "meetAiPoint3Desc": "In the app, in chats, and now right here on this page.",
+    "meetAiWelcome": "👋 Hi! I'm the Strata assistant. Ask me anything about the platform — attendance, leave, OKRs, payroll, drivers.",
+    "meetAiChip1": "What does Strata do?",
+    "meetAiChip2": "Does it support OKRs?",
+    "meetAiChip3": "Is my data GDPR-ready?",
+    "meetAiSend": "Send",
+    "meetAiError": "Sorry, I could not reach the assistant right now. Try again in a moment.",
+    "meetAiFootnote": "Live demo — real AI, your questions, product answers only.",
+    "logoNova": "Nova",
+    "logoOrbit": "Orbit",
+    "logoVertex": "Vertex",
+    "logoHelix": "Helix",
+    "logoAtlas": "Atlas",
+    "logoPulse": "Pulse",
+    "logoZenith": "Zenith",
+    "logoCrest": "Crest",
+    "trustEyebrow": "Security & compliance",
+    "trustTitle": "Enterprise-grade trust,",
+    "trustTitleAccent": "out of the box",
+    "trustSoc2": "SOC 2",
+    "trustSoc2Desc": "Annual third-party audits",
+    "trustGdpr": "GDPR-ready",
+    "trustGdprDesc": "EU data-protection compliance",
+    "trustEncryption": "Encryption at rest",
+    "trustEncryptionDesc": "AES-256 for stored data",
+    "trustEuHosting": "EU hosting",
+    "trustEuHostingDesc": "Data stays in the EU",
+    "trustUptime": "99.9% uptime",
+    "trustUptimeDesc": "SLA-backed availability"
   },
   "landingExtra": {
     "myAccount": "My Account",
@@ -546,7 +584,12 @@
     "calculatorStrata": "Strata Professional",
     "calculatorSavingsLabel": "Estimated annual savings",
     "calculatorPerYear": "per year",
-    "calculatorFootnote": "Based on $12/seat/mo for legacy tooling, 30 min of HR time saved per seat per month, and the Professional plan. Conservative by design."
+    "calculatorFootnote": "Based on $12/seat/mo for legacy tooling, 30 min of HR time saved per seat per month, and the Professional plan. Conservative by design.",
+    "pageCtaTitle": "Start free — upgrade when you grow",
+    "pageCtaSubtitle": "Every plan includes a free trial, no credit card required.",
+    "pageCtaPrimary": "Start free trial",
+    "pageCtaSecondary": "Talk to sales",
+    "pageCtaNote": "GDPR-ready · EU hosting · Cancel anytime"
   },
   "testimonials": {
     "eyebrow": "Testimonials",
@@ -558,37 +601,49 @@
       "name": "Sarah Johnson",
       "role": "HR Director",
       "company": "TechCorp Inc.",
-      "text": "Strata transformed our HR management process. What used to take hours now takes minutes. The analytics are incredible!"
+      "text": "Strata transformed our HR management process. What used to take hours now takes minutes. The analytics are incredible!",
+      "metric": "40%",
+      "metricLabel": "less time on HR admin"
     },
     "testimonial2": {
       "name": "Michael Chen",
       "role": "Operations Manager",
       "company": "GlobalTech",
-      "text": "The real-time tracking and automated approvals have saved us countless hours. Best HR tool we've ever used."
+      "text": "The real-time tracking and automated approvals have saved us countless hours. Best HR tool we've ever used.",
+      "metric": "120+",
+      "metricLabel": "hours saved every month"
     },
     "testimonial3": {
       "name": "Emily Rodriguez",
       "role": "Chief People Officer",
       "company": "Innovate LLC",
-      "text": "Finally, an HR management system that employees actually love to use. The face recognition login is a game-changer!"
+      "text": "Finally, an HR management system that employees actually love to use. The face recognition login is a game-changer!",
+      "metric": "2.1s",
+      "metricLabel": "average check-in time"
     },
     "testimonial4": {
       "name": "David Kim",
       "role": "VP of Engineering",
       "company": "StartupFlow",
-      "text": "The automated workflows saved our HR team 15 hours per week. Setup was incredibly easy and the support team is outstanding."
+      "text": "The automated workflows saved our HR team 15 hours per week. Setup was incredibly easy and the support team is outstanding.",
+      "metric": "35%",
+      "metricLabel": "faster onboarding"
     },
     "testimonial5": {
       "name": "Lisa Thompson",
       "role": "HR Manager",
       "company": "Global Retail Co",
-      "text": "Managing leave across 12 offices used to be a nightmare. Now everything is centralized and our compliance rate is 100%."
+      "text": "Managing leave across 12 offices used to be a nightmare. Now everything is centralized and our compliance rate is 100%.",
+      "metric": "$70k",
+      "metricLabel": "saved in year one"
     },
     "testimonial6": {
       "name": "James Wilson",
       "role": "CEO",
       "company": "TechBridge",
-      "text": "We switched from a legacy HR system and saw immediate improvements in employee satisfaction and manager productivity."
+      "text": "We switched from a legacy HR system and saw immediate improvements in employee satisfaction and manager productivity.",
+      "metric": "98%",
+      "metricLabel": "employee satisfaction"
     }
   },
   "faq": {
@@ -830,6 +885,40 @@
         "feature2": "Color-coded health indicators (on-track / at-risk / behind)",
         "feature3": "Interactive tree with expand/collapse and drill-down",
         "feature4": "Alignment tips & compact view mode"
+      },
+      "payroll": {
+        "eyebrow": "Payroll & compensation",
+        "title": "Payroll that runs itself — almost",
+        "subtitle": "Compensation bands, bonuses, allowances and payroll runs in one place, with approvals and audit trails built in.",
+        "descTitle": "One source of truth for compensation",
+        "description": "Strata centralises salary bands, bonus programs, allowances and payroll runs. Approvals follow your reporting line, every change is audited, and employees see their own compensation breakdown — pay, benefits, allowances — in one clear view. No spreadsheets, no double entry, no surprises at month end.",
+        "stat1": "manual payroll hours",
+        "stat1Value": "-90%",
+        "stat2": "approval steps",
+        "stat3": "audit trail",
+        "stat3Value": "Full",
+        "stat2Value": "Built-in",
+        "benefit1": "Salary bands and bonus programs in one place",
+        "benefit2": "Approvals follow your reporting line",
+        "benefit3": "Full audit trail on every change",
+        "benefit4": "Employees see their own compensation breakdown"
+      },
+      "drivers": {
+        "eyebrow": "Fleet & driver management",
+        "title": "Your fleet, booked and managed in minutes",
+        "subtitle": "Drivers, vehicles, bookings and recurring trips — with availability, capacity and live status all in one screen.",
+        "descTitle": "Every ride organised, every driver on time",
+        "description": "Strata’s fleet module keeps drivers and vehicles visible: who is available, what capacity is free, which trips repeat weekly. Employees book rides without leaving the platform, dispatchers see the whole day at a glance, and recurring trips are handled automatically. Leave and driver availability are checked before any booking is confirmed.",
+        "stat1": "trip capacity",
+        "stat1Value": "100%",
+        "stat2": "recurring trips",
+        "stat2Value": "Auto",
+        "stat3": "booking time",
+        "stat3Value": "<1 min",
+        "benefit1": "Availability and capacity checked before booking",
+        "benefit2": "Recurring trips scheduled automatically",
+        "benefit3": "Drivers on leave excluded from the roster",
+        "benefit4": "Whole fleet visible on one screen"
       }
     },
     "platform": {
@@ -1041,6 +1130,36 @@
       "description": "Strata is a powerful all-in-one HR platform with real-time attendance tracking, leave management, task management, employee analytics, face recognition check-in, and AI assistant. Built for modern teams.",
       "ogTitle": "Strata — All-in-One HR Management Platform",
       "ogDescription": "Manage your entire workforce with real-time attendance, AI-powered analytics, task management, and smart leave tracking."
+    },
+    "pricing": {
+      "title": "Pricing — Strata HR",
+      "description": "Simple, transparent pricing for Strata HR. Starter, Professional and Enterprise plans with a free trial — no credit card required.",
+      "ogTitle": "Pricing — Strata HR",
+      "ogDescription": "Simple, transparent pricing for Strata HR. Start free and upgrade when you grow."
+    },
+    "attendance": {
+      "title": "Biometric Attendance — Strata HR",
+      "description": "Face-recognition check-in in the browser. Under 2 seconds, 99.7% accuracy, no hardware. Automatic attendance tracking that feeds payroll and leave.",
+      "ogTitle": "Biometric Attendance — Strata HR",
+      "ogDescription": "Face-recognition check-in in the browser. Under 2 seconds, no hardware."
+    },
+    "okr": {
+      "title": "OKRs & Goal Tracking — Strata HR",
+      "description": "Cascade OKRs from the boardroom to every employee, track progress in real time, and drive performance that matters.",
+      "ogTitle": "OKRs & Goal Tracking — Strata HR",
+      "ogDescription": "Cascade OKRs, track progress in real time, drive performance."
+    },
+    "payroll": {
+      "title": "Payroll & Compensation — Strata HR",
+      "description": "Compensation bands, bonuses, allowances and payroll runs in one place with approvals and audit trails built in.",
+      "ogTitle": "Payroll & Compensation — Strata HR",
+      "ogDescription": "Salary bands, bonuses, allowances and payroll in one place."
+    },
+    "drivers": {
+      "title": "Fleet & Driver Management — Strata HR",
+      "description": "Drivers, vehicles, bookings and recurring trips with availability and capacity checks. Book a ride in under a minute.",
+      "ogTitle": "Fleet & Driver Management — Strata HR",
+      "ogDescription": "Book rides, manage drivers and recurring trips in one screen."
     }
   }
 }

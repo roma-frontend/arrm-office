@@ -52,6 +52,7 @@ import { meetingRooms } from './meetingRooms';
 import { hiringPackets } from './hiringPackets';
 import { documentBuilder } from './documentBuilder';
 import { probation } from './probation';
+import { landing } from './landing';
 
 export default defineSchema({
   ...organizations,
@@ -107,6 +108,7 @@ export default defineSchema({
   ...hiringPackets,
   ...documentBuilder,
   ...probation,
+  ...landing,
 });
 
 export {
@@ -163,4 +165,5 @@ export {
   hiringPackets,
   documentBuilder,
   probation,
+  landing,
 };

@@ -311,7 +311,45 @@
           "desc": "In 60 Sekunden in Aktion sehen"
         }
       }
-    }
+    },
+    "meetAiEyebrow": "Lernen Sie den KI-Assistenten kennen",
+    "meetAiTitle": "Ihr Team hat einen",
+    "meetAiTitleAccent": "Copilot für alles rund um HR",
+    "meetAiSubtitle": "Fragen Sie in einfacher Sprache — Urlaubssalden, Richtlinien, Berichtsentwürfe, Onboarding-Schritte. Derselbe Assistent, der auch in der App arbeitet.",
+    "meetAiPoint1Title": "Antwortet in Sekunden",
+    "meetAiPoint1Desc": "Sofortige Antworten zu Urlaub, Richtlinien, Gehalt — kein Suchen in Ordnern.",
+    "meetAiPoint2Title": "Versteht Ihr Unternehmen",
+    "meetAiPoint2Desc": "Rollenbezogene Antworten auf Basis Ihrer Unternehmensdaten, keine generischen Ratschläge.",
+    "meetAiPoint3Title": "Arbeitet, wo Sie arbeiten",
+    "meetAiPoint3Desc": "In der App, im Chat und jetzt direkt auf dieser Seite.",
+    "meetAiWelcome": "👋 Hallo! Ich bin der Strata-Assistent. Fragen Sie mich alles zur Plattform — Anwesenheit, Urlaub, OKRs, Gehalt, Fahrer.",
+    "meetAiChip1": "Was kann Strata?",
+    "meetAiChip2": "Unterstützt es OKRs?",
+    "meetAiChip3": "Sind meine Daten DSGVO-konform?",
+    "meetAiSend": "Senden",
+    "meetAiError": "Der Assistent ist gerade nicht erreichbar. Bitte versuchen Sie es gleich noch einmal.",
+    "meetAiFootnote": "Live-Demo — echter KI-Assistent, Ihre Fragen, nur Produktantworten.",
+    "logoNova": "Nova",
+    "logoOrbit": "Orbit",
+    "logoVertex": "Vertex",
+    "logoHelix": "Helix",
+    "logoAtlas": "Atlas",
+    "logoPulse": "Pulse",
+    "logoZenith": "Zenith",
+    "logoCrest": "Crest",
+    "trustEyebrow": "Sicherheit & Compliance",
+    "trustTitle": "Enterprise-Sicherheit,",
+    "trustTitleAccent": "out of the box",
+    "trustSoc2": "SOC 2",
+    "trustSoc2Desc": "Jährliche externe Audits",
+    "trustGdpr": "DSGVO-konform",
+    "trustGdprDesc": "EU-Datenschutzkonformität",
+    "trustEncryption": "Verschlüsselung at rest",
+    "trustEncryptionDesc": "AES-256 für gespeicherte Daten",
+    "trustEuHosting": "EU-Hosting",
+    "trustEuHostingDesc": "Daten bleiben in der EU",
+    "trustUptime": "99,9 % Uptime",
+    "trustUptimeDesc": "SLA-garantierte Verfügbarkeit"
   },
   "landingExtra": {
     "myAccount": "Mein Konto",
@@ -546,7 +584,12 @@
     "calculatorStrata": "Strata Professional",
     "calculatorSavingsLabel": "Geschätzte jährliche Einsparung",
     "calculatorPerYear": "pro Jahr",
-    "calculatorFootnote": "Basiert auf 12 $/Sitzplatz/Monat für alte Tools, 30 Min. eingesparter HR-Zeit pro Sitzplatz und Monat sowie dem Professional-Plan. Bewusst konservativ."
+    "calculatorFootnote": "Basiert auf 12 $/Sitzplatz/Monat für alte Tools, 30 Min. eingesparter HR-Zeit pro Sitzplatz und Monat sowie dem Professional-Plan. Bewusst konservativ.",
+    "pageCtaTitle": "Kostenlos starten — wachsen, wann Sie bereit sind",
+    "pageCtaSubtitle": "Jeder Plan enthält eine kostenlose Testphase, keine Kreditkarte nötig.",
+    "pageCtaPrimary": "Kostenlos testen",
+    "pageCtaSecondary": "Vertrieb kontaktieren",
+    "pageCtaNote": "DSGVO-konform · EU-Hosting · Jederzeit kündbar"
   },
   "testimonials": {
     "eyebrow": "Referenzen",
@@ -558,37 +601,49 @@
       "name": "Sara Johnson",
       "role": "HR-Direktorin",
       "company": "Google",
-      "text": "Strata hat unseren Personalverwaltungsprozess revolutioniert. Was früher Stunden dauerte, dauert jetzt Minuten. Die Analysen sind unglaublich!"
+      "text": "Strata hat unseren Personalverwaltungsprozess revolutioniert. Was früher Stunden dauerte, dauert jetzt Minuten. Die Analysen sind unglaublich!",
+      "metric": "40 %",
+      "metricLabel": "weniger Zeit für HR-Administration"
     },
     "testimonial2": {
       "name": "Michael Chen",
       "role": "Betriebsleiter",
       "company": "Microsoft",
-      "text": "Echtzeit-Tracking und automatische Genehmigungen haben uns unzählige Stunden gespart. Das beste HR-Tool, das wir je verwendet haben."
+      "text": "Echtzeit-Tracking und automatische Genehmigungen haben uns unzählige Stunden gespart. Das beste HR-Tool, das wir je verwendet haben.",
+      "metric": "120+",
+      "metricLabel": "gesparte Stunden pro Monat"
     },
     "testimonial3": {
       "name": "Emily Rodriguez",
       "role": "Personalleiterin",
       "company": "Apple",
-      "text": "Endlich ein HR-System, das die Mitarbeiter wirklich gerne nutzen. Die Gesichtserkennung beim Login ist ein echter Durchbruch!"
+      "text": "Endlich ein HR-System, das die Mitarbeiter wirklich gerne nutzen. Die Gesichtserkennung beim Login ist ein echter Durchbruch!",
+      "metric": "2,1 s",
+      "metricLabel": "durchschnittlicher Check-in"
     },
     "testimonial4": {
       "name": "David Kim",
       "role": "Vice President of Engineering",
       "company": "StartupFlow",
-      "text": "Automatisierte Arbeitsabläufe haben unserem HR-Team 15 Stunden pro Woche gespart. Die Einrichtung war unglaublich einfach und das Support-Team ist hervorragend."
+      "text": "Automatisierte Arbeitsabläufe haben unserem HR-Team 15 Stunden pro Woche gespart. Die Einrichtung war unglaublich einfach und das Support-Team ist hervorragend.",
+      "metric": "35 %",
+      "metricLabel": "schnelleres Onboarding"
     },
     "testimonial5": {
       "name": "Lisa Thompson",
       "role": "HR-Managerin",
       "company": "Global Retail Co",
-      "text": "Die Urlaubsverwaltung in 12 Büros war früher ein Albtraum. Jetzt ist alles zentralisiert und unsere Compliance-Rate liegt bei 100%."
+      "text": "Die Urlaubsverwaltung in 12 Büros war früher ein Albtraum. Jetzt ist alles zentralisiert und unsere Compliance-Rate liegt bei 100%.",
+      "metric": "$70k",
+      "metricLabel": "Einsparungen im ersten Jahr"
     },
     "testimonial6": {
       "name": "James Wilson",
       "role": "Geschäftsführer",
       "company": "TechBridge",
-      "text": "Wir sind von einem veralteten HR-System auf Strata umgestiegen und haben sofort Verbesserungen in der Mitarbeiterzufriedenheit und der Produktivität der Manager festgestellt."
+      "text": "Wir sind von einem veralteten HR-System auf Strata umgestiegen und haben sofort Verbesserungen in der Mitarbeiterzufriedenheit und der Produktivität der Manager festgestellt.",
+      "metric": "98 %",
+      "metricLabel": "Mitarbeiterzufriedenheit"
     }
   },
   "faq": {
@@ -830,6 +885,40 @@
         "feature2": "Gesundheitsindikatoren und Status",
         "feature3": "Kompakte und vollständige Ansicht",
         "feature4": "Filterung nach Jahr und Periode"
+      },
+      "payroll": {
+        "eyebrow": "Gehalt & Vergütung",
+        "title": "Gehaltsabrechnung, die sich fast von selbst erledigt",
+        "subtitle": "Gehaltsbänder, Boni, Zulagen und Abrechnungen an einem Ort — mit Genehmigungen und Prüfpfad.",
+        "descTitle": "Eine Quelle der Wahrheit für Vergütung",
+        "description": "Strata bündelt Gehaltsbänder, Bonusprogramme, Zulagen und Abrechnungsläufe. Genehmigungen folgen der Berichtslinie, jede Änderung wird protokolliert, und Mitarbeiter sehen ihre Vergütung — Gehalt, Boni, Zulagen — auf einen Blick. Keine Tabellen, keine Doppelerfassung, keine Überraschungen am Monatsende.",
+        "stat1": "manuelle Abrechnungsstunden",
+        "stat1Value": "-90 %",
+        "stat2": "Genehmigungen",
+        "stat2Value": "Integriert",
+        "stat3": "Prüfpfad",
+        "stat3Value": "Vollständig",
+        "benefit1": "Gehaltsbänder und Bonusprogramme an einem Ort",
+        "benefit2": "Genehmigungen entlang der Berichtslinie",
+        "benefit3": "Vollständiger Prüfpfad für jede Änderung",
+        "benefit4": "Mitarbeiter sehen ihre eigene Vergütung"
+      },
+      "drivers": {
+        "eyebrow": "Fuhrpark & Fahrer",
+        "title": "Ihr Fuhrpark — in Minuten gebucht und verwaltet",
+        "subtitle": "Fahrer, Fahrzeuge, Buchungen und wiederkehrende Fahrten — mit Verfügbarkeit, Kapazität und Live-Status auf einem Bildschirm.",
+        "descTitle": "Jede Fahrt organisiert, jeder Fahrer pünktlich",
+        "description": "Das Fuhrpark-Modul von Strata hält Fahrer und Fahrzeuge im Blick: wer verfügbar ist, welche Kapazität frei ist, welche Fahrten wöchentlich wiederkehren. Mitarbeiter buchen Fahrten, ohne die Plattform zu verlassen, Disponenten sehen den ganzen Tag auf einen Blick, und wiederkehrende Fahrten werden automatisch abgewickelt. Urlaub und Verfügbarkeit der Fahrer werden vor jeder Buchung geprüft.",
+        "stat1": "Fahrzeugkapazität",
+        "stat1Value": "100 %",
+        "stat2": "wiederkehrende Fahrten",
+        "stat2Value": "Auto",
+        "stat3": "Buchungszeit",
+        "stat3Value": "<1 min",
+        "benefit1": "Verfügbarkeit und Kapazität werden vor der Buchung geprüft",
+        "benefit2": "Wiederkehrende Fahrten automatisch geplant",
+        "benefit3": "Fahrer im Urlaub werden ausgeschlossen",
+        "benefit4": "Der ganze Fuhrpark auf einem Bildschirm"
       }
     },
     "platform": {
@@ -1041,6 +1130,36 @@
       "description": "Strata ist eine leistungsstarke HR-Plattform mit Echtzeit-Anwesenheit, Urlaubsverwaltung, Aufgabenmanagement, Mitarbeiteranalytik, Gesichtserkennung und KI-Assistent.",
       "ogTitle": "Strata — All-in-One HR-Plattform",
       "ogDescription": "Verwalten Sie Ihre Belegschaft mit KI-Analytik, Anwesenheitserfassung und Aufgabenmanagement."
+    },
+    "pricing": {
+      "title": "Preise — Strata HR",
+      "description": "Einfache, transparente Preise für Strata HR. Starter-, Professional- und Enterprise-Pläne mit kostenloser Testphase — keine Kreditkarte nötig.",
+      "ogTitle": "Preise — Strata HR",
+      "ogDescription": "Einfache, transparente Preise für Strata HR. Kostenlos starten und wachsen."
+    },
+    "attendance": {
+      "title": "Biometrische Anwesenheit — Strata HR",
+      "description": "Gesichtserkennung im Browser. Unter 2 Sekunden, 99,7 % Genauigkeit, keine Hardware. Automatische Anwesenheit für Lohn und Urlaub.",
+      "ogTitle": "Biometrische Anwesenheit — Strata HR",
+      "ogDescription": "Gesichtserkennung im Browser. Unter 2 Sekunden, keine Hardware."
+    },
+    "okr": {
+      "title": "OKRs & Zielverfolgung — Strata HR",
+      "description": "OKRs vom Vorstand bis zum Mitarbeiter kaskadieren, Fortschritt in Echtzeit verfolgen, Leistung steigern.",
+      "ogTitle": "OKRs & Zielverfolgung — Strata HR",
+      "ogDescription": "OKRs kaskadieren, Fortschritt in Echtzeit verfolgen."
+    },
+    "payroll": {
+      "title": "Gehalt & Vergütung — Strata HR",
+      "description": "Gehaltsbänder, Boni, Zulagen und Abrechnungsläufe an einem Ort — mit Genehmigungen und Prüfpfad.",
+      "ogTitle": "Gehalt & Vergütung — Strata HR",
+      "ogDescription": "Gehaltsbänder, Boni, Zulagen und Abrechnung an einem Ort."
+    },
+    "drivers": {
+      "title": "Fuhrpark & Fahrer — Strata HR",
+      "description": "Fahrer, Fahrzeuge, Buchungen und wiederkehrende Fahrten mit Verfügbarkeitsprüfung. In unter einer Minute buchen.",
+      "ogTitle": "Fuhrpark & Fahrer — Strata HR",
+      "ogDescription": "Fahrten buchen und den Fuhrpark auf einem Bildschirm verwalten."
     }
   }
 }

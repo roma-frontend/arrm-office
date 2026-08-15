@@ -5,6 +5,29 @@ import LandingExtras from './LandingExtras';
 import StrategyCascadeSection from './StrategyCascadeSection';
 import ScrollStorySection from './ScrollStorySection';
 
+// Meet AI — live chat demo. SSR'd for crawlers; the chat window itself only
+// renders after mount (the seeded copy is client-localized).
+const MeetAISection = dynamic(() => import('./MeetAISection'), {
+  loading: () => (
+    <div
+      className="h-96 animate-pulse rounded-3xl"
+      style={{ backgroundColor: 'var(--landing-card-bg)' }}
+    />
+  ),
+  ssr: true,
+});
+
+// Trust band — logo marquee + security strip, after the stats.
+const TrustBandSection = dynamic(() => import('./TrustBandSection'), {
+  loading: () => (
+    <div
+      className="h-72 animate-pulse rounded-3xl"
+      style={{ backgroundColor: 'var(--landing-card-bg)' }}
+    />
+  ),
+  ssr: true,
+});
+
 // Below-fold sections - lazy loaded for performance with SSR
 const TestimonialsSection = dynamic(() => import('./TestimonialsSection'), {
   loading: () => (
@@ -92,8 +115,17 @@ export default function LandingBelowFold({ initialLanguage = 'en' }: { initialLa
     <>
       {/* Page content */}
       <main className="relative">
+        {/* Meet AI — the intelligence layer, right after the hero (BambooHR's
+            "Meet Bamboo AI™" position). */}
+        <div className="section-lazy">
+          <MeetAISection initialLanguage={initialLanguage} />
+        </div>
         <div className="section-lazy">
           <LiveStatsSection initialLanguage={initialLanguage} />
+        </div>
+        {/* Trust band — customer logos + security strip. */}
+        <div className="section-lazy">
+          <TrustBandSection initialLanguage={initialLanguage} />
         </div>
         {/* Scroll storytelling — pinned phone with 4 scenes (check-in → cascade → AI → analytics).
             NOT lazy: `content-visibility: auto` would break the sticky pinning. */}
@@ -113,7 +145,7 @@ export default function LandingBelowFold({ initialLanguage = 'en' }: { initialLa
           <PricingPreview />
         </div>
         <section id="testimonials" className="section-lazy">
-          <TestimonialsSection />
+          <TestimonialsSection initialLanguage={initialLanguage} />
         </section>
         <div className="section-lazy">
           <FAQSection />

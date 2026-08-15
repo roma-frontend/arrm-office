@@ -2,6 +2,8 @@
 
 import { useRef, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useQuery } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 import { Star, Quote } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
@@ -9,6 +11,18 @@ interface Testimonial {
   id: number;
   gradient: string;
   rating: number;
+}
+
+/** A curated showcase testimonial (real org + quote, optional metric). */
+interface ShowcaseTestimonial {
+  id: string;
+  company: string;
+  quote: string;
+  authorName?: string;
+  authorRole?: string;
+  metric?: string;
+  metricLabel?: string;
+  order: number;
 }
 
 function useReveal(margin = '-50px') {
@@ -36,19 +50,24 @@ function TestimonialCard({
   testimonial,
   delay,
   index,
+  real,
 }: {
   testimonial: Testimonial;
   delay: number;
   index: number;
+  /** Curated showcase data; when present it wins over the i18n placeholder. */
+  real?: ShowcaseTestimonial;
 }) {
   const { t } = useTranslation();
   const { ref, visible } = useReveal('-50px');
 
   const testimonialKey = `testimonial${index + 1}`;
-  const name = t(`testimonials.${testimonialKey}.name`);
-  const role = t(`testimonials.${testimonialKey}.role`);
-  const company = t(`testimonials.${testimonialKey}.company`);
-  const text = t(`testimonials.${testimonialKey}.text`);
+  const name = real?.authorName || t(`testimonials.${testimonialKey}.name`);
+  const role = real?.authorRole || t(`testimonials.${testimonialKey}.role`);
+  const company = real?.company || t(`testimonials.${testimonialKey}.company`);
+  const text = real?.quote || t(`testimonials.${testimonialKey}.text`);
+  const metric = real?.metric || t(`testimonials.${testimonialKey}.metric`, '');
+  const metricLabel = real?.metricLabel || t(`testimonials.${testimonialKey}.metricLabel`, '');
 
   const getInitials = (name: string) =>
     name
@@ -95,6 +114,23 @@ function TestimonialCard({
         >
           &ldquo;{text}&rdquo;
         </p>
+        {/* Outcome metric — "Saved $70k / year" style proof (BambooHR pattern).
+            Falls back to nothing when a locale has no metric for this card. */}
+        {metric ? (
+          <div
+            className="flex items-baseline gap-2 rounded-xl px-3 py-2"
+            style={{ background: 'var(--surface-2)', border: '1px solid var(--border-default)' }}
+          >
+            <span className="text-lg font-bold leading-none" style={{ color: 'var(--primary)' }}>
+              {metric}
+            </span>
+            {metricLabel ? (
+              <span className="text-xs" style={{ color: 'var(--landing-text-secondary)' }}>
+                {metricLabel}
+              </span>
+            ) : null}
+          </div>
+        ) : null}
         <div
           className="flex items-center gap-3 pt-4 border-t"
           style={{ borderColor: 'var(--landing-card-border)' }}
@@ -153,11 +189,22 @@ function PauseIcon() {
   );
 }
 
-export default function TestimonialsSection() {
-  const { t } = useTranslation();
+export default function TestimonialsSection({
+  initialLanguage = 'en',
+}: {
+  initialLanguage?: string;
+}) {
+  const { t, i18n } = useTranslation();
   const { ref, visible } = useReveal('-30px');
   const [paused, setPaused] = useState(false);
   const trackRef = useRef<HTMLDivElement>(null);
+
+  // Real curated testimonials when a superadmin has set any up; i18n
+  // placeholders fall back for fresh installs.
+  const showcase = useQuery(api.landing.getShowcase, {
+    lang: i18n?.language || initialLanguage || 'en',
+  });
+  const realTestimonials = showcase?.testimonials ?? [];
 
   // Drive the marquee's animation-play-state from React state so the Play/Pause
   // control below works in both browsers and reduced-motion mode (which disables
@@ -201,8 +248,10 @@ export default function TestimonialsSection() {
     },
   ];
 
-  // Duplicate for infinite scroll effect
-  const allTestimonials = [...testimonials, ...testimonials];
+  // Real testimonials win when curated; otherwise the i18n placeholders.
+  // Duplicate either list for the infinite marquee.
+  const cards = realTestimonials.length > 0 ? realTestimonials : testimonials;
+  const allTestimonials = [...cards, ...cards];
 
   return (
     <section className="relative z-10 px-6 md:px-12 py-12 md:py-20 overflow-hidden">
@@ -252,15 +301,24 @@ export default function TestimonialsSection() {
         />
 
         <div ref={trackRef} className="carousel-track">
-          {allTestimonials.map((testimonial, i) => (
-            <div key={`${testimonial.id}-${i}`} className="flex-shrink-0 w-[340px] md:w-[400px]">
-              <TestimonialCard
-                testimonial={testimonial}
-                delay={0}
-                index={i % testimonials.length}
-              />
-            </div>
-          ))}
+          {allTestimonials.map((testimonial, i) => {
+            const fallbackIndex = i % testimonials.length;
+            const placeholder = testimonials[fallbackIndex]!;
+            const real = 'quote' in testimonial ? (testimonial as ShowcaseTestimonial) : undefined;
+            return (
+              <div
+                key={`${real?.id ?? (testimonial as Testimonial).id}-${i}`}
+                className="flex-shrink-0 w-[340px] md:w-[400px]"
+              >
+                <TestimonialCard
+                  testimonial={placeholder}
+                  delay={0}
+                  index={fallbackIndex}
+                  real={real}
+                />
+              </div>
+            );
+          })}
         </div>
       </div>
 

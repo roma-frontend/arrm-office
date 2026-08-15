@@ -345,3 +345,83 @@ and is only a tile in the bottom `QuickActions` for managers.
 - No server-side analytics — localStorage scoring is private and costs nothing.
 - No per-widget configuration UI — the dock + pinned set covers 90% of the
   need; custom dashboards come later if users ask.
+
+---
+
+## 7. Competitive landing blocks — benchmarked against BambooHR / spark.work /
+
+Deel / Personio / Rippling / Lattice / Huly / Payfit / Monday (Aug 2026)
+
+Status: **7.1–7.5 done (Aug 2026)**. The landing already beats the category on
+motion and pricing (it has a live ROI calculator; BambooHR doesn't even have
+one); the trust blocks competitors shared are now built. Each block reuses
+existing infra — no new providers, no new design language.
+
+### 7.1 Meet AI — live chat demo on the landing ✅
+
+`src/components/landing/MeetAISection.tsx` sits right after the hero (BambooHR's
+"Meet Bamboo AI™" position). Left copy + three capability rows + prompt chips;
+right side a **live chat window** seeded with a welcome + a sample exchange.
+Sending a message POSTs to `src/app/api/landing-demo/route.ts`, which runs the
+real Gemini → Groq → OpenRouter chain (`generateWithFallback`) with a locked
+product-only system prompt — no auth, no org data, no memory. Replies follow
+the visitor's language. i18n: `landing.meetAi*` in all 4 locales.
+
+### 7.2 Logo cloud + Trust & Security band ✅
+
+`src/components/landing/TrustBandSection.tsx` after LiveStats:
+
+- **Logo marquee** — pure-CSS infinite track (`@keyframes trust-marquee`),
+  duplicated track, `prefers-reduced-motion` pause, edge fade via CSS mask.
+  Token-styled wordmarks, no images → zero CLS.
+- **Trust strip** — SOC 2, GDPR, encryption at rest, EU hosting, 99.9% uptime
+  as a 5-up card grid with icon + one-liner.
+
+### 7.3 Case-study numbers inside testimonials ✅
+
+Each testimonial card now carries an outcome metric chip ("40% less time on HR
+admin", "$70k saved in year one") — `testimonials.testimonialN.metric*` keys in
+all 4 locales. Falls back to nothing when a locale has no metric.
+
+### 7.4 Full `/pricing` page ✅
+
+`src/app/pricing/page.tsx` + `src/components/pricing/PricingClient.tsx` —
+reuses `PricingPreview` (cards + savings calculator + billing toggle), adds FAQ
+and a final CTA. Navbar/Footer "Pricing" links are pathname-aware: `/#pricing`
+on the landing, `/pricing` elsewhere. SSR metadata via `getServerTranslation`.
+
+### 7.5 Per-module SEO pages ✅ (attendance, okr, payroll, drivers)
+
+`src/components/features/ModuleSeoPage.tsx` generalises the leave-types pattern:
+hero badge + icon, title/subtitle, 3 proof stats, description + 4 benefits,
+auth-aware CTA. Four routes: `/features/attendance`, `/features/okr`,
+`/features/payroll`, `/features/drivers` — each with SSR metadata. Content lives
+in `featuresPage.modules.<module>.*` + `meta.<module>.*` in all 4 locales.
+Strategy / recruitment / surveys pages can be added the same way (one route +
+one i18n block, no component changes).
+
+### 7.6 Live data behind the logo cloud and testimonials ✅
+
+Placeholder copy is now driven by real data end-to-end:
+
+- **`convex/schema/landing.ts`** — new `landingShowcase` table: a row references
+  a **real organization** (`organizationId`) and is either a `logo` (marquee
+  entry; name/logo come from the org) or a `testimonial` (quote in 4 languages,
+  author, role, optional outcome metric). Indexed by `isVisible` + `kind`.
+- **`convex/landing.ts`** — public `getShowcase({ lang })` (serves only
+  `isVisible` rows whose org is active, quotes resolved by the visitor's
+  language with EN fallback, batch-loaded orgs, stable `sortOrder` ordering)
+  plus superadmin-only curation mutations: `listShowcase`, `createShowcase`,
+  `updateShowcase`, `deleteShowcase`.
+- **`TrustBandSection`** — real client logos (org `logoUrl` when present, else
+  a deterministic wordmark) win over the i18n placeholders.
+- **`TestimonialsSection`** — curated quotes/companies/authors/metrics win over
+  the i18n placeholder cards; the i18n wall remains the fresh-install fallback.
+
+Tests: `TestimonialsSection.test.tsx` (placeholder vs curated vs loading vs
+play/pause) and `TrustBandSection.test.tsx` (real logo + marquee/trust strip).
+
+### 7.7 /about + /blog + /changelog (not started)
+
+/about in landing style; changelog can be generated from git history. Lower
+priority than 7.1–7.5.
