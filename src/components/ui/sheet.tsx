@@ -50,8 +50,8 @@ type SheetSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
 /** Widths tuned to content, not to the viewport: `md` fits a labelled form at a
  *  comfortable measure, `lg` fits a two-column detail view. */
 const SIDE_CLASSES: Record<SheetSide, string> = {
-  right: 'inset-y-0 right-0 h-full rounded-l-sheet border-l',
-  left: 'inset-y-0 left-0 h-full rounded-r-sheet border-r',
+  right: 'inset-y-0 right-0 h-full rounded-l-none sm:rounded-l-sheet border-l',
+  left: 'inset-y-0 left-0 h-full rounded-r-none sm:rounded-r-sheet border-r',
   bottom: 'inset-x-0 bottom-0 w-full max-h-[92dvh] rounded-t-sheet border-t',
 };
 

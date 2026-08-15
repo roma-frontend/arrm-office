@@ -24,7 +24,7 @@ export default async function RecurringTasksPage() {
 
   return (
     <WidgetErrorBoundary name="RecurringTasksPage">
-      <RecurringTasksClient userRole={user.role} />
+      <RecurringTasksClient userId={user.userId} userRole={user.role} />
     </WidgetErrorBoundary>
   );
 }

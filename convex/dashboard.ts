@@ -3,6 +3,7 @@ import { query } from './_generated/server';
 import { getAuthCaller } from './lib/getAuthCaller';
 import { getProfile, type UserProfile } from './lib/userProfile';
 import { isSuperadmin } from './lib/auth';
+import { getSubordinateIds } from './lib/reportingLine';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import type { Id, Doc } from './_generated/dataModel';
 
@@ -67,6 +68,47 @@ export const getMyTasks = query({
       deadline: t.deadline,
       createdAt: t.createdAt,
     }));
+  },
+});
+
+// ── Tasks awaiting review ─────────────────────────────────────────────────────
+// How many tasks are sitting in the 'review' column. For a supervisor this is
+// their reports' submissions (the board they manage); for an admin it is the
+// whole organization. Powers the ToolDock "awaiting review" badge — the visible
+// count of work that is done but not yet checked.
+export const getPendingReviewCount = query({
+  args: {},
+  handler: async (ctx, _args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return 0;
+    if (caller.role === 'employee' || caller.role === 'driver') return 0;
+
+    const org = caller.organizationId;
+    if (!org && !isSuperadmin(caller)) return 0;
+
+    // Admin/superadmin: every review task in the organization.
+    if (caller.role === 'admin' || isSuperadmin(caller)) {
+      const all = await ctx.db
+        .query('tasks')
+        .withIndex('by_status', (q) => q.eq('status', 'review'))
+        .take(DEFAULT_LIST_CAP);
+      return isSuperadmin(caller)
+        ? all.filter((t) => !org || t.organizationId === org).length
+        : all.filter((t) => t.organizationId === org).length;
+    }
+
+    // Supervisor: review tasks created inside their reporting subtree.
+    const subordinates = await getSubordinateIds(ctx, caller._id);
+    const people = [caller._id, ...subordinates];
+    let count = 0;
+    for (const person of people) {
+      const rows = await ctx.db
+        .query('tasks')
+        .withIndex('by_assigned_status', (q) => q.eq('assignedTo', person).eq('status', 'review'))
+        .take(SMALL_LIST_CAP);
+      count += rows.filter((t) => !org || t.organizationId === org).length;
+    }
+    return count;
   },
 });
 

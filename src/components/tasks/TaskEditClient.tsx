@@ -26,7 +26,8 @@ import { logger } from '@/lib/logger';
 import { convexIdFromParam } from '@/lib/convexIds';
 
 const PRIORITIES = ['low', 'medium', 'high', 'urgent'] as const;
-const STATUSES = ['pending', 'in_progress', 'review', 'completed', 'cancelled'] as const;
+// The board has four columns; a task moves through exactly these states.
+const STATUSES = ['pending', 'in_progress', 'review', 'completed'] as const;
 
 // Status values use snake_case in the DB but the i18n keys are camelCase.
 const STATUS_KEYS: Record<(typeof STATUSES)[number], string> = {
@@ -34,7 +35,6 @@ const STATUS_KEYS: Record<(typeof STATUSES)[number], string> = {
   in_progress: 'tasksClient.inProgress',
   review: 'tasksClient.inReview',
   completed: 'tasksClient.completed',
-  cancelled: 'tasksClient.cancelled',
 };
 
 type Priority = (typeof PRIORITIES)[number];

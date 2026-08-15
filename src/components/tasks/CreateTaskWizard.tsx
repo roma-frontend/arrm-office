@@ -32,6 +32,26 @@ import type { Id } from '@/convex/_generated/dataModel';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
 
+/** The series this wizard is editing instead of creating a new one. */
+interface EditingSeries {
+  _id: Id<'recurringTasks'>;
+  title: string;
+  description?: string;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  tags?: string[];
+  assignedTo: Id<'users'>;
+  projectId?: Id<'projects'>;
+  objectiveId?: Id<'objectives'>;
+  keyResultId?: Id<'keyResults'>;
+  attachments?: Array<{ url: string; name: string; type: string; size: number }>;
+  frequency: 'weekly' | 'monthly';
+  daysOfWeek?: number[];
+  dayOfMonth?: number;
+  startDate: string;
+  endDate?: string;
+  deadlineOffsetDays?: number;
+}
+
 interface CreateTaskWizardProps {
   currentUserId: Id<'users'>;
   userRole: 'admin' | 'supervisor' | 'employee' | 'superadmin';
@@ -40,6 +60,8 @@ interface CreateTaskWizardProps {
   objectiveId?: Id<'objectives'>;
   /** Pre-links the task to a project (used by /tasks/new?projectId=…). */
   projectId?: Id<'projects'>;
+  /** When set, the wizard edits this recurring series instead of creating. */
+  editingSeries?: EditingSeries;
   /** Overridable so a goal-scoped draft cannot clash with the board's draft. */
   draftKey?: string;
   /** Passed through to the Wizard shell — lets a host sheet own the layout. */
@@ -195,9 +217,11 @@ const WEEKDAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
 
 export function CreateTaskWizard({
   currentUserId,
+  userRole,
   assigneeId,
   objectiveId,
   projectId,
+  editingSeries,
   draftKey = 'create-task',
   className,
   onComplete,
@@ -206,6 +230,7 @@ export function CreateTaskWizard({
   const { t } = useTranslation();
   const { createOptimistic: createTask } = useOptimisticCreateTask();
   const createRecurringTask = useMutation(api.recurringTasks.createRecurringTask);
+  const updateRecurringTask = useMutation(api.recurringTasks.updateRecurringTask);
 
   const addAttachment = useMutation(api.tasks.addAttachment);
 
@@ -229,6 +254,13 @@ export function CreateTaskWizard({
       ? { organizationId: userForQuery.organizationId as Id<'organizations'>, userId: safeUserId! }
       : 'skip',
   );
+
+  // Regular employees can only create tasks for themselves, so the assignee
+  // step is pure ceremony for them — drop it and hard-wire self-assignment in
+  // handleSubmit instead of showing a one-option dropdown. The same applies
+  // while editing a series that belongs to them.
+  const isSelfAssignedOnly =
+    userRole === 'employee' || (editingSeries && editingSeries.assignedTo === currentUserId);
 
   const steps: WizardStep[] = [
     {
@@ -257,28 +289,32 @@ export function CreateTaskWizard({
         </div>
       ),
     },
-    {
-      id: 'assignee',
-      title: t('taskWizard.steps.assignee.title'),
-      description: t('taskWizard.steps.assignee.description'),
-      icon: <User className="w-5 h-5" />,
-      validation: (data) => !!data.assigneeId,
-      content: (
-        <SelectStep
-          field="assigneeId"
-          label={t('taskWizard.steps.assignee.assigneeLabel')}
-          options={
-            availableEmployees?.map((emp) => ({
-              value: emp._id,
-              label: `${emp.name}${emp.position ? ` — ${emp.position}` : ''}${emp.department ? ` (${emp.department})` : ''}`,
-            })) || []
-          }
-          placeholder={t('taskWizard.steps.assignee.assigneePlaceholder')}
-          defaultValue={assigneeId}
-          required
-        />
-      ),
-    },
+    ...(isSelfAssignedOnly
+      ? []
+      : [
+          {
+            id: 'assignee' as const,
+            title: t('taskWizard.steps.assignee.title'),
+            description: t('taskWizard.steps.assignee.description'),
+            icon: <User className="w-5 h-5" />,
+            validation: (data: Record<string, unknown>) => !!data.assigneeId,
+            content: (
+              <SelectStep
+                field="assigneeId"
+                label={t('taskWizard.steps.assignee.assigneeLabel')}
+                options={
+                  availableEmployees?.map((emp) => ({
+                    value: emp._id,
+                    label: `${emp.name}${emp.position ? ` — ${emp.position}` : ''}${emp.department ? ` (${emp.department})` : ''}`,
+                  })) || []
+                }
+                placeholder={t('taskWizard.steps.assignee.assigneePlaceholder')}
+                defaultValue={assigneeId}
+                required
+              />
+            ),
+          },
+        ]),
     {
       id: 'priority',
       title: t('taskWizard.steps.priority.title'),
@@ -327,13 +363,20 @@ export function CreateTaskWizard({
           <SelectStep
             field="repeat"
             label={t('taskWizard.steps.repeat.frequencyLabel')}
-            options={[
-              { value: 'none', label: t('taskWizard.steps.repeat.frequency.none') },
-              { value: 'weekly', label: t('taskWizard.steps.repeat.frequency.weekly') },
-              { value: 'monthly', label: t('taskWizard.steps.repeat.frequency.monthly') },
-            ]}
+            options={
+              editingSeries
+                ? [
+                    { value: 'weekly', label: t('taskWizard.steps.repeat.frequency.weekly') },
+                    { value: 'monthly', label: t('taskWizard.steps.repeat.frequency.monthly') },
+                  ]
+                : [
+                    { value: 'none', label: t('taskWizard.steps.repeat.frequency.none') },
+                    { value: 'weekly', label: t('taskWizard.steps.repeat.frequency.weekly') },
+                    { value: 'monthly', label: t('taskWizard.steps.repeat.frequency.monthly') },
+                  ]
+            }
             placeholder={t('taskWizard.steps.repeat.frequencyPlaceholder')}
-            defaultValue="none"
+            defaultValue={editingSeries ? editingSeries.frequency : 'none'}
             description={t('taskWizard.steps.repeat.frequencyHint')}
           />
           <RepeatRuleFields />
@@ -417,6 +460,11 @@ export function CreateTaskWizard({
       const keyResultId = data.keyResultId
         ? (String(data.keyResultId) as Id<'keyResults'>)
         : undefined;
+      // The project picker is prop-driven for /tasks/new?projectId=…, but while
+      // editing a series the link arrives through the prefilled step data.
+      const resolvedProjectId = (
+        data.projectId ? (String(data.projectId) as Id<'projects'>) : projectId
+      ) as Id<'projects'> | undefined;
 
       const frequency = (data.repeat as string | undefined) ?? 'none';
 
@@ -428,44 +476,87 @@ export function CreateTaskWizard({
           ? (data.repeatDaysOfWeek as string[]).map(Number).sort((a, b) => a - b)
           : [];
         const offsetRaw = Number(data.repeatDeadlineOffsetDays);
+        const startDate = data.repeatStartDate
+          ? String(data.repeatStartDate)
+          : new Date().toISOString().slice(0, 10);
+        const endDate = data.repeatEndDate ? String(data.repeatEndDate) : undefined;
+        const deadlineOffsetDays =
+          Number.isFinite(offsetRaw) && offsetRaw > 0 ? offsetRaw : undefined;
 
-        const result = await createRecurringTask({
-          title: String(data.title).trim(),
-          description: data.description ? String(data.description).trim() : undefined,
-          assignedTo: String(data.assigneeId) as Id<'users'>,
-          priority: (String(data.priority) || 'medium') as 'low' | 'medium' | 'high' | 'urgent',
-          tags: tags.length > 0 ? tags : undefined,
-          projectId,
-          objectiveId,
-          keyResultId,
-          frequency,
-          daysOfWeek: frequency === 'weekly' ? daysOfWeek : undefined,
-          dayOfMonth: frequency === 'monthly' ? Number(data.repeatDayOfMonth) : undefined,
-          startDate: data.repeatStartDate
-            ? String(data.repeatStartDate)
-            : new Date().toISOString().slice(0, 10),
-          endDate: data.repeatEndDate ? String(data.repeatEndDate) : undefined,
-          deadlineOffsetDays: Number.isFinite(offsetRaw) && offsetRaw > 0 ? offsetRaw : undefined,
-        });
-
-        // Attachments belong to a task, not to a rule — say so rather than
-        // dropping the files silently.
+        // Files are part of the rule now: they travel with every occurrence the
+        // sweep materializes, so the same briefing reaches each run of the task.
         const attachmentsJson = data.attachments as string | undefined;
-        if (attachmentsJson && attachmentsJson !== '[]' && attachmentsJson.length > 2) {
-          toast.warning(t('recurringTasks.attachmentsNotSupported'));
-        }
+        const attachments =
+          attachmentsJson && attachmentsJson !== '[]' && attachmentsJson.length > 2
+            ? (JSON.parse(attachmentsJson) as AttachmentData[]).map(
+                ({ url, name, type, size }) => ({
+                  url,
+                  name,
+                  type,
+                  size,
+                }),
+              )
+            : undefined;
 
-        toast.success(
-          result.nextOccurrence
-            ? t('recurringTasks.createdWithNext', { date: result.nextOccurrence })
-            : t('recurringTasks.created'),
-        );
+        const result = editingSeries
+          ? await updateRecurringTask({
+              seriesId: editingSeries._id,
+              title: String(data.title).trim(),
+              description: data.description ? String(data.description).trim() : undefined,
+              assignedTo: (isSelfAssignedOnly
+                ? editingSeries.assignedTo
+                : String(data.assigneeId)) as Id<'users'>,
+              priority: (String(data.priority) || 'medium') as 'low' | 'medium' | 'high' | 'urgent',
+              tags: tags.length > 0 ? tags : undefined,
+              projectId: resolvedProjectId,
+              objectiveId,
+              keyResultId,
+              frequency,
+              daysOfWeek: frequency === 'weekly' ? daysOfWeek : undefined,
+              dayOfMonth: frequency === 'monthly' ? Number(data.repeatDayOfMonth) : undefined,
+              startDate,
+              endDate,
+              deadlineOffsetDays,
+              attachments,
+            })
+          : await createRecurringTask({
+              title: String(data.title).trim(),
+              description: data.description ? String(data.description).trim() : undefined,
+              assignedTo: (isSelfAssignedOnly
+                ? currentUserId
+                : String(data.assigneeId)) as Id<'users'>,
+              priority: (String(data.priority) || 'medium') as 'low' | 'medium' | 'high' | 'urgent',
+              tags: tags.length > 0 ? tags : undefined,
+              projectId,
+              objectiveId,
+              keyResultId,
+              frequency,
+              daysOfWeek: frequency === 'weekly' ? daysOfWeek : undefined,
+              dayOfMonth: frequency === 'monthly' ? Number(data.repeatDayOfMonth) : undefined,
+              startDate,
+              endDate,
+              deadlineOffsetDays,
+              attachments,
+            });
+
+        if (editingSeries) {
+          toast.success(t('recurringTasks.updated'));
+        } else {
+          const created = result as {
+            nextOccurrence: string | null;
+          };
+          toast.success(
+            created.nextOccurrence
+              ? t('recurringTasks.createdWithNext', { date: created.nextOccurrence })
+              : t('recurringTasks.created'),
+          );
+        }
         onComplete?.();
         return;
       }
 
       const taskId = await createTask({
-        assignedTo: String(data.assigneeId) as Id<'users'>,
+        assignedTo: (isSelfAssignedOnly ? currentUserId : String(data.assigneeId)) as Id<'users'>,
         assignedBy: currentUserId,
         title: String(data.title).trim(),
         description: data.description ? String(data.description).trim() : undefined,
@@ -500,10 +591,33 @@ export function CreateTaskWizard({
     }
   };
 
-  const stepDefaults = React.useMemo(
-    () => ({ priority: 'medium', ...(objectiveId ? { objectiveId } : {}) }),
-    [objectiveId],
-  );
+  const stepDefaults = React.useMemo(() => {
+    // Editing a series: prefill every step from the rule, and no draft — a form
+    // bound to an existing row must not resurrect stale input (see Wizard docs).
+    if (editingSeries) {
+      const repeatDaysOfWeek = (editingSeries.daysOfWeek ?? []).map(String);
+      return {
+        title: editingSeries.title,
+        description: editingSeries.description ?? '',
+        priority: editingSeries.priority,
+        repeat: editingSeries.frequency,
+        repeatDaysOfWeek,
+        repeatDayOfMonth: editingSeries.dayOfMonth ? String(editingSeries.dayOfMonth) : '',
+        repeatStartDate: editingSeries.startDate,
+        repeatEndDate: editingSeries.endDate ?? '',
+        repeatDeadlineOffsetDays: editingSeries.deadlineOffsetDays
+          ? String(editingSeries.deadlineOffsetDays)
+          : '',
+        tags: (editingSeries.tags ?? []).join(', '),
+        attachments: JSON.stringify(editingSeries.attachments ?? []),
+        ...(editingSeries.projectId ? { projectId: editingSeries.projectId } : {}),
+        ...(editingSeries.objectiveId ? { objectiveId: editingSeries.objectiveId } : {}),
+        ...(editingSeries.keyResultId ? { keyResultId: editingSeries.keyResultId } : {}),
+        ...(isSelfAssignedOnly ? {} : { assigneeId: editingSeries.assignedTo }),
+      };
+    }
+    return { priority: 'medium', ...(objectiveId ? { objectiveId } : {}) };
+  }, [editingSeries, objectiveId, isSelfAssignedOnly]);
 
   return (
     <Wizard
@@ -511,10 +625,10 @@ export function CreateTaskWizard({
       steps={steps}
       onComplete={handleSubmit}
       onCancel={onCancel}
-      submitLabel={t('taskWizard.submit')}
+      submitLabel={editingSeries ? t('taskWizard.save', 'Save') : t('taskWizard.submit')}
       cancelLabel={t('actions.cancel')}
       defaultStepData={stepDefaults}
-      draftKey={draftKey}
+      draftKey={editingSeries ? undefined : draftKey}
     />
   );
 }

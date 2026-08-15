@@ -40,6 +40,9 @@ jest.mock('../../convex/_generated/api', () => ({
       getTasksAssignedBy: { _name: 'getTasksAssignedBy' },
       getTasksForEmployee: { _name: 'getTasksForEmployee' },
     },
+    recurringTasks: {
+      listRecurringTasks: { _name: 'listRecurringTasks' },
+    },
   },
 }));
 

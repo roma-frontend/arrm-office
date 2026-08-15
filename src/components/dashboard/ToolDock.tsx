@@ -53,6 +53,7 @@ export function ToolDock() {
     isApprovalAdmin ? {} : 'skip',
   );
   const pendingLeaves = useQuery(api.leaves.getPendingLeaves, canReview ? {} : 'skip');
+  const pendingReviewCount = useQuery(api.dashboard.getPendingReviewCount, canReview ? {} : 'skip');
 
   const overdueCount = useMemo(() => {
     if (!myTasks) return 0;
@@ -61,11 +62,22 @@ export function ToolDock() {
 
   const approvalsCount = pendingApprovals?.length ?? 0;
   const pendingLeavesCount = pendingLeaves?.length ?? 0;
-  const attentionTotal = overdueCount + (canReview ? pendingLeavesCount : 0) + approvalsCount;
+  const reviewCount = pendingReviewCount ?? 0;
+  const attentionTotal =
+    overdueCount + (canReview ? pendingLeavesCount : 0) + approvalsCount + reviewCount;
 
   const badgeFor = (href: string): { tone: string; count: number; label: string } | null => {
-    if (href === '/tasks' && overdueCount > 0) {
-      return { tone: 'danger', count: overdueCount, label: t('toolDock.overdue', 'overdue') };
+    if (href === '/tasks') {
+      if (reviewCount > 0) {
+        return {
+          tone: 'warning',
+          count: reviewCount,
+          label: t('toolDock.review', 'awaiting review'),
+        };
+      }
+      if (overdueCount > 0) {
+        return { tone: 'danger', count: overdueCount, label: t('toolDock.overdue', 'overdue') };
+      }
     }
     if (href === '/approvals' && isApprovalAdmin && approvalsCount > 0) {
       return { tone: 'warning', count: approvalsCount, label: t('toolDock.pending', 'pending') };

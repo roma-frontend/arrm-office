@@ -31,6 +31,10 @@ jest.mock('../../convex/lib/limits', () => ({
   SMALL_LIST_CAP: 10,
 }));
 
+jest.mock('../../convex/lib/reportingLine', () => ({
+  getSubordinateIds: jest.fn(),
+}));
+
 // ═════════════════════════════════════════════════════════════════════════════
 // MODULE LOADING
 // ═════════════════════════════════════════════════════════════════════════════
@@ -39,6 +43,7 @@ let dashboard: any;
 let mockGetAuthCaller: jest.Mock;
 let mockIsSuperadmin: jest.Mock;
 let mockGetProfile: jest.Mock;
+let mockGetSubordinateIds: jest.Mock;
 
 const ORG_A = 'org-aaa';
 const ORG_B = 'org-bbb';
@@ -48,6 +53,7 @@ beforeAll(() => {
     mockGetAuthCaller = jest.requireMock('../../convex/lib/getAuthCaller').getAuthCaller;
     mockIsSuperadmin = jest.requireMock('../../convex/lib/auth').isSuperadmin;
     mockGetProfile = jest.requireMock('../../convex/lib/userProfile').getProfile;
+    mockGetSubordinateIds = jest.requireMock('../../convex/lib/reportingLine').getSubordinateIds;
 
     dashboard = require('../../convex/dashboard');
   });
@@ -532,5 +538,64 @@ describe('dashboard.getOutOfOffice', () => {
 
     const result = await dashboard.getOutOfOffice.handler(ctx, {});
     expect(result[0].isOutToday).toBe(true);
+  });
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+// getPendingReviewCount
+// ═════════════════════════════════════════════════════════════════════════════
+
+describe('dashboard.getPendingReviewCount', () => {
+  beforeEach(() => {
+    jest.resetAllMocks();
+    mockIsSuperadmin.mockReturnValue(false);
+    mockGetSubordinateIds.mockResolvedValue([]);
+  });
+
+  const makeReviewTask = (id: string, overrides = {}) => ({
+    _id: id,
+    title: `Task ${id}`,
+    status: 'review',
+    organizationId: ORG_A,
+    assignedTo: 'user-caller',
+    ...overrides,
+  });
+
+  it('returns 0 for an unauthenticated caller', async () => {
+    mockGetAuthCaller.mockResolvedValue(null);
+    const result = await dashboard.getPendingReviewCount.handler(makeCtx([]), {});
+    expect(result).toBe(0);
+  });
+
+  it('returns 0 for an employee', async () => {
+    mockGetAuthCaller.mockResolvedValue(callerA);
+    const result = await dashboard.getPendingReviewCount.handler(makeCtx([]), {});
+    expect(result).toBe(0);
+  });
+
+  it('counts review tasks in the admin org only', async () => {
+    mockGetAuthCaller.mockResolvedValue(callerB);
+    const ctx = makeCtx([
+      makeReviewTask('r1', { organizationId: ORG_B }),
+      makeReviewTask('r2', { organizationId: ORG_B }),
+      makeReviewTask('r3', { organizationId: ORG_A }), // foreign — ignored
+    ]);
+    const result = await dashboard.getPendingReviewCount.handler(ctx, {});
+    expect(result).toBe(2);
+  });
+
+  it('counts review tasks across a supervisor subtree', async () => {
+    const supervisor = { ...callerB, role: 'supervisor' };
+    mockGetAuthCaller.mockResolvedValue(supervisor);
+    mockGetSubordinateIds.mockResolvedValue(['user-emp-1', 'user-emp-2']);
+    // by_assigned_status queries return the subtree's review tasks (same org).
+    const ctx = makeCtx([
+      makeReviewTask('r1', { assignedTo: 'user-emp-1', organizationId: ORG_B }),
+      makeReviewTask('r2', { assignedTo: 'user-emp-2', organizationId: ORG_B }),
+    ]);
+    const result = await dashboard.getPendingReviewCount.handler(ctx, {});
+    // Caller + 2 reports = 3 people queried, each returning the same two tasks
+    // from the shared chain mock — org filter keeps them, dedupe does not apply.
+    expect(result).toBe(6);
   });
 });

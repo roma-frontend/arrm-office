@@ -209,13 +209,28 @@ describe('createTask', () => {
     ).rejects.toThrow('Not authenticated');
   });
 
-  it('rejects an employee: assigning work is not theirs to do', async () => {
+  it('rejects an employee assigning to someone else: only self-assignment is theirs to do', async () => {
     const { ctx } = makeCtx();
     mockGetAuthCaller.mockResolvedValue(makeCaller('employee', ORG_A, USER_ID));
 
     await expect(
       handlers.createTask(ctx, { title: 'T', assignedTo: 'someone', priority: 'low' }),
-    ).rejects.toThrow('Only admins and supervisors may assign tasks');
+    ).rejects.toThrow('Employees can only create tasks assigned to themselves');
+  });
+
+  it('lets an employee create a task assigned to themselves', async () => {
+    const { ctx, get, insert } = makeCtx();
+    mockGetAuthCaller.mockResolvedValue(makeCaller('employee', ORG_A, USER_ID));
+    // Assignee lookup: the caller themselves, same org.
+    get.mockResolvedValueOnce(userDoc({ _id: USER_ID, organizationId: ORG_A }));
+    insert.mockResolvedValueOnce(TASK_ID);
+
+    await handlers.createTask(ctx, { title: 'My task', assignedTo: USER_ID, priority: 'low' });
+
+    expect(insert).toHaveBeenCalledWith(
+      'tasks',
+      expect.objectContaining({ title: 'My task', assignedTo: USER_ID, assignedBy: USER_ID }),
+    );
   });
 
   it('rejects an assignee from another organization', async () => {
@@ -367,6 +382,7 @@ describe('updateTaskStatus', () => {
     get.mockResolvedValueOnce(taskDoc({ status: 'in_progress', assignedBy: ADMIN_ID }));
     get.mockResolvedValueOnce(userDoc({ name: 'Anna' })); // employee
     get.mockResolvedValueOnce(userDoc({ _id: ADMIN_ID, role: 'admin', name: 'Boss' })); // supervisor
+    get.mockResolvedValueOnce(userDoc({ _id: ADMIN_ID, role: 'admin', name: 'Boss' })); // supervisorDoc
 
     await handlers.updateTaskStatus(ctx, { taskId: TASK_ID, status: 'completed', userId: USER_ID });
 
@@ -382,7 +398,8 @@ describe('updateTaskStatus', () => {
     const { ctx, get } = makeCtx();
     get.mockResolvedValueOnce(taskDoc({ assignedBy: ADMIN_ID }));
     get.mockResolvedValueOnce(userDoc());
-    get.mockResolvedValueOnce(userDoc({ _id: ADMIN_ID, role: 'admin', name: 'Boss' }));
+    get.mockResolvedValueOnce(userDoc({ _id: ADMIN_ID, role: 'admin', name: 'Boss' })); // supervisor
+    get.mockResolvedValueOnce(userDoc({ _id: ADMIN_ID, role: 'admin', name: 'Boss' })); // supervisorDoc
 
     await handlers.updateTaskStatus(ctx, { taskId: TASK_ID, status: 'review', userId: USER_ID });
 
@@ -410,6 +427,52 @@ describe('updateTaskStatus', () => {
     await expect(
       handlers.updateTaskStatus(ctx, { taskId: TASK_ID, status: 'pending', userId: USER_ID }),
     ).rejects.toThrow('Task not found');
+  });
+
+  it('lets the assignee move their own task', async () => {
+    const { ctx, get, patch } = makeCtx();
+    mockGetAuthCaller.mockResolvedValue(makeCaller('employee', ORG_A, USER_ID));
+    get.mockResolvedValueOnce(taskDoc({ assignedTo: USER_ID }));
+
+    await handlers.updateTaskStatus(ctx, {
+      taskId: TASK_ID,
+      status: 'in_progress',
+      userId: USER_ID,
+    });
+
+    expect(patch).toHaveBeenCalledWith(TASK_ID, expect.objectContaining({ status: 'in_progress' }));
+  });
+
+  it('refuses an employee moving someone else’s task', async () => {
+    const { ctx, get } = makeCtx();
+    mockGetAuthCaller.mockResolvedValue(makeCaller('employee', ORG_A, USER_ID));
+    get.mockResolvedValueOnce(taskDoc({ assignedTo: 'someone-else' }));
+
+    await expect(
+      handlers.updateTaskStatus(ctx, {
+        taskId: TASK_ID,
+        status: 'completed',
+        userId: USER_ID,
+      }),
+    ).rejects.toThrow('You can only change the status of your own tasks');
+  });
+
+  it('lets a supervisor move a task their report created for themselves', async () => {
+    const { ctx, get, patch, take } = makeCtx();
+    const supervisor = makeCaller('supervisor', ORG_A, 'sup-1');
+    mockGetAuthCaller.mockResolvedValue(supervisor);
+    // The reporting-line walk finds the employee under the supervisor.
+    take.mockResolvedValue([userDoc({ _id: USER_ID, supervisorId: 'sup-1' })]);
+    get.mockResolvedValueOnce(taskDoc({ assignedTo: USER_ID, assignedBy: USER_ID }));
+    get.mockResolvedValueOnce(userDoc({ _id: 'sup-1', role: 'supervisor' })); // actor
+
+    await handlers.updateTaskStatus(ctx, {
+      taskId: TASK_ID,
+      status: 'review',
+      userId: 'sup-1',
+    });
+
+    expect(patch).toHaveBeenCalledWith(TASK_ID, expect.objectContaining({ status: 'review' }));
   });
 });
 

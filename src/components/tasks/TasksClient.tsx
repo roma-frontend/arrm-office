@@ -33,6 +33,9 @@ import { toast } from 'sonner';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { useOptimisticTaskStatus } from '@/hooks/useOptimisticActions';
 import { memo } from 'react';
+import Link from 'next/link';
+import { Repeat as RepeatIcon } from 'lucide-react';
+import type { TFunction } from 'i18next';
 
 // â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 type Status = 'pending' | 'in_progress' | 'review' | 'completed' | 'cancelled';
@@ -523,6 +526,51 @@ function TaskRow({ task, onOpen }: { task: TaskItem; onOpen: () => void }) {
 }
 
 // â”€â”€ Main Client â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+interface RecurringSeriesRow {
+  _id: string;
+  title: string;
+  isActive: boolean;
+  assignedToName?: string;
+}
+
+/**
+ * Compact strip of active recurring series, shown above the board/list/timeline
+ * so a repeating task is visible where the day-to-day work lives. The same
+ * rules are managed in full on /tasks/recurring.
+ */
+function RecurringStrip({ series, t }: { series: RecurringSeriesRow[]; t: TFunction }) {
+  if (series.length === 0) return null;
+  return (
+    <div className="mb-4 rounded-2xl border border-(--border) bg-(--card) p-3">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <p className="flex items-center gap-1.5 text-xs font-semibold text-(--text-2)">
+          <RepeatIcon className="h-3.5 w-3.5 text-(--brand-text)" aria-hidden="true" />
+          {t('tasksClient.recurring', 'Recurring')}
+        </p>
+        <Link
+          href="/tasks/recurring"
+          className="text-xs font-medium text-(--brand-text) hover:underline"
+        >
+          {t('tasksClient.manageRecurring', 'Manage')}
+        </Link>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {series.map((s) => (
+          <Link
+            key={s._id}
+            href="/tasks/recurring"
+            className="group flex items-center gap-1.5 rounded-full border border-(--border) bg-(--background-subtle) px-3 py-1.5 text-xs text-(--text-2) transition-all hover:border-(--primary)/40 hover:text-(--brand-text)"
+          >
+            <RepeatIcon className="h-3 w-3 text-(--brand-text)" aria-hidden="true" />
+            <span className="max-w-[180px] truncate font-medium">{s.title}</span>
+            {s.assignedToName && <span className="text-(--text-muted)">→ {s.assignedToName}</span>}
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 interface TasksClientProps {
   userId: string;
   userRole: 'superadmin' | 'admin' | 'supervisor' | 'employee' | 'driver';
@@ -568,6 +616,9 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
   const convexId = userId && userId !== '' ? (userId as Id<'users'>) : null;
   // Superadmins can manage tasks like admins (they see all org tasks too).
   const canManage = userRole === 'admin' || userRole === 'supervisor' || userRole === 'superadmin';
+  // Employees may create their own tasks (backend enforces self-assignment);
+  // drivers have no task-creation surface anywhere in the app.
+  const canCreate = canManage || userRole === 'employee';
   const isSuperadmin = userRole === 'superadmin';
   const selectedOrgId = useSelectedOrganization();
 
@@ -625,6 +676,12 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
         : userRole === 'superadmin'
           ? adminTasks
           : employeeTasks;
+
+  // Active recurring series, shown as a compact strip above the board. The
+  // query scopes server-side: managers see every series in the org, everyone
+  // else only the ones pointed at them (or created by them).
+  const recurringSeries = useQuery(api.recurringTasks.listRecurringTasks, {});
+  const activeSeries: RecurringSeriesRow[] = (recurringSeries ?? []).filter((s) => s.isActive);
 
   // Merge optimistic updates with raw tasks for instant UI feedback
   const rawTasksWithOptimistic = useMemo(() => {
@@ -804,7 +861,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
                 {t('tasksClient.assignSupervisor')}
               </button>
             )}
-            {canManage && (
+            {canCreate && (
               <button
                 onClick={() => {
                   const mainEl = mainRef.current;
@@ -980,7 +1037,10 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
           <ShieldLoader size="lg" />
         </div>
       ) : viewMode === 'timeline' ? (
-        <TimelineView tasks={tasks} onOpen={(task) => openTask(task)} />
+        <>
+          <RecurringStrip series={activeSeries} t={t} />
+          <TimelineView tasks={tasks} onOpen={(task) => openTask(task)} />
+        </>
       ) : viewMode === 'kanban' ? (
         <DndContext
           sensors={sensors}
@@ -1037,6 +1097,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
           }}
           onDragCancel={() => setActiveTask(null)}
         >
+          <RecurringStrip series={activeSeries} t={t} />
           <div ref={kanbanScrollRef} className="flex gap-4 overflow-x-auto pb-4">
             {KANBAN_COLUMNS.map((status) => (
               <DroppableKanbanColumn
@@ -1049,45 +1110,50 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
           </div>
         </DndContext>
       ) : (
-        <div className="bg-(--card) rounded-2xl border border-(--border) shadow-sm overflow-x-auto">
-          {tasks.length === 0 ? (
-            <div className="py-20 text-center">
-              <p className="text-4xl mb-3">📋</p>
-              <p className="text-(--text-secondary) font-medium">{t('tasksClient.noTasksFound')}</p>
-              <p className="text-(--text-muted) text-sm mt-1">
-                {canManage ? t('tasksClient.createNewTask') : t('tasksClient.noTasksAssigned')}
-              </p>
-            </div>
-          ) : (
-            <table className="w-full">
-              <thead>
-                <tr className="bg-(--background-subtle) border-b border-(--border)">
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-(--text-muted) uppercase tracking-wide">
-                    {t('tasksClient.task')}
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-(--text-muted) uppercase tracking-wide">
-                    {t('tasksClient.assignee')}
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-(--text-muted) uppercase tracking-wide">
-                    {t('tasksClient.priority')}
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-(--text-muted) uppercase tracking-wide">
-                    {t('common.status')}
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-(--text-muted) uppercase tracking-wide">
-                    {t('tasksClient.deadline')}
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-(--text-muted) uppercase tracking-wide"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {tasks.map((task) => (
-                  <TaskRow key={task._id} task={task} onOpen={() => openTask(task)} />
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+        <>
+          <RecurringStrip series={activeSeries} t={t} />
+          <div className="bg-(--card) rounded-2xl border border-(--border) shadow-sm overflow-x-auto">
+            {tasks.length === 0 ? (
+              <div className="py-20 text-center">
+                <p className="text-4xl mb-3">📋</p>
+                <p className="text-(--text-secondary) font-medium">
+                  {t('tasksClient.noTasksFound')}
+                </p>
+                <p className="text-(--text-muted) text-sm mt-1">
+                  {canManage ? t('tasksClient.createNewTask') : t('tasksClient.noTasksAssigned')}
+                </p>
+              </div>
+            ) : (
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-(--background-subtle) border-b border-(--border)">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-(--text-muted) uppercase tracking-wide">
+                      {t('tasksClient.task')}
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-(--text-muted) uppercase tracking-wide">
+                      {t('tasksClient.assignee')}
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-(--text-muted) uppercase tracking-wide">
+                      {t('tasksClient.priority')}
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-(--text-muted) uppercase tracking-wide">
+                      {t('common.status')}
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-(--text-muted) uppercase tracking-wide">
+                      {t('tasksClient.deadline')}
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-(--text-muted) uppercase tracking-wide"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {tasks.map((task) => (
+                    <TaskRow key={task._id} task={task} onOpen={() => openTask(task)} />
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </>
       )}
 
       {/* Modals */}
@@ -1109,6 +1175,9 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
               className="min-h-0 flex-1 px-5 pt-4"
               currentUserId={convexId}
               userRole={userRole as 'admin' | 'supervisor' | 'employee'}
+              // Employees can only assign to themselves; default the picker so
+              // the wizard opens ready to go.
+              assigneeId={userRole === 'employee' ? convexId : undefined}
               onComplete={() => setShowCreate(false)}
               onCancel={() => setShowCreate(false)}
             />

@@ -76,7 +76,11 @@ async function requireOwnSeries(ctx: MutationCtx, seriesId: Id<'recurringTasks'>
       message: 'Access denied: cross-organization operation',
     });
   }
-  if (!mayManageSeries(caller)) {
+  // The person the series belongs to (creator or assignee) may always manage
+  // it — an employee who set up their own recurring task must be able to pause
+  // or remove it. Everyone else needs manager rights.
+  const isOwnSeries = series.assignedBy === caller._id || series.assignedTo === caller._id;
+  if (!mayManageSeries(caller) && !isOwnSeries) {
     throw new ConvexError({
       code: 'FORBIDDEN',
       message: 'Only an admin or supervisor can manage recurring tasks',
@@ -97,6 +101,17 @@ export const createRecurringTask = mutation({
     projectId: v.optional(v.id('projects')),
     objectiveId: v.optional(v.id('objectives')),
     keyResultId: v.optional(v.id('keyResults')),
+    /** Files that travel with every occurrence the series produces. */
+    attachments: v.optional(
+      v.array(
+        v.object({
+          url: v.string(),
+          name: v.string(),
+          type: v.string(),
+          size: v.number(),
+        }),
+      ),
+    ),
 
     frequency: frequencyValidator,
     daysOfWeek: v.optional(v.array(v.number())),
@@ -112,7 +127,16 @@ export const createRecurringTask = mutation({
     if (!caller) {
       throw new ConvexError({ code: 'NOT_AUTHENTICATED', message: 'Not authenticated' });
     }
-    if (!mayManageSeries(caller)) {
+    // Employees may create a recurring series, but only pointed at themselves
+    // — same rule `tasks.createTask` applies to one-off tasks.
+    if (caller.role === 'employee') {
+      if (args.assignedTo !== caller._id) {
+        throw new ConvexError({
+          code: 'FORBIDDEN',
+          message: 'Employees can only create recurring tasks assigned to themselves',
+        });
+      }
+    } else if (!mayManageSeries(caller)) {
       throw new ConvexError({
         code: 'FORBIDDEN',
         message: 'Only an admin or supervisor can create recurring tasks',
@@ -199,6 +223,14 @@ export const createRecurringTask = mutation({
       projectId: args.projectId,
       objectiveId: args.objectiveId,
       keyResultId: args.keyResultId,
+      // Stamp who attached what now — the client only sends url/name/type/size
+      // (the same shape `tasks.addAttachment` accepts), and every generated
+      // occurrence inherits these rows as-is.
+      attachments: args.attachments?.map((a) => ({
+        ...a,
+        uploadedBy: caller._id,
+        uploadedAt: now,
+      })),
       frequency: args.frequency,
       daysOfWeek: args.frequency === 'weekly' ? args.daysOfWeek : undefined,
       dayOfMonth: args.frequency === 'monthly' ? args.dayOfMonth : undefined,
@@ -308,15 +340,20 @@ export const listRecurringTasks = query({
 
 /** Adds the names and the next run date the UI needs, without a second round trip. */
 async function decorate(ctx: QueryCtx, series: Doc<'recurringTasks'>, today: string) {
-  const [assignee, author] = await Promise.all([
+  const [assignee, author, commentRows] = await Promise.all([
     ctx.db.get(series.assignedTo),
     ctx.db.get(series.assignedBy),
+    ctx.db
+      .query('recurringTaskComments')
+      .withIndex('by_series', (q) => q.eq('seriesId', series._id))
+      .take(SMALL_LIST_CAP),
   ]);
 
   return {
     ...series,
     assignedToName: assignee?.name ?? 'Unknown',
     assignedByName: author?.name ?? 'Unknown',
+    commentCount: commentRows.length,
     // Tomorrow onwards: today's occurrence, if any, has already been produced.
     nextOccurrence: series.isActive ? nextOccurrence(ruleOf(series), addDays(today, 1)) : null,
   };
@@ -351,12 +388,26 @@ export const updateRecurringTask = mutation({
     assignedTo: v.optional(v.id('users')),
     priority: v.optional(priorityValidator),
     tags: v.optional(v.array(v.string())),
+    projectId: v.optional(v.id('projects')),
+    objectiveId: v.optional(v.id('objectives')),
+    keyResultId: v.optional(v.id('keyResults')),
     frequency: v.optional(frequencyValidator),
     daysOfWeek: v.optional(v.array(v.number())),
     dayOfMonth: v.optional(v.number()),
     startDate: v.optional(v.string()),
     endDate: v.optional(v.string()),
     deadlineOffsetDays: v.optional(v.number()),
+    /** Full replacement list — the client sends what should be kept, minus removals. */
+    attachments: v.optional(
+      v.array(
+        v.object({
+          url: v.string(),
+          name: v.string(),
+          type: v.string(),
+          size: v.number(),
+        }),
+      ),
+    ),
   },
   handler: async (ctx, args) => {
     const { caller, series } = await requireOwnSeries(ctx, args.seriesId);
@@ -368,6 +419,35 @@ export const updateRecurringTask = mutation({
           code: 'FORBIDDEN',
           message: 'Access denied: cross-organization operation',
         });
+      }
+    }
+
+    // Link targets must stay inside the organization, mirroring create.
+    if (args.projectId) {
+      const project = await ctx.db.get(args.projectId);
+      if (!project || project.organizationId !== series.organizationId) {
+        throw new ConvexError({
+          code: 'FORBIDDEN',
+          message: 'Project does not belong to your organization',
+        });
+      }
+    }
+    if (args.objectiveId) {
+      const objective = await ctx.db.get(args.objectiveId);
+      if (!objective || objective.organizationId !== series.organizationId) {
+        throw new ConvexError({
+          code: 'FORBIDDEN',
+          message: 'Objective does not belong to your organization',
+        });
+      }
+      if (args.keyResultId) {
+        const kr = await ctx.db.get(args.keyResultId);
+        if (!kr || kr.objectiveId !== args.objectiveId) {
+          throw new ConvexError({
+            code: 'KEY_RESULT_MISMATCH',
+            message: 'Key result does not belong to the specified objective',
+          });
+        }
       }
     }
 
@@ -392,6 +472,9 @@ export const updateRecurringTask = mutation({
       assignedTo: args.assignedTo ?? series.assignedTo,
       priority: args.priority ?? series.priority,
       tags: args.tags ?? series.tags,
+      projectId: args.projectId !== undefined ? args.projectId : series.projectId,
+      objectiveId: args.objectiveId !== undefined ? args.objectiveId : series.objectiveId,
+      keyResultId: args.keyResultId !== undefined ? args.keyResultId : series.keyResultId,
       frequency: merged.frequency,
       // Keep only the fields the chosen frequency uses, so a series switched from
       // weekly to monthly cannot keep firing on its old weekdays.
@@ -400,6 +483,17 @@ export const updateRecurringTask = mutation({
       startDate: merged.startDate,
       endDate: merged.endDate,
       deadlineOffsetDays: args.deadlineOffsetDays ?? series.deadlineOffsetDays,
+      attachments:
+        args.attachments === undefined
+          ? series.attachments
+          : args.attachments.map((a) => ({
+              ...a,
+              // Keep the original uploader for files that survive an edit;
+              // anything newly added was attached by whoever edited the rule.
+              uploadedBy:
+                series.attachments?.find((old) => old.url === a.url)?.uploadedBy ?? caller._id,
+              uploadedAt: series.attachments?.find((old) => old.url === a.url)?.uploadedAt ?? now,
+            })),
       updatedAt: now,
     });
 
@@ -463,6 +557,16 @@ export const deleteRecurringTask = mutation({
       await ctx.db.patch(task._id, { recurringTaskId: undefined, updatedAt: now });
     }
 
+    // The rule's discussion dies with it — comments have no meaning once the
+    // template they refer to is gone.
+    const comments = await ctx.db
+      .query('recurringTaskComments')
+      .withIndex('by_series', (q) => q.eq('seriesId', args.seriesId))
+      .take(DEFAULT_LIST_CAP);
+    for (const comment of comments) {
+      await ctx.db.delete(comment._id);
+    }
+
     await ctx.db.delete(args.seriesId);
     await ctx.db.insert('auditLogs', {
       organizationId: series.organizationId,
@@ -519,6 +623,9 @@ async function materializeIfDue(
     projectId: series.projectId,
     objectiveId: series.objectiveId,
     keyResultId: series.keyResultId,
+    // The rule's briefing files travel with the work. Stamped rows are copied
+    // verbatim so the occurrence shows who originally attached them.
+    attachments: series.attachments,
     recurringTaskId: series._id,
     createdAt: now,
     updatedAt: now,
@@ -590,5 +697,129 @@ export const generateDueRecurringTasks = internalMutation({
       );
     }
     return { generated, skipped, day: today };
+  },
+});
+
+// ── Comments on a series ─────────────────────────────────────────────────────
+
+/**
+ * Comments on a recurring rule, newest first.
+ *
+ * A series is a template, but the discussion around it is real: "the Monday
+ * briefing should also cover the warehouse" is context the assignee needs on
+ * every occurrence. Same visibility rules as the series itself — anyone who can
+ * see the series can read its thread, authors can delete their own.
+ */
+export const listRecurringTaskComments = query({
+  args: { seriesId: v.id('recurringTasks') },
+  handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) {
+      throw new ConvexError({ code: 'NOT_AUTHENTICATED', message: 'Not authenticated' });
+    }
+    const series = await ctx.db.get(args.seriesId);
+    if (!series) return [];
+    // Same visibility contract as `getRecurringTaskOccurrences`: a caller from
+    // another organization simply sees nothing, not an error.
+    if (!isSuperadmin(caller) && caller.organizationId !== series.organizationId) return [];
+
+    const comments = await ctx.db
+      .query('recurringTaskComments')
+      .withIndex('by_series', (q) => q.eq('seriesId', args.seriesId))
+      .order('desc')
+      .take(SMALL_LIST_CAP);
+
+    return Promise.all(
+      comments.map(async (comment) => {
+        const author = await ctx.db.get(comment.authorId);
+        return {
+          ...comment,
+          authorName: author?.name ?? 'Unknown',
+          authorAvatar: author?.avatarUrl ?? null,
+        };
+      }),
+    );
+  },
+});
+
+/** Anyone who may manage the series may comment; the assignee always may. */
+export const addRecurringTaskComment = mutation({
+  args: {
+    seriesId: v.id('recurringTasks'),
+    content: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const { caller, series } = await requireOwnSeries(ctx, args.seriesId);
+    const content = args.content.trim();
+    if (!content) {
+      throw new ConvexError({ code: 'EMPTY_COMMENT', message: 'Comment cannot be empty' });
+    }
+    if (content.length > 2000) {
+      throw new ConvexError({
+        code: 'COMMENT_TOO_LONG',
+        message: 'Comment is too long (2000 characters max)',
+      });
+    }
+
+    const commentId = await ctx.db.insert('recurringTaskComments', {
+      seriesId: args.seriesId,
+      authorId: caller._id,
+      content: sanitizeText(content),
+      createdAt: Date.now(),
+    });
+
+    // The assignee is told when somebody else comments — the series produces
+    // *their* work, so discussion about it is their business.
+    if (series.assignedTo !== caller._id) {
+      await notify(ctx, {
+        organizationId: series.organizationId,
+        userId: series.assignedTo,
+        type: 'system',
+        titleKey: 'notifications.titles.seriesCommented',
+        messageKey: 'notifications.messages.seriesCommented',
+        params: { seriesTitle: series.title, authorName: caller.name ?? 'Someone' },
+        fallbackTitle: '💬 Comment on recurring task',
+        fallbackMessage: `${caller.name ?? 'Someone'} commented on "${series.title}"`,
+        relatedId: args.seriesId,
+        route: '/tasks/recurring',
+        createdAt: Date.now(),
+      });
+    }
+
+    return { commentId };
+  },
+});
+
+/** The author may remove their own comment. */
+export const deleteRecurringTaskComment = mutation({
+  args: { commentId: v.id('recurringTaskComments') },
+  handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) {
+      throw new ConvexError({ code: 'NOT_AUTHENTICATED', message: 'Not authenticated' });
+    }
+    const comment = await ctx.db.get(args.commentId);
+    if (!comment) {
+      throw new ConvexError({ code: 'NOT_FOUND', message: 'Comment not found' });
+    }
+    const series = await ctx.db.get(comment.seriesId);
+    if (!series) {
+      throw new ConvexError({ code: 'NOT_FOUND', message: 'Recurring task not found' });
+    }
+    if (!isSuperadmin(caller) && caller.organizationId !== series.organizationId) {
+      throw new ConvexError({
+        code: 'FORBIDDEN',
+        message: 'Access denied: cross-organization operation',
+      });
+    }
+    // Only the author (or a superadmin) removes a comment.
+    if (comment.authorId !== caller._id && !isSuperadmin(caller)) {
+      throw new ConvexError({
+        code: 'FORBIDDEN',
+        message: 'Only the author can delete this comment',
+      });
+    }
+    await ctx.db.delete(args.commentId);
+    return { success: true };
   },
 });

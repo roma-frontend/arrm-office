@@ -105,6 +105,22 @@ export const tasks = {
     projectId: v.optional(v.id('projects')),
     objectiveId: v.optional(v.id('objectives')),
     keyResultId: v.optional(v.id('keyResults')),
+    /**
+     * Files attached to the rule. Copied into every occurrence at
+     * materialization time, so the same briefing travels with the work.
+     */
+    attachments: v.optional(
+      v.array(
+        v.object({
+          url: v.string(),
+          name: v.string(),
+          type: v.string(),
+          size: v.number(),
+          uploadedBy: v.id('users'),
+          uploadedAt: v.number(),
+        }),
+      ),
+    ),
 
     // ── The rule ──
     frequency: v.union(v.literal('weekly'), v.literal('monthly')),
@@ -142,4 +158,12 @@ export const tasks = {
     content: v.string(),
     createdAt: v.number(),
   }).index('by_task', ['taskId']),
+
+  /** Discussion on a recurring rule — same shape as `taskComments`. */
+  recurringTaskComments: defineTable({
+    seriesId: v.id('recurringTasks'),
+    authorId: v.id('users'),
+    content: v.string(),
+    createdAt: v.number(),
+  }).index('by_series', ['seriesId']),
 };

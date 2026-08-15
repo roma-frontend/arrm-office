@@ -4,13 +4,26 @@ import { mutation, query, type QueryCtx, type MutationCtx } from './_generated/s
 import { paginationOptsValidator } from 'convex/server';
 import type { Doc, Id } from './_generated/dataModel';
 import { isSuperadmin } from './lib/auth';
-import { getSubordinateIds } from './lib/reportingLine';
+import { getSubordinateIds, resolveSupervisorId } from './lib/reportingLine';
 
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
 import { getAuthCaller } from './lib/getAuthCaller';
 import { notify } from './lib/notify';
 import { sanitizeTitle, sanitizeText } from './lib/sanitize';
+
+/**
+ * Organization admins, used as the fallback review queue when an employee
+ * without a supervisor creates a task for themselves.
+ */
+async function getOrgAdmins(ctx: QueryCtx, organizationId: Id<'organizations'> | undefined) {
+  if (!organizationId) return [];
+  const users = await ctx.db
+    .query('users')
+    .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
+    .take(SMALL_LIST_CAP);
+  return users.filter((u) => u.role === 'admin').map((u) => u._id);
+}
 
 /**
  * Helper to batch load users and enrich task data
@@ -133,11 +146,22 @@ export const createTask = mutation({
     // tasks as someone else in any organization.
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
-    if (caller.role !== 'admin' && caller.role !== 'superadmin' && caller.role !== 'supervisor') {
-      throw new Error('Only admins and supervisors may assign tasks');
-    }
     const assigner = caller;
     const organizationId = caller.organizationId;
+
+    // Regular employees may create tasks — but only for themselves. Admins and
+    // supervisors keep the full assign scope (org / reporting subtree).
+    if (caller.role === 'employee') {
+      if (args.assignedTo !== caller._id) {
+        throw new Error('Employees can only create tasks assigned to themselves');
+      }
+    } else if (
+      caller.role !== 'admin' &&
+      caller.role !== 'superadmin' &&
+      caller.role !== 'supervisor'
+    ) {
+      throw new Error('Only admins and supervisors may assign tasks');
+    }
 
     // The assignee must exist and live in the same organization as the caller.
     const assignee = await ctx.db.get(args.assignedTo);
@@ -197,21 +221,47 @@ export const createTask = mutation({
       updatedAt: now,
     });
 
-    // Notify the person who assigned the task (skip superadmin)
+    // Notify the person who assigned the task (skip superadmin). When a regular
+    // employee creates a task for themselves there is nobody who "assigned" it
+    // to them — instead their manager along the reporting line needs to know,
+    // so the work lands on the supervisor's board and gets checked there.
     if (assigner.role !== 'superadmin') {
-      await notify(ctx, {
-        organizationId,
-        userId: caller._id,
-        type: 'system',
-        titleKey: 'notifications.titles.taskAssigned',
-        messageKey: 'notifications.messages.taskAssignedByYou',
-        params: { taskTitle: args.title },
-        fallbackTitle: '📋 Task Assigned',
-        fallbackMessage: `You assigned a task: "${args.title}"`,
-        relatedId: taskId,
-        route: '/tasks',
-        createdAt: now,
-      });
+      if (assigner.role === 'employee') {
+        const supervisorId = await resolveSupervisorId(ctx, assignee);
+        // Everyone has a supervisor in a healthy org, but an employee without
+        // one must not drop their work into a void — the org admins are told
+        // instead so the task still lands on a review queue.
+        const recipients = supervisorId ? [supervisorId] : await getOrgAdmins(ctx, organizationId);
+        for (const recipientId of recipients) {
+          await notify(ctx, {
+            organizationId,
+            userId: recipientId,
+            type: 'system',
+            titleKey: 'notifications.titles.taskCreated',
+            messageKey: 'notifications.messages.taskCreatedByEmployee',
+            params: { taskTitle: args.title, employeeName: assignee.name ?? 'employee' },
+            fallbackTitle: '📋 New Task Created',
+            fallbackMessage: `${assignee.name ?? 'An employee'} created a task: "${args.title}"`,
+            relatedId: taskId,
+            route: '/tasks',
+            createdAt: now,
+          });
+        }
+      } else {
+        await notify(ctx, {
+          organizationId,
+          userId: caller._id,
+          type: 'system',
+          titleKey: 'notifications.titles.taskAssigned',
+          messageKey: 'notifications.messages.taskAssignedByYou',
+          params: { taskTitle: args.title },
+          fallbackTitle: '📋 Task Assigned',
+          fallbackMessage: `You assigned a task: "${args.title}"`,
+          relatedId: taskId,
+          route: '/tasks',
+          createdAt: now,
+        });
+      }
     }
 
     // Audit log: task created
@@ -250,6 +300,27 @@ export const updateTaskStatus = mutation({
     const task = await ctx.db.get(args.taskId);
     if (!task) throw new Error('Task not found');
 
+    // Only the assignee (doing the work), the person who assigned it (checking
+    // it), and staff may move a task. Employees cannot drag someone else's task
+    // out of their column.
+    const caller = await getAuthCaller(ctx);
+    if (caller) {
+      const isStaff =
+        caller.role === 'admin' || caller.role === 'supervisor' || isSuperadmin(caller);
+      const isAssignee = caller._id === task.assignedTo;
+      const isAssigner = caller._id === task.assignedBy;
+      // A supervisor may move a task their report is working on even when they
+      // did not assign it (e.g. a task the report created for themselves).
+      let isSupervisorOfAssignee = false;
+      if (caller.role === 'supervisor' && !isAssignee && !isAssigner) {
+        const subordinates = await getSubordinateIds(ctx, caller._id);
+        isSupervisorOfAssignee = subordinates.includes(task.assignedTo);
+      }
+      if (!isStaff && !isAssignee && !isAssigner && !isSupervisorOfAssignee) {
+        throw new Error('You can only change the status of your own tasks');
+      }
+    }
+
     const now = Date.now();
     await ctx.db.patch(args.taskId, {
       status: args.status,
@@ -257,15 +328,26 @@ export const updateTaskStatus = mutation({
       completedAt: args.status === 'completed' ? now : task.completedAt,
     });
 
-    // Notify supervisor when task goes to review or completed (skip superadmin)
+    // Notify the manager along the reporting line when a task goes to review or
+    // completed. The assignee's supervisor is who needs to know: for tasks a
+    // supervisor assigned that is `assignedBy`; for tasks an employee created
+    // for themselves it is the assignee's own manager, resolved via the
+    // reporting line instead of `assignedBy` (which would be the employee
+    // themself and produce a self-notification).
     if (args.status === 'review' || args.status === 'completed') {
       const employee = await ctx.db.get(args.userId);
       const supervisor = await ctx.db.get(task.assignedBy);
-      if (supervisor?.role !== 'superadmin') {
+      const assignedByIsManager =
+        supervisor && supervisor.role !== 'employee' && supervisor._id !== task.assignedTo;
+      const supervisorId = assignedByIsManager
+        ? task.assignedBy
+        : await resolveSupervisorId(ctx, employee ?? (await ctx.db.get(task.assignedTo))!);
+      const supervisorDoc = supervisorId ? await ctx.db.get(supervisorId) : null;
+      if (supervisorDoc && supervisorDoc.role !== 'superadmin') {
         const isCompleted = args.status === 'completed';
         await notify(ctx, {
           organizationId: task.organizationId,
-          userId: task.assignedBy,
+          userId: supervisorId!,
           type: 'system',
           titleKey: isCompleted
             ? 'notifications.titles.taskCompleted'
@@ -468,21 +550,53 @@ export const getTasksAssignedBy = query({
 
     const userIsSuperadmin = isSuperadmin(supervisor);
 
-    const tasks = await ctx.db
+    // Tasks the supervisor assigned themselves…
+    const assignedBySelf = await ctx.db
       .query('tasks')
       .withIndex('by_assigned_by', (q) => q.eq('assignedBy', args.supervisorId))
       .order('desc')
       .take(DEFAULT_LIST_CAP);
 
-    // Filter by organization (skip for superadmin)
-    let orgTasks = tasks;
+    // …plus tasks created by anyone in their reporting subtree. Employees now
+    // create their own tasks, and those must be checked along the reporting
+    // line — the manager who owns the work sees it on the board instead of it
+    // disappearing into the creator's private list. `getSubordinateIds` walks
+    // the whole subtree (direct reports, their reports, …), so a mid-level
+    // manager sees everything their branch produced.
+    let subtreeTasks: Doc<'tasks'>[] = [];
     if (!userIsSuperadmin) {
-      orgTasks = tasks.filter(
-        (task) => !supervisor.organizationId || task.organizationId === supervisor.organizationId,
-      );
+      const subordinates = await getSubordinateIds(ctx, args.supervisorId);
+      if (subordinates.length > 0) {
+        const perPerson = await Promise.all(
+          subordinates.map((id) =>
+            ctx.db
+              .query('tasks')
+              .withIndex('by_assigned_by', (q) => q.eq('assignedBy', id))
+              .order('desc')
+              .take(SMALL_LIST_CAP),
+          ),
+        );
+        subtreeTasks = perPerson.flat();
+      }
     }
 
-    return enrichTasksWithUserData(ctx, orgTasks);
+    // Merge + de-dupe, newest first.
+    const seen = new Set<string>();
+    const merged: Doc<'tasks'>[] = [];
+    for (const task of [...assignedBySelf, ...subtreeTasks]) {
+      if (seen.has(task._id)) continue;
+      seen.add(task._id);
+      if (
+        userIsSuperadmin ||
+        !supervisor.organizationId ||
+        task.organizationId === supervisor.organizationId
+      ) {
+        merged.push(task);
+      }
+    }
+    merged.sort((a, b) => b.createdAt - a.createdAt);
+
+    return enrichTasksWithUserData(ctx, merged);
   },
 });
 
@@ -605,6 +719,13 @@ export const getUsersForAssignment = query({
           u.role === 'admin' ||
           u.role === 'driver'),
     );
+
+    // Employees create tasks for themselves only — the assignee picker offers
+    // exactly one person, so the wizard cannot present a choice the backend
+    // would reject.
+    if (requester.role === 'employee') {
+      candidates = candidates.filter((u) => u._id === requester._id);
+    }
 
     // Supervisors can only assign within their own reporting branch. If the
     // reporting lines are not filled in (no direct reports), fall back to

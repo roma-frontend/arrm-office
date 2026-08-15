@@ -177,6 +177,8 @@ export default function TaskDetailClient({
   // page can list them and let anyone add to the discussion.
   const comments = useQuery(api.tasks.getTaskComments, taskId ? { taskId } : 'skip');
   const addComment = useMutation(api.tasks.addComment);
+  const updateStatus = useMutation(api.tasks.updateTaskStatus);
+  const [statusUpdating, setStatusUpdating] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [isPosting, setIsPosting] = useState(false);
 
@@ -255,6 +257,29 @@ export default function TaskDetailClient({
   const canManage =
     user?.role === 'admin' || user?.role === 'supervisor' || user?.role === 'superadmin';
 
+  // Status changes belong to the people doing/checking the work: the assignee
+  // and their supervisor (plus admins). The server enforces the same rule.
+  const isAssignee = user?.id != null && task.assignedTo === (user.id as Id<'users'>);
+  const canChangeStatus = canManage || isAssignee;
+
+  const handleStatusChange = async (status: string) => {
+    if (!user?.id || !taskId || statusUpdating) return;
+    setStatusUpdating(true);
+    try {
+      await updateStatus({
+        taskId,
+        status: status as 'pending' | 'in_progress' | 'review' | 'completed',
+        userId: user.id as Id<'users'>,
+      });
+      toast.success(t('tasksClient.statusUpdated', 'Status updated'));
+    } catch (error) {
+      logger.error('Failed to update status', error);
+      toast.error(t('common.error', 'Something went wrong'));
+    } finally {
+      setStatusUpdating(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -305,7 +330,30 @@ export default function TaskDetailClient({
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">{t('common.status')}</span>
-              <StatusBadge status={task.status} />
+              {canChangeStatus ? (
+                <select
+                  value={task.status}
+                  disabled={statusUpdating}
+                  onChange={(e) => void handleStatusChange(e.target.value)}
+                  aria-label={t('common.status')}
+                  className="rounded-lg border border-(--border) bg-(--card) px-2 py-1 text-sm font-medium text-(--text-primary) focus:outline-none focus:ring-2 focus:ring-(--primary)/30 disabled:opacity-60"
+                >
+                  {(
+                    [
+                      { value: 'pending', key: 'pending' },
+                      { value: 'in_progress', key: 'inProgress' },
+                      { value: 'review', key: 'inReview' },
+                      { value: 'completed', key: 'completed' },
+                    ] as const
+                  ).map(({ value, key }) => (
+                    <option key={value} value={value}>
+                      {t(`taskStatus.${key}`)}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <StatusBadge status={task.status} />
+              )}
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">{t('tasksClient.priority')}</span>

@@ -48,6 +48,7 @@ jest.mock('@/convex/_generated/api', () => ({
     },
     recurringTasks: {
       createRecurringTask: { _name: 'createRecurringTask' },
+      updateRecurringTask: { _name: 'updateRecurringTask' },
     },
     users: {
       queries: { getUserById: { _name: 'getUserById' } },
@@ -234,6 +235,7 @@ const seed = () => {
   mutationImpls.createRecurringTask = jest
     .fn()
     .mockResolvedValue({ id: 'r-1', nextOccurrence: null });
+  mutationImpls.updateRecurringTask = jest.fn().mockResolvedValue({ success: true });
   createTask.mockClear().mockResolvedValue('task-1');
   mockToast.success.mockClear();
   mockToast.error.mockClear();
@@ -432,7 +434,7 @@ describe('CreateTaskWizard', () => {
     );
   });
 
-  it('warns that attachments are not supported on recurring tasks', async () => {
+  it('keeps attachments on a recurring series so they travel with occurrences', async () => {
     renderWizard();
     walkToEnd({
       repeat: 'weekly',
@@ -442,8 +444,85 @@ describe('CreateTaskWizard', () => {
     fireEvent.click(screen.getByText('taskWizard.submit'));
 
     await waitFor(() =>
-      expect(mockToast.warning).toHaveBeenCalledWith('recurringTasks.attachmentsNotSupported'),
+      expect(mutationCalls).toContainEqual({
+        name: 'createRecurringTask',
+        args: [
+          expect.objectContaining({
+            attachments: [{ url: 'u', name: 'a', type: 'image/png', size: 1 }],
+          }),
+        ],
+      }),
     );
+    expect(mockToast.success).toHaveBeenCalledWith('recurringTasks.created');
+  });
+
+  it('prefills and updates a series in edit mode', async () => {
+    renderWizard({
+      userRole: 'admin',
+      editingSeries: {
+        _id: 'r-1',
+        title: 'Weekly standup notes',
+        description: 'Post the recap',
+        priority: 'high',
+        tags: ['ops', 'sync'],
+        assignedTo: 'emp-1',
+        frequency: 'weekly',
+        daysOfWeek: [1, 5],
+        startDate: '2026-08-01',
+        endDate: '2026-12-31',
+        deadlineOffsetDays: 1,
+        attachments: [
+          { url: 'https://cdn/a.pdf', name: 'a.pdf', type: 'application/pdf', size: 10 },
+        ],
+      },
+    });
+
+    // Step 0 (details) is prefilled from the series
+    expect((screen.getByTestId('input-title') as HTMLInputElement).value).toBe(
+      'Weekly standup notes',
+    );
+
+    // Walk: assignee → priority → repeat (steps 1-3)
+    fireEvent.click(screen.getByText('Next'));
+    fireEvent.click(screen.getByText('Next'));
+    fireEvent.click(screen.getByText('Next'));
+
+    // Repeat is prefilled and offers no "none" while editing a series
+    expect((screen.getByTestId('select-repeat') as HTMLSelectElement).value).toBe('weekly');
+    const repeatOptions = Array.from(
+      screen.getByTestId('select-repeat').querySelectorAll('option'),
+    ).map((o) => (o as HTMLOptionElement).value);
+    expect(repeatOptions.filter(Boolean)).toEqual(['weekly', 'monthly']);
+
+    // tags → objectiveLink → attachments → submit
+    fireEvent.click(screen.getByText('Next'));
+    fireEvent.click(screen.getByText('Next'));
+    fireEvent.click(screen.getByText('Next'));
+    // Edit mode labels the submit button "Save"
+    fireEvent.click(screen.getByText('Save'));
+
+    await waitFor(() =>
+      expect(mutationCalls).toContainEqual({
+        name: 'updateRecurringTask',
+        args: [
+          expect.objectContaining({
+            seriesId: 'r-1',
+            title: 'Weekly standup notes',
+            priority: 'high',
+            frequency: 'weekly',
+            daysOfWeek: [1, 5],
+            startDate: '2026-08-01',
+            endDate: '2026-12-31',
+            deadlineOffsetDays: 1,
+            attachments: [
+              { url: 'https://cdn/a.pdf', name: 'a.pdf', type: 'application/pdf', size: 10 },
+            ],
+          }),
+        ],
+      }),
+    );
+    expect(mockToast.success).toHaveBeenCalledWith('recurringTasks.updated');
+    expect(createTask).not.toHaveBeenCalled();
   });
 
   it('attaches files to a one-off task after creation', async () => {
@@ -594,6 +673,36 @@ describe('CreateTaskWizard', () => {
     walkToEnd();
     fireEvent.click(screen.getByText('taskWizard.submit'));
     await waitFor(() => expect(onComplete).toHaveBeenCalled());
+  });
+
+  it('skips the assignee step for employees and self-assigns on submit', async () => {
+    const onComplete = jest.fn();
+    renderWizard({ userRole: 'employee', currentUserId: 'u-emp', onComplete });
+
+    // No assignee step: after details, the wizard jumps straight to priority.
+    fillTitle();
+    fireEvent.click(screen.getByText('Next'));
+    expect(screen.queryByTestId('select-assigneeId')).not.toBeInTheDocument();
+    expect(screen.getByTestId('select-priority')).toBeInTheDocument();
+
+    // Walk the remaining steps (priority → repeat → tags → objective → attachments).
+    fireEvent.click(screen.getByText('Next'));
+    fireEvent.click(screen.getByText('Next'));
+    fireEvent.click(screen.getByText('Next'));
+    fireEvent.click(screen.getByText('Next'));
+    expect(screen.getByText('taskWizard.submit')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('taskWizard.submit'));
+    await waitFor(() =>
+      expect(createTask).toHaveBeenCalledWith(
+        expect.objectContaining({
+          assignedTo: 'u-emp',
+          assignedBy: 'u-emp',
+          title: 'Ship it',
+        }),
+      ),
+    );
+    expect(onComplete).toHaveBeenCalled();
   });
 
   it('calls onCancel when the wizard is cancelled', () => {

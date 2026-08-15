@@ -175,13 +175,45 @@ describe('recurringTasks.createRecurringTask', () => {
     expect(mockInsert).not.toHaveBeenCalled();
   });
 
-  it('refuses an employee: series are scheduling policy', async () => {
+  it('refuses an employee creating a series for someone else', async () => {
     mockGetAuthCaller.mockResolvedValue(employeeA);
     mockIsSuperadmin.mockReturnValue(false);
-    await expect(
-      recurringTasks.createRecurringTask.handler(makeCtx(), validArgs),
-    ).rejects.toThrow();
+    // `validArgs` assigns to assigneeA — not the employee themselves.
+    await expect(recurringTasks.createRecurringTask.handler(makeCtx(), validArgs)).rejects.toThrow(
+      'Employees can only create recurring tasks assigned to themselves',
+    );
     expect(mockInsert).not.toHaveBeenCalled();
+  });
+
+  it('lets an employee create a recurring series assigned to themselves', async () => {
+    mockGetAuthCaller.mockResolvedValue(employeeA);
+    mockIsSuperadmin.mockReturnValue(false);
+    mockGet.mockImplementation(async (id: string) =>
+      id === employeeA._id
+        ? employeeA
+        : id === 'inserted-1'
+          ? seriesDoc({ _id: 'inserted-1' })
+          : null,
+    );
+
+    await recurringTasks.createRecurringTask.handler(makeCtx(), {
+      ...validArgs,
+      assignedTo: employeeA._id as any,
+    });
+
+    expect(mockInsert).toHaveBeenCalledWith(
+      'recurringTasks',
+      expect.objectContaining({
+        organizationId: ORG_A,
+        title: 'Weekly report',
+        assignedTo: employeeA._id,
+        assignedBy: employeeA._id,
+        frequency: 'weekly',
+        daysOfWeek: [1],
+        isActive: true,
+        generatedCount: 0,
+      }),
+    );
   });
 
   it('lets a supervisor create one', async () => {
@@ -467,5 +499,145 @@ describe('recurringTasks.generateDueRecurringTasks', () => {
 
     expect(result.skipped).toBe(1);
     expect(result.generated).toBe(1);
+  });
+});
+
+// ── addRecurringTaskComment / listRecurringTaskComments ─────────────────────
+
+describe('recurringTasks.addRecurringTaskComment', () => {
+  it('refuses an unauthenticated caller', async () => {
+    mockGetAuthCaller.mockResolvedValue(null);
+    await expect(
+      recurringTasks.addRecurringTaskComment.handler(makeCtx(), {
+        seriesId: 'series-1',
+        content: 'hi',
+      }),
+    ).rejects.toThrow();
+    expect(mockInsert).not.toHaveBeenCalled();
+  });
+
+  it('refuses an empty comment', async () => {
+    mockGetAuthCaller.mockResolvedValue(adminA);
+    mockGet.mockResolvedValue(seriesDoc());
+    await expect(
+      recurringTasks.addRecurringTaskComment.handler(makeCtx(), {
+        seriesId: 'series-1',
+        content: '   ',
+      }),
+    ).rejects.toThrow();
+    expect(mockInsert).not.toHaveBeenCalled();
+  });
+
+  it('stores a comment and notifies the assignee when the author differs', async () => {
+    mockGetAuthCaller.mockResolvedValue(adminA);
+    mockGet.mockResolvedValue(seriesDoc());
+
+    await recurringTasks.addRecurringTaskComment.handler(makeCtx(), {
+      seriesId: 'series-1',
+      content: 'Add the warehouse to the briefing',
+    });
+
+    expect(mockInsert).toHaveBeenCalledWith(
+      'recurringTaskComments',
+      expect.objectContaining({
+        seriesId: 'series-1',
+        authorId: adminA._id,
+        content: 'Add the warehouse to the briefing',
+      }),
+    );
+    // The assignee is a different person — they get told.
+    expect(mockNotify).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ userId: assigneeA._id, route: '/tasks/recurring' }),
+    );
+  });
+
+  it('does not notify the assignee when the assignee comments', async () => {
+    const assigneeAdmin = { ...adminA, _id: assigneeA._id };
+    mockGetAuthCaller.mockResolvedValue(assigneeAdmin);
+    mockGet.mockResolvedValue(seriesDoc());
+
+    await recurringTasks.addRecurringTaskComment.handler(makeCtx(), {
+      seriesId: 'series-1',
+      content: 'Got it',
+    });
+
+    expect(mockNotify).not.toHaveBeenCalled();
+  });
+});
+
+describe('recurringTasks.listRecurringTaskComments', () => {
+  it('scopes comments to the caller organization', async () => {
+    mockGetAuthCaller.mockResolvedValue(adminB);
+    mockGet.mockResolvedValue(seriesDoc());
+
+    const result = await recurringTasks.listRecurringTaskComments.handler(makeCtx(), {
+      seriesId: 'series-1',
+    });
+
+    expect(result).toEqual([]);
+  });
+
+  it('returns comments with author names', async () => {
+    mockGetAuthCaller.mockResolvedValue(adminA);
+    mockGet.mockResolvedValue(seriesDoc()); // series lookup
+    mockGet.mockResolvedValueOnce(seriesDoc()); // series lookup
+    mockGet.mockResolvedValueOnce(adminA); // author
+    const ctx = makeCtx({
+      recurringTaskComments: [
+        {
+          _id: 'comment-1',
+          seriesId: 'series-1',
+          authorId: adminA._id,
+          content: 'hi',
+          createdAt: 1,
+        },
+      ],
+    });
+
+    const result = await recurringTasks.listRecurringTaskComments.handler(ctx, {
+      seriesId: 'series-1',
+    });
+
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({ authorName: 'Admin A', content: 'hi' });
+  });
+});
+
+describe('recurringTasks.updateRecurringTask attachments', () => {
+  it('preserves the original uploader for a file that survives an edit', async () => {
+    mockGetAuthCaller.mockResolvedValue(adminA);
+    mockGet.mockResolvedValue(
+      seriesDoc({
+        attachments: [
+          {
+            url: 'https://cdn/a.pdf',
+            name: 'a.pdf',
+            type: 'application/pdf',
+            size: 10,
+            uploadedBy: assigneeA._id,
+            uploadedAt: 5,
+          },
+        ],
+      }),
+    );
+
+    await recurringTasks.updateRecurringTask.handler(makeCtx(), {
+      seriesId: 'series-1',
+      attachments: [
+        { url: 'https://cdn/a.pdf', name: 'a.pdf', type: 'application/pdf', size: 10 },
+        { url: 'https://cdn/b.png', name: 'b.png', type: 'image/png', size: 20 },
+      ],
+    });
+
+    const patched = mockPatch.mock.calls.find((c: any[]) => c[0] === 'series-1')?.[1] as any;
+    expect(patched.attachments).toEqual([
+      expect.objectContaining({
+        url: 'https://cdn/a.pdf',
+        uploadedBy: assigneeA._id,
+        uploadedAt: 5,
+      }),
+      expect.objectContaining({ url: 'https://cdn/b.png', uploadedBy: adminA._id }),
+    ]);
   });
 });

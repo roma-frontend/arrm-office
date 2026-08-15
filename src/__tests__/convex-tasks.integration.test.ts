@@ -248,6 +248,47 @@ describe('employee task queries', () => {
     );
     expect(res).toEqual([]);
   });
+
+  it('getTasksAssignedBy includes tasks employees created themselves (reporting line)', async () => {
+    const c = await seed();
+    // The employee creates a task for themselves — allowed since `createTask`
+    // lets an employee assign work to themselves.
+    const selfTaskId = await createTaskAs(c, 'employee@acme.test', {
+      assignedTo: c.employeeId,
+      title: 'My own task',
+    });
+
+    // The supervisor sees it: it was created inside their reporting subtree.
+    const res = await c.t.run((ctx) =>
+      ctx.runQuery(api.tasks.getTasksAssignedBy, { supervisorId: c.supervisorId }),
+    );
+    expect(res.some((t) => t._id === selfTaskId)).toBe(true);
+    expect(res.find((t) => t._id === selfTaskId)?.title).toBe('My own task');
+
+    // The peer (also a report of the same supervisor, but not the creator) does
+    // not see the task in their personal list.
+    const peerRes = await c.t.run((ctx) =>
+      ctx.runQuery(api.tasks.getTasksForEmployee, { userId: c.peerId }),
+    );
+    expect(peerRes.some((t) => t._id === selfTaskId)).toBe(false);
+  });
+
+  it('notifies the supervisor when an employee creates a task for themselves', async () => {
+    const c = await seed();
+    await createTaskAs(c, 'employee@acme.test', {
+      assignedTo: c.employeeId,
+      title: 'My own task',
+    });
+
+    // The notification lands in the supervisor's inbox, not the employee's.
+    const rows = await c.t.run((ctx) => ctx.db.query('notifications').collect());
+    const supervisorNotice = rows.find((n) => n.userId === c.supervisorId);
+    expect(supervisorNotice).toBeDefined();
+    expect(supervisorNotice?.title).toContain('New Task Created');
+    expect(supervisorNotice?.type).toBe('system');
+    // Nobody self-notifies.
+    expect(rows.some((n) => n.userId === c.employeeId)).toBe(false);
+  });
 });
 
 // ── getAllTasks (admin gating + org filtering) ──────────────────────────────
