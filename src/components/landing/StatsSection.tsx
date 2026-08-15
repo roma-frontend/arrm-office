@@ -26,7 +26,7 @@ function getStatsData(t: (key: string) => string) {
           <path d="M16 3.13a4 4 0 0 1 0 7.75" />
         </svg>
       ),
-      color: 'rgba(37,99,235,0.2)',
+      color: 'rgba(44,140,213,0.2)',
     },
     {
       value: '99%',

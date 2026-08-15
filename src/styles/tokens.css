@@ -409,7 +409,7 @@
   --accent: var(--surface-2);
   --accent-foreground: var(--text-1);
 
-  --loader-color: var(--brand-800); /* #1e40af */
+  --loader-color: var(--brand-text); /* azure — matches the dark theme's loader */
 
   /* Semantic */
   --destructive: var(--danger-solid);

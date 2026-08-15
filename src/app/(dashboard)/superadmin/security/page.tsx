@@ -100,8 +100,8 @@ const COLOR_MAP: Record<
 > = {
   blue: {
     iconColor: '#2563eb',
-    iconColorDark: '#3b82f6',
-    accentBg: 'rgba(37,99,235,0.1)',
+    iconColorDark: 'var(--brand)',
+    accentBg: 'rgba(44,140,213,0.1)',
     accentBgDark: 'rgba(59,130,246,0.15)',
     accentText: '#2563eb',
   },
@@ -303,7 +303,7 @@ export default function SecurityDashboard() {
             <div className="flex items-center gap-2 sm:gap-3">
               <div
                 className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl border shrink-0"
-                style={{ background: 'rgba(37,99,235,0.1)', borderColor: 'rgba(37,99,235,0.3)' }}
+                style={{ background: 'rgba(44,140,213,0.1)', borderColor: 'rgba(44,140,213,0.3)' }}
               >
                 <Shield className="w-5 h-5 sm:w-7 sm:h-7" style={{ color: 'var(--primary)' }} />
               </div>
@@ -418,7 +418,7 @@ export default function SecurityDashboard() {
                 onClick={() => setActiveTab(tab)}
                 className="px-3 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-medium rounded-t-lg transition-colors whitespace-nowrap shrink-0"
                 style={{
-                  background: activeTab === tab ? '#3b82f6' : 'transparent',
+                  background: activeTab === tab ? 'var(--brand)' : 'transparent',
                   color: activeTab === tab ? 'white' : 'var(--text-muted)',
                   borderColor: activeTab === tab ? 'var(--border)' : 'transparent',
                   border: activeTab === tab ? '1px solid var(--border)' : '1px solid transparent',
@@ -508,7 +508,7 @@ export default function SecurityDashboard() {
                       {feature.critical && (
                         <span
                           className="text-xs px-2 py-0.5 rounded"
-                          style={{ background: 'rgba(37,99,235,0.12)', color: 'var(--primary)' }}
+                          style={{ background: 'rgba(44,140,213,0.12)', color: 'var(--primary)' }}
                         >
                           {t('superadmin.security.criticalBadge')}
                         </span>
@@ -526,7 +526,7 @@ export default function SecurityDashboard() {
                       {feature.critical && (
                         <span
                           className="text-xs px-2 py-0.5 rounded"
-                          style={{ background: 'rgba(37,99,235,0.12)', color: 'var(--primary)' }}
+                          style={{ background: 'rgba(44,140,213,0.12)', color: 'var(--primary)' }}
                         >
                           {t('superadmin.security.criticalBadge')}
                         </span>
@@ -680,7 +680,7 @@ export default function SecurityDashboard() {
                           }}
                           className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-medium text-xs sm:text-sm transition-colors flex items-center gap-1 sm:gap-2 w-full sm:w-auto justify-center"
                           style={{
-                            background: 'rgba(37,99,235,0.1)',
+                            background: 'rgba(44,140,213,0.1)',
                             color: 'var(--primary)',
                           }}
                         >
@@ -820,7 +820,7 @@ export default function SecurityDashboard() {
                       <div className="text-sm truncate" style={{ color: 'var(--text-secondary)' }}>
                         <span
                           className="font-mono text-xs px-1.5 py-0.5 rounded mr-2 inline-block shrink-0"
-                          style={{ background: 'rgba(37,99,235,0.12)', color: 'var(--primary)' }}
+                          style={{ background: 'rgba(44,140,213,0.12)', color: 'var(--primary)' }}
                         >
                           {log.action}
                         </span>

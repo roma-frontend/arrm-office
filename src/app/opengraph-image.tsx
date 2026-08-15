@@ -29,7 +29,7 @@ export default function Image() {
           width: 80,
           height: 80,
           borderRadius: 20,
-          background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+          background: 'linear-gradient(135deg, #2c8cd5, #1d73b0)',
           marginBottom: 32,
           fontSize: 36,
           fontWeight: 800,

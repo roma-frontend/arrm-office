@@ -255,7 +255,7 @@ export default function AttendancePage() {
                   }`}
                   style={
                     activeTab === tab.id
-                      ? { background: '#3b82f6', color: 'white' }
+                      ? { background: 'var(--brand)', color: 'white' }
                       : { color: 'var(--text-muted)' }
                   }
                 >

@@ -1364,7 +1364,7 @@ body {
    ═══════════════════════════════════════════════════════════════ */
 
 /* Primary brand fill — `.btn-gradient` now lives in src/styles/spark.css.
-   The version here hard-coded rgb(37,99,235)→rgb(96,165,250) at 135°, which
+   The version here hard-coded rgb(44,140,213)→rgb(96,165,250) at 135°, which
    ignored the theme and read as a two-tone sweep; the token version is a
    vertical, few-percent gradient with an inner top highlight. */
 

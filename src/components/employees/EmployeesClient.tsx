@@ -258,7 +258,7 @@ export function EmployeesClient() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.08 }}
             className="p-4 rounded-xl border flex items-start gap-3"
-            style={{ background: 'rgba(37,99,235,0.08)', borderColor: 'rgba(37,99,235,0.2)' }}
+            style={{ background: 'rgba(44,140,213,0.08)', borderColor: 'rgba(44,140,213,0.2)' }}
           >
             <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-(--brand-text) bg-(--brand-quiet)">
               <Plus className="w-5 h-5" />

@@ -614,7 +614,7 @@ export default function MobileMenu({ isOpen, onClose, activeSection = null }: Mo
                 <div
                   className="w-11 h-6 rounded-full relative transition-colors duration-300"
                   style={{
-                    background: theme === 'dark' ? '#3b82f6' : 'var(--border)',
+                    background: theme === 'dark' ? 'var(--brand)' : 'var(--border)',
                   }}
                 >
                   <div
@@ -686,7 +686,7 @@ export default function MobileMenu({ isOpen, onClose, activeSection = null }: Mo
             <button
               className="w-full px-5 py-3.5 rounded-2xl font-bold transition-all duration-200 hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2.5 group relative overflow-hidden"
               style={{
-                background: 'linear-gradient(135deg, #2563eb, #3b82f6)',
+                background: 'linear-gradient(135deg, #1d73b0, #2c8cd5)',
                 color: '#ffffff',
                 boxShadow: '0 4px 20px rgba(37, 99, 235, 0.3)',
               }}

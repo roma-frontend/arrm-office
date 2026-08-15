@@ -536,7 +536,7 @@ export default function SecurityAlertDetailClient() {
 
             <div
               className="rounded-xl border p-6"
-              style={{ background: 'rgba(37,99,235,0.1)', borderColor: 'rgba(37,99,235,0.3)' }}
+              style={{ background: 'rgba(44,140,213,0.1)', borderColor: 'rgba(44,140,213,0.3)' }}
             >
               <h3 className="font-semibold mb-3" style={{ color: 'var(--primary)' }}>
                 Quick Presets
@@ -549,7 +549,7 @@ export default function SecurityAlertDetailClient() {
                   }}
                   className="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors"
                   style={{ background: 'var(--card-background)', color: 'var(--text-primary)' }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(37,99,235,0.2)')}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(44,140,213,0.2)')}
                   onMouseLeave={(e) =>
                     (e.currentTarget.style.background = 'var(--card-background)')
                   }
@@ -563,7 +563,7 @@ export default function SecurityAlertDetailClient() {
                   }}
                   className="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors"
                   style={{ background: 'var(--card-background)', color: 'var(--text-primary)' }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(37,99,235,0.2)')}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(44,140,213,0.2)')}
                   onMouseLeave={(e) =>
                     (e.currentTarget.style.background = 'var(--card-background)')
                   }
@@ -577,7 +577,7 @@ export default function SecurityAlertDetailClient() {
                   }}
                   className="w-full text-left px-3 py-2 rounded-lg text-sm transition-colors"
                   style={{ background: 'var(--card-background)', color: 'var(--text-primary)' }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(37,99,235,0.2)')}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(44,140,213,0.2)')}
                   onMouseLeave={(e) =>
                     (e.currentTarget.style.background = 'var(--card-background)')
                   }

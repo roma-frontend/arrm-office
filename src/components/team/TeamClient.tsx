@@ -408,7 +408,7 @@ export default function TeamClient() {
         <span
           aria-hidden
           className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full opacity-40 blur-3xl"
-          style={{ background: 'radial-gradient(circle, rgba(37,99,235,0.55), transparent 70%)' }}
+          style={{ background: 'radial-gradient(circle, rgba(44,140,213,0.55), transparent 70%)' }}
         />
         <span
           aria-hidden
@@ -939,7 +939,7 @@ function MemberCard({
             src={member.avatarUrl ?? member.faceImageUrl}
             role={member.role}
             size={compact ? 40 : 48}
-            ring={isMe ? 'rgba(37,99,235,0.35)' : undefined}
+            ring={isMe ? 'rgba(44,140,213,0.35)' : undefined}
           />
           <span
             aria-hidden
@@ -956,7 +956,7 @@ function MemberCard({
             {isMe && (
               <span
                 className="rounded-full px-1.5 py-px text-[10px] font-bold"
-                style={{ background: 'rgba(37,99,235,0.14)', color: 'var(--primary)' }}
+                style={{ background: 'rgba(44,140,213,0.14)', color: 'var(--primary)' }}
               >
                 {t('team.you', { defaultValue: 'You' })}
               </span>

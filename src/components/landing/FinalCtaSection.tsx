@@ -145,7 +145,7 @@ export default function FinalCtaSection({ initialLanguage = 'en' }: { initialLan
       <div
         className="absolute bottom-0 -left-20 w-[500px] h-[500px] rounded-full pointer-events-none orb-pulse-2"
         style={{
-          background: 'radial-gradient(circle, rgba(37,99,235,0.2) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(44,140,213,0.2) 0%, transparent 70%)',
           filter: 'blur(60px)',
         }}
       />
@@ -261,7 +261,7 @@ export default function FinalCtaSection({ initialLanguage = 'en' }: { initialLan
                   style={{
                     background: 'linear-gradient(135deg, #2563eb, #93c5fd)',
                     color: '#fff',
-                    boxShadow: '0 12px 32px -8px rgba(37,99,235,0.5)',
+                    boxShadow: '0 12px 32px -8px rgba(44,140,213,0.5)',
                   }}
                 >
                   <svg
@@ -282,7 +282,7 @@ export default function FinalCtaSection({ initialLanguage = 'en' }: { initialLan
                 <span
                   className="absolute inset-0 rounded-2xl pointer-events-none"
                   style={{
-                    border: '2px solid rgba(37,99,235,0.4)',
+                    border: '2px solid rgba(44,140,213,0.4)',
                     animation: 'pulse-ring 2.4s cubic-bezier(0.22,1,0.36,1) infinite',
                   }}
                 />
@@ -313,7 +313,7 @@ export default function FinalCtaSection({ initialLanguage = 'en' }: { initialLan
                     <span
                       className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
                       style={{
-                        background: 'rgba(37,99,235,0.12)',
+                        background: 'rgba(44,140,213,0.12)',
                         color: 'var(--primary)',
                       }}
                     >

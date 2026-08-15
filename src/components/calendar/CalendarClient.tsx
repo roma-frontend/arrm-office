@@ -597,7 +597,9 @@ function DayCell({
                     }}
                     className="group flex items-center gap-1.5 rounded-full px-1.5 py-0.5 cursor-grab active:cursor-grabbing"
                     style={{
-                      background: isSelected ? 'rgba(255,255,255,0.2)' : '#3b82f622',
+                      background: isSelected
+                        ? 'rgba(255,255,255,0.2)'
+                        : 'color-mix(in srgb, var(--brand) 13%, transparent)',
                     }}
                   >
                     <span

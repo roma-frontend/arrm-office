@@ -30,7 +30,7 @@ import { toast } from 'sonner';
 
 // ── Role config ─────────────────────────────────────────────────────────────
 const ROLE_CONFIG = {
-  admin: { icon: Crown, color: '#2563eb', bg: 'rgba(37,99,235,0.1)', label: 'Admin' },
+  admin: { icon: Crown, color: '#2563eb', bg: 'rgba(44,140,213,0.1)', label: 'Admin' },
   supervisor: {
     icon: UserCheck,
     color: '#f59e0b',
@@ -196,7 +196,7 @@ export function AssignManagerModal({
                 <div className="flex items-center gap-3">
                   <div
                     className="w-10 h-10 rounded-xl flex items-center justify-center"
-                    style={{ background: 'rgba(37,99,235,0.1)' }}
+                    style={{ background: 'rgba(44,140,213,0.1)' }}
                   >
                     <UserCog className="w-5 h-5 text-(--brand-text)" />
                   </div>
@@ -225,7 +225,7 @@ export function AssignManagerModal({
             {reportingLine && reportingLine.ancestors.length > 0 && (
               <div
                 className="px-6 py-3 border-b"
-                style={{ background: 'rgba(37,99,235,0.03)', borderColor: 'var(--border)' }}
+                style={{ background: 'rgba(44,140,213,0.03)', borderColor: 'var(--border)' }}
               >
                 <p
                   className="text-xs font-medium mb-2 flex items-center gap-1"
@@ -392,8 +392,8 @@ export function AssignManagerModal({
                           className="w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all"
                           style={{
                             borderColor: isSelected ? '#2563eb' : 'var(--border)',
-                            background: isSelected ? 'rgba(37,99,235,0.05)' : 'transparent',
-                            boxShadow: isSelected ? '0 0 0 1px rgba(37,99,235,0.3)' : 'none',
+                            background: isSelected ? 'rgba(44,140,213,0.05)' : 'transparent',
+                            boxShadow: isSelected ? '0 0 0 1px rgba(44,140,213,0.3)' : 'none',
                           }}
                           onMouseEnter={(e) => {
                             if (!isSelected)

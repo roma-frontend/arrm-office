@@ -305,7 +305,7 @@ export default function OrgRequestsClient() {
                 {request.description && (
                   <div
                     className="p-3 rounded-xl mb-4"
-                    style={{ background: 'rgba(37,99,235,0.05)' }}
+                    style={{ background: 'rgba(44,140,213,0.05)' }}
                   >
                     <div className="flex items-start gap-2 text-sm">
                       <MessageSquare className="w-4 h-4 mt-0.5 text-(--text-muted)" />

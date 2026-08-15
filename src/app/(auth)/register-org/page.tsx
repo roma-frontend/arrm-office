@@ -138,7 +138,7 @@ export default function RegisterOrgPage() {
                 }`}
                 style={{
                   background: 'var(--card)',
-                  boxShadow: plan.popular ? '0 0 30px rgba(37,99,235,0.2)' : undefined,
+                  boxShadow: plan.popular ? '0 0 30px rgba(44,140,213,0.2)' : undefined,
                 }}
                 onClick={() => handleSelectPlan(plan.id)}
               >

@@ -53,7 +53,7 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://strata.work';
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#2563eb' },
+    { media: '(prefers-color-scheme: light)', color: '#2c8cd5' },
     { media: '(prefers-color-scheme: dark)', color: '#60a5fa' },
   ],
   width: 'device-width',
@@ -166,7 +166,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     <html lang={htmlLang} suppressHydrationWarning data-scroll-behavior="smooth">
       <head>
         {/* Safari pinned tab */}
-        <link rel="mask-icon" href="/favicon.svg?v=3" color="#2563eb" />
+        <link rel="mask-icon" href="/favicon.svg?v=3" color="#2c8cd5" />
 
         {/* ── Resource hints ──
             No preconnect to Sentry: MonitoringProvider loads the SDK inside

@@ -45,7 +45,7 @@ function StatusBadge({ status }: { status: string }) {
   };
   const bgMap: Record<string, string> = {
     pending: 'rgba(245,158,11,0.1)',
-    in_progress: 'rgba(37,99,235,0.1)',
+    in_progress: 'rgba(44,140,213,0.1)',
     completed: 'rgba(16,185,129,0.1)',
     rejected: 'rgba(239,68,68,0.1)',
   };
@@ -192,7 +192,7 @@ export default function ComplianceClient() {
           <div className="flex items-center gap-2 sm:gap-3">
             <div
               className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl border shrink-0"
-              style={{ background: 'rgba(37,99,235,0.1)', borderColor: 'rgba(37,99,235,0.3)' }}
+              style={{ background: 'rgba(44,140,213,0.1)', borderColor: 'rgba(44,140,213,0.3)' }}
             >
               <Shield className="w-5 h-5 sm:w-7 sm:h-7" style={{ color: 'var(--primary)' }} />
             </div>
@@ -342,7 +342,7 @@ export default function ComplianceClient() {
                 onClick={() => setActiveTab(tab.id)}
                 className="flex items-center gap-1.5 px-3 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-medium rounded-t-lg transition-colors whitespace-nowrap shrink-0"
                 style={{
-                  background: activeTab === tab.id ? '#3b82f6' : 'transparent',
+                  background: activeTab === tab.id ? 'var(--brand)' : 'transparent',
                   color: activeTab === tab.id ? 'white' : 'var(--text-muted)',
                   border:
                     activeTab === tab.id ? '1px solid var(--border)' : '1px solid transparent',
@@ -488,7 +488,7 @@ export default function ComplianceClient() {
                     <div className="text-sm truncate" style={{ color: 'var(--text-secondary)' }}>
                       <span
                         className="font-mono text-xs px-1.5 py-0.5 rounded mr-2 inline-block shrink-0"
-                        style={{ background: 'rgba(37,99,235,0.12)', color: 'var(--primary)' }}
+                        style={{ background: 'rgba(44,140,213,0.12)', color: 'var(--primary)' }}
                       >
                         {log.action}
                       </span>

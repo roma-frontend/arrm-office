@@ -453,7 +453,7 @@ describe('visuals', () => {
       (d) => (d as HTMLElement).style.opacity === '1' || (d as HTMLElement).style.opacity === '0.5',
     );
     expect(dots).toHaveLength(2);
-    expect((dots[0] as HTMLElement).style.background).toBe('rgb(59, 130, 246)');
+    expect((dots[0] as HTMLElement).style.background).toBe('var(--brand)');
   });
 
   it('renders the highlight ring around the target by default', async () => {

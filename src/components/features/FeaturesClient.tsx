@@ -36,7 +36,7 @@ const MODULES = [
     id: 'people',
     icon: Users,
     color: '#2563eb',
-    gradient: 'linear-gradient(135deg, rgba(37,99,235,0.12) 0%, rgba(96,165,250,0.06) 100%)',
+    gradient: 'linear-gradient(135deg, rgba(44,140,213,0.12) 0%, rgba(96,165,250,0.06) 100%)',
     dashboardLink: '/employees',
   },
   {
@@ -299,7 +299,7 @@ export default function FeaturesClient() {
                 >
                   <div
                     className="inline-flex items-center justify-center w-11 h-11 rounded-xl mb-4"
-                    style={{ background: 'rgba(37,99,235,0.1)' }}
+                    style={{ background: 'rgba(44,140,213,0.1)' }}
                   >
                     <Icon className="w-5 h-5" style={{ color: 'var(--brand-text)' }} />
                   </div>

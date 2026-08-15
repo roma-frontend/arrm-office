@@ -512,7 +512,7 @@ export function OnboardingTour({ steps, tourId, onComplete, onSkip }: Onboarding
                       key={idx}
                       className="w-1.5 h-1.5 rounded-full transition-all"
                       style={{
-                        background: idx === currentStep ? '#3b82f6' : 'var(--muted)',
+                        background: idx === currentStep ? 'var(--brand)' : 'var(--muted)',
                         opacity: idx === currentStep ? 1 : 0.5,
                       }}
                     />

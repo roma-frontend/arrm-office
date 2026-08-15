@@ -21,7 +21,7 @@ const FEATURES = {
   vacation: {
     icon: <Calendar className="w-6 h-6" />,
     color: '#2563eb',
-    gradient: 'linear-gradient(135deg, rgba(37,99,235,0.15) 0%, rgba(96,165,250,0.08) 100%)',
+    gradient: 'linear-gradient(135deg, rgba(44,140,213,0.15) 0%, rgba(96,165,250,0.08) 100%)',
   },
   sick: {
     icon: <Heart className="w-6 h-6" />,
@@ -36,7 +36,7 @@ const FEATURES = {
   doctor: {
     icon: <Stethoscope className="w-6 h-6" />,
     color: '#93c5fd',
-    gradient: 'linear-gradient(135deg, rgba(96,165,250,0.15) 0%, rgba(37,99,235,0.08) 100%)',
+    gradient: 'linear-gradient(135deg, rgba(96,165,250,0.15) 0%, rgba(44,140,213,0.08) 100%)',
   },
 };
 

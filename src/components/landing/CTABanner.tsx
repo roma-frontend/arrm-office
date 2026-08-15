@@ -41,7 +41,7 @@ export default function CTABanner({ initialLanguage = 'en' }: { initialLanguage?
       <div
         className="absolute bottom-0 -left-20 w-[500px] h-[500px] rounded-full pointer-events-none orb-pulse-2"
         style={{
-          background: 'radial-gradient(circle, rgba(37,99,235,0.2) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(44,140,213,0.2) 0%, transparent 70%)',
           filter: 'blur(60px)',
         }}
       />

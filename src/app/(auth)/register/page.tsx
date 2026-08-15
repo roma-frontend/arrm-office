@@ -470,8 +470,8 @@ function RegisterPageContent() {
                         <div
                           className="flex items-center gap-3 p-3 rounded-xl border"
                           style={{
-                            background: 'rgba(37,99,235,0.08)',
-                            borderColor: 'rgba(37,99,235,0.3)',
+                            background: 'rgba(44,140,213,0.08)',
+                            borderColor: 'rgba(44,140,213,0.3)',
                           }}
                         >
                           <Sparkles className="w-4 h-4 text-(--brand-text) shrink-0" />

@@ -154,8 +154,8 @@ export default function ContactClient() {
                   <div
                     className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
                     style={{
-                      background: 'rgba(37,99,235,0.1)',
-                      border: '1px solid rgba(37,99,235,0.2)',
+                      background: 'rgba(44,140,213,0.1)',
+                      border: '1px solid rgba(44,140,213,0.2)',
                       color: '#2563eb',
                     }}
                   >
@@ -266,7 +266,7 @@ export default function ContactClient() {
                       className="flex items-center gap-2 px-8 py-3.5 rounded-2xl text-sm font-semibold text-white transition-all hover:opacity-90 hover:shadow-lg shadow-md"
                       style={{
                         background: 'linear-gradient(135deg, var(--brand), var(--brand-hover))',
-                        boxShadow: '0 4px 16px rgba(37,99,235,0.15)',
+                        boxShadow: '0 4px 16px rgba(44,140,213,0.15)',
                       }}
                     >
                       {t('ui.backToHome')} <ArrowRight size={15} />
@@ -385,7 +385,7 @@ export default function ContactClient() {
                       className="w-full py-4 rounded-2xl font-bold text-sm text-white flex items-center justify-center gap-2 transition-all hover:opacity-90 hover:shadow-lg shadow-md disabled:opacity-60 disabled:cursor-not-allowed"
                       style={{
                         background: 'linear-gradient(135deg, var(--brand), var(--brand-hover))',
-                        boxShadow: '0 4px 16px rgba(37,99,235,0.15)',
+                        boxShadow: '0 4px 16px rgba(44,140,213,0.15)',
                       }}
                     >
                       {loading ? (

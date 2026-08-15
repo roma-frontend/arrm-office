@@ -66,7 +66,7 @@ export default function PendingPage() {
           <div className="space-y-4 mb-8 text-left">
             <div
               className="flex items-start gap-3 p-4 rounded-xl"
-              style={{ background: 'rgba(37,99,235,0.05)' }}
+              style={{ background: 'rgba(44,140,213,0.05)' }}
             >
               <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-linear-to-r from-(--primary) to-(--primary-dark,var(--primary))">
                 <CheckCircle2 className="w-4 h-4 text-white" />
@@ -86,7 +86,7 @@ export default function PendingPage() {
 
             <div
               className="flex items-start gap-3 p-4 rounded-xl"
-              style={{ background: 'rgba(37,99,235,0.05)' }}
+              style={{ background: 'rgba(44,140,213,0.05)' }}
             >
               <div
                 className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"

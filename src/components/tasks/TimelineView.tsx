@@ -495,7 +495,7 @@ export default function TimelineView({ tasks, onOpen }: TimelineViewProps) {
                             : task.status === 'completed'
                               ? 'linear-gradient(90deg, #10b981, #059669)'
                               : task.status === 'in_progress'
-                                ? 'linear-gradient(90deg, #3b82f6, #2563eb)'
+                                ? 'linear-gradient(90deg, var(--brand), var(--brand-hover))'
                                 : task.status === 'review'
                                   ? 'linear-gradient(90deg, #f59e0b, #d97706)'
                                   : 'linear-gradient(90deg, #6b7280, #4b5563)',

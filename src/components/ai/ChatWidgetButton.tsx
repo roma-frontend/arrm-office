@@ -367,7 +367,7 @@ export function ChatWidgetButton({
             document.addEventListener('mousemove', onMove);
             document.addEventListener('mouseup', onUp);
           }}
-          className="fixed z-50 flex items-center justify-center w-8 h-12 shadow-lg btn-gradient text-white cursor-grab active:cursor-grabbing transition-all duration-300 hover:w-10 hover:h-14 hover:shadow-[0_0_20px_rgba(37,99,235,0.5)]"
+          className="fixed z-50 flex items-center justify-center w-8 h-12 shadow-lg btn-gradient text-white cursor-grab active:cursor-grabbing transition-all duration-300 hover:w-10 hover:h-14 hover:shadow-[0_0_20px_rgba(44,140,213,0.5)]"
           style={{
             ...(undocking
               ? {
@@ -467,7 +467,7 @@ export function ChatWidgetButton({
             setIsOpen((o: boolean) => !o);
             setLastActivityTime(Date.now());
           }}
-          className="hidden hidden sm:block fixed above-mobile-dock right-6 z-50 w-10 sm:w-14 h-10 sm:h-14 rounded-full sm:flex items-center gap-2 justify-center btn-gradient text-white font-medium shadow-md hover:shadow-[0_0_24px_rgba(37,99,235,0.6)] transition-shadow duration-300"
+          className="hidden hidden sm:block fixed above-mobile-dock right-6 z-50 w-10 sm:w-14 h-10 sm:h-14 rounded-full sm:flex items-center gap-2 justify-center btn-gradient text-white font-medium shadow-md hover:shadow-[0_0_24px_rgba(44,140,213,0.6)] transition-shadow duration-300"
           style={
             dragPos && !returning
               ? {

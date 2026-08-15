@@ -91,7 +91,7 @@ export function ReportingLineWidget({
           <CardTitle className="text-lg flex items-center gap-2">
             <div
               className="w-8 h-8 rounded-lg flex items-center justify-center"
-              style={{ background: 'rgba(37,99,235,0.1)' }}
+              style={{ background: 'rgba(44,140,213,0.1)' }}
             >
               <Crown className="w-4 h-4 text-(--brand-text)" />
             </div>
@@ -102,7 +102,7 @@ export function ReportingLineWidget({
               onClick={onAssignManager}
               className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-all hover:opacity-80"
               style={{
-                background: 'rgba(37,99,235,0.1)',
+                background: 'rgba(44,140,213,0.1)',
                 color: '#2563eb',
               }}
             >
@@ -133,7 +133,7 @@ export function ReportingLineWidget({
                 onClick={onAssignManager}
                 className="mt-2 flex items-center gap-1.5 text-xs font-medium px-4 py-2 rounded-lg transition-all hover:opacity-80"
                 style={{
-                  background: 'rgba(37,99,235,0.1)',
+                  background: 'rgba(44,140,213,0.1)',
                   color: '#2563eb',
                 }}
               >
@@ -174,7 +174,7 @@ export function ReportingLineWidget({
                         background: isSubject
                           ? 'linear-gradient(135deg, #2563eb, #0ea5e9)'
                           : `linear-gradient(135deg, ${roleColor}, ${roleColor}88)`,
-                        boxShadow: isSubject ? '0 0 0 3px rgba(37,99,235,0.2)' : 'none',
+                        boxShadow: isSubject ? '0 0 0 3px rgba(44,140,213,0.2)' : 'none',
                       }}
                     >
                       {person.avatarUrl ? (
