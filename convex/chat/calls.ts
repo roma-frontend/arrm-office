@@ -1,6 +1,7 @@
 import { v } from 'convex/values';
 import { mutation, query } from '../_generated/server';
 import type { Id } from '../_generated/dataModel';
+import { assertFeatureEnabled, isFeatureEnabledForCaller } from '../superadmin/featureToggles';
 import { MAX_PAGE_SIZE } from '../pagination';
 
 // ─── CALLS ────────────────────────────────────────────────────────────────────
@@ -15,6 +16,7 @@ export const initiateCall = mutation({
     offer: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'chat.realtime');
     const now = Date.now();
     const participantList = [
       {
@@ -59,6 +61,7 @@ export const answerCall = mutation({
     answer: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'chat.realtime');
     const call = await ctx.db.get(args.callId);
     if (!call) throw new Error('Call not found');
 
@@ -94,6 +97,7 @@ export const endCall = mutation({
     userId: v.id('users'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'chat.realtime');
     const call = await ctx.db.get(args.callId);
     if (!call) throw new Error('Call not found');
 
@@ -120,6 +124,7 @@ export const declineCall = mutation({
     userId: v.id('users'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'chat.realtime');
     const call = await ctx.db.get(args.callId);
     if (!call) throw new Error('Call not found');
     await ctx.db.patch(args.callId, { status: 'declined' });
@@ -144,6 +149,7 @@ export const updateOffer = mutation({
     offer: v.string(),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'chat.realtime');
     const call = await ctx.db.get(args.callId);
     if (!call) throw new Error('Call not found');
 
@@ -165,6 +171,7 @@ export const updateIceCandidates = mutation({
     candidates: v.array(v.string()),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'chat.realtime');
     const call = await ctx.db.get(args.callId);
     if (!call) throw new Error('Call not found');
 
@@ -185,6 +192,7 @@ export const updateIceCandidates = mutation({
 export const getActiveCall = query({
   args: { conversationId: v.id('chatConversations') },
   handler: async (ctx, args) => {
+    if (!(await isFeatureEnabledForCaller(ctx, 'chat.realtime'))) return null;
     // Get the most recent call that is still ringing or active
     return ctx.db
       .query('chatCalls')
@@ -202,6 +210,7 @@ export const getIncomingCalls = query({
     organizationId: v.id('organizations'),
   },
   handler: async (ctx, args) => {
+    if (!(await isFeatureEnabledForCaller(ctx, 'chat.realtime'))) return null;
     // Find all active/ringing calls in this organization where user is a participant but not initiator
     const calls = await ctx.db
       .query('chatCalls')

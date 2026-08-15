@@ -210,7 +210,6 @@ const nextConfig = {
   async redirects() {
     return [
       { source: '/home', destination: '/', permanent: true },
-      { source: '/superadmin', destination: '/superadmin/organizations', permanent: false },
     ];
   },
 };

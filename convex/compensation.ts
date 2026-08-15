@@ -2,6 +2,7 @@ import type { Id } from './_generated/dataModel';
 import type { MutationCtx } from './_generated/server';
 import { v } from 'convex/values';
 import { query, mutation } from './_generated/server';
+import { assertFeatureEnabled } from './superadmin/featureToggles';
 import { DEFAULT_LIST_CAP } from './lib/limits';
 import {
   assertOrgStaff,
@@ -328,6 +329,7 @@ export const createCompensationRecord = mutation({
     createdBy: v.id('users'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'compensation.module');
     const { createdBy: _clientCreatedBy, ...recordData } = args;
     // Writing pay is an admin action, mirroring `canManage` in the UI.
     const scope = await assertOrgStaff(ctx, args.organizationId, { adminOnly: true });
@@ -364,6 +366,7 @@ export const updateCompensationRecord = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'compensation.module');
     const { recordId, ...updates } = args;
     const record = await ctx.db.get(recordId);
     if (!record) throw new Error('Compensation record not found');
@@ -390,6 +393,7 @@ export const approveCompensationRecord = mutation({
     approvedBy: v.id('users'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'compensation.module');
     const { recordId } = args;
     const record = await ctx.db.get(recordId);
     if (!record) throw new Error('Compensation record not found');
@@ -415,6 +419,7 @@ export const rejectCompensationRecord = mutation({
     rejectionReason: v.string(),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'compensation.module');
     const { recordId, rejectionReason } = args;
     const record = await ctx.db.get(recordId);
     if (!record) throw new Error('Compensation record not found');
@@ -436,6 +441,7 @@ export const deleteCompensationRecord = mutation({
     recordId: v.id('compensationRecords'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'compensation.module');
     const { recordId } = args;
     const record = await ctx.db.get(recordId);
     if (!record) throw new Error('Compensation record not found');
@@ -464,6 +470,7 @@ export const createCompensationBand = mutation({
     createdBy: v.id('users'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'compensation.module');
     const { createdBy: _clientCreatedBy, ...bandData } = args;
     const scope = await assertOrgStaff(ctx, args.organizationId, { adminOnly: true });
     const now = Date.now();
@@ -491,6 +498,7 @@ export const updateCompensationBand = mutation({
     medianSalary: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'compensation.module');
     const { bandId, ...updates } = args;
     const band = await ctx.db.get(bandId);
     if (!band) throw new Error('Compensation band not found');
@@ -514,6 +522,7 @@ export const deleteCompensationBand = mutation({
     bandId: v.id('compensationBands'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'compensation.module');
     const { bandId } = args;
     const band = await ctx.db.get(bandId);
     if (!band) throw new Error('Compensation band not found');
@@ -547,6 +556,7 @@ export const createBonusProgram = mutation({
     createdBy: v.id('users'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'compensation.module');
     const { createdBy: _clientCreatedBy, ...programData } = args;
     const scope = await assertOrgStaff(ctx, args.organizationId, { adminOnly: true });
     const now = Date.now();
@@ -582,6 +592,7 @@ export const updateBonusProgram = mutation({
     periodEnd: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'compensation.module');
     const { programId, ...updates } = args;
     const program = await ctx.db.get(programId);
     if (!program) throw new Error('Bonus program not found');
@@ -615,6 +626,7 @@ export const createReviewCycle = mutation({
     createdBy: v.id('users'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'compensation.module');
     const { createdBy: _clientCreatedBy, ...cycleData } = args;
     const scope = await assertOrgStaff(ctx, args.organizationId, { adminOnly: true });
     const now = Date.now();
@@ -651,6 +663,7 @@ export const updateReviewCycle = mutation({
     maxIncreasePercentage: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'compensation.module');
     const { cycleId, ...updates } = args;
     const cycle = await ctx.db.get(cycleId);
     if (!cycle) throw new Error('Review cycle not found');
@@ -687,6 +700,7 @@ export const createReviewEntry = mutation({
     performanceRating: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'compensation.module');
     // A review entry states somebody's current and proposed salary — admin only,
     // and the cycle it joins must belong to the same organization.
     const scope = await assertOrgStaff(ctx, args.organizationId, { adminOnly: true });
@@ -730,6 +744,7 @@ export const updateReviewEntry = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'compensation.module');
     const { entryId, ...updates } = args;
     const entry = await ctx.db.get(entryId);
     if (!entry) throw new Error('Review entry not found');
@@ -760,6 +775,7 @@ export const approveReviewEntry = mutation({
     reviewedBy: v.id('users'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'compensation.module');
     const { entryId } = args;
     const entry = await ctx.db.get(entryId);
     if (!entry) throw new Error('Review entry not found');
@@ -783,6 +799,7 @@ export const rejectReviewEntry = mutation({
     entryId: v.id('compensationReviewEntries'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'compensation.module');
     const { entryId } = args;
     const entry = await ctx.db.get(entryId);
     if (!entry) throw new Error('Review entry not found');

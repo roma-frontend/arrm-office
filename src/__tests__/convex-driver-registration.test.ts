@@ -81,7 +81,8 @@ const sampleDriver = {
  */
 function makeCtx(queryResult?: any) {
   const chains = new Map<string, any>();
-  const makeChain = () => {
+  const makeChain = (result: any) => {
+    const effective = result === undefined ? queryResult : result;
     const q: any = { eq: jest.fn(() => q), field: jest.fn(() => q) };
     const chain: any = {
       withIndex: jest.fn((_index: string, pred?: (qb: any) => unknown) => {
@@ -90,10 +91,10 @@ function makeCtx(queryResult?: any) {
       }),
       filter: jest.fn(() => chain),
       order: jest.fn(() => chain),
-      take: async () => (typeof queryResult === 'function' ? queryResult() : queryResult),
-      first: async () => (typeof queryResult === 'function' ? queryResult() : queryResult),
-      unique: async () => (typeof queryResult === 'function' ? queryResult() : queryResult),
-      paginate: async () => ({ page: queryResult ?? [], continueCursor: '', isDone: true }),
+      take: async () => (typeof effective === 'function' ? effective() : effective),
+      first: async () => (typeof effective === 'function' ? effective() : effective),
+      unique: async () => (typeof effective === 'function' ? effective() : effective),
+      paginate: async () => ({ page: effective ?? [], continueCursor: '', isDone: true }),
     };
     return chain;
   };
@@ -104,7 +105,11 @@ function makeCtx(queryResult?: any) {
       patch: mockPatch,
       delete: mockDelete,
       query: (table: string) => {
-        if (!chains.has(table)) chains.set(table, makeChain());
+        // featureToggles is a platform table the tests never seed — a missing
+        // row means "default on" for the toggle guard.
+        if (!chains.has(table)) {
+          chains.set(table, makeChain(table === 'featureToggles' ? null : undefined));
+        }
         return chains.get(table);
       },
     },

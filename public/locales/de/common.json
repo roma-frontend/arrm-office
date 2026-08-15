@@ -144,7 +144,8 @@
     "noPosition": "Keine Position",
     "publishing": "Veröffentlichen…",
     "selectOrganization": "Organisation auswählen",
-    "welcome": "Willkommen"
+    "welcome": "Willkommen",
+    "chat.realtime": "Echtzeit-Chat"
   },
   "nav": {
     "home": "Startseite",
@@ -224,6 +225,12 @@
     "aiSiteEditor": "AI-Website-Editor",
     "subscriptions": "Abonnements",
     "backups": "Backups",
+    "superadmin": "Superadmin",
+    "superadminHub": "Superadmin-Hub",
+    "featureToggles": "Feature-Toggles",
+    "database": "Daten-Browser",
+    "sessions": "Aktive Sitzungen",
+    "audit": "Audit-Protokoll",
     "security": "Sicherheit",
     "recognition": "Anerkennung",
     "surveys": "Umfragen",
@@ -1674,7 +1681,11 @@
     "reviewFailed": "Benachrichtigung konnte nicht verarbeitet werden"
   },
   "chat": {
-    "newMessage": "Neue Nachricht"
+    "newMessage": "Neue Nachricht",
+    "disabled": {
+      "title": "Chat deaktiviert",
+      "description": "Das Echtzeit-Chat-Modul wurde vom Administrator Ihrer Organisation deaktiviert."
+    }
   },
   "employees": {
     "loadingProfile": "Profil wird geladen..."

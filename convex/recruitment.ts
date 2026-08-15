@@ -1,5 +1,6 @@
 import { v } from 'convex/values';
 import { query, mutation, type MutationCtx, type QueryCtx } from './_generated/server';
+import { assertFeatureEnabled } from './superadmin/featureToggles';
 import { paginationOptsValidator } from 'convex/server';
 import { api, internal } from './_generated/api';
 import type { Id } from './_generated/dataModel';
@@ -393,6 +394,7 @@ export const createVacancy = mutation({
     hiringManagerId: v.id('users'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'recruitment.module');
     const scope = await assertOrgStaff(ctx, args.organizationId);
     const organizationId = scope.organizationId ?? args.organizationId;
 
@@ -437,6 +439,7 @@ export const updateVacancy = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'recruitment.module');
     const { vacancyId, ...updates } = args;
     const vac = await ctx.db.get(vacancyId);
     if (!vac) throw new Error('Vacancy not found');
@@ -514,6 +517,7 @@ async function purgeOrphanCandidate(
 export const deleteVacancy = mutation({
   args: { vacancyId: v.id('vacancies') },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'recruitment.module');
     const { vacancyId } = args;
     const vac = await ctx.db.get(vacancyId);
     if (!vac) throw new Error('Vacancy not found');
@@ -538,6 +542,7 @@ export const deleteVacancy = mutation({
 export const deleteCandidate = mutation({
   args: { applicationId: v.id('applications') },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'recruitment.module');
     const { applicationId } = args;
     const scope = await assertOrgScope(ctx);
     const app = await ownedApplication(ctx, scope, applicationId);
@@ -571,6 +576,7 @@ export const addCandidate = mutation({
     cvMimeType: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'recruitment.module');
     const {
       vacancyId,
       name,
@@ -733,6 +739,7 @@ export const moveCandidate = mutation({
     reason: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'recruitment.module');
     const { applicationId, newStage, reason } = args;
     const scope = await assertOrgStaff(ctx, undefined);
     const app = await ownedApplication(ctx, scope, applicationId);
@@ -836,6 +843,7 @@ export const rejectCandidate = mutation({
     reason: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'recruitment.module');
     const { applicationId, reason } = args;
     const scope = await assertOrgStaff(ctx, undefined);
     const app = await ownedApplication(ctx, scope, applicationId);
@@ -903,6 +911,7 @@ export const scheduleInterview = mutation({
     additionalNotes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'recruitment.module');
     const scope = await assertOrgStaff(ctx, args.organizationId);
     const app = await ownedApplication(ctx, scope, args.applicationId);
     // Inviting someone who has been rejected, or already hired, is a mistake
@@ -972,6 +981,7 @@ export const updateInterviewStatus = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'recruitment.module');
     const { interviewId, status, notes } = args;
     const interview = await ctx.db.get(interviewId);
     if (!interview) throw new Error('Interview not found');
@@ -1010,6 +1020,7 @@ export const submitScorecard = mutation({
     summary: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'recruitment.module');
     const { applicationId, interviewId, ratings, overallScore, recommendation, summary } = args;
     const scope = await assertOrgScope(ctx, args.organizationId);
     const app = await ownedApplication(ctx, scope, applicationId);
@@ -1059,6 +1070,7 @@ export const updateCandidateNotes = mutation({
     notes: v.string(),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'recruitment.module');
     const { applicationId, notes } = args;
     const scope = await assertOrgStaff(ctx, undefined);
     await ownedApplication(ctx, scope, applicationId);
@@ -1081,6 +1093,7 @@ export const reviewCv = mutation({
     note: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'recruitment.module');
     const { applicationId, decision, note } = args;
     const scope = await assertOrgStaff(ctx, undefined);
     const app = await ownedApplication(ctx, scope, applicationId);
@@ -1154,6 +1167,7 @@ export const hireCandidate = mutation({
     department: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'recruitment.module');
     const { applicationId, startDate, position, department } = args;
     // Hiring creates a user account with access to the organization, so it is an
     // admin action rather than a staff one.
@@ -1341,6 +1355,7 @@ export const hireCandidate = mutation({
 export const secureDeleteVacancy = mutation({
   args: { vacancyId: v.id('vacancies') },
   handler: async (ctx, { vacancyId }) => {
+    await assertFeatureEnabled(ctx, 'recruitment.module');
     const vacancy = await ctx.db.get(vacancyId);
     if (!vacancy) throw new Error('Vacancy not found');
     const scope = await assertOrgStaff(ctx, vacancy.organizationId, { adminOnly: true });
@@ -1363,6 +1378,7 @@ export const secureDeleteVacancy = mutation({
 export const secureDeleteCandidate = mutation({
   args: { applicationId: v.id('applications') },
   handler: async (ctx, { applicationId }) => {
+    await assertFeatureEnabled(ctx, 'recruitment.module');
     const scope = await assertOrgStaff(ctx, undefined);
     // The organization check was missing here while its sibling had one, so an
     // authenticated user of one tenant could delete another tenant's candidate.

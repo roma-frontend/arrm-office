@@ -7,6 +7,7 @@
 import { v } from 'convex/values';
 import { mutation } from '../_generated/server';
 import { getAuthCaller } from '../lib/getAuthCaller';
+import { assertFeatureEnabled } from '../superadmin/featureToggles';
 import { isSuperadmin } from '../lib/auth';
 
 /** Register as a driver - only organization admins can register drivers, or users can register themselves */
@@ -29,6 +30,7 @@ export const registerAsDriver = mutation({
     maxTripsPerDay: v.number(),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'drivers.module');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
 
@@ -93,6 +95,7 @@ export const updateDriverAvailability = mutation({
     isAvailable: v.boolean(),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'drivers.module');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     const { driverId, isAvailable } = args;
@@ -117,6 +120,7 @@ export const addFavoriteDriver = mutation({
     driverId: v.id('drivers'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'drivers.module');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     const { organizationId, driverId } = args;
@@ -157,6 +161,7 @@ export const removeFavoriteDriver = mutation({
     driverId: v.id('drivers'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'drivers.module');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     const { driverId } = args;

@@ -20,6 +20,7 @@ import { useTranslation } from 'react-i18next';
 import { useQuery } from 'convex/react';
 import { CheckSquare, ClipboardList, LayoutDashboard, MessageCircle } from 'lucide-react';
 import { useAuthUser } from '@/store/useAuthStore';
+import { MODULE_TOGGLE_BY_HREF, useFeatureFlags } from '@/hooks/useFeatureFlags';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { MobileDockBar, type DockSlot, type DockTab } from '@/components/layout/MobileDockBar';
@@ -57,6 +58,7 @@ export function MobileTabBar() {
   const { t } = useTranslation();
   const pathname = usePathname();
   const user = useAuthUser();
+  const { isEnabled } = useFeatureFlags();
   const [menuOpen, setMenuOpen] = useState(false);
   // The sheet stays mounted after the first open so its leave animation can run;
   // before that it is not even downloaded.
@@ -95,7 +97,9 @@ export function MobileTabBar() {
     pathname === '/chat' || pathname === '/ai-chat' || Boolean(pathname?.startsWith('/chat/'));
   if (isConversationPage) return null;
 
-  const tabs: DockTab[] = TABS.map((tab) => ({
+  const tabs: DockTab[] = TABS.filter(
+    (tab) => !MODULE_TOGGLE_BY_HREF[tab.href] || isEnabled(MODULE_TOGGLE_BY_HREF[tab.href]),
+  ).map((tab) => ({
     href: tab.href,
     icon: tab.icon,
     label: t(tab.labelKey),

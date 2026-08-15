@@ -4,6 +4,7 @@ import { paginationOptsValidator } from 'convex/server';
 import type { Id, Doc } from '../_generated/dataModel';
 import { isSuperadmin } from '../lib/auth';
 import { getAuthCaller } from '../lib/getAuthCaller';
+import { isFeatureEnabledForCaller } from '../superadmin/featureToggles';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { getProfile } from '../lib/userProfile';
 
@@ -23,6 +24,7 @@ export const getMyConversations = query({
     organizationId: v.optional(v.id('organizations')),
   },
   handler: async (ctx, args) => {
+    if (!(await isFeatureEnabledForCaller(ctx, 'chat.realtime'))) return [];
     // Step 1: Get all memberships for this user
     const memberships = await ctx.db
       .query('chatMembers')
@@ -219,6 +221,7 @@ export const getConversationSummary = query({
     userId: v.optional(v.id('users')),
   },
   handler: async (ctx, args) => {
+    if (!(await isFeatureEnabledForCaller(ctx, 'chat.realtime'))) return null;
     const caller = await getAuthCaller(ctx);
     const viewerId = caller?._id ?? args.userId;
     if (!viewerId) return null;
@@ -250,6 +253,7 @@ export const getConversationSummary = query({
 export const getConversationMembers = query({
   args: { conversationId: v.id('chatConversations') },
   handler: async (ctx, args) => {
+    if (!(await isFeatureEnabledForCaller(ctx, 'chat.realtime'))) return [];
     const members = await ctx.db
       .query('chatMembers')
       .withIndex('by_conversation', (q) => q.eq('conversationId', args.conversationId))
@@ -308,6 +312,7 @@ export const getMessages = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    if (!(await isFeatureEnabledForCaller(ctx, 'chat.realtime'))) return [];
     const limit = args.limit ?? 50;
 
     // Verify membership
@@ -363,6 +368,8 @@ export const listMessagesPaginated = query({
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, { conversationId, userId, paginationOpts }) => {
+    if (!(await isFeatureEnabledForCaller(ctx, 'chat.realtime')))
+      return { page: [], isDone: true, continueCursor: '' };
     const membership = await ctx.db
       .query('chatMembers')
       .withIndex('by_conversation_user', (q) =>
@@ -416,6 +423,7 @@ export const getTotalUnread = query({
     organizationId: v.optional(v.id('organizations')),
   },
   handler: async (ctx, args) => {
+    if (!(await isFeatureEnabledForCaller(ctx, 'chat.realtime'))) return 0;
     const memberships = await ctx.db
       .query('chatMembers')
       .withIndex('by_user', (q) => q.eq('userId', args.userId))
@@ -438,6 +446,7 @@ export const getTypingUsers = query({
     currentUserId: v.id('users'),
   },
   handler: async (ctx, args) => {
+    if (!(await isFeatureEnabledForCaller(ctx, 'chat.realtime'))) return [];
     const cutoff = Date.now() - 5000; // 5 seconds TTL
     const typing = await ctx.db
       .query('chatTyping')
@@ -463,6 +472,7 @@ export const searchMessages = query({
     query: v.string(),
   },
   handler: async (ctx, args) => {
+    if (!(await isFeatureEnabledForCaller(ctx, 'chat.realtime'))) return [];
     const membership = await ctx.db
       .query('chatMembers')
       .withIndex('by_conversation_user', (q) =>
@@ -485,6 +495,7 @@ export const searchMessages = query({
 export const getPinnedMessages = query({
   args: { conversationId: v.id('chatConversations') },
   handler: async (ctx, args) => {
+    if (!(await isFeatureEnabledForCaller(ctx, 'chat.realtime'))) return [];
     const messages = await ctx.db
       .query('chatMessages')
       .withIndex('by_pinned', (q) =>
@@ -511,6 +522,7 @@ export const getPinnedMessages = query({
 export const getThreadReplies = query({
   args: { parentMessageId: v.id('chatMessages') },
   handler: async (ctx, args) => {
+    if (!(await isFeatureEnabledForCaller(ctx, 'chat.realtime'))) return [];
     const replies = await ctx.db
       .query('chatMessages')
       .filter((q) => q.eq(q.field('parentMessageId'), args.parentMessageId))
@@ -539,6 +551,7 @@ export const getThreadReplies = query({
 export const getScheduledMessages = query({
   args: { conversationId: v.id('chatConversations'), senderId: v.id('users') },
   handler: async (ctx, args) => {
+    if (!(await isFeatureEnabledForCaller(ctx, 'chat.realtime'))) return [];
     const msgs = await ctx.db
       .query('chatMessages')
       .withIndex('by_conversation', (q) => q.eq('conversationId', args.conversationId))
@@ -556,6 +569,7 @@ export const getUnreadConversations = query({
     userId: v.id('users'),
   },
   handler: async (ctx, args) => {
+    if (!(await isFeatureEnabledForCaller(ctx, 'chat.realtime'))) return [];
     const members = await ctx.db
       .query('chatMembers')
       .filter((q) =>
@@ -586,6 +600,7 @@ export const getGroupConversations = query({
     userId: v.id('users'),
   },
   handler: async (ctx, args) => {
+    if (!(await isFeatureEnabledForCaller(ctx, 'chat.realtime'))) return [];
     const members = await ctx.db
       .query('chatMembers')
       .filter((q) =>
@@ -617,6 +632,7 @@ export const getPinnedConversations = query({
     userId: v.id('users'),
   },
   handler: async (ctx, args) => {
+    if (!(await isFeatureEnabledForCaller(ctx, 'chat.realtime'))) return [];
     const members = await ctx.db
       .query('chatMembers')
       .filter((q) =>
@@ -646,6 +662,7 @@ export const getArchivedConversations = query({
     userId: v.id('users'),
   },
   handler: async (ctx, args) => {
+    if (!(await isFeatureEnabledForCaller(ctx, 'chat.realtime'))) return [];
     const members = await ctx.db
       .query('chatMembers')
       .filter((q) =>
@@ -675,6 +692,7 @@ export const getOrgUsers = query({
     currentUserId: v.id('users'),
   },
   handler: async (ctx, args) => {
+    if (!(await isFeatureEnabledForCaller(ctx, 'chat.realtime'))) return [];
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
 
@@ -739,6 +757,7 @@ export const getServiceBroadcasts = query({
     organizationId: v.id('organizations'),
   },
   handler: async (ctx, args) => {
+    // Service broadcasts are an admin tool, not user chat — no toggle gate.
     // Get System Announcements conversation
     const systemAnnouncements = await ctx.db
       .query('chatConversations')
@@ -790,6 +809,7 @@ export const getServiceBroadcasts = query({
 export const getUnreadMessageCount = query({
   args: { userId: v.id('users') },
   handler: async (ctx, { userId }) => {
+    if (!(await isFeatureEnabledForCaller(ctx, 'chat.realtime'))) return 0;
     const memberships = await ctx.db
       .query('chatMembers')
       .withIndex('by_user', (q) => q.eq('userId', userId))

@@ -38,19 +38,24 @@ import {
   HelpCircle,
   Key,
   Layers,
+  LayoutDashboard,
   Library,
   Megaphone,
+  Monitor,
   Network,
   Package,
   PenTool,
   Receipt,
   Rocket,
+  ScrollText,
   Search,
   Settings,
   ShieldCheck,
   Sparkles,
+  Table2,
   Target,
   Ticket,
+  ToggleLeft,
   User,
   UserCheck,
   UserMinus,
@@ -60,6 +65,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { MODULE_TOGGLE_BY_HREF, useFeatureFlags } from '@/hooks/useFeatureFlags';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 
@@ -172,22 +178,37 @@ const GROUPS: readonly MenuGroup[] = [
         icon: ShieldCheck,
         roles: ADMINS,
       },
-      { href: '/admin', labelKey: 'nav.admin', icon: ShieldCheck, roles: SUPERADMIN },
-      { href: '/superadmin/automation', labelKey: 'nav.automation', icon: Cpu, roles: SUPERADMIN },
+    ],
+  },
+  {
+    titleKey: 'nav.groups.superadmin',
+    items: [
       {
-        href: '/superadmin/security',
-        labelKey: 'nav.security',
-        icon: ShieldCheck,
+        href: '/superadmin',
+        labelKey: 'nav.superadminHub',
+        icon: LayoutDashboard,
         roles: SUPERADMIN,
       },
-      { href: '/superadmin/backups', labelKey: 'nav.backups', icon: Database, roles: SUPERADMIN },
+      { href: '/admin', labelKey: 'nav.admin', icon: ShieldCheck, roles: SUPERADMIN },
       {
-        href: '/superadmin/subscriptions',
-        labelKey: 'nav.subscriptions',
-        icon: CreditCard,
+        href: '/superadmin/feature-toggles',
+        labelKey: 'nav.featureToggles',
+        icon: ToggleLeft,
+        roles: SUPERADMIN,
+      },
+      {
+        href: '/superadmin/automation',
+        labelKey: 'nav.automation',
+        icon: Cpu,
         roles: SUPERADMIN,
       },
       { href: '/superadmin/support', labelKey: 'nav.support', icon: Ticket, roles: SUPERADMIN },
+      {
+        href: '/superadmin/emergency',
+        labelKey: 'nav.emergency',
+        icon: AlertTriangle,
+        roles: SUPERADMIN,
+      },
       {
         href: '/superadmin/impersonate',
         labelKey: 'nav.impersonate',
@@ -207,9 +228,29 @@ const GROUPS: readonly MenuGroup[] = [
         roles: SUPERADMIN,
       },
       {
-        href: '/superadmin/emergency',
-        labelKey: 'nav.emergency',
-        icon: AlertTriangle,
+        href: '/superadmin/subscriptions',
+        labelKey: 'nav.subscriptions',
+        icon: CreditCard,
+        roles: SUPERADMIN,
+      },
+      { href: '/superadmin/backups', labelKey: 'nav.backups', icon: Database, roles: SUPERADMIN },
+      {
+        href: '/superadmin/database',
+        labelKey: 'nav.database',
+        icon: Table2,
+        roles: SUPERADMIN,
+      },
+      {
+        href: '/superadmin/sessions',
+        labelKey: 'nav.sessions',
+        icon: Monitor,
+        roles: SUPERADMIN,
+      },
+      { href: '/superadmin/audit', labelKey: 'nav.audit', icon: ScrollText, roles: SUPERADMIN },
+      {
+        href: '/superadmin/security',
+        labelKey: 'nav.security',
+        icon: ShieldCheck,
         roles: SUPERADMIN,
       },
       { href: '/ai-site-editor', labelKey: 'nav.aiSiteEditor', icon: Sparkles, roles: SUPERADMIN },
@@ -262,16 +303,21 @@ export function MobileMenuSheet({ open, onClose, role, bottomInset }: MobileMenu
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [open, onClose]);
 
+  const { isEnabled } = useFeatureFlags();
+
   const visibleGroups = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    const allowed = (item: MenuItem) => !item.roles || item.roles.includes(role);
+    const allowed = (item: MenuItem) =>
+      !item.roles ||
+      (item.roles.includes(role) &&
+        (!MODULE_TOGGLE_BY_HREF[item.href] || isEnabled(MODULE_TOGGLE_BY_HREF[item.href])));
     return GROUPS.map((group) => ({
       titleKey: group.titleKey,
       items: group.items.filter(
         (item) => allowed(item) && (!needle || t(item.labelKey).toLowerCase().includes(needle)),
       ),
     })).filter((group) => group.items.length > 0);
-  }, [query, role, t]);
+  }, [query, role, t, isEnabled]);
 
   // Loaded through `next/dynamic` with `ssr: false`, so `document` always exists
   // by the time this renders — the guard only covers test environments.

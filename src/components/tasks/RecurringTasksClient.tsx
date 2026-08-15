@@ -47,6 +47,14 @@ import { cn } from '@/lib/utils';
 interface RecurringTasksClientProps {
   userId: string;
   userRole: 'superadmin' | 'admin' | 'supervisor' | 'employee' | 'driver';
+  /**
+   * Rendered inside a sheet: the page header (back arrow, title, subtitle) is
+   * dropped — the sheet supplies its own — and the root keeps only the list
+   * and the create/edit panels.
+   */
+  embedded?: boolean;
+  /** Extra classes for the root; use it to make the list scrollable in a sheet. */
+  className?: string;
 }
 
 /** Monday first, matching the wizard's weekday picker. */
@@ -55,7 +63,12 @@ const WEEKDAY_ORDER = [1, 2, 3, 4, 5, 6, 0] as const;
 /** Index 0-6 → the existing `weekdays.*` keys in the common namespace. */
 const WEEKDAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
 
-export function RecurringTasksClient({ userId, userRole }: RecurringTasksClientProps) {
+export function RecurringTasksClient({
+  userId,
+  userRole,
+  embedded = false,
+  className,
+}: RecurringTasksClientProps) {
   const { t } = useTranslation();
   const router = useRouter();
 
@@ -283,35 +296,46 @@ export function RecurringTasksClient({ userId, userRole }: RecurringTasksClientP
   };
 
   return (
-    <div className="my-6">
-      <div className="flex items-center justify-between gap-3 my-6">
-        <div className="flex min-w-0 items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.push('/tasks')}
-            aria-label={t('actions.back')}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div className="min-w-0">
-            <h1 className="truncate text-xl font-semibold md:text-2xl">
-              {t('recurringTasks.title')}
-            </h1>
-            <p className="mt-0.5 text-sm text-(--text-muted)">{t('recurringTasks.subtitle')}</p>
+    <div className={cn(!embedded && 'my-6', className)}>
+      {embedded ? (
+        /* Inside a sheet the header lives on the sheet itself; the only
+            in-content control left is the create button, kept top-right. */
+        (canManage || userRole === 'employee') && (
+          <div className="mb-4 flex justify-end">
+            <Button onClick={() => setCreating(true)} className="shrink-0 gap-2">
+              <Plus className="h-4 w-4" />
+              {t('recurringTasks.newSeries')}
+            </Button>
           </div>
+        )
+      ) : (
+        <div className="flex items-center justify-between gap-3 my-6">
+          <div className="flex min-w-0 items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => router.push('/tasks')}
+              aria-label={t('actions.back')}
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div className="min-w-0">
+              <h1 className="truncate text-xl font-semibold md:text-2xl">
+                {t('recurringTasks.title')}
+              </h1>
+              <p className="mt-0.5 text-sm text-(--text-muted)">{t('recurringTasks.subtitle')}</p>
+            </div>
+          </div>
+          {/* Employees may create recurring series for themselves (the wizard
+              skips the assignee step for them), so offer the same entry point. */}
+          {(canManage || userRole === 'employee') && (
+            <Button onClick={() => setCreating(true)} className="shrink-0 gap-2">
+              <Plus className="h-4 w-4" />
+              {t('recurringTasks.newSeries')}
+            </Button>
+          )}
         </div>
-        {/* Employees may create recurring series for themselves (the wizard
-            skips the assignee step for them), so offer the same entry point.
-            The wizard opens in a sheet — same creation surface as everywhere
-            else, instead of shipping the user off to /tasks/new. */}
-        {(canManage || userRole === 'employee') && (
-          <Button onClick={() => setCreating(true)} className="shrink-0 gap-2">
-            <Plus className="h-4 w-4" />
-            {t('recurringTasks.newSeries')}
-          </Button>
-        )}
-      </div>
+      )}
 
       {series === undefined ? (
         <div className="flex justify-center py-16">

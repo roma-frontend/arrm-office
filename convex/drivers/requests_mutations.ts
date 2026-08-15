@@ -6,6 +6,7 @@
 
 import { v } from 'convex/values';
 import { getAuthCaller } from '../lib/getAuthCaller';
+import { assertFeatureEnabled } from '../superadmin/featureToggles';
 import { mutation } from '../_generated/server';
 import { SMALL_LIST_CAP } from '../lib/limits';
 import { isSuperadmin } from '../lib/auth';
@@ -55,6 +56,7 @@ export const requestDriver = mutation({
     requiresApproval: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'drivers.module');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     const requesterId = caller._id;
@@ -221,6 +223,7 @@ export const respondToDriverRequest = mutation({
     declineReason: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'drivers.module');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     const { requestId, driverId, approved, declineReason } = args;
@@ -332,6 +335,7 @@ export const updateDriverRequest = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'drivers.module');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     const request = await ctx.db.get(args.requestId);
@@ -442,6 +446,7 @@ export const cancelDriverRequest = mutation({
     requestId: v.id('driverRequests'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'drivers.module');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     const { requestId } = args;
@@ -479,6 +484,7 @@ export const deleteDriverRequest = mutation({
     requestId: v.id('driverRequests'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'drivers.module');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     const request = await ctx.db.get(args.requestId);
@@ -542,6 +548,7 @@ export const reassignDriverRequest = mutation({
     newDriverId: v.id('drivers'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'drivers.module');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     const { requestId, newDriverId } = args;

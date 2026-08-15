@@ -5,6 +5,7 @@
 import { v } from 'convex/values';
 import { mutation } from '../_generated/server';
 import { getAuthCaller } from '../lib/getAuthCaller';
+import { assertFeatureEnabled } from '../superadmin/featureToggles';
 import { notify } from '../lib/notify';
 
 /** Grant calendar access to another user */
@@ -16,6 +17,7 @@ export const grantCalendarAccess = mutation({
     expiresAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'drivers.module');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     const { organizationId, viewerId, accessLevel, expiresAt } = args;
@@ -65,6 +67,7 @@ export const revokeCalendarAccess = mutation({
     accessId: v.id('calendarAccess'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'drivers.module');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     const { accessId } = args;
@@ -87,6 +90,7 @@ export const requestCalendarAccess = mutation({
     driverUserId: v.id('users'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'drivers.module');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     const { organizationId, driverUserId } = args;

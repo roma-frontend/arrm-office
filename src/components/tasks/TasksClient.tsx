@@ -12,7 +12,15 @@ import { CreateTaskWizard } from './CreateTaskWizard';
 import { ProjectBadge } from './ProjectBadge';
 import { localizedTaskTitle, type TitledTask } from '@/lib/taskTitle';
 import { TaskSheet } from './TaskSheet';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetBody,
+} from '@/components/ui/sheet';
+import { RecurringTasksClient } from './RecurringTasksClient';
 import { DraftResumeBar } from '@/components/ui/DraftResumeBar';
 import { useDraftResume } from '@/hooks/useDraftResume';
 import { CustomSelect } from '@/components/ui/CustomSelect';
@@ -33,7 +41,6 @@ import { toast } from 'sonner';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { useOptimisticTaskStatus } from '@/hooks/useOptimisticActions';
 import { memo } from 'react';
-import Link from 'next/link';
 import { Repeat as RepeatIcon } from 'lucide-react';
 import type { TFunction } from 'i18next';
 
@@ -535,10 +542,19 @@ interface RecurringSeriesRow {
 
 /**
  * Compact strip of active recurring series, shown above the board/list/timeline
- * so a repeating task is visible where the day-to-day work lives. The same
- * rules are managed in full on /tasks/recurring.
+ * so a repeating task is visible where the day-to-day work lives. The rules
+ * open in a sheet — the same surface as the task detail panel — instead of
+ * shipping the user off to a separate page.
  */
-function RecurringStrip({ series, t }: { series: RecurringSeriesRow[]; t: TFunction }) {
+function RecurringStrip({
+  series,
+  t,
+  onManage,
+}: {
+  series: RecurringSeriesRow[];
+  t: TFunction;
+  onManage: () => void;
+}) {
   if (series.length === 0) return null;
   return (
     <div className="mb-4 rounded-2xl border border-(--border) bg-(--card) p-3">
@@ -547,24 +563,26 @@ function RecurringStrip({ series, t }: { series: RecurringSeriesRow[]; t: TFunct
           <RepeatIcon className="h-3.5 w-3.5 text-(--brand-text)" aria-hidden="true" />
           {t('tasksClient.recurring', 'Recurring')}
         </p>
-        <Link
-          href="/tasks/recurring"
+        <button
+          type="button"
+          onClick={onManage}
           className="text-xs font-medium text-(--brand-text) hover:underline"
         >
           {t('tasksClient.manageRecurring', 'Manage')}
-        </Link>
+        </button>
       </div>
       <div className="flex flex-wrap gap-2">
         {series.map((s) => (
-          <Link
+          <button
             key={s._id}
-            href="/tasks/recurring"
+            type="button"
+            onClick={onManage}
             className="group flex items-center gap-1.5 rounded-full border border-(--border) bg-(--background-subtle) px-3 py-1.5 text-xs text-(--text-2) transition-all hover:border-(--primary)/40 hover:text-(--brand-text)"
           >
             <RepeatIcon className="h-3 w-3 text-(--brand-text)" aria-hidden="true" />
             <span className="max-w-[180px] truncate font-medium">{s.title}</span>
             {s.assignedToName && <span className="text-(--text-muted)">→ {s.assignedToName}</span>}
-          </Link>
+          </button>
         ))}
       </div>
     </div>
@@ -582,6 +600,8 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
   const kanbanScrollRef = useRef<HTMLDivElement>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('kanban');
   const [showCreate, setShowCreate] = useState(false);
+  /** Recurring series manager, opened as a sheet instead of a separate page. */
+  const [showRecurring, setShowRecurring] = useState(false);
   const taskDraft = useDraftResume('create-task', !showCreate);
   /** Task shown in the slide-over, with its title for the panel header. */
   const [sheetTask, setSheetTask] = useState<{ id: Id<'tasks'>; title: string } | null>(null);
@@ -1038,7 +1058,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
         </div>
       ) : viewMode === 'timeline' ? (
         <>
-          <RecurringStrip series={activeSeries} t={t} />
+          <RecurringStrip series={activeSeries} t={t} onManage={() => setShowRecurring(true)} />
           <TimelineView tasks={tasks} onOpen={(task) => openTask(task)} />
         </>
       ) : viewMode === 'kanban' ? (
@@ -1097,7 +1117,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
           }}
           onDragCancel={() => setActiveTask(null)}
         >
-          <RecurringStrip series={activeSeries} t={t} />
+          <RecurringStrip series={activeSeries} t={t} onManage={() => setShowRecurring(true)} />
           <div ref={kanbanScrollRef} className="flex gap-4 overflow-x-auto pb-4">
             {KANBAN_COLUMNS.map((status) => (
               <DroppableKanbanColumn
@@ -1111,7 +1131,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
         </DndContext>
       ) : (
         <>
-          <RecurringStrip series={activeSeries} t={t} />
+          <RecurringStrip series={activeSeries} t={t} onManage={() => setShowRecurring(true)} />
           <div className="bg-(--card) rounded-2xl border border-(--border) shadow-sm overflow-x-auto">
             {tasks.length === 0 ? (
               <div className="py-20 text-center">
@@ -1182,6 +1202,26 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
               onCancel={() => setShowCreate(false)}
             />
           )}
+        </SheetContent>
+      </Sheet>
+
+      {/* Recurring series manager in a sheet. It owns its own create/edit
+          panels, so opening it here keeps the board intact underneath — the
+          same slide-over pattern as a task detail. */}
+      <Sheet open={showRecurring} onOpenChange={setShowRecurring}>
+        <SheetContent side="right" size="lg" closeLabel={t('common.close', 'Close')}>
+          <SheetHeader>
+            <SheetTitle>{t('recurringTasks.title')}</SheetTitle>
+            <SheetDescription>{t('recurringTasks.subtitle')}</SheetDescription>
+          </SheetHeader>
+          <SheetBody className="px-0 py-0">
+            <RecurringTasksClient
+              userId={userId}
+              userRole={userRole}
+              embedded
+              className="px-5 py-4"
+            />
+          </SheetBody>
         </SheetContent>
       </Sheet>
 

@@ -2,6 +2,7 @@ import { v } from 'convex/values';
 import { query } from '../_generated/server';
 import type { QueryCtx } from '../_generated/server';
 import type { Id } from '../_generated/dataModel';
+import { isFeatureEnabledForCaller } from '../superadmin/featureToggles';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { getProfile } from '../lib/userProfile';
 
@@ -65,6 +66,7 @@ export async function getUsersWithLeaveStatus(ctx: Pick<QueryCtx, 'db'>, userIds
 export const getUserPresenceStatus = query({
   args: { userId: v.id('users') },
   handler: async (ctx, args) => {
+    if (!(await isFeatureEnabledForCaller(ctx, 'chat.realtime'))) return null;
     const user = await ctx.db.get(args.userId);
     if (!user) return null;
 

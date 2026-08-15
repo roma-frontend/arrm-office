@@ -4,6 +4,7 @@ import type { Id } from '../_generated/dataModel';
 import { DEFAULT_LIST_CAP } from '../lib/limits';
 import { sanitizeText } from '../lib/sanitize';
 import { getAuthCaller } from '../lib/getAuthCaller';
+import { assertFeatureEnabled } from '../superadmin/featureToggles';
 import { notify } from '../lib/notify';
 import { encodeSystemMessage } from '../lib/systemMessage';
 
@@ -32,6 +33,7 @@ export const getOrCreateDM = mutation({
     targetUserId: v.id('users'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'chat.realtime');
     const ids = [args.currentUserId, args.targetUserId].sort();
     const dmKey = ids.join('_');
 
@@ -124,6 +126,7 @@ export const createGroup = mutation({
     memberIds: v.array(v.id('users')),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'chat.realtime');
     const now = Date.now();
     const convId = await ctx.db.insert('chatConversations', {
       organizationId: args.organizationId,
@@ -194,6 +197,7 @@ export const updateGroup = mutation({
     description: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'chat.realtime');
     const membership = await ctx.db
       .query('chatMembers')
       .withIndex('by_conversation_user', (q) =>
@@ -230,6 +234,7 @@ export const addMember = mutation({
     organizationId: v.optional(v.id('organizations')),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'chat.realtime');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
 
@@ -291,6 +296,7 @@ export const leaveConversation = mutation({
     userId: v.id('users'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'chat.realtime');
     const membership = await ctx.db
       .query('chatMembers')
       .withIndex('by_conversation_user', (q) =>
@@ -370,6 +376,7 @@ export const sendMessage = mutation({
     audioDuration: v.optional(v.number()), // Duration in seconds for voice messages
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'chat.realtime');
     const now = Date.now();
 
     // Check if trying to send to System Announcements channel
@@ -506,6 +513,7 @@ export const editMessage = mutation({
     content: v.string(),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'chat.realtime');
     const msg = await ctx.db.get(args.messageId);
     if (!msg || msg.senderId !== args.userId) throw new Error('Not authorized');
     await ctx.db.patch(args.messageId, {
@@ -537,6 +545,7 @@ export const deleteMessage = mutation({
     deleteForEveryone: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'chat.realtime');
     const msg = await ctx.db.get(args.messageId);
     if (!msg) {
       throw new Error('Message not found');
@@ -724,6 +733,7 @@ export const deleteMessageForMe = mutation({
     userId: v.id('users'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'chat.realtime');
     const msg = await ctx.db.get(args.messageId);
     if (!msg) throw new Error('Message not found');
     const existing: Id<'users'>[] = (msg.deletedForUsers as Id<'users'>[] | undefined) ?? [];
@@ -791,6 +801,7 @@ export const toggleReaction = mutation({
     emoji: v.string(),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'chat.realtime');
     const msg = await ctx.db.get(args.messageId);
     if (!msg) throw new Error('Message not found');
 
@@ -867,6 +878,7 @@ export const pinMessage = mutation({
     pin: v.boolean(),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'chat.realtime');
     const msg = await ctx.db.get(args.messageId);
     if (!msg) throw new Error('Message not found');
 
@@ -895,6 +907,7 @@ export const markAsRead = mutation({
     userId: v.id('users'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'chat.realtime');
     const membership = await ctx.db
       .query('chatMembers')
       .withIndex('by_conversation_user', (q) =>
@@ -944,6 +957,7 @@ export const markMessageDelivered = mutation({
     userId: v.id('users'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'chat.realtime');
     const msg = await ctx.db.get(args.messageId);
     if (!msg || msg.senderId === args.userId) return;
     const readBy: Array<{ userId: Id<'users'>; readAt: number }> =
@@ -967,6 +981,7 @@ export const setTyping = mutation({
     isTyping: v.boolean(),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'chat.realtime');
     const existing = await ctx.db
       .query('chatTyping')
       .withIndex('by_conversation_user', (q) =>
@@ -1011,6 +1026,7 @@ export const votePoll = mutation({
     optionId: v.string(),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'chat.realtime');
     const msg = await ctx.db.get(args.messageId);
     if (!msg?.poll) throw new Error('No poll found');
     const poll = msg.poll as {
@@ -1044,6 +1060,7 @@ export const votePoll = mutation({
 export const closePoll = mutation({
   args: { messageId: v.id('chatMessages'), userId: v.id('users') },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'chat.realtime');
     const msg = await ctx.db.get(args.messageId);
     if (!msg?.poll) throw new Error('No poll');
     if (msg.senderId !== args.userId) throw new Error('Not authorized');
@@ -1078,6 +1095,7 @@ export const sendThreadReply = mutation({
     content: v.string(),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'chat.realtime');
     const now = Date.now();
     const replyId = await ctx.db.insert('chatMessages', {
       conversationId: args.conversationId,
@@ -1126,6 +1144,7 @@ export const scheduleMessage = mutation({
     scheduledFor: v.number(),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'chat.realtime');
     const scheduledMsgId = await ctx.db.insert('chatMessages', {
       conversationId: args.conversationId,
       organizationId: args.organizationId,
@@ -1158,6 +1177,7 @@ export const scheduleMessage = mutation({
 export const cancelScheduledMessage = mutation({
   args: { messageId: v.id('chatMessages'), userId: v.id('users') },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'chat.realtime');
     const msg = await ctx.db.get(args.messageId);
     if (!msg || msg.senderId !== args.userId) throw new Error('Not authorized');
     await ctx.db.delete(args.messageId);
@@ -1187,6 +1207,7 @@ export const setLinkPreview = mutation({
     }),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'chat.realtime');
     const msg = await ctx.db.get(args.messageId);
     if (!msg) throw new Error('Message not found');
 
@@ -1213,6 +1234,7 @@ export const togglePin = mutation({
     userId: v.id('users'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'chat.realtime');
     const conv = await ctx.db.get(args.conversationId);
     if (!conv) throw new Error('Conversation not found');
 
@@ -1250,6 +1272,7 @@ export const deleteConversation = mutation({
     userId: v.id('users'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'chat.realtime');
     const conv = await ctx.db.get(args.conversationId);
     if (!conv) throw new Error('Conversation not found');
 
@@ -1315,6 +1338,7 @@ export const restoreConversation = mutation({
     userId: v.id('users'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'chat.realtime');
     const conv = await ctx.db.get(args.conversationId);
     if (!conv) throw new Error('Conversation not found');
 
@@ -1373,6 +1397,7 @@ export const toggleArchive = mutation({
     userId: v.id('users'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'chat.realtime');
     const conv = await ctx.db.get(args.conversationId);
     if (!conv) throw new Error('Conversation not found');
 
@@ -1411,6 +1436,7 @@ export const toggleMute = mutation({
     userId: v.id('users'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'chat.realtime');
     const conv = await ctx.db.get(args.conversationId);
     if (!conv) throw new Error('Conversation not found');
 
@@ -1453,6 +1479,7 @@ export const sendServiceBroadcast = mutation({
     icon: v.optional(v.string()), // emoji or icon, e.g. "⚠️", "ℹ️", "🔧"
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'chat.realtime');
     const now = Date.now();
 
     // Create the service broadcast message

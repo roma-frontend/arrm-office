@@ -90,6 +90,24 @@ export const security = {
     description: v.optional(v.string()),
   }).index('by_key', ['key']),
 
+  /**
+   * Feature toggles — platform-level switches a superadmin flips from the
+   * console, with per-organization overrides. Global defaults live here
+   * (scope 'global', organizationId undefined); an org row overrides it.
+   */
+  featureToggles: defineTable({
+    key: v.string(),
+    enabled: v.boolean(),
+    organizationId: v.optional(v.id('organizations')),
+    /** Who changed it last. */
+    updatedBy: v.id('users'),
+    updatedAt: v.number(),
+    description: v.optional(v.string()),
+  })
+    .index('by_key', ['key'])
+    .index('by_org', ['organizationId'])
+    .index('by_org_key', ['organizationId', 'key']),
+
   loginAttempts: defineTable({
     email: v.string(),
     userId: v.optional(v.id('users')),
@@ -162,4 +180,30 @@ export const security = {
     .index('by_email', ['email'])
     .index('by_temp_user', ['tempUserId'])
     .index('by_expires', ['expiresAt']),
+
+  /**
+   * Superadmin Data Browser audit trail. Every row edit made through the
+   * browser is recorded here with its before/after snapshot, so a change can be
+   * inspected later and undone in one click — the same discipline the admin
+   * console in builder-studio follows.
+   */
+  adminDbChanges: defineTable({
+    tableName: v.string(),
+    /** The edited document id, as a string (ids are typed per table). */
+    docId: v.string(),
+    /** JSON snapshot of the doc before the change. */
+    beforeJson: v.optional(v.string()),
+    /** JSON snapshot of the doc after the change. */
+    afterJson: v.optional(v.string()),
+    /** 'patch' | 'insert' | 'delete' */
+    action: v.string(),
+    changedBy: v.id('users'),
+    /** Set when the change has been undone. */
+    undoneAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index('by_table', ['tableName'])
+    .index('by_doc', ['tableName', 'docId'])
+    .index('by_creator', ['changedBy'])
+    .index('by_created', ['createdAt']),
 };

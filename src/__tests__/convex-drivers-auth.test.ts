@@ -136,7 +136,12 @@ function makeCtx(queryResult?: any) {
       insert: mockInsert,
       patch: mockPatch,
       delete: mockDelete,
-      query: () => makeQueryChain(queryResult),
+      query: (table: string) => {
+        // featureToggles is a platform table the tests never seed — a missing
+        // row means "default on" for the toggle guard.
+        if (table === 'featureToggles') return makeQueryChain(null);
+        return makeQueryChain(queryResult);
+      },
     },
   };
 }

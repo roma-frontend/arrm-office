@@ -47,6 +47,7 @@ import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { flattenNavDestinations, type UserRole } from '@/lib/nav';
 import { fuzzyMatchAny } from '@/lib/fuzzy';
+import { MODULE_TOGGLE_BY_HREF, useFeatureFlags } from '@/hooks/useFeatureFlags';
 import { useGlobalShortcut } from '@/hooks/useGlobalShortcut';
 import { useAuthUser } from '@/store/useAuthStore';
 import { useCommandPaletteStore } from '@/store/useCommandPaletteStore';
@@ -178,7 +179,15 @@ export function CommandPalette() {
     shouldSearchPeople && orgId ? { organizationId: orgId, limit: 100 } : 'skip',
   );
 
-  const destinations = useMemo(() => flattenNavDestinations(role), [role]);
+  const { isEnabled } = useFeatureFlags();
+
+  const destinations = useMemo(
+    () =>
+      flattenNavDestinations(role).filter(
+        (d) => !MODULE_TOGGLE_BY_HREF[d.href] || isEnabled(MODULE_TOGGLE_BY_HREF[d.href]),
+      ),
+    [role, isEnabled],
+  );
 
   const quickActions = useMemo(
     () => QUICK_ACTIONS.filter((a) => !a.roles || a.roles.includes(role)),

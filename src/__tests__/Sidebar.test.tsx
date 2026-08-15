@@ -95,6 +95,9 @@ jest.mock('@/convex/_generated/api', () => ({
     signatures: { getMyPendingSignatures: { _name: 'getMyPendingSignatures' } },
     news: { getNewsStats: { _name: 'getNewsStats' } },
     users: { queries: { getPendingApprovalUsers: { _name: 'getPendingApprovalUsers' } } },
+    superadmin: {
+      featureToggles: { getMyFeatureFlags: { _name: 'getMyFeatureFlags' } },
+    },
   },
 }));
 

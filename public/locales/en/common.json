@@ -144,7 +144,8 @@
     "noPosition": "No position",
     "publishing": "Publishing…",
     "selectOrganization": "Select an organization",
-    "welcome": "Welcome"
+    "welcome": "Welcome",
+    "chat.realtime": "Real-time chat"
   },
   "nav": {
     "home": "Home",
@@ -224,6 +225,12 @@
     "aiSiteEditor": "AI Site Editor",
     "subscriptions": "Subscriptions",
     "backups": "Backups",
+    "superadmin": "Superadmin",
+    "superadminHub": "Superadmin Hub",
+    "featureToggles": "Feature Toggles",
+    "database": "Data Browser",
+    "sessions": "Active Sessions",
+    "audit": "Audit Trail",
     "security": "Security",
     "recognition": "Recognition",
     "surveys": "Surveys",
@@ -1674,7 +1681,11 @@
     "reviewFailed": "Failed to review alert"
   },
   "chat": {
-    "newMessage": "New message"
+    "newMessage": "New message",
+    "disabled": {
+      "title": "Chat is disabled",
+      "description": "The real-time chat module has been turned off by your organization's administrator."
+    }
   },
   "employees": {
     "loadingProfile": "Loading employee profile..."

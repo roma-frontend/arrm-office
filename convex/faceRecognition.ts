@@ -1,5 +1,6 @@
 import { v } from 'convex/values';
 import { mutation, query, internalQuery } from './_generated/server';
+import { assertFeatureEnabled } from './superadmin/featureToggles';
 import type { Id } from './_generated/dataModel';
 import { DEFAULT_LIST_CAP } from './lib/limits';
 import { getAuthCaller } from './lib/getAuthCaller';
@@ -62,6 +63,7 @@ export const registerFace = mutation({
     faceImageUrl: v.string(),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'face.recognition');
     if (args.faceDescriptor.length !== FACE_DESCRIPTOR_LENGTH) {
       throw new Error(`Face descriptor must be ${FACE_DESCRIPTOR_LENGTH}-dim`);
     }
@@ -126,6 +128,7 @@ export const removeFaceRegistration = mutation({
     userId: v.id('users'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'face.recognition');
     const { userId } = args;
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
@@ -186,6 +189,7 @@ export const loginWithFace = mutation({
     userAgent: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'face.recognition');
     if (args.faceDescriptor.length !== FACE_DESCRIPTOR_LENGTH) {
       throw new Error('Invalid face descriptor');
     }

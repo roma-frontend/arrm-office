@@ -8,6 +8,7 @@ import { v } from 'convex/values';
 import { mutation, query } from '../_generated/server';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { DEFAULT_LIST_CAP } from '../lib/limits';
+import { assertFeatureEnabled } from '../superadmin/featureToggles';
 import { getAuthCaller } from '../lib/getAuthCaller';
 import { isSuperadmin } from '../lib/auth';
 import { notify } from '../lib/notify';
@@ -33,6 +34,7 @@ export const createRecurringTrip = mutation({
     }),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'drivers.module');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     const id = await ctx.db.insert('recurringTrips', {
@@ -83,6 +85,7 @@ export const toggleRecurringTrip = mutation({
     isActive: v.boolean(),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'drivers.module');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     const { recurringTripId, isActive } = args;
@@ -100,6 +103,7 @@ export const deleteRecurringTrip = mutation({
     recurringTripId: v.id('recurringTrips'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'drivers.module');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     const { recurringTripId } = args;
@@ -115,6 +119,7 @@ export const deleteRecurringTrip = mutation({
 export const generateRecurringRequests = mutation({
   args: { organizationId: v.id('organizations') },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'drivers.module');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     if (caller.role !== 'admin' && !isSuperadmin(caller)) {

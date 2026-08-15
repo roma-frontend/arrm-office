@@ -4,6 +4,7 @@
 
 import { mutation } from './_generated/server';
 import { v } from 'convex/values';
+import { assertFeatureEnabled } from './superadmin/featureToggles';
 import { SMALL_LIST_CAP } from './lib/limits';
 import { getAuthCaller } from './lib/getAuthCaller';
 import { assertLeaveTypeActive } from './lib/leaveTypes';
@@ -21,6 +22,7 @@ export const createConversation = mutation({
     title: v.string(),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'ai.assistant');
     const conversationId = await ctx.db.insert('aiConversations', {
       userId: args.userId,
       title: args.title,
@@ -38,6 +40,7 @@ export const updateConversationTitle = mutation({
     title: v.string(),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'ai.assistant');
     await ctx.db.patch(args.conversationId, {
       title: args.title,
       updatedAt: Date.now(),
@@ -50,6 +53,7 @@ export const updateConversationTitle = mutation({
 export const deleteConversation = mutation({
   args: { conversationId: v.id('aiConversations') },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'ai.assistant');
     // Delete all messages first
     const messages = await ctx.db
       .query('aiMessages')
@@ -88,6 +92,7 @@ export const addMessage = mutation({
     content: v.string(),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'ai.assistant');
     const messageId = await ctx.db.insert('aiMessages', {
       conversationId: args.conversationId,
       role: args.role,
@@ -107,6 +112,7 @@ export const addMessage = mutation({
 export const deleteMessage = mutation({
   args: { messageId: v.id('aiMessages') },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'ai.assistant');
     await ctx.db.delete(args.messageId);
     return { success: true };
   },
@@ -118,6 +124,7 @@ export const autoRenameConversation = mutation({
     firstMessage: v.string(),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'ai.assistant');
     // Generate a short title from the first message (max 50 chars)
     const title = args.firstMessage.slice(0, 50).trim();
 
@@ -145,6 +152,7 @@ export const createLeaveRequest = mutation({
     reason: v.string(),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'ai.assistant');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
 
@@ -191,6 +199,7 @@ export const createTask = mutation({
     priority: v.union(v.literal('low'), v.literal('medium'), v.literal('high')),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'ai.assistant');
     const now = Date.now();
 
     const taskId = await ctx.db.insert('tasks', {
@@ -213,6 +222,7 @@ export const createTask = mutation({
 export const togglePinConversation = mutation({
   args: { conversationId: v.id('aiConversations') },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'ai.assistant');
     const conversation = await ctx.db.get(args.conversationId);
     if (!conversation) return { success: false, pinned: false };
     const pinned = !conversation.pinned;
@@ -231,6 +241,7 @@ export const setMessageFeedback = mutation({
     reason: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'ai.assistant');
     const existing = await ctx.db
       .query('aiFeedback')
       .withIndex('by_conversation', (q) => q.eq('conversationId', args.conversationId))
@@ -265,6 +276,7 @@ export const createShare = mutation({
     createdBy: v.id('users'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'ai.assistant');
     const existing = await ctx.db
       .query('aiShares')
       .withIndex('by_conversation', (q) => q.eq('conversationId', args.conversationId))
@@ -284,6 +296,7 @@ export const createShare = mutation({
 export const deleteShare = mutation({
   args: { conversationId: v.id('aiConversations') },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'ai.assistant');
     const existing = await ctx.db
       .query('aiShares')
       .withIndex('by_conversation', (q) => q.eq('conversationId', args.conversationId))

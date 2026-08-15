@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { useSidebarStore } from '@/store/useSidebarStore';
 import { useSwipe } from '@/hooks/useSwipe';
 import { useAuthUser } from '@/store/useAuthStore';
+import { MODULE_TOGGLE_BY_HREF, useFeatureFlags } from '@/hooks/useFeatureFlags';
 import { OrganizationSelector } from '@/components/layout/OrganizationSelector';
 import { QuickActionsPalette } from '@/components/superadmin/QuickActionsPalette';
 import { useQuery } from 'convex/react';
@@ -26,6 +27,7 @@ export function Sidebar() {
   const pathname = usePathname();
   const { collapsed, toggle } = useSidebarStore();
   const user = useAuthUser();
+  const { isEnabled } = useFeatureFlags();
   const [mounted, setMounted] = React.useState(false);
   const [hoveredItem, setHoveredItem] = React.useState<string | null>(null);
   const [activeSubNav, setActiveSubNav] = React.useState<NavItem | null>(null);
@@ -116,23 +118,41 @@ export function Sidebar() {
   const userRole = user?.role ?? 'employee';
   const isSuperadmin = user?.role === 'superadmin';
 
-  const visibleItems = navItems.filter((item, index, arr) => {
-    if (isSeparator(item)) {
-      if (userRole === 'driver' || userRole === 'employee') return false;
-      let hasVisibleItem = false;
-      for (let i = index + 1; i < arr.length; i++) {
-        const next = arr[i];
-        if (!next) break;
-        if (isSeparator(next)) break;
-        if (next.roles.includes(userRole)) {
-          hasVisibleItem = true;
-          break;
+  // Toggled-off modules disappear from the nav in real time (see
+  // useFeatureFlags). Items are cloned — never mutated — so flipping a toggle
+  // back on restores the original children.
+  const withModuleChildren = (item: NavItem): NavItem => {
+    if (MODULE_TOGGLE_BY_HREF[item.href]) return item;
+    if (!item.children?.some((c) => MODULE_TOGGLE_BY_HREF[c.href])) return item;
+    return {
+      ...item,
+      children: item.children.filter(
+        (c) => !MODULE_TOGGLE_BY_HREF[c.href] || isEnabled(MODULE_TOGGLE_BY_HREF[c.href]),
+      ),
+    };
+  };
+  const moduleVisible = (item: NavItem) =>
+    !MODULE_TOGGLE_BY_HREF[item.href] || isEnabled(MODULE_TOGGLE_BY_HREF[item.href]);
+
+  const visibleItems = navItems
+    .map((entry) => (isSeparator(entry) ? entry : withModuleChildren(entry)))
+    .filter((item, index, arr) => {
+      if (isSeparator(item)) {
+        if (userRole === 'driver' || userRole === 'employee') return false;
+        let hasVisibleItem = false;
+        for (let i = index + 1; i < arr.length; i++) {
+          const next = arr[i];
+          if (!next) break;
+          if (isSeparator(next)) break;
+          if (next.roles.includes(userRole) && moduleVisible(next)) {
+            hasVisibleItem = true;
+            break;
+          }
         }
+        return hasVisibleItem;
       }
-      return hasVisibleItem;
-    }
-    return item.roles.includes(userRole);
-  }) as NavEntry[];
+      return item.roles.includes(userRole) && moduleVisible(item);
+    }) as NavEntry[];
 
   // Filter items based on search query
   const filteredItems = (() => {
@@ -731,6 +751,7 @@ export function MobileSidebar() {
   const pathname = usePathname();
   const { mobileOpen, setMobileOpen } = useSidebarStore();
   const user = useAuthUser();
+  const { isEnabled } = useFeatureFlags();
   const [mounted, setMounted] = React.useState(false);
   const sidebarRef = React.useRef<HTMLDivElement>(null);
   const [activeSubNav, setActiveSubNav] = React.useState<NavItem | null>(null);
@@ -823,25 +844,41 @@ export function MobileSidebar() {
   // Get user role with fallback
   const userRole = user?.role ?? 'employee';
 
-  const visibleItems = navItems.filter((item, index, arr) => {
-    if (isSeparator(item)) {
-      // Hide section headers for driver/employee roles
-      if (userRole === 'driver' || userRole === 'employee') return false;
-      // For other roles, only show separator if there's at least one visible nav item in this section
-      let hasVisibleItem = false;
-      for (let i = index + 1; i < arr.length; i++) {
-        const next = arr[i];
-        if (!next) break;
-        if (isSeparator(next)) break;
-        if (next.roles.includes(userRole)) {
-          hasVisibleItem = true;
-          break;
+  // Same module-toggle filtering as the desktop sidebar (see useFeatureFlags).
+  const withModuleChildren = (item: NavItem): NavItem => {
+    if (MODULE_TOGGLE_BY_HREF[item.href]) return item;
+    if (!item.children?.some((c) => MODULE_TOGGLE_BY_HREF[c.href])) return item;
+    return {
+      ...item,
+      children: item.children.filter(
+        (c) => !MODULE_TOGGLE_BY_HREF[c.href] || isEnabled(MODULE_TOGGLE_BY_HREF[c.href]),
+      ),
+    };
+  };
+  const moduleVisible = (item: NavItem) =>
+    !MODULE_TOGGLE_BY_HREF[item.href] || isEnabled(MODULE_TOGGLE_BY_HREF[item.href]);
+
+  const visibleItems = navItems
+    .map((entry) => (isSeparator(entry) ? entry : withModuleChildren(entry)))
+    .filter((item, index, arr) => {
+      if (isSeparator(item)) {
+        // Hide section headers for driver/employee roles
+        if (userRole === 'driver' || userRole === 'employee') return false;
+        // For other roles, only show separator if there's at least one visible nav item in this section
+        let hasVisibleItem = false;
+        for (let i = index + 1; i < arr.length; i++) {
+          const next = arr[i];
+          if (!next) break;
+          if (isSeparator(next)) break;
+          if (next.roles.includes(userRole) && moduleVisible(next)) {
+            hasVisibleItem = true;
+            break;
+          }
         }
+        return hasVisibleItem;
       }
-      return hasVisibleItem;
-    }
-    return item.roles.includes(userRole);
-  });
+      return item.roles.includes(userRole) && moduleVisible(item);
+    });
 
   // Filter items based on search query
   const mobileFilteredItems = (() => {

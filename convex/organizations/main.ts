@@ -127,10 +127,22 @@ export const listAll = query({
 export const getAllOrganizations = query({
   args: { superadminUserId: v.optional(v.id('users')) },
   handler: async (ctx, args) => {
-    if (args.superadminUserId) {
-      const caller = await ctx.db.get(args.superadminUserId);
-      if (!caller || !isSuperadmin(caller)) {
-        throw new Error('Superadmin only');
+    // Identity is the source of truth: verify against the authenticated
+    // caller rather than trusting a client-supplied userId (which can point
+    // at a deleted temp-access account and fail the legacy check below).
+    const identity = await ctx.auth.getUserIdentity();
+    const identityUser = identity?.email
+      ? await ctx.db
+          .query('users')
+          .withIndex('by_email', (q) => q.eq('email', identity.email!.toLowerCase()))
+          .unique()
+      : null;
+    if (!identityUser || !isSuperadmin(identityUser)) {
+      if (args.superadminUserId) {
+        const caller = await ctx.db.get(args.superadminUserId);
+        if (!caller || !isSuperadmin(caller)) {
+          throw new Error('Superadmin only');
+        }
       }
     }
 

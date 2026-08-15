@@ -5,8 +5,9 @@ import dynamic from 'next/dynamic';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Undo2 } from 'lucide-react';
+import { MessageSquareOff, Undo2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 import { useAuthStore, type User } from '@/store/useAuthStore';
 import { useShallow } from 'zustand/shallow';
 import { useSidebarStore } from '@/store/useSidebarStore';
@@ -136,8 +137,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [hydrated, setHydrated] = useState(false);
   const pathname = usePathname();
+  const { isEnabled: isFeatureEnabled } = useFeatureFlags();
   const isAIChatPage = pathname?.startsWith('/ai-chat');
   const isChatPage = pathname?.startsWith('/chat') && !isAIChatPage;
+  // The chat module itself can be toggled off; the page then renders a
+  // friendly disabled state instead of a live conversation surface.
+  const isChatDisabled = isChatPage && !isFeatureEnabled('chat.realtime');
   const isAuthOnboardingPage =
     pathname?.startsWith('/onboarding/select-organization') ||
     pathname?.startsWith('/onboarding/pending');
@@ -259,7 +264,17 @@ export function Providers({ children }: { children: React.ReactNode }) {
                   : 'flex-1 overflow-y-auto overflow-x-hidden min-h-0 main-scrollable app-main'
               }
             >
-              {isChatPage ? (
+              {isChatDisabled ? (
+                <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
+                  <MessageSquareOff className="h-10 w-10 text-(--text-muted)" />
+                  <h2 className="text-lg font-semibold text-(--text-primary)">
+                    {t('chat.disabled.title')}
+                  </h2>
+                  <p className="max-w-sm text-sm text-(--text-muted)">
+                    {t('chat.disabled.description')}
+                  </p>
+                </div>
+              ) : isChatPage ? (
                 <div className="flex flex-col flex-1 min-h-0 h-full p-0 sm:p-3 md:p-4">
                   <div className="flex flex-col flex-1 min-h-0 h-full mx-auto w-full">
                     {children}
@@ -278,8 +293,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
               )}
             </main>
           </div>
-          {/* AI Chat Widget - hidden on /chat page so it doesn't cover the send button */}
-          {!isChatPage && <ChatWidget />}
+          {/* AI Chat Widget — hidden on /chat page so it doesn't cover the send
+              button, and everywhere when the ai.assistant toggle is off. */}
+          {!isChatPage && isFeatureEnabled('ai.assistant') && <ChatWidget />}
 
           {/* Tool Dock — floating "Your tools" trigger on every dashboard page;
               it hides on scroll down and returns on scroll up. */}

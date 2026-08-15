@@ -8,6 +8,7 @@ import { v } from 'convex/values';
 import { mutation } from '../_generated/server';
 import { DEFAULT_LIST_CAP } from '../lib/limits';
 import { getAuthCaller } from '../lib/getAuthCaller';
+import { assertFeatureEnabled } from '../superadmin/featureToggles';
 import { isSuperadmin } from '../lib/auth';
 import { notify } from '../lib/notify';
 
@@ -21,6 +22,7 @@ export const blockTimeSlot = mutation({
     reason: v.string(),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'drivers.module');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     const { driverId, organizationId, startTime, endTime, reason } = args;
@@ -55,6 +57,7 @@ export const updateTripStatus = mutation({
     status: v.union(v.literal('in_progress'), v.literal('completed'), v.literal('cancelled')),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'drivers.module');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     const { scheduleId, status } = args;
@@ -86,6 +89,7 @@ export const submitDriverFeedback = mutation({
     comment: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'drivers.module');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     const { scheduleId, rating, comment } = args;
@@ -151,6 +155,7 @@ export const blockTimeOff = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'drivers.module');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     const { driverId, organizationId, startTime, endTime, reason, type } = args;
@@ -184,6 +189,7 @@ export const calculateRoute = mutation({
     to: v.string(),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'drivers.module');
     const { from: _from, to: _to } = args;
     const apiKey = process.env.GOOGLE_MAPS_API_KEY;
 
@@ -216,6 +222,7 @@ export const submitPassengerRating = mutation({
     comment: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'drivers.module');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     if (args.rating < 1 || args.rating > 5) {
@@ -277,6 +284,7 @@ export const addDriverNotes = mutation({
     notes: v.string(),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'drivers.module');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     const { scheduleId, notes } = args;
@@ -305,6 +313,7 @@ export const markDriverArrived = mutation({
     scheduleId: v.id('driverSchedules'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'drivers.module');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     const { scheduleId } = args;
@@ -342,6 +351,7 @@ export const markPassengerPickedUp = mutation({
     scheduleId: v.id('driverSchedules'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'drivers.module');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     const { scheduleId } = args;
@@ -371,6 +381,7 @@ export const updateETA = mutation({
     etaMinutes: v.number(),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'drivers.module');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     const { scheduleId, etaMinutes } = args;

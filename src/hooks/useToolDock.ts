@@ -13,6 +13,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { useAuthUser } from '@/store/useAuthStore';
+import { MODULE_TOGGLE_BY_HREF, useFeatureFlags } from '@/hooks/useFeatureFlags';
 import { flattenNavDestinations } from '@/lib/nav';
 
 const STORAGE_PREFIX = 'tool-dock-v1';
@@ -64,6 +65,7 @@ function loadState(userKey: string): PersistedState {
 
 export function useToolDock() {
   const user = useAuthUser();
+  const { isEnabled } = useFeatureFlags();
   const userKey = user?.id && user.id !== '' ? user.id : 'anonymous';
 
   const [state, setState] = useState<PersistedState>(() => loadState(userKey));
@@ -124,7 +126,9 @@ export function useToolDock() {
    */
   const modules = useMemo<DockModule[]>(() => {
     const role = user?.role ?? 'employee';
-    const destinations = flattenNavDestinations(role);
+    const destinations = flattenNavDestinations(role).filter(
+      (d) => !MODULE_TOGGLE_BY_HREF[d.href] || isEnabled(MODULE_TOGGLE_BY_HREF[d.href]),
+    );
     const order = new Map(destinations.map((d, i) => [d.href, i]));
 
     return [...destinations]
@@ -156,7 +160,7 @@ export function useToolDock() {
         if (scoreA !== scoreB) return scoreB - scoreA;
         return (order.get(a.href) ?? 0) - (order.get(b.href) ?? 0);
       });
-  }, [user?.role, state.pinned, score]);
+  }, [user?.role, state.pinned, score, isEnabled]);
 
   return { modules, recordVisit, togglePin, isPinned };
 }

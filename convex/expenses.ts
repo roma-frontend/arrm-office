@@ -2,6 +2,7 @@ import type { Doc, Id } from './_generated/dataModel';
 import type { MutationCtx } from './_generated/server';
 import { v } from 'convex/values';
 import { query, mutation } from './_generated/server';
+import { assertFeatureEnabled } from './superadmin/featureToggles';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits';
 import {
   assertOrgScope,
@@ -413,6 +414,7 @@ export const createExpense = mutation({
     createdBy: v.id('users'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'expenses.module');
     const { createdBy: _clientCreatedBy, ...expenseData } = args;
     // Filing for somebody else is a staff action; everyone else files for self.
     const scope = await assertOrgScope(ctx, args.organizationId);
@@ -473,6 +475,7 @@ export const updateExpense = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'expenses.module');
     const { expenseId, ...updates } = args;
     const expense = await ctx.db.get(expenseId);
     if (!expense) throw new Error('Expense not found');
@@ -516,6 +519,7 @@ export const submitExpense = mutation({
     expenseId: v.id('expenses'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'expenses.module');
     const { expenseId } = args;
     const expense = await ctx.db.get(expenseId);
     if (!expense) throw new Error('Expense not found');
@@ -540,6 +544,7 @@ export const approveExpense = mutation({
     reviewNotes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'expenses.module');
     const { expenseId, reviewNotes } = args;
     const expense = await ctx.db.get(expenseId);
     if (!expense) throw new Error('Expense not found');
@@ -568,6 +573,7 @@ export const rejectExpense = mutation({
     reviewNotes: v.string(),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'expenses.module');
     const { expenseId, reviewNotes } = args;
     const expense = await ctx.db.get(expenseId);
     if (!expense) throw new Error('Expense not found');
@@ -596,6 +602,7 @@ export const reimburseExpense = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'expenses.module');
     const { expenseId, reimbursementMethod } = args;
     const expense = await ctx.db.get(expenseId);
     if (!expense) throw new Error('Expense not found');
@@ -619,6 +626,7 @@ export const deleteExpense = mutation({
     expenseId: v.id('expenses'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'expenses.module');
     const { expenseId } = args;
     const expense = await ctx.db.get(expenseId);
     if (!expense) throw new Error('Expense not found');
@@ -651,6 +659,7 @@ export const createExpenseCategory = mutation({
     createdBy: v.id('users'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'expenses.module');
     const { createdBy: _clientCreatedBy, ...categoryData } = args;
     // Categories shape what everyone in the org may claim — admin-only.
     const scope = await assertOrgStaff(ctx, args.organizationId, { adminOnly: true });
@@ -680,6 +689,7 @@ export const updateExpenseCategory = mutation({
     isActive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'expenses.module');
     const { categoryId, ...updates } = args;
     const category = await ctx.db.get(categoryId);
     if (!category) throw new Error('Expense category not found');
@@ -719,6 +729,7 @@ export const createExpensePolicy = mutation({
     createdBy: v.id('users'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'expenses.module');
     const { createdBy: _clientCreatedBy, ...policyData } = args;
     // Approval limits are the control that makes review meaningful — admin-only.
     const scope = await assertOrgStaff(ctx, args.organizationId, { adminOnly: true });
@@ -750,6 +761,7 @@ export const updateExpensePolicy = mutation({
     isActive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'expenses.module');
     const { policyId, ...updates } = args;
     const policy = await ctx.db.get(policyId);
     if (!policy) throw new Error('Expense policy not found');
@@ -794,6 +806,7 @@ export const createExpenseReport = mutation({
     createdBy: v.id('users'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'expenses.module');
     const { createdBy: _clientCreatedBy, ...reportData } = args;
     const scope = await assertOrgScope(ctx, args.organizationId);
     if (!scope.isStaff && args.userId !== scope.caller._id) {
@@ -823,6 +836,7 @@ export const addExpenseToReport = mutation({
     organizationId: v.id('organizations'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'expenses.module');
     const { reportId, expenseId } = args;
     const report = await ctx.db.get(reportId);
     if (!report) throw new Error('Expense report not found');
@@ -876,6 +890,7 @@ export const removeExpenseFromReport = mutation({
     expenseId: v.id('expenses'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'expenses.module');
     const { reportId, expenseId } = args;
     const report = await ctx.db.get(reportId);
     if (!report) throw new Error('Expense report not found');
@@ -916,6 +931,7 @@ export const submitExpenseReport = mutation({
     reportId: v.id('expenseReports'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'expenses.module');
     const { reportId } = args;
     const report = await ctx.db.get(reportId);
     if (!report) throw new Error('Expense report not found');
@@ -939,6 +955,7 @@ export const approveExpenseReport = mutation({
     reviewNotes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'expenses.module');
     const { reportId, reviewNotes } = args;
     const report = await ctx.db.get(reportId);
     if (!report) throw new Error('Expense report not found');
@@ -967,6 +984,7 @@ export const rejectExpenseReport = mutation({
     reviewNotes: v.string(),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'expenses.module');
     const { reportId, reviewNotes } = args;
     const report = await ctx.db.get(reportId);
     if (!report) throw new Error('Expense report not found');

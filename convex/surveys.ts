@@ -1,5 +1,6 @@
 import { v } from 'convex/values';
 import { mutation, query, internalMutation } from './_generated/server';
+import { assertFeatureEnabled } from './superadmin/featureToggles';
 import type { Id } from './_generated/dataModel';
 import { MAX_PAGE_SIZE } from './pagination';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
@@ -254,6 +255,7 @@ export const createSurvey = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'surveys.module');
     const now = Date.now();
 
     const surveyId = await ctx.db.insert('surveys', {
@@ -301,6 +303,7 @@ export const publishSurvey = mutation({
     organizationId: v.id('organizations'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'surveys.module');
     const { surveyId, organizationId } = args;
     const survey = await ctx.db.get(surveyId);
     if (!survey || survey.organizationId !== organizationId) {
@@ -327,6 +330,7 @@ export const closeSurvey = mutation({
     organizationId: v.id('organizations'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'surveys.module');
     const { surveyId, organizationId } = args;
     const survey = await ctx.db.get(surveyId);
     if (!survey || survey.organizationId !== organizationId) {
@@ -353,6 +357,7 @@ export const deleteSurvey = mutation({
     organizationId: v.id('organizations'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'surveys.module');
     const { surveyId, organizationId } = args;
     const survey = await ctx.db.get(surveyId);
     if (!survey || survey.organizationId !== organizationId) {
@@ -394,6 +399,7 @@ export const submitResponse = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'surveys.module');
     const survey = await ctx.db.get(args.surveyId);
     if (!survey || survey.organizationId !== args.organizationId) {
       throw new Error('Survey not found');
@@ -463,6 +469,7 @@ export const reorderQuestions = mutation({
     questionIds: v.array(v.id('surveyQuestions')),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'surveys.module');
     const { surveyId, organizationId, questionIds } = args;
     const survey = await ctx.db.get(surveyId);
     if (!survey || survey.organizationId !== organizationId) {
@@ -499,6 +506,7 @@ export const updateQuestion = mutation({
     options: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'surveys.module');
     const { questionId, organizationId, ...updates } = args;
     const question = await ctx.db.get(questionId);
     if (!question || question.organizationId !== organizationId) {
@@ -532,6 +540,7 @@ export const deleteQuestion = mutation({
     organizationId: v.id('organizations'),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'surveys.module');
     const { questionId, organizationId } = args;
     const question = await ctx.db.get(questionId);
     if (!question || question.organizationId !== organizationId) {
@@ -585,6 +594,7 @@ export const updateSurvey = mutation({
     endsAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'surveys.module');
     const { surveyId, organizationId, ...updates } = args;
     const survey = await ctx.db.get(surveyId);
     if (!survey || survey.organizationId !== organizationId) {
@@ -636,6 +646,7 @@ export const updateSurveyQuestions = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'surveys.module');
     const { surveyId, organizationId, questions } = args;
     const survey = await ctx.db.get(surveyId);
     if (!survey || survey.organizationId !== organizationId) {
@@ -680,6 +691,7 @@ export const updateSurveyQuestions = mutation({
 export const activateScheduledSurveys = internalMutation({
   args: {},
   handler: async (ctx) => {
+    await assertFeatureEnabled(ctx, 'surveys.module');
     const now = Date.now();
 
     // Get all organizations
@@ -722,6 +734,7 @@ export const activateScheduledSurveys = internalMutation({
 export const closeExpiredSurveys = internalMutation({
   args: {},
   handler: async (ctx) => {
+    await assertFeatureEnabled(ctx, 'surveys.module');
     const now = Date.now();
 
     const orgs = await ctx.db.query('organizations').take(DEFAULT_LIST_CAP);
