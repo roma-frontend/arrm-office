@@ -1,9 +1,7 @@
 'use client';
 
-import { useTranslation } from 'react-i18next';
-
-import { useEffect, useState, useCallback } from 'react';
-import { createPortal } from 'react-dom';
+import { useCallback } from 'react';
+import { useLandingTranslation } from '@/components/landing/useLandingTranslation';
 import { useCookieConsent } from '@/store/cookieConsentStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { Cookie, Settings, Shield, BarChart3, Target, Palette } from 'lucide-react';
@@ -11,33 +9,22 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-export default function CookieBanner() {
-  const { t } = useTranslation();
+export default function CookieBanner({ initialLanguage = 'en' }: { initialLanguage?: string }) {
+  // getFixedT(initialLanguage) before mount so the SSR HTML (rendered in the
+  // cookie-detected language) and the first client render match byte-for-byte.
+  const { t, mounted } = useLandingTranslation(initialLanguage);
   const { hasConsent, showBanner, acceptAll, rejectAll } = useCookieConsent();
   const { isAuthenticated } = useAuthStore();
   const router = useRouter();
-  const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
-    // PERFORMANCE: Defer cookie banner rendering until the browser is idle so it
-    // is not picked up as the LCP element (previously caused ~5,700ms render
-    // delay per Lighthouse). `requestIdleCallback` lets us show it as soon as
-    // the main thread is free instead of waiting on a fixed 4s timer.
-    const show = () => setMounted(true);
-    const win = window as Window & {
-      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
-      cancelIdleCallback?: (id: number) => void;
-    };
-
-    if (typeof win.requestIdleCallback === 'function') {
-      const id = win.requestIdleCallback(show, { timeout: 2500 });
-      return () => win.cancelIdleCallback?.(id);
-    }
-
-    // Fallback for browsers without requestIdleCallback (e.g. Safari).
-    const timer = setTimeout(show, 1500);
-    return () => clearTimeout(timer);
-  }, []);
+  // The banner is server-rendered so it paints with the first render of the
+  // page (an idle-deferred banner painted after the multi-second hydration and
+  // became the LCP element — see Lighthouse history). Before mount the banner
+  // always renders, matching the SSR HTML exactly; after mount the (rehydrated)
+  // consent store decides. Returning visitors with consent are hidden before
+  // first paint by the `cookie-consent-given` class the inline head script
+  // sets from localStorage — no flash either way.
+  const visible = !mounted || (!hasConsent && showBanner);
 
   const handleSettingsClick = useCallback(
     (e: React.MouseEvent) => {
@@ -55,13 +42,13 @@ export default function CookieBanner() {
     [isAuthenticated, router],
   );
 
-  if (!mounted || hasConsent || !showBanner) {
+  if (!visible) {
     return null;
   }
 
   const bannerContent = (
     <div
-      className="fixed bottom-0 left-0 right-0 z-[120] max-w-full p-4 sm:p-6 animate-cookie-banner"
+      className="cookie-banner-root fixed bottom-0 left-0 right-0 z-[120] max-w-full p-4 sm:p-6 animate-cookie-banner"
       style={{ pointerEvents: 'none' }}
     >
       <div style={{ pointerEvents: 'auto' }}>
@@ -165,5 +152,7 @@ export default function CookieBanner() {
     </div>
   );
 
-  return createPortal(bannerContent, document.body);
+  // Rendered inline (fixed-position) instead of a portal: the banner is
+  // server-rendered and portals can't run during SSR.
+  return bannerContent;
 }

@@ -1,11 +1,19 @@
 'use client';
 
 import React from 'react';
-import { motion, useScroll, useTransform } from 'framer-motion';
 import HeroCTA from './HeroCTA';
 import HeroDemo from './HeroDemo';
 import { useTranslation } from 'react-i18next';
 import '@/i18n/config';
+
+// Scroll-driven parallax without framer-motion: a single passive scroll
+// listener (rAF-throttled) writes transforms/opacities straight onto element
+// refs, so no React re-renders and no animation runtime in the first-load JS.
+// (The hero is the LCP element — its chunk used to pull the whole framer
+// runtime into the critical path.) Matches the previous useScroll/useTransform
+// offsets: demo progress over ['start 85%', 'end 30%'], indicator fade over
+// the first 6% of the page scroll.
+const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 
 // Inline SVG icons
 function SparklesIcon() {
@@ -102,17 +110,57 @@ export default function HeroSection({ initialLanguage = 'en' }: { initialLanguag
   // Scroll-parallax on the demo panel: it rides the viewport (sticky) while the
   // left column scrolls past, gently drifting and tightening as it goes.
   const demoWrapRef = React.useRef<HTMLDivElement>(null);
-  const { scrollYProgress: demoProgress } = useScroll({
-    target: demoWrapRef,
-    offset: ['start 85%', 'end 30%'],
-  });
-  const demoY = useTransform(demoProgress, [0, 1], [0, -46]);
-  const demoScale = useTransform(demoProgress, [0, 1], [1, 0.93]);
-  const glowOpacity = useTransform(demoProgress, [0, 0.8, 1], [1, 0.75, 0.5]);
+  const demoInnerRef = React.useRef<HTMLDivElement>(null);
+  const glowRef = React.useRef<HTMLDivElement>(null);
+  const indicatorRef = React.useRef<HTMLDivElement>(null);
+  const rafPending = React.useRef(0);
 
-  // Scroll indicator fades away as the visitor starts scrolling.
-  const { scrollYProgress: pageProgress } = useScroll();
-  const indicatorOpacity = useTransform(pageProgress, [0, 0.06], [1, 0]);
+  React.useEffect(() => {
+    const update = () => {
+      rafPending.current = 0;
+      const vh = window.innerHeight;
+
+      const wrap = demoWrapRef.current;
+      const inner = demoInnerRef.current;
+      const glow = glowRef.current;
+      if (wrap && inner) {
+        const rect = wrap.getBoundingClientRect();
+        // Framer's ['start 85%', 'end 30%'] window: 0 when the wrapper's top
+        // crosses 85% of the viewport, 1 when its bottom crosses 30%.
+        const travel = rect.height + vh * 0.55;
+        const progress = clamp01((vh * 0.85 - rect.top) / travel);
+        inner.style.transform = `translateY(${(-46 * progress).toFixed(2)}px) scale(${(1 - 0.07 * progress).toFixed(4)})`;
+        if (glow) {
+          // [0, 0.8, 1] → [1, 0.75, 0.5]
+          const opacity =
+            progress <= 0.8 ? 1 - 0.25 * (progress / 0.8) : 0.75 - 0.25 * ((progress - 0.8) / 0.2);
+          glow.style.opacity = opacity.toFixed(3);
+        }
+      }
+
+      const indicator = indicatorRef.current;
+      if (indicator) {
+        const docHeight = document.documentElement.scrollHeight;
+        const pageProgress = docHeight > vh ? window.scrollY / (docHeight - vh) : 0;
+        indicator.style.opacity = clamp01(1 - pageProgress / 0.06).toFixed(3);
+      }
+    };
+
+    const onScroll = () => {
+      if (!rafPending.current) {
+        rafPending.current = requestAnimationFrame(update);
+      }
+    };
+
+    update();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+      if (rafPending.current) cancelAnimationFrame(rafPending.current);
+    };
+  }, []);
 
   React.useEffect(() => {
     setMounted(true);
@@ -264,20 +312,20 @@ export default function HeroSection({ initialLanguage = 'en' }: { initialLanguag
         >
           <div className="lg:sticky lg:top-24">
             {/* Glow behind the frame — fades subtly as the panel drifts */}
-            <motion.div
+            <div
+              ref={glowRef}
               className="absolute -inset-10 -z-10 rounded-[3rem] pointer-events-none"
               style={{
                 background:
                   'radial-gradient(ellipse 60% 50% at 50% 45%, var(--landing-orb-1) 0%, transparent 70%)',
                 filter: 'blur(40px)',
-                opacity: glowOpacity,
               }}
             />
 
             {/* Live product demo — rides the scroll with a gentle drift */}
-            <motion.div style={{ y: demoY, scale: demoScale }}>
+            <div ref={demoInnerRef} style={{ willChange: 'transform' }}>
               <HeroDemo t={t} />
-            </motion.div>
+            </div>
 
             {/* Floating card — biometric check-in (top right) */}
             <div
@@ -340,9 +388,9 @@ export default function HeroSection({ initialLanguage = 'en' }: { initialLanguag
       </div>
 
       {/* Scroll indicator — fades out on first scroll */}
-      <motion.div
+      <div
+        ref={indicatorRef}
         className="mt-6 md:mt-8 flex-col items-center gap-2 hidden md:flex pointer-events-none"
-        style={{ opacity: indicatorOpacity }}
         aria-hidden="true"
       >
         <span
@@ -358,7 +406,7 @@ export default function HeroSection({ initialLanguage = 'en' }: { initialLanguag
             opacity: 0.7,
           }}
         />
-      </motion.div>
+      </div>
     </div>
   );
 }

@@ -1,114 +1,51 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import LazyMount from './LazyMount';
 import LandingExtras from './LandingExtras';
-import StrategyCascadeSection from './StrategyCascadeSection';
-import ScrollStorySection from './ScrollStorySection';
+import CookieBanner from '@/components/CookieBanner';
 
-// Meet AI — live chat demo. SSR'd for crawlers; the chat window itself only
-// renders after mount (the seeded copy is client-localized).
-const MeetAISection = dynamic(() => import('./MeetAISection'), {
-  loading: () => (
-    <div
-      className="h-96 animate-pulse rounded-3xl"
-      style={{ backgroundColor: 'var(--landing-card-bg)' }}
-    />
-  ),
-  ssr: true,
-});
+// Below-fold sections are wrapped in <LazyMount> (IntersectionObserver) with
+// ssr:false: their chunks — which together carry most of the landing's JS,
+// including the framer-motion runtime — are only fetched when the visitor
+// approaches the section instead of in the initial load window. The FAQ and
+// Footer stay SSR'd: their HTML is small and valuable for crawlers (visible
+// FAQ content, footer links).
+
+// Meet AI — live chat demo. Client-only: the chat window renders after mount.
+const MeetAISection = dynamic(() => import('./MeetAISection'), { ssr: false });
 
 // Trust band — logo marquee + security strip, after the stats.
-const TrustBandSection = dynamic(() => import('./TrustBandSection'), {
-  loading: () => (
-    <div
-      className="h-72 animate-pulse rounded-3xl"
-      style={{ backgroundColor: 'var(--landing-card-bg)' }}
-    />
-  ),
-  ssr: true,
-});
+const TrustBandSection = dynamic(() => import('./TrustBandSection'), { ssr: false });
 
 // Below-fold sections - lazy loaded for performance with SSR
-const TestimonialsSection = dynamic(() => import('./TestimonialsSection'), {
-  loading: () => (
-    <div
-      className="h-96 animate-pulse rounded-3xl"
-      style={{ backgroundColor: 'var(--landing-card-bg)' }}
-    />
-  ),
-  ssr: true,
-});
+const TestimonialsSection = dynamic(() => import('./TestimonialsSection'), { ssr: false });
 
-const FAQSection = dynamic(() => import('./FAQSection'), {
-  loading: () => (
-    <div
-      className="h-96 animate-pulse rounded-3xl"
-      style={{ backgroundColor: 'var(--landing-card-bg)' }}
-    />
-  ),
-  ssr: true,
-});
+// Scroll storytelling — pinned phone with 4 scenes (check-in → cascade → AI →
+// analytics). Mounted on approach (NOT via content-visibility, which would
+// break the sticky pinning): the section mounts ~1200px before it becomes
+// visible and sticky works normally from then on.
+const ScrollStorySection = dynamic(() => import('./ScrollStorySection'), { ssr: false });
+
+const StrategyCascadeSection = dynamic(() => import('./StrategyCascadeSection'), { ssr: false });
+
+const LiveStatsSection = dynamic(() => import('./LiveStatsSection'), { ssr: false });
+
+const FeaturesSection = dynamic(() => import('./FeaturesSection'), { ssr: false });
+
+const PersonasSection = dynamic(() => import('./PersonasSection'), { ssr: false });
 
 const PricingPreview = dynamic(() => import('./PricingPreview'), {
-  loading: () => (
-    <div
-      className="h-96 animate-pulse rounded-3xl"
-      style={{ backgroundColor: 'var(--landing-card-bg)' }}
-    />
-  ),
   ssr: false, // Uses Convex useQuery hook — can't SSR before ConvexProvider activates
 });
 
-// One unified live-stats band: the social-proof metrics and the platform
-// numbers merged into a single dashboard-style panel (count-up, bars, ticker).
-const LiveStatsSection = dynamic(() => import('./LiveStatsSection'), {
-  loading: () => (
-    <div
-      className="h-64 animate-pulse rounded-3xl"
-      style={{ backgroundColor: 'var(--landing-card-bg)' }}
-    />
-  ),
-  ssr: true,
-});
+const FinalCtaSection = dynamic(() => import('./FinalCtaSection'), { ssr: false });
 
-const FeaturesSection = dynamic(() => import('./FeaturesSection'), {
-  loading: () => (
-    <div
-      className="h-96 animate-pulse rounded-3xl"
-      style={{ backgroundColor: 'var(--landing-card-bg)' }}
-    />
-  ),
-  ssr: true,
-});
+// SSR'd for crawlers: the visible FAQ text pairs with FAQPageJsonLd.
+const FAQSection = dynamic(() => import('./FAQSection'), { ssr: true });
 
-const PersonasSection = dynamic(() => import('./PersonasSection'), {
-  loading: () => (
-    <div
-      className="h-96 animate-pulse rounded-3xl"
-      style={{ backgroundColor: 'var(--landing-card-bg)' }}
-    />
-  ),
-  ssr: true,
-});
-
-// The last section before the footer: the CTA banner and the newsletter form
-// merged into one video-styled panel (see FinalCtaSection).
-const FinalCtaSection = dynamic(() => import('./FinalCtaSection'), {
-  loading: () => (
-    <div
-      className="h-72 animate-pulse rounded-3xl"
-      style={{ backgroundColor: 'var(--landing-card-bg)' }}
-    />
-  ),
-  ssr: true,
-});
-
-const Footer = dynamic(() => import('./Footer'), {
-  loading: () => (
-    <div className="h-48 animate-pulse" style={{ backgroundColor: 'var(--landing-card-bg)' }} />
-  ),
-  ssr: true,
-});
+// SSR'd for crawlers: footer links carry navigation/link equity.
+const Footer = dynamic(() => import('./Footer'), { ssr: true });
 
 export default function LandingBelowFold({ initialLanguage = 'en' }: { initialLanguage?: string }) {
   return (
@@ -117,46 +54,48 @@ export default function LandingBelowFold({ initialLanguage = 'en' }: { initialLa
       <main className="relative">
         {/* Meet AI — the intelligence layer, right after the hero (BambooHR's
             "Meet Bamboo AI™" position). */}
-        <div className="section-lazy">
+        <LazyMount minHeight={384}>
           <MeetAISection initialLanguage={initialLanguage} />
-        </div>
-        <div className="section-lazy">
+        </LazyMount>
+        <LazyMount minHeight={256}>
           <LiveStatsSection initialLanguage={initialLanguage} />
-        </div>
+        </LazyMount>
         {/* Trust band — customer logos + security strip. */}
-        <div className="section-lazy">
+        <LazyMount minHeight={288}>
           <TrustBandSection initialLanguage={initialLanguage} />
-        </div>
-        {/* Scroll storytelling — pinned phone with 4 scenes (check-in → cascade → AI → analytics).
-            NOT lazy: `content-visibility: auto` would break the sticky pinning. */}
-        <div className="story-not-lazy">
+        </LazyMount>
+        {/* Scroll storytelling — pinned phone with 4 scenes. */}
+        <LazyMount minHeight={600}>
           <ScrollStorySection initialLanguage={initialLanguage} />
-        </div>
-        <div className="section-lazy">
+        </LazyMount>
+        <LazyMount minHeight={384}>
           <StrategyCascadeSection initialLanguage={initialLanguage} />
-        </div>
-        <div className="section-lazy">
+        </LazyMount>
+        <LazyMount minHeight={384}>
           <FeaturesSection initialLanguage={initialLanguage} />
-        </div>
-        <div className="section-lazy">
+        </LazyMount>
+        <LazyMount minHeight={384}>
           <PersonasSection initialLanguage={initialLanguage} />
-        </div>
-        <div className="section-lazy">
+        </LazyMount>
+        <LazyMount minHeight={384}>
           <PricingPreview />
-        </div>
-        <section id="testimonials" className="section-lazy">
-          <TestimonialsSection initialLanguage={initialLanguage} />
+        </LazyMount>
+        <section id="testimonials">
+          <LazyMount minHeight={384}>
+            <TestimonialsSection initialLanguage={initialLanguage} />
+          </LazyMount>
         </section>
-        <div className="section-lazy">
-          <FAQSection />
-        </div>
-        <div className="section-lazy">
+        <FAQSection />
+        <LazyMount minHeight={288}>
           <FinalCtaSection initialLanguage={initialLanguage} />
-        </div>
+        </LazyMount>
       </main>
 
       <Footer initialLanguage={initialLanguage} />
       <LandingExtras />
+      {/* Server-rendered so it paints with the page (LCP); consented visitors
+          are hidden pre-paint via the inline head script + CSS. */}
+      <CookieBanner initialLanguage={initialLanguage} />
     </>
   );
 }

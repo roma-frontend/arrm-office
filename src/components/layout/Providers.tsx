@@ -6,7 +6,9 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { MessageSquareOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { ensureAppNamespaces } from '@/i18n/config';
 import { useFeatureFlags } from '@/hooks/useFeatureFlags';
+import { useI18nOverrides } from '@/hooks/useI18nOverrides';
 import { useAuthStore, type User } from '@/store/useAuthStore';
 import { useShallow } from 'zustand/shallow';
 import { useSidebarStore } from '@/store/useSidebarStore';
@@ -15,6 +17,7 @@ import { WidgetErrorBoundary } from '@/components/error/WidgetErrorBoundary';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { ErrorBoundary } from '@/components/error/ErrorBoundary';
 import { ReactQueryProvider } from '@/components/providers/ReactQueryProvider';
+import { NavBadgesProvider } from '@/components/layout/NavBadgesProvider';
 import DashboardAmbient from '@/components/layout/DashboardAmbient';
 
 function SidebarSkeleton() {
@@ -137,6 +140,8 @@ const CommandPalette = dynamic(
 export function Providers({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
   const user = useAuthStore(useShallow((state: { user: User | null }) => state.user));
+  // Superadmin translation overrides — fetched once and injected into i18next.
+  useI18nOverrides(user?.role === 'superadmin');
   const { status } = useSession();
   const router = useRouter();
   const [hydrated, setHydrated] = useState(false);
@@ -152,6 +157,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
     pathname?.startsWith('/onboarding/pending');
   const redirectedRef = React.useRef(false);
   const hasHydratedRef = React.useRef(false);
+
+  // Dashboard-only translation namespaces are lazy-loaded (see src/i18n/config.ts);
+  // fetch them as soon as the dashboard mounts. Fire-and-forget — t() consumers
+  // re-render when the bundles arrive.
+  useEffect(() => {
+    ensureAppNamespaces();
+  }, []);
 
   useLayoutEffect(() => {
     // Prevent double hydration
@@ -220,112 +232,117 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ErrorBoundary>
       <ReactQueryProvider>
-        {/* `app-shell` (see globals.css) is the real height: 100dvh minus the
+        {/* NavBadgesProvider — the single set of Convex badge subscriptions
+            shared by the navbar, both sidebars, the mobile dock and the
+            notification banner (previously ~20 duplicated subscriptions). */}
+        <NavBadgesProvider>
+          {/* `app-shell` (see globals.css) is the real height: 100dvh minus the
             safe-area insets. `h-dvh` is only a safety net — Tailwind utilities
             live in `@layer utilities`, so the unlayered `.app-shell` rule always
             wins over it. If that rule ever fails to reach the browser (stale CSS
             chunk after an HMR update, blocked stylesheet), the shell still gets a
             definite height instead of collapsing to `auto`, which turns the
             document into the scroller and drags the sidebar out of the viewport. */}
-        <div className="flex app-shell h-dvh bg-(--background) overflow-hidden">
-          {/* Ambient background — drifting colour orbs behind all content (z-0) */}
-          <DashboardAmbient />
+          <div className="flex app-shell h-dvh bg-(--background) overflow-hidden">
+            {/* Ambient background — drifting colour orbs behind all content (z-0) */}
+            <DashboardAmbient />
 
-          {/* Desktop Sidebar — ssr:false prevents localStorage persist mismatch */}
-          <Sidebar />
+            {/* Desktop Sidebar — ssr:false prevents localStorage persist mismatch */}
+            <Sidebar />
 
-          {/* Mobile Sidebar */}
-          <MobileSidebar />
+            {/* Mobile Sidebar */}
+            <MobileSidebar />
 
-          {/* Main content — overflow-clip prevents content bleed without creating containing block */}
-          <div className="flex-1 flex flex-col min-w-0 overflow-clip">
-            {/* Navbar — ssr:false prevents theme/user/notification mismatch */}
-            <Navbar />
-            {/* Impersonation banner — always visible while acting as a user */}
-            {user && <ImpersonationBanner />}
-            {/* Maintenance warning banner — below navbar, above content */}
-            {user && <MaintenanceBanner />}
-            {/* Frozen-organization lock screen — blocks every feature */}
-            {user && <OrgFreezeGate />}
-            {/* Status update banner — below maintenance banner */}
-            <StatusUpdateBanner />
-            {/* Real-time notification banner — below status banner, full width, persistent */}
-            {user && <NotificationBanner />}
-            {/* Main content area — min-h-0 prevents CLS when content loads */}
-            <main
-              className={
-                isChatPage || isAIChatPage
-                  ? 'flex-1 overflow-hidden flex flex-col min-h-0 app-main'
-                  : 'flex-1 overflow-y-auto overflow-x-hidden min-h-0 main-scrollable app-main'
-              }
-            >
-              {isChatDisabled ? (
-                <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
-                  <MessageSquareOff className="h-10 w-10 text-(--text-muted)" />
-                  <h2 className="text-lg font-semibold text-(--text-primary)">
-                    {t('chat.disabled.title')}
-                  </h2>
-                  <p className="max-w-sm text-sm text-(--text-muted)">
-                    {t('chat.disabled.description')}
-                  </p>
-                </div>
-              ) : isChatPage ? (
-                <div className="flex flex-col flex-1 min-h-0 h-full p-0 sm:p-3 md:p-4">
-                  <div className="flex flex-col flex-1 min-h-0 h-full mx-auto w-full">
-                    {children}
+            {/* Main content — overflow-clip prevents content bleed without creating containing block */}
+            <div className="flex-1 flex flex-col min-w-0 overflow-clip">
+              {/* Navbar — ssr:false prevents theme/user/notification mismatch */}
+              <Navbar />
+              {/* Impersonation banner — always visible while acting as a user */}
+              {user && <ImpersonationBanner />}
+              {/* Maintenance warning banner — below navbar, above content */}
+              {user && <MaintenanceBanner />}
+              {/* Frozen-organization lock screen — blocks every feature */}
+              {user && <OrgFreezeGate />}
+              {/* Status update banner — below maintenance banner */}
+              <StatusUpdateBanner />
+              {/* Real-time notification banner — below status banner, full width, persistent */}
+              {user && <NotificationBanner />}
+              {/* Main content area — min-h-0 prevents CLS when content loads */}
+              <main
+                className={
+                  isChatPage || isAIChatPage
+                    ? 'flex-1 overflow-hidden flex flex-col min-h-0 app-main'
+                    : 'flex-1 overflow-y-auto overflow-x-hidden min-h-0 main-scrollable app-main'
+                }
+              >
+                {isChatDisabled ? (
+                  <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
+                    <MessageSquareOff className="h-10 w-10 text-(--text-muted)" />
+                    <h2 className="text-lg font-semibold text-(--text-primary)">
+                      {t('chat.disabled.title')}
+                    </h2>
+                    <p className="max-w-sm text-sm text-(--text-muted)">
+                      {t('chat.disabled.description')}
+                    </p>
                   </div>
-                </div>
-              ) : isAIChatPage ? (
-                <div className="flex flex-col flex-1 min-h-0 h-full p-0">
-                  <div className="flex flex-col flex-1 min-h-0 h-full mx-auto w-full">
-                    {children}
+                ) : isChatPage ? (
+                  <div className="flex flex-col flex-1 min-h-0 h-full p-0 sm:p-3 md:p-4">
+                    <div className="flex flex-col flex-1 min-h-0 h-full mx-auto w-full">
+                      {children}
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div className="px-6 pb-mobile-dock !pt-0 mx-auto max-w-7xl w-full">
-                  <MobilePageTransition>{children}</MobilePageTransition>
-                </div>
-              )}
-            </main>
-          </div>
-          {/* AI Chat Widget — hidden on /chat page so it doesn't cover the send
+                ) : isAIChatPage ? (
+                  <div className="flex flex-col flex-1 min-h-0 h-full p-0">
+                    <div className="flex flex-col flex-1 min-h-0 h-full mx-auto w-full">
+                      {children}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="px-6 pb-mobile-dock !pt-0 mx-auto max-w-7xl w-full">
+                    <MobilePageTransition>{children}</MobilePageTransition>
+                  </div>
+                )}
+              </main>
+            </div>
+            {/* AI Chat Widget — hidden on /chat page so it doesn't cover the send
               button, and everywhere when the ai.assistant toggle is off. */}
-          {!isChatPage && isFeatureEnabled('ai.assistant') && <ChatWidget />}
+            {!isChatPage && isFeatureEnabled('ai.assistant') && <ChatWidget />}
 
-          {/* Tool Dock — floating "Your tools" trigger on every dashboard page;
+            {/* Tool Dock — floating "Your tools" trigger on every dashboard page;
               it hides on scroll down and returns on scroll up. */}
-          {user && <ToolDock />}
+            {user && <ToolDock />}
 
-          {/* Mobile Tab Bar — fixed bottom navigation for mobile */}
-          <MobileTabBar />
+            {/* Mobile Tab Bar — fixed bottom navigation for mobile */}
+            <MobileTabBar />
 
-          {/* ⌘K palette — the navbar shortcut modal, the dashboard Quick Actions
+            {/* ⌘K palette — the navbar shortcut modal, the dashboard Quick Actions
               header and the productivity settings page all advertise this
               shortcut, and until it was mounted here, pressing it did nothing. */}
-          {hydrated && user && <CommandPalette />}
+            {hydrated && user && <CommandPalette />}
 
-          {/* Global incoming call detection — works on ALL pages */}
-          {hydrated && user && <IncomingCallProvider />}
-          {/* Global chat notification sound + toast — works on ALL pages */}
-          {hydrated && user && <GlobalChatNotifier />}
+            {/* Global incoming call detection — works on ALL pages */}
+            {hydrated && user && <IncomingCallProvider />}
+            {/* Global chat notification sound + toast — works on ALL pages */}
+            {hydrated && user && <GlobalChatNotifier />}
 
-          {/* Productivity Services - only render when mounted to avoid SSR mismatch */}
-          {hydrated && user && (
-            <>
-              <BreakReminderService
-                enabled={false}
-                intervalMinutes={120}
-                workHoursStart={undefined}
-                workHoursEnd={undefined}
-              />
-              <FocusModeIndicator
-                enabled={false}
-                workHoursStart={undefined}
-                workHoursEnd={undefined}
-              />
-            </>
-          )}
-        </div>
+            {/* Productivity Services - only render when mounted to avoid SSR mismatch */}
+            {hydrated && user && (
+              <>
+                <BreakReminderService
+                  enabled={false}
+                  intervalMinutes={120}
+                  workHoursStart={undefined}
+                  workHoursEnd={undefined}
+                />
+                <FocusModeIndicator
+                  enabled={false}
+                  workHoursStart={undefined}
+                  workHoursEnd={undefined}
+                />
+              </>
+            )}
+          </div>
+        </NavBadgesProvider>
       </ReactQueryProvider>
     </ErrorBoundary>
   );

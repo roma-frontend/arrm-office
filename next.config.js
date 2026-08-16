@@ -5,6 +5,12 @@ const withBundleAnalyzer = require('@next/bundle-analyzer')({
 });
 
 const nextConfig = {
+  // Isolated output dir for local production audits (e.g. performance work):
+  // NEXT_DIST_DIR=perf-next npm run build && NEXT_DIST_DIR=perf-next npx next start
+  // Keeps prod builds from colliding with a concurrently running dev server,
+  // which shares .next and races the build's manifest writes.
+  ...(process.env.NEXT_DIST_DIR ? { distDir: process.env.NEXT_DIST_DIR } : {}),
+
   // ═══════════════════════════════════════════════════════════════
   // CORE SETTINGS
   // ═══════════════════════════════════════════════════════════════
@@ -25,8 +31,11 @@ const nextConfig = {
   // nothing — they are not referenced by the page's critical path.
   productionBrowserSourceMaps: true,
 
-  // TypeScript: DO NOT ignore build errors — catch type issues early
-  typescript: { ignoreBuildErrors: false },
+  // TypeScript: DO NOT ignore build errors — catch type issues early.
+  // NEXT_IGNORE_TS=1 is an escape hatch for local perf builds when unrelated
+  // work-in-progress files don't typecheck yet; CI and normal builds keep
+  // the strict behavior.
+  typescript: { ignoreBuildErrors: process.env.NEXT_IGNORE_TS === '1' },
 
   // Transpile Radix UI icons (face-api is pre-built, no transpilation needed)
   transpilePackages: ['@radix-ui/react-icons'],

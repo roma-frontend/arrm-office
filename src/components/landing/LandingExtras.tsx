@@ -8,16 +8,8 @@ const ScrollToTop = dynamic(() => import('./ScrollToTop'), {
   loading: () => null,
 });
 
-const CookieBanner = dynamic(() => import('@/components/CookieBanner'), {
-  ssr: false,
-  loading: () => null,
-});
-
+// The CookieBanner used to live here too — it moved into LandingBelowFold so
+// it renders in the SSR HTML and paints with the first render (LCP).
 export default function LandingClientExtras() {
-  return (
-    <>
-      <ScrollToTop />
-      <CookieBanner />
-    </>
-  );
+  return <ScrollToTop />;
 }

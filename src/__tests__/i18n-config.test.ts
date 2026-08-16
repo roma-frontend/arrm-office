@@ -85,19 +85,26 @@ describe('allNamespaces', () => {
 });
 
 describe('resources', () => {
-  it('bundles all EN namespaces', () => {
+  it('bundles only landing+common for every language (landing-critical set)', () => {
     const { mod } = loadConfig();
-    expect(Object.keys(mod.resources.en)).toEqual(
-      expect.arrayContaining(['common', 'landing', 'auth', 'dashboard']),
-    );
+    // The dashboard namespaces are lazy-loaded via HttpBackend (see
+    // ensureAppNamespaces) — they must NOT be in the static bundle.
+    expect(Object.keys(mod.resources.en).sort()).toEqual(['common', 'landing']);
+    expect(Object.keys(mod.resources.ru).sort()).toEqual(['common', 'landing']);
+    expect(Object.keys(mod.resources.hy).sort()).toEqual(['common', 'landing']);
+    expect(Object.keys(mod.resources.de).sort()).toEqual(['common', 'landing']);
     expect(mod.resources.en.common).toBeTruthy();
+    expect(mod.resources.en.landing).toBeTruthy();
   });
 
-  it('bundles only landing+common for RU/HY/DE', () => {
+  it('splits allNamespaces into bundled vs lazy', () => {
     const { mod } = loadConfig();
-    expect(Object.keys(mod.resources.ru)).toEqual(['landing', 'common']);
-    expect(Object.keys(mod.resources.hy)).toEqual(['landing', 'common']);
-    expect(Object.keys(mod.resources.de)).toEqual(['landing', 'common']);
+    expect(mod.bundledNamespaces).toEqual(['common', 'landing']);
+    expect(mod.lazyNamespaces).toEqual(
+      expect.arrayContaining(['auth', 'dashboard', 'modules', 'expenses']),
+    );
+    expect(mod.lazyNamespaces).not.toContain('common');
+    expect(mod.lazyNamespaces).not.toContain('landing');
   });
 });
 
@@ -112,6 +119,9 @@ describe('i18n initialization', () => {
     expect(opts.react).toEqual({ useSuspense: false, bindI18nStore: 'added removed' });
     expect(opts.backend.loadPath).toBe('/locales/{{lng}}/{{ns}}.json');
     expect(opts.lng).toBe('en');
+    // Only the bundled namespaces initialize — the rest load on demand from
+    // app layouts so the landing never fetches dashboard locale JSON.
+    expect(opts.ns).toEqual(['common', 'landing']);
   });
 
   it('uses the language from the i18nextLng cookie', () => {

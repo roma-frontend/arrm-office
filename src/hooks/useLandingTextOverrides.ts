@@ -8,7 +8,11 @@
  * (Convex re-runs the query → the effect re-injects → `t()` re-renders).
  *
  * Mounted on the public landing for every visitor; the query is deliberately
- * public and returns published values only.
+ * public and returns published values only. The live subscription starts only
+ * once the browser goes idle: it opens the Convex websocket and re-renders the
+ * tree, which used to land inside the initial load window and compete with
+ * hydration for the main thread. The SSR `initial` map is applied immediately,
+ * so the first paint is still correct.
  *
  * The landing editor renders the SAME client components but passes
  * `editorOverrides` — the merged draft+published map. When present it wins over
@@ -18,7 +22,7 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { applyLandingOverrides, type LandingLocale } from '@/lib/landingTexts';
@@ -28,9 +32,25 @@ export function useLandingTextOverrides(
   initial?: Record<string, string>,
   editorOverrides?: Record<string, string>,
 ) {
+  const [liveReady, setLiveReady] = useState(false);
+
+  useEffect(() => {
+    if (editorOverrides) return; // editor preview drives its own overrides
+    const win = window as Window & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+    if (typeof win.requestIdleCallback === 'function') {
+      const id = win.requestIdleCallback(() => setLiveReady(true), { timeout: 3000 });
+      return () => win.cancelIdleCallback?.(id);
+    }
+    const timer = setTimeout(() => setLiveReady(true), 2000);
+    return () => clearTimeout(timer);
+  }, [editorOverrides]);
+
   const published = useQuery(
     api.superadmin.landingEditor.getPublishedLandingTexts,
-    editorOverrides ? 'skip' : { lang: locale },
+    editorOverrides || !liveReady ? 'skip' : { lang: locale },
   );
 
   useEffect(() => {

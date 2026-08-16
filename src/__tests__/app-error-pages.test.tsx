@@ -10,6 +10,9 @@ import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { render, screen, fireEvent } from '@testing-library/react';
 
 jest.mock('react-i18next', () => ({
+  // The (auth) layout transitively imports '@/i18n/config' via
+  // AppNamespacesLoader — the real i18next.init needs the plugin shape.
+  initReactI18next: { type: 'i18nextModule' },
   useTranslation: () => ({
     t: (key: string, fallback?: string) => fallback ?? key,
     ready: true,

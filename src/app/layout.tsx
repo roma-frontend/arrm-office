@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { IBM_Plex_Sans, Inter, Noto_Sans_Armenian } from 'next/font/google';
+import { Inter, Noto_Sans_Armenian } from 'next/font/google';
 import React, { Suspense } from 'react';
 import { cookies, headers } from 'next/headers';
 import './globals.css';
@@ -13,20 +13,11 @@ import { SpeedInsights } from '@vercel/speed-insights/next';
 // Validate environment variables at startup
 validateEnvironment();
 
-// Primary text font — IBM Plex Sans (Corporate & Professional).
-// `preload: true` because this font renders the LCP <h1>: Next then emits a
-// real <link rel="preload"> for the font file. With preload disabled on *every*
-// font, Next falls back to emitting a self-origin `<link rel="preconnect" />`
-// that is never used, which Lighthouse flags as an unused preconnect.
-const ibmPlexSans = IBM_Plex_Sans({
-  variable: '--font-ibm-plex',
-  subsets: ['latin', 'cyrillic'],
-  display: 'swap',
-  preload: true,
-  weight: ['400', '500', '600', '700'],
-  fallback: ['sans-serif'],
-  adjustFontFallback: true,
-});
+// IBM Plex Sans (the primary/LCP font) is self-hosted from public/fonts with
+// hand-written @font-face rules in globals.css: next/font only emits preload
+// hints inside the Flight stream on dynamic pages, so the font arrived after
+// JS boot and the swap re-paint became the LCP (~3s slower on mobile). The
+// <link rel=preload>s below now start it with the HTML itself.
 
 // UI elements — Inter (clean, highly legible)
 const inter = Inter({
@@ -165,6 +156,26 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   return (
     <html lang={htmlLang} suppressHydrationWarning data-scroll-behavior="smooth">
       <head>
+        {/* LCP font — real preload so it races the HTML instead of waiting for
+            the JS runtime to process the Flight-stream hints. Cyrillic only
+            when the visitor's language needs it. */}
+        <link
+          rel="preload"
+          href="/fonts/ibm-plex-sans-latin.v1.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+        {locale === 'ru' && (
+          <link
+            rel="preload"
+            href="/fonts/ibm-plex-sans-cyrillic.v1.woff2"
+            as="font"
+            type="font/woff2"
+            crossOrigin="anonymous"
+          />
+        )}
+
         {/* Safari pinned tab */}
         <link rel="mask-icon" href="/favicon.svg?v=3" color="#2c8cd5" />
 
@@ -197,6 +208,27 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
                   var root = document.documentElement;
                   root.classList.remove('light', 'dark');
                   root.classList.add(resolved === 'dark' ? 'dark' : 'light');
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
+
+        {/* Hide the SSR'd cookie banner before first paint for visitors who
+            already gave consent (zustand persist rehydrates only after
+            hydration). Same pre-paint pattern as the theme init above. */}
+        <script
+          id="cookie-consent-init"
+          nonce={nonce}
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var raw = localStorage.getItem('cookie-consent-storage');
+                  if (raw && JSON.parse(raw).state && JSON.parse(raw).state.hasConsent) {
+                    document.documentElement.classList.add('cookie-consent-given');
+                  }
                 } catch (e) {}
               })();
             `,
@@ -242,7 +274,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         />
       </head>
       <body
-        className={`${ibmPlexSans.variable} ${inter.variable} ${notoSansArmenian.variable} antialiased`}
+        className={`${inter.variable} ${notoSansArmenian.variable} antialiased`}
         suppressHydrationWarning
       >
         <a

@@ -1,14 +1,17 @@
 /**
- * Tests for CookieBanner — consent banner that defers to idle time, accepts,
+ * Tests for CookieBanner — server-rendered consent banner that accepts,
  * rejects and routes to settings.
  */
 
 import React from 'react';
-import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
 
 // ── i18n mock ────────────────────────────────────────────────────────────────
 jest.mock('react-i18next', () => ({
+  // CookieBanner resolves copy via useLandingTranslation, which imports
+  // '@/i18n/config' — the real i18next.init() needs the plugin shape below.
+  initReactI18next: { type: 'i18nextModule' },
   useTranslation: () => ({
     t: (key: string, opts?: string | { defaultValue?: string }) =>
       typeof opts === 'object' && opts ? (opts.defaultValue ?? key) : (opts ?? key),
@@ -77,24 +80,10 @@ const { useCookieConsent } = require('@/store/cookieConsentStore') as {
 
 import CookieBanner from '@/components/CookieBanner';
 
-const originalIdle = (globalThis as any).requestIdleCallback;
-const originalCancelIdle = (globalThis as any).cancelIdleCallback;
-
 beforeEach(() => {
   jest.clearAllMocks();
   mockConsent = { hasConsent: false, showBanner: true };
   mockIsAuthenticated = false;
-  (globalThis as any).requestIdleCallback = (cb: () => void) => {
-    // fire immediately so the banner mounts without waiting
-    cb();
-    return 1;
-  };
-  (globalThis as any).cancelIdleCallback = jest.fn();
-});
-
-afterEach(() => {
-  (globalThis as any).requestIdleCallback = originalIdle;
-  (globalThis as any).cancelIdleCallback = originalCancelIdle;
 });
 
 describe('CookieBanner', () => {
