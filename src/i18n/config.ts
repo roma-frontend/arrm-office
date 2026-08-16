@@ -124,7 +124,7 @@ if (!i18n.isInitialized) {
       lookupLocalStorage: 'i18nextLng',
       caches: ['localStorage', 'cookie'],
     },
-    react: { useSuspense: false },
+    react: { useSuspense: false, bindI18nStore: 'added removed' },
   });
 }
 

@@ -29,6 +29,7 @@ import {
   Clock,
   Contact,
   Cpu,
+  Languages,
   CreditCard,
   Crosshair,
   Crown,
@@ -378,6 +379,11 @@ export const navItems: NavEntry[] = [
         href: '/superadmin/control',
         labelKey: 'nav.controlCenter',
         icon: Gauge,
+      },
+      {
+        href: '/superadmin/landing-editor',
+        labelKey: 'nav.landingEditor',
+        icon: Languages,
       },
       {
         href: '/superadmin/org-requests',

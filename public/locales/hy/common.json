@@ -255,7 +255,8 @@
     "modules": "Բոլոր մոդուլները",
     "controlCenter": "Կառավարման կենտրոն",
     "orgRequests": "Կազմ. հայտեր",
-    "trash": "Զամբյուղ"
+    "trash": "Զամբյուղ",
+    "landingEditor": "Լենդինգի խմբագրիչ"
   },
   "mobileNav": {
     "menu": "Մենյու",

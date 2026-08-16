@@ -494,13 +494,41 @@ export default function ScrollStorySection({
   const { t } = useLandingTranslation(initialLanguage);
   const reduced = useReducedMotion();
   const ref = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLElement | null>(null);
   const [active, setActive] = useState(0);
   const [touring, setTouring] = useState(false);
   const touringRef = useRef(false);
   const rafRef = useRef<number | null>(null);
 
+  // The section must track the element that actually scrolls. On the public
+  // landing that is the window, but when the landing is rendered inside the app
+  // shell (dashboard, landing editor canvas) the window never scrolls — a
+  // `.main-scrollable` container does. Detecting the nearest real scroll
+  // container (skipping html/body → window) keeps the pinned phone advancing
+  // in both contexts. The callback ref runs before framer-motion's layout
+  // effect, so `useScroll({ container })` sees the right element on mount.
+  const setSectionRef = useCallback((node: HTMLDivElement | null) => {
+    ref.current = node;
+    if (node) {
+      let el: HTMLElement | null = node.parentElement;
+      while (el) {
+        const oy = getComputedStyle(el).overflowY;
+        if (oy === 'auto' || oy === 'scroll') break;
+        el = el.parentElement;
+      }
+      // html/body are the window's scroll containers — let useScroll fall back
+      // to window instead of double-counting documentElement scroll.
+      if (el && el.tagName !== 'HTML' && el.tagName !== 'BODY') {
+        scrollContainerRef.current = el;
+      } else {
+        scrollContainerRef.current = null;
+      }
+    }
+  }, []);
+
   const { scrollYProgress } = useScroll({
     target: ref,
+    container: scrollContainerRef,
     offset: ['start start', 'end end'],
   });
 
@@ -528,10 +556,12 @@ export default function ScrollStorySection({
   const scrollToAnimated = useCallback(
     (to: number, duration: number) =>
       new Promise<void>((resolve) => {
-        const from = window.scrollY;
+        const sc = scrollContainerRef.current;
+        const from = sc ? sc.scrollTop : window.scrollY;
         const delta = to - from;
         if (Math.abs(delta) < 1 || !touringRef.current) {
-          window.scrollTo(0, to);
+          if (sc) sc.scrollTop = to;
+          else window.scrollTo(0, to);
           resolve();
           return;
         }
@@ -540,7 +570,8 @@ export default function ScrollStorySection({
           p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
         const step = (now: number) => {
           const p = Math.min((now - start) / duration, 1);
-          window.scrollTo(0, from + delta * easeInOutCubic(p));
+          if (sc) sc.scrollTop = from + delta * easeInOutCubic(p);
+          else window.scrollTo(0, from + delta * easeInOutCubic(p));
           if (p < 1 && touringRef.current) {
             rafRef.current = requestAnimationFrame(step);
           } else {
@@ -559,7 +590,9 @@ export default function ScrollStorySection({
     touringRef.current = true;
     setTouring(true);
 
-    const base = el.getBoundingClientRect().top + window.scrollY;
+    const sc = scrollContainerRef.current;
+    const currentTop = sc ? sc.scrollTop : window.scrollY;
+    const base = el.getBoundingClientRect().top + currentTop;
     const step = el.clientHeight / SCENES.length;
 
     // Return to the section's start, then walk each scene.
@@ -585,8 +618,14 @@ export default function ScrollStorySection({
   const goTo = useCallback((i: number) => {
     const el = ref.current;
     if (!el) return;
-    const top = el.getBoundingClientRect().top + window.scrollY;
-    window.scrollTo({ top: top + (i * el.clientHeight) / SCENES.length, behavior: 'smooth' });
+    const sc = scrollContainerRef.current;
+    const currentTop = sc ? sc.scrollTop : window.scrollY;
+    const top = el.getBoundingClientRect().top + currentTop;
+    if (sc) {
+      sc.scrollTo({ top: top + (i * el.clientHeight) / SCENES.length, behavior: 'smooth' });
+    } else {
+      window.scrollTo({ top: top + (i * el.clientHeight) / SCENES.length, behavior: 'smooth' });
+    }
   }, []);
 
   // Reduced motion: plain stacked layout, no pinning, no transforms.
@@ -631,7 +670,12 @@ export default function ScrollStorySection({
   }
 
   return (
-    <section id="story" ref={ref} className="relative h-[400vh]" aria-label="How it works">
+    <section
+      id="story"
+      ref={setSectionRef}
+      className="relative h-[400vh]"
+      aria-label="How it works"
+    >
       {/* Background orbs (parallax drift) */}
       <motion.div
         className="absolute -top-32 -right-24 w-[640px] h-[640px] rounded-full pointer-events-none"

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/components/ThemeProvider';
@@ -65,7 +65,7 @@ function ShieldIcon() {
   );
 }
 
-export default function Navbar() {
+export default function Navbar({ embedded = false }: { embedded?: boolean }) {
   const { t } = useTranslation();
   const { user, logout } = useAuthStore();
   const router = useRouter();
@@ -84,6 +84,26 @@ export default function Navbar() {
 
   const activeSection = useActiveSection(sectionIds);
 
+  // The landing editor embeds the page inside its own scroll frame — the navbar
+  // must stick to the frame, not the viewport, and read scroll from the frame.
+  const navRef = useRef<HTMLElement>(null);
+  const scrollContainerRef = useRef<HTMLElement | Window | null>(null);
+
+  useEffect(() => {
+    if (!embedded) return;
+    // Nearest real scroll ancestor of the nav (the editor's canvas frame).
+    let el: HTMLElement | null = navRef.current?.parentElement ?? null;
+    while (el) {
+      const s = getComputedStyle(el);
+      if (s.overflowY === 'auto' || s.overflowY === 'scroll') {
+        scrollContainerRef.current = el;
+        return;
+      }
+      el = el.parentElement;
+    }
+    scrollContainerRef.current = window;
+  }, [embedded]);
+
   useEffect(() => {
     const checkScreenSize = () => {
       setIsDesktop(window.innerWidth >= 1024);
@@ -100,18 +120,23 @@ export default function Navbar() {
       if (ticking) return;
       ticking = true;
       window.requestAnimationFrame(() => {
-        setScrolled(window.scrollY > 20);
+        const container = embedded ? (scrollContainerRef.current ?? window) : window;
+        const top = container === window ? window.scrollY : (container as HTMLElement).scrollTop;
+        setScrolled(top > 20);
         // Reading progress — the navbar's thin gradient bar (Spark has none).
-        const doc = document.documentElement;
-        const max = doc.scrollHeight - window.innerHeight;
-        setScrollProgress(max > 0 ? Math.min(100, (window.scrollY / max) * 100) : 0);
+        const max =
+          container === window
+            ? document.documentElement.scrollHeight - window.innerHeight
+            : (container as HTMLElement).scrollHeight - (container as HTMLElement).clientHeight;
+        setScrollProgress(max > 0 ? Math.min(100, (top / max) * 100) : 0);
         ticking = false;
       });
     };
-    window.addEventListener('scroll', handleScroll, { passive: true });
+    const container = embedded ? (scrollContainerRef.current ?? window) : window;
+    container.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll();
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, [embedded]);
 
   const handleLogout = async () => {
     await logoutAction();
@@ -135,7 +160,10 @@ export default function Navbar() {
   return (
     <>
       <nav
-        className={`fixed top-0 left-0 right-0 z-[100] flex items-center justify-between px-4 md:px-8 lg:px-12 transition-all duration-500 ease-in-out border-b ${
+        ref={navRef}
+        className={`${
+          embedded ? 'sticky top-0 z-10' : 'fixed top-0 left-0 right-0 z-[100]'
+        } flex items-center justify-between px-4 md:px-8 lg:px-12 transition-all duration-500 ease-in-out border-b ${
           scrolled ? 'py-2 md:py-3 shadow-lg' : 'py-3 md:py-4'
         }`}
         role="navigation"

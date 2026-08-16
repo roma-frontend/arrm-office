@@ -28,6 +28,7 @@ import {
   FileText,
   Gauge,
   Globe,
+  Languages,
   History,
   Monitor,
   ShieldAlert,
@@ -80,6 +81,11 @@ const LazyOrgRequests = lazy(() =>
     default: m.OrgRequestsClient,
   })),
 );
+const LazyLandingEditor = lazy(() =>
+  import('@/components/superadmin/LandingEditorClient').then((m) => ({
+    default: m.LandingEditorClient,
+  })),
+);
 // Tools whose UI lives in their page module (no separate client component).
 // They carry their own headings, so the sheet just hosts them as-is.
 const LazyBackups = lazy(() => import('@/app/(dashboard)/superadmin/backups/page'));
@@ -115,6 +121,12 @@ const TOOL_LINKS: ToolDef[] = [
     icon: Trash2,
     key: 'trash',
     client: LazyTrash as React.ComponentType,
+  },
+  {
+    href: '/superadmin/landing-editor',
+    icon: Languages,
+    key: 'landingEditor',
+    client: LazyLandingEditor as React.ComponentType,
   },
   {
     href: '/superadmin/database',

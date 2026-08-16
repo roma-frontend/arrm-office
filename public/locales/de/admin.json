@@ -973,7 +973,8 @@
         "support": "Support",
         "controlCenter": "Control Center",
         "orgRequests": "Org-Anfragen",
-        "trash": "Papierkorb"
+        "trash": "Papierkorb",
+        "landingEditor": "Landing-Editor"
       },
       "liveActivity": "Live-Aktivität",
       "viewAll": "Alle anzeigen",
@@ -1166,6 +1167,38 @@
       "reviewed": "Geprüft",
       "viewOrg": "Organisation ansehen",
       "team": "Team {{n}}"
+    },
+    "landingEditor": {
+      "title": "Landing-Texteditor",
+      "subtitle": "Bearbeiten Sie alle Landing-Texte pro Sprache — Entwürfe werden erst mit Veröffentlichung live geschaltet",
+      "drafts": "Entwürfe",
+      "live": "Live",
+      "publish": "Alle veröffentlichen",
+      "saveDraftsFirst": "Speichern Sie zuerst Ihre Entwürfe",
+      "searchPlaceholder": "Schlüssel oder Text suchen…",
+      "allSections": "Alle Abschnitte",
+      "keyCol": "Schlüssel",
+      "currentCol": "Aktuell ({{locale}})",
+      "liveBadge": "LIVE",
+      "draft": "ENTWURF",
+      "saveDraft": "Entwurf speichern",
+      "unpublish": "Auf Standard zurücksetzen",
+      "enReference": "EN:",
+      "draftSaved": "Entwurf gespeichert",
+      "published": "Veröffentlicht — {{count}} Texte live",
+      "unpublished": "Auf Standard zurückgesetzt",
+      "actionFailed": "Aktion fehlgeschlagen",
+      "publishFailed": "Veröffentlichung fehlgeschlagen",
+      "noResults": "Keine Übereinstimmungen — versuchen Sie eine andere Suche.",
+      "inlineHint": "Text anfahren → Doppelklick zum Bearbeiten · Enter speichert einen Entwurf · Esc bricht ab",
+      "restorePage": "Seite wiederherstellen",
+      "resetConfirm": "Die gesamte Seite auf die Standardkopie zurücksetzen? Alle Bearbeitungen für diese Sprache werden verworfen.",
+      "resetDone": "Seite auf Standardkopie zurückgesetzt",
+      "revert": "Zurücksetzen",
+      "canvasLabel": "Live-Vorschau",
+      "noDrafts": "Keine Entwürfe zum Veröffentlichen",
+      "fullscreen": "Vollbild",
+      "exitFullscreen": "Vollbild beenden"
     }
   },
   "superadminSecurity": {
@@ -1466,5 +1499,8 @@
     "trialLabel": "Testversion",
     "pastDueLabel": "Überfällig",
     "canceledLabel": "Abgebrochen"
+  },
+  "nav": {
+    "landingEditor": "Landing-Editor"
   }
 }

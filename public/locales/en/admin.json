@@ -973,7 +973,8 @@
         "support": "Support",
         "controlCenter": "Control Center",
         "orgRequests": "Org requests",
-        "trash": "Trash"
+        "trash": "Trash",
+        "landingEditor": "Landing Editor"
       },
       "liveActivity": "Live activity",
       "viewAll": "View all",
@@ -1166,6 +1167,38 @@
       "reviewed": "Reviewed",
       "viewOrg": "View organization",
       "team": "{{n}} team"
+    },
+    "landingEditor": {
+      "title": "Landing text editor",
+      "subtitle": "Edit every landing text per language — drafts never go live until you publish",
+      "drafts": "Drafts",
+      "live": "Live",
+      "publish": "Publish all",
+      "saveDraftsFirst": "Save your drafts first",
+      "searchPlaceholder": "Search keys or text…",
+      "allSections": "All sections",
+      "keyCol": "Key",
+      "currentCol": "Current ({{locale}})",
+      "liveBadge": "LIVE",
+      "draft": "DRAFT",
+      "saveDraft": "Save draft",
+      "unpublish": "Revert to default",
+      "enReference": "EN:",
+      "draftSaved": "Draft saved",
+      "published": "Published — {{count}} texts live",
+      "unpublished": "Reverted to default",
+      "actionFailed": "Action failed",
+      "publishFailed": "Publish failed",
+      "noResults": "No keys match — try a different search.",
+      "inlineHint": "Hover a text → double-click to edit · Enter saves a draft · Esc cancels",
+      "restorePage": "Restore page",
+      "resetConfirm": "Restore the whole page to its default copy? All edits for this language will be discarded.",
+      "resetDone": "Page restored to default copy",
+      "revert": "Revert",
+      "canvasLabel": "Live preview",
+      "noDrafts": "No drafts to publish",
+      "fullscreen": "Fullscreen",
+      "exitFullscreen": "Exit fullscreen"
     }
   },
   "superadminSecurity": {
@@ -1466,5 +1499,8 @@
     "trialLabel": "Trial",
     "pastDueLabel": "Past due",
     "canceledLabel": "Canceled"
+  },
+  "nav": {
+    "landingEditor": "Landing Editor"
   }
 }

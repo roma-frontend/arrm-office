@@ -255,7 +255,8 @@
     "modules": "Alle Module",
     "controlCenter": "Control Center",
     "orgRequests": "Org-Anfragen",
-    "trash": "Papierkorb"
+    "trash": "Papierkorb",
+    "landingEditor": "Landing-Editor"
   },
   "mobileNav": {
     "menu": "Menü",

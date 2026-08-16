@@ -112,7 +112,12 @@ function TestimonialCard({
           className="leading-relaxed text-sm flex-1"
           style={{ color: 'var(--landing-text-secondary)', opacity: 0.9 }}
         >
-          &ldquo;{text}&rdquo;
+          {/* Decorative quotes live in their own nodes so the DOM text node of
+              `text` matches the i18n key exactly — the landing editor maps
+              rendered text → key by value, and wrapped text breaks the match. */}
+          <span aria-hidden="true">&ldquo;</span>
+          {text}
+          <span aria-hidden="true">&rdquo;</span>
         </p>
         {/* Outcome metric — "Saved $70k / year" style proof (BambooHR pattern).
             Falls back to nothing when a locale has no metric for this card. */}
@@ -156,7 +161,10 @@ function TestimonialCard({
               className="text-xs"
               style={{ color: 'var(--landing-text-secondary)', opacity: 0.85 }}
             >
-              {role}, {company}
+              {/* Separate nodes — each maps to its own i18n key in the editor. */}
+              <span>{role}</span>
+              <span>, </span>
+              <span>{company}</span>
             </p>
           </div>
         </div>

@@ -109,7 +109,7 @@ describe('i18n initialization', () => {
     expect(opts.fallbackLng).toBe('en');
     expect(opts.defaultNS).toBe('common');
     expect(opts.supportedLngs).toEqual(['en', 'hy', 'ru', 'de']);
-    expect(opts.react).toEqual({ useSuspense: false });
+    expect(opts.react).toEqual({ useSuspense: false, bindI18nStore: 'added removed' });
     expect(opts.backend.loadPath).toBe('/locales/{{lng}}/{{ns}}.json');
     expect(opts.lng).toBe('en');
   });

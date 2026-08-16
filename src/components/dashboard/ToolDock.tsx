@@ -12,6 +12,7 @@
 
 import React, { useMemo, useState, useCallback } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from 'convex/react';
@@ -35,6 +36,11 @@ export function ToolDock() {
   const user = useAuthUser();
   const openPalette = useCommandPaletteStore((s) => s.openPalette);
   const { modules, recordVisit, togglePin, isPinned } = useToolDock();
+
+  // The landing editor is a full-workspace canvas — the floating dock would
+  // sit on top of the preview. Keep every other dashboard page covered.
+  const pathname = usePathname();
+  const hideDock = pathname?.startsWith('/superadmin/landing-editor') ?? false;
 
   const [open, setOpen] = useState(false);
   const [allOpen, setAllOpen] = useState(false);
@@ -185,6 +191,8 @@ export function ToolDock() {
       </div>
     );
   };
+
+  if (hideDock) return null;
 
   return (
     <>

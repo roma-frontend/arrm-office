@@ -255,7 +255,8 @@
     "modules": "Все модули",
     "controlCenter": "Центр управления",
     "orgRequests": "Заявки на орг.",
-    "trash": "Корзина"
+    "trash": "Корзина",
+    "landingEditor": "Редактор лендинга"
   },
   "mobileNav": {
     "menu": "Меню",

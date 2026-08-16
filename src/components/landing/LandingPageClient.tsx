@@ -1,6 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import { useLandingTextOverrides } from '@/hooks/useLandingTextOverrides';
 
 // SSR the hero so the <h1> is in the initial HTML and is the LCP element
 // immediately. The hero renders in the server-detected language (passed via
@@ -29,10 +30,27 @@ const LandingBelowFold = dynamic(() => import('@/components/landing/LandingBelow
   ssr: true,
 });
 
-export default function LandingPageClient({ initialLanguage }: { initialLanguage: string }) {
+export default function LandingPageClient({
+  initialLanguage,
+  initialOverrides,
+  editorOverrides,
+  embedded = false,
+}: {
+  initialLanguage: string;
+  initialOverrides?: Record<string, string>;
+  /** Landing-editor preview: merged draft+published map that wins over the live query. */
+  editorOverrides?: Record<string, string>;
+  /** Landing-editor canvas: navbar sticks inside the scroll frame instead of the viewport. */
+  embedded?: boolean;
+}) {
+  // Published landing text overrides: matches SSR HTML on hydration and live-
+  // updates open tabs when a superadmin publishes. The editor passes
+  // `editorOverrides` instead so its canvas shows the working copy.
+  useLandingTextOverrides(initialLanguage, initialOverrides, editorOverrides);
+
   return (
     <>
-      <NavbarWrapper />
+      <NavbarWrapper embedded={embedded} />
       <HeroSection initialLanguage={initialLanguage} />
       <LandingBelowFold initialLanguage={initialLanguage} />
     </>
