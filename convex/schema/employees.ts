@@ -90,6 +90,8 @@ export const employees = {
     taxIdVerifiedAt: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
+    // GDPR marker set by the superadmin toolkit when PII is scrubbed.
+    dataAnonymizedAt: v.optional(v.number()),
   })
     .index('by_org', ['organizationId'])
     .index('by_user', ['userId']),

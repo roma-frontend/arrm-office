@@ -47,11 +47,10 @@ export function SecurityMonitor() {
       }
     };
 
+    // Один запрос при монтировании: эндпоинт возвращает статичные в рамках
+    // сессии данные (id/email/role), а прежний поллинг каждые 30 секунд давал
+    // ~2880 запросов к Convex в день на одного пользователя впустую.
     checkAdmin();
-
-    // Обновление каждые 30 секунд
-    const interval = setInterval(checkAdmin, 30000);
-    return () => clearInterval(interval);
   }, [isAuthenticated]);
 
   if (!isVisible) return null;

@@ -126,6 +126,10 @@ export const users = {
     // so the account (and its data) can be restored.
     deletedAt: v.optional(v.number()),
     deletedBy: v.optional(v.id('users')),
+    // GDPR markers set by the superadmin toolkit — anonymize leaves a shell
+    // account, erase also sweeps owned records first.
+    dataAnonymizedAt: v.optional(v.number()),
+    dataErasedAt: v.optional(v.number()),
   })
     .index('by_email', ['email'])
     .index('by_deleted', ['deletedAt'])

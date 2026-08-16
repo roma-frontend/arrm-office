@@ -1,10 +1,8 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { useQuery } from 'convex/react';
-import { api } from '../../../convex/_generated/api';
 import { useAuthStore } from '@/store/useAuthStore';
-import { Id } from '../../../convex/_generated/dataModel';
+import { useNavBadges } from '@/components/layout/NavBadgesProvider';
 import { SmartBanner } from '@/components/ui/SmartBanner';
 import { useRouter } from 'next/navigation';
 import { MessageSquare } from 'lucide-react';
@@ -54,10 +52,9 @@ export function NotificationBanner() {
   const router = useRouter();
   const _isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
 
-  const notifications = useQuery(
-    api.notifications.getUserNotifications,
-    user?.id ? { userId: user.id as Id<'users'> } : 'skip',
-  );
+  // Shared subscription from NavBadgesProvider — the banner used to hold a
+  // fourth duplicate subscription to the same notifications list.
+  const { notifications } = useNavBadges();
 
   const [lastSeenCount, setLastSeenCount] = useState<number | null>(null);
   const [newNotification, setNewNotification] = useState<{

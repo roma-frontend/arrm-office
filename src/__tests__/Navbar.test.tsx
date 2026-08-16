@@ -49,13 +49,23 @@ jest.mock('next/link', () => ({
 }));
 
 let queryResults: Record<string, any> = {};
-let paginatedResult: { results: any[]; status: string } = {
-  results: [],
-  status: 'Exhausted',
+// Notifications now flow through the shared NavBadgesProvider context.
+let mockBadges: Record<string, any> = {
+  notifications: [],
+  userOrg: undefined,
+  chatUnread: 0,
+  taskUnread: 0,
+  notificationsUnread: 0,
+  leavesUnread: 0,
+  pendingSignatures: 0,
+  pendingApprovals: 0,
+  newsUnread: 0,
 };
+jest.mock('@/components/layout/NavBadgesProvider', () => ({
+  useNavBadges: () => mockBadges,
+}));
 const mutationCalls: Array<{ name?: string; args: any[] }> = [];
 const mutationImpls: Record<string, (...args: any[]) => any> = {};
-const mockLoadMore = jest.fn();
 
 jest.mock('convex/react', () => ({
   useQuery: (ref: { _name?: string }) => queryResults[ref?._name ?? ''],
@@ -66,11 +76,6 @@ jest.mock('convex/react', () => ({
       const impl = mutationImpls[ref?._name ?? ''];
       return impl ? impl(...args) : Promise.resolve();
     },
-  usePaginatedQuery: () => ({
-    results: paginatedResult.results,
-    status: paginatedResult.status,
-    loadMore: mockLoadMore,
-  }),
 }));
 
 jest.mock('../../convex/_generated/api', () => ({
@@ -246,11 +251,10 @@ const seed = () => {
   queryResults = {
     getUserById: { presenceStatus: 'available' },
   };
-  paginatedResult = { results: [], status: 'Exhausted' };
+  mockBadges = { ...mockBadges, notifications: [] };
   mutationCalls.length = 0;
   Object.keys(mutationImpls).forEach((key) => delete mutationImpls[key]);
   mockPush.mockClear();
-  mockLoadMore.mockClear();
   mockShowNotification.mockClear();
   mockLogout.mockClear();
   mockSetUser.mockClear();
@@ -343,10 +347,7 @@ describe('Navbar', () => {
   });
 
   it('shows the unread badge and marks all notifications read', async () => {
-    paginatedResult = {
-      results: [notif(), notif({ _id: 'n-2', isRead: true })],
-      status: 'Exhausted',
-    };
+    mockBadges = { ...mockBadges, notifications: [notif(), notif({ _id: 'n-2', isRead: true })] };
     render(<Navbar />);
     fireEvent.click(screen.getByTitle('Notifications'));
     expect(screen.getByText('1')).toBeInTheDocument();
@@ -360,7 +361,7 @@ describe('Navbar', () => {
   });
 
   it('marks a notification read and navigates to its target', async () => {
-    paginatedResult = { results: [notif()], status: 'Exhausted' };
+    mockBadges = { ...mockBadges, notifications: [notif()] };
     render(<Navbar />);
     fireEvent.click(screen.getByTitle('Notifications'));
     fireEvent.click(screen.getByText('T:New request'));
@@ -374,7 +375,7 @@ describe('Navbar', () => {
   });
 
   it('navigates via the row route when present', async () => {
-    paginatedResult = { results: [notif({ route: '/custom-target' })], status: 'Exhausted' };
+    mockBadges = { ...mockBadges, notifications: [notif({ route: '/custom-target' })] };
     render(<Navbar />);
     fireEvent.click(screen.getByTitle('Notifications'));
     fireEvent.click(screen.getByText('T:New request'));
@@ -382,18 +383,10 @@ describe('Navbar', () => {
   });
 
   it('renders just-now for a very recent notification', () => {
-    paginatedResult = { results: [notif({ _creationTime: mockNow - 500 })], status: 'Exhausted' };
+    mockBadges = { ...mockBadges, notifications: [notif({ _creationTime: mockNow - 500 })] };
     render(<Navbar />);
     fireEvent.click(screen.getByTitle('Notifications'));
     expect(screen.getByText('time.justNow')).toBeInTheDocument();
-  });
-
-  it('loads more notifications when the list can grow', () => {
-    paginatedResult = { results: [notif()], status: 'CanLoadMore' };
-    render(<Navbar />);
-    fireEvent.click(screen.getByTitle('Notifications'));
-    fireEvent.click(screen.getByText('Load more'));
-    expect(mockLoadMore).toHaveBeenCalledWith(20);
   });
 
   it('closes the notifications dropdown on an outside mousedown', () => {
@@ -517,10 +510,7 @@ describe('Navbar', () => {
   });
 
   it('skips the new-notification effect on first load', () => {
-    paginatedResult = {
-      results: [notif({ _id: 'n-new', type: 'join_approved' })],
-      status: 'Exhausted',
-    };
+    mockBadges = { ...mockBadges, notifications: [notif({ _id: 'n-new', type: 'join_approved' })] };
     render(<Navbar />);
     // No sound/state mutation on the initial render.
     expect(mockSetUser).not.toHaveBeenCalled();
@@ -528,18 +518,18 @@ describe('Navbar', () => {
 
   it('updates the approved state when a join_approved notification arrives later', () => {
     // First render consumes the first-load guard with a known notification.
-    paginatedResult = { results: [notif({ _id: 'n-0' })], status: 'Exhausted' };
+    mockBadges = { ...mockBadges, notifications: [notif({ _id: 'n-0' })] };
     const { rerender } = render(<Navbar />);
-    paginatedResult = {
-      results: [notif({ _id: 'n-0' }), notif({ _id: 'n-new', type: 'join_approved' })],
-      status: 'Exhausted',
+    mockBadges = {
+      ...mockBadges,
+      notifications: [notif({ _id: 'n-0' }), notif({ _id: 'n-new', type: 'join_approved' })],
     };
     rerender(<Navbar />);
     expect(mockSetUser).toHaveBeenCalledWith(expect.objectContaining({ isApproved: true }));
   });
 
   it('does not update state for already-seen notifications', () => {
-    paginatedResult = { results: [notif({ _id: 'n-seen' })], status: 'Exhausted' };
+    mockBadges = { ...mockBadges, notifications: [notif({ _id: 'n-seen' })] };
     const { rerender } = render(<Navbar />);
     // Same id again — nothing new.
     rerender(<Navbar />);
@@ -587,18 +577,18 @@ describe('Navbar', () => {
   });
 
   it('does not fire the notification effect for an empty list', () => {
-    paginatedResult = { results: [], status: 'Exhausted' };
+    mockBadges = { ...mockBadges, notifications: [] };
     render(<Navbar />);
     expect(mockSetUser).not.toHaveBeenCalled();
   });
 
   it('renders days and hours ago labels for older notifications', () => {
-    paginatedResult = {
-      results: [
+    mockBadges = {
+      ...mockBadges,
+      notifications: [
         notif({ _id: 'n-old', _creationTime: mockNow - 2 * 86_400_000 }),
         notif({ _id: 'n-mid', _creationTime: mockNow - 3 * 3_600_000 }),
       ],
-      status: 'Exhausted',
     };
     render(<Navbar />);
     fireEvent.click(screen.getByTitle('Notifications'));
@@ -608,9 +598,9 @@ describe('Navbar', () => {
 
   it('renders minutes ago and the fallback name for a nameless user', () => {
     mockUser = { ...mockUser, name: null };
-    paginatedResult = {
-      results: [notif({ _id: 'n-min', _creationTime: mockNow - 5 * 60_000 })],
-      status: 'Exhausted',
+    mockBadges = {
+      ...mockBadges,
+      notifications: [notif({ _id: 'n-min', _creationTime: mockNow - 5 * 60_000 })],
     };
     render(<Navbar />);
     fireEvent.click(screen.getByTitle('Notifications'));
@@ -628,7 +618,7 @@ describe('Navbar', () => {
 
   it('does not call mark-all-read without a user id', async () => {
     mockUser = null;
-    paginatedResult = { results: [notif()], status: 'Exhausted' };
+    mockBadges = { ...mockBadges, notifications: [notif()] };
     render(<Navbar />);
     fireEvent.click(screen.getByTitle('Notifications'));
     fireEvent.click(screen.getByText('notifications.markAllAsRead'));
@@ -639,33 +629,33 @@ describe('Navbar', () => {
 
   it('leaves already-seen read notifications alone after first load', () => {
     // First render consumes the first-load guard.
-    paginatedResult = { results: [notif({ _id: 'n-0' })], status: 'Exhausted' };
+    mockBadges = { ...mockBadges, notifications: [notif({ _id: 'n-0' })] };
     const { rerender } = render(<Navbar />);
     // A new read notification is not "new" (only unread ones are).
-    paginatedResult = {
-      results: [notif({ _id: 'n-0' }), notif({ _id: 'n-2', isRead: true })],
-      status: 'Exhausted',
+    mockBadges = {
+      ...mockBadges,
+      notifications: [notif({ _id: 'n-0' }), notif({ _id: 'n-2', isRead: true })],
     };
     rerender(<Navbar />);
     expect(mockSetUser).not.toHaveBeenCalled();
   });
 
   it('skips the approved-state update when the user is unknown', () => {
-    paginatedResult = { results: [notif({ _id: 'n-0' })], status: 'Exhausted' };
+    mockBadges = { ...mockBadges, notifications: [notif({ _id: 'n-0' })] };
     const { rerender } = render(<Navbar />);
     mockUser = null;
-    paginatedResult = {
-      results: [notif({ _id: 'n-0' }), notif({ _id: 'n-new', type: 'join_approved' })],
-      status: 'Exhausted',
+    mockBadges = {
+      ...mockBadges,
+      notifications: [notif({ _id: 'n-0' }), notif({ _id: 'n-new', type: 'join_approved' })],
     };
     rerender(<Navbar />);
     expect(mockSetUser).not.toHaveBeenCalled();
   });
 
   it('marks a notification read without navigating when it has no target', async () => {
-    paginatedResult = {
-      results: [notif({ type: 'unknown_type', route: undefined })],
-      status: 'Exhausted',
+    mockBadges = {
+      ...mockBadges,
+      notifications: [notif({ type: 'unknown_type', route: undefined })],
     };
     render(<Navbar />);
     fireEvent.click(screen.getByTitle('Notifications'));
@@ -680,7 +670,7 @@ describe('Navbar', () => {
   });
 
   it('keeps the dropdown open when clicking inside it', () => {
-    paginatedResult = { results: [notif()], status: 'Exhausted' };
+    mockBadges = { ...mockBadges, notifications: [notif()] };
     render(<Navbar />);
     fireEvent.click(screen.getByTitle('Notifications'));
     fireEvent.mouseDown(screen.getByText('T:New request'));

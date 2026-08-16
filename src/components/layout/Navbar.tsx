@@ -100,8 +100,9 @@ export function notificationTarget(n: NotificationItem, role?: string): string |
 function PresenceEmoji({ emoji }: { emoji: string }) {
   return <span aria-hidden="true">{emoji}</span>;
 }
-import { useQuery, useMutation, usePaginatedQuery } from 'convex/react';
+import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
+import { useNavBadges } from '@/components/layout/NavBadgesProvider';
 import { useSidebarStore } from '@/store/useSidebarStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import type { User as UserType } from '@/store/useAuthStore';
@@ -167,16 +168,11 @@ export function Navbar() {
     setMounted(true);
   }, []);
 
-  // Convex notifications (paginated)
-  const {
-    results: notifications,
-    status: notifStatus,
-    loadMore,
-  } = usePaginatedQuery(
-    api.notifications.listPaginated,
-    user?.id ? { userId: user.id as Id<'users'> } : 'skip',
-    { initialNumItems: 20 },
-  );
+  // Notifications come from the shared NavBadgesProvider subscription (latest
+  // 50) — the navbar used to keep its own always-on paginated subscription on
+  // top of the four other components subscribed to the same table.
+  const { notifications: sharedNotifications } = useNavBadges();
+  const notifications = React.useMemo(() => sharedNotifications ?? [], [sharedNotifications]);
   const markRead = useMutation(api.notifications.markAsRead);
   const markAllRead = useMutation(api.notifications.markAllAsRead);
   const updatePresence = useMutation(api.users.mutations.updatePresenceStatus);
@@ -353,14 +349,6 @@ export function Navbar() {
               ))
             )}
           </div>
-          {notifStatus === 'CanLoadMore' && (
-            <button
-              onClick={() => loadMore(20)}
-              className="w-full py-2 text-xs text-(--brand-text) hover:bg-(--background-subtle) border-t border-(--border)"
-            >
-              {t('notifications.loadMore', { defaultValue: 'Load more' })}
-            </button>
-          )}
         </div>
       )}
       {/* Hide-on-scroll (mobile): the header is a flex row in the column, and the

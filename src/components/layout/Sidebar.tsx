@@ -13,9 +13,7 @@ import { useAuthUser } from '@/store/useAuthStore';
 import { MODULE_TOGGLE_BY_HREF, useFeatureFlags } from '@/hooks/useFeatureFlags';
 import { OrganizationSelector } from '@/components/layout/OrganizationSelector';
 import { QuickActionsPalette } from '@/components/superadmin/QuickActionsPalette';
-import { useQuery } from 'convex/react';
-import { api } from '../../../convex/_generated/api';
-import type { Id } from '../../../convex/_generated/dataModel';
+import { useNavBadges } from '@/components/layout/NavBadgesProvider';
 
 // The destination list itself lives in @/lib/nav so the command palette can read
 // the same one instead of keeping a second, drifting copy.
@@ -40,78 +38,22 @@ export function Sidebar() {
     if (collapsed) setActiveSubNav(null);
   }, [collapsed]);
 
-  // Get user's organization
-  const userOrg = useQuery(
-    api.organizations.getMyOrganization,
-    mounted && user?.id ? { userId: user.id as Id<'users'> } : 'skip',
-  );
-
-  // Unread task notifications badge
-  const notifications = useQuery(
-    api.notifications.getUserNotifications,
-    mounted && user?.id ? { userId: user.id as Id<'users'> } : 'skip',
-  );
-
-  // Unread leaves count (only for admin role)
-  const unreadLeavesCount = useQuery(
-    api.leaves.getUnreadCount,
-    mounted && user?.id && user.role === 'admin' ? {} : 'skip',
-  );
-
-  // Unread chat messages count
-  const chatUnreadCount = useQuery(
-    api.chat.queries.getTotalUnread,
-    mounted && user?.id && user?.organizationId
-      ? {
-          userId: user.id as Id<'users'>,
-          organizationId: user.organizationId as Id<'organizations'>,
-        }
-      : 'skip',
-  );
-
-  // Pending signature requests count
-  const pendingSignaturesCount = useQuery(
-    api.signatures.getMyPendingSignatures,
-    mounted && user?.id && user?.organizationId
-      ? {
-          userId: user.id as Id<'users'>,
-          organizationId: user.organizationId as Id<'organizations'>,
-        }
-      : 'skip',
-  );
-
-  // Pending join approvals. The query throws for anyone who isn't an org admin,
-  // so it stays skipped unless the same roles that can see the nav item are set.
-  const pendingApprovalUsers = useQuery(
-    api.users.queries.getPendingApprovalUsers,
-    mounted && user?.id && (user.role === 'admin' || user.role === 'superadmin') ? {} : 'skip',
-  );
-
-  // Unread announcements. The feed is a broadcast surface, so an unopened notice
-  // has to advertise itself in the nav the way an unread chat does — otherwise a
-  // dated post can come and go inside its day without anyone noticing.
-  const newsStats = useQuery(
-    api.news.getNewsStats,
-    mounted && user?.id && user?.organizationId
-      ? { organizationId: user.organizationId as Id<'organizations'> }
-      : 'skip',
-  );
-
-  // Task notifications are typed `system`, so they're identified by their route
-  // rather than by their title — titles are localized and matching English words
-  // in them silently zeroed this badge in every other language.
-  const taskUnreadCount = (notifications ?? []).filter(
-    (n) => !n.isRead && n.route === '/tasks',
-  ).length;
-
-  const signatureBadgeCount = (pendingSignaturesCount ?? []).length;
-
-  const approvalBadgeCount = (pendingApprovalUsers ?? []).length;
+  // Every badge below comes from the shared NavBadgesProvider — one set of
+  // Convex subscriptions for the whole shell instead of a duplicated set per
+  // component (this sidebar alone used to hold seven of its own).
+  const {
+    userOrg,
+    taskUnread: taskUnreadCount,
+    leavesUnread,
+    chatUnread: chatUnreadCount,
+    pendingSignatures: signatureBadgeCount,
+    pendingApprovals: approvalBadgeCount,
+    newsUnread,
+  } = useNavBadges();
 
   // Update browser tab title with unread chat count
   React.useEffect(() => {
-    const count = chatUnreadCount ?? 0;
-    document.title = count > 0 ? `(${count}) Shield HR` : 'Shield HR';
+    document.title = chatUnreadCount > 0 ? `(${chatUnreadCount}) Shield HR` : 'Shield HR';
   }, [chatUnreadCount]);
 
   // Get user role with fallback
@@ -346,10 +288,9 @@ export function Sidebar() {
               const Icon = item.icon;
               const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
               const taskBadgeCount = taskUnreadCount;
-              const leaveBadgeCount = (unreadLeavesCount as number) ?? 0;
-              const chatBadgeCount = chatUnreadCount ?? 0;
-              const newsBadgeCount =
-                (newsStats as { unreadCount?: number } | undefined)?.unreadCount ?? 0;
+              const leaveBadgeCount = leavesUnread;
+              const chatBadgeCount = chatUnreadCount;
+              const newsBadgeCount = newsUnread;
               const showTaskBadge = item.href === '/tasks' && taskBadgeCount > 0;
               const showLeaveBadge =
                 item.href === '/leaves' && leaveBadgeCount > 0 && user?.role === 'admin';
@@ -759,51 +700,15 @@ export function MobileSidebar() {
 
   React.useEffect(() => setMounted(true), []);
 
-  // Get user's organization
-  const userOrg = useQuery(
-    api.organizations.getMyOrganization,
-    mounted && user?.id ? { userId: user.id as Id<'users'> } : 'skip',
-  );
-
-  const mobileNotifications = useQuery(
-    api.notifications.getUserNotifications,
-    mounted && user?.id ? { userId: user.id as Id<'users'> } : 'skip',
-  );
-
-  // Mobile Unread leaves count (only for admin role)
-  const mobileUnreadLeavesCount = useQuery(
-    api.leaves.getUnreadCount,
-    mounted && user?.id && user.role === 'admin' ? {} : 'skip',
-  );
-
-  // Mobile unread chat count
-  const mobileChatUnreadCount = useQuery(
-    api.chat.queries.getTotalUnread,
-    mounted && user?.id && user?.organizationId
-      ? {
-          userId: user.id as Id<'users'>,
-          organizationId: user.organizationId as Id<'organizations'>,
-        }
-      : 'skip',
-  );
-
-  // Mobile pending signature requests count
-  const mobilePendingSignaturesCount = useQuery(
-    api.signatures.getMyPendingSignatures,
-    mounted && user?.id && user?.organizationId
-      ? {
-          userId: user.id as Id<'users'>,
-          organizationId: user.organizationId as Id<'organizations'>,
-        }
-      : 'skip',
-  );
-
-  // Same route-based match as `taskUnreadCount` above, for the same reason.
-  const mobileTaskBadge = (mobileNotifications ?? []).filter(
-    (n) => !n.isRead && n.route === '/tasks',
-  ).length;
-
-  const mobileSignatureCount = (mobilePendingSignaturesCount ?? []).length;
+  // Shared badge subscriptions (NavBadgesProvider) — this mobile sidebar used
+  // to duplicate five of the desktop sidebar's Convex subscriptions.
+  const {
+    userOrg,
+    taskUnread: mobileTaskBadge,
+    leavesUnread: mobileUnreadLeavesCount,
+    chatUnread: mobileChatUnreadCount,
+    pendingSignatures: mobileSignatureCount,
+  } = useNavBadges();
 
   // Lock body scroll when mobile sidebar is open
   React.useEffect(() => {
@@ -1076,9 +981,8 @@ export function MobileSidebar() {
                 const Icon = item.icon;
                 const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
                 const mobileTaskCount = mobileTaskBadge;
-                const mobileLeaveCount = (mobileUnreadLeavesCount as number) ?? 0;
-                const mobileChatCount = mobileChatUnreadCount ?? 0;
-                const mobileSignatureCount = (mobilePendingSignaturesCount ?? []).length;
+                const mobileLeaveCount = mobileUnreadLeavesCount;
+                const mobileChatCount = mobileChatUnreadCount;
                 const mobileBadge =
                   item.href === '/tasks'
                     ? mobileTaskCount

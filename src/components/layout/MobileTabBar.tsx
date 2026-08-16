@@ -17,12 +17,10 @@ import React, { useState } from 'react';
 import nextDynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
-import { useQuery } from 'convex/react';
 import { CheckSquare, ClipboardList, LayoutDashboard, MessageCircle } from 'lucide-react';
 import { useAuthUser } from '@/store/useAuthStore';
 import { MODULE_TOGGLE_BY_HREF, useFeatureFlags } from '@/hooks/useFeatureFlags';
-import { api } from '@/convex/_generated/api';
-import type { Id } from '@/convex/_generated/dataModel';
+import { useNavBadges } from '@/components/layout/NavBadgesProvider';
 import { MobileDockBar, type DockSlot, type DockTab } from '@/components/layout/MobileDockBar';
 
 const MobileMenuSheet = nextDynamic(
@@ -64,29 +62,14 @@ export function MobileTabBar() {
   // before that it is not even downloaded.
   const [sheetLoaded, setSheetLoaded] = useState(false);
 
-  const userId = user?.id as Id<'users'> | undefined;
-  const organizationId = user?.organizationId as Id<'organizations'> | undefined;
-
-  const chatUnread = useQuery(
-    api.chat.queries.getTotalUnread,
-    userId && organizationId ? { userId, organizationId } : 'skip',
-  );
-  const notifications = useQuery(
-    api.notifications.getUserNotifications,
-    userId ? { userId } : 'skip',
-  );
-  const leavesUnread = useQuery(api.leaves.getUnreadCount, user?.role === 'admin' ? {} : 'skip');
-  const newsStats = useQuery(api.news.getNewsStats, organizationId ? { organizationId } : 'skip');
-
-  // Task notifications are typed `system`, so they are identified by route —
-  // matching on the (localized) title silently zeroed this in every language.
-  const taskUnread = (notifications ?? []).filter((n) => !n.isRead && n.route === '/tasks').length;
-  const newsUnread = (newsStats as { unreadCount?: number } | undefined)?.unreadCount ?? 0;
+  // Shared badge subscriptions (NavBadgesProvider) — the dock used to hold its
+  // own copies of four subscriptions the sidebar already had.
+  const { chatUnread, taskUnread, leavesUnread, newsUnread } = useNavBadges();
 
   const badgeFor = (href: string): number => {
-    if (href === '/chat') return chatUnread ?? 0;
+    if (href === '/chat') return chatUnread;
     if (href === '/tasks') return taskUnread;
-    if (href === '/leaves') return (leavesUnread as number | undefined) ?? 0;
+    if (href === '/leaves') return leavesUnread;
     return 0;
   };
 

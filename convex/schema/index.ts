@@ -54,6 +54,7 @@ import { documentBuilder } from './documentBuilder';
 import { probation } from './probation';
 import { landing } from './landing';
 import { landingTexts } from './landingTexts';
+import { operatorTools } from './operatorTools';
 
 export default defineSchema({
   ...organizations,
@@ -111,6 +112,7 @@ export default defineSchema({
   ...probation,
   ...landing,
   ...landingTexts,
+  ...operatorTools,
 });
 
 export {
@@ -169,4 +171,5 @@ export {
   probation,
   landing,
   landingTexts,
+  operatorTools,
 };

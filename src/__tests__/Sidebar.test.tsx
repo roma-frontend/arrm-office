@@ -101,6 +101,13 @@ jest.mock('@/convex/_generated/api', () => ({
   },
 }));
 
+// Sidebar reads nav badges through the shared NavBadgesProvider context (not
+// raw convex queries). Mock the hook so badge tests control the counters.
+let mockBadges: any = {};
+jest.mock('@/components/layout/NavBadgesProvider', () => ({
+  useNavBadges: () => mockBadges,
+}));
+
 // ── Sub-components / icons ───────────────────────────────────────────────────
 jest.mock('@/components/layout/OrganizationSelector', () => ({
   OrganizationSelector: () => <div data-testid="org-selector" />,
@@ -173,7 +180,6 @@ import { Sidebar, MobileSidebar } from '@/components/layout/Sidebar';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 const link = (href: string) => document.querySelector(`a[href="${href}"]`);
-
 function resetQueries() {
   mockQueries.getMyOrganization = { name: 'Acme' };
   mockQueries.getUserNotifications = [];
@@ -181,12 +187,24 @@ function resetQueries() {
   mockQueries.getTotalUnread = 0;
   mockQueries.getMyPendingSignatures = [];
   mockQueries.getNewsStats = { unreadCount: 0 };
+  mockBadges = {
+    notifications: [],
+    userOrg: { name: 'Acme' },
+    chatUnread: 0,
+    taskUnread: 0,
+    notificationsUnread: 0,
+    leavesUnread: 0,
+    pendingSignatures: 0,
+    pendingApprovals: 0,
+    newsUnread: 0,
+  };
 }
 
 beforeEach(() => {
   jest.clearAllMocks();
   mockPathname = '/dashboard';
   mockUser = { id: 'u1', name: 'Alice', role: 'admin', organizationId: 'org-1' };
+
   resetQueries();
   mockSidebar = {
     collapsed: false,
@@ -346,11 +364,15 @@ describe('Sidebar', () => {
   });
 
   it('shows the unread task badge from route-matched notifications', () => {
-    mockQueries.getUserNotifications = [
-      { isRead: false, route: '/tasks' },
-      { isRead: true, route: '/tasks' },
-      { isRead: false, route: '/leaves' },
-    ];
+    mockBadges = {
+      ...mockBadges,
+      notifications: [
+        { isRead: false, route: '/tasks' },
+        { isRead: true, route: '/tasks' },
+        { isRead: false, route: '/leaves' },
+      ],
+      taskUnread: 1,
+    };
     render(<Sidebar />);
     // the tasks item has children, so it renders as a button in expanded mode
     const badge = screen.getByText('nav.tasks').closest('button')?.querySelector('.absolute');
@@ -358,19 +380,19 @@ describe('Sidebar', () => {
   });
 
   it('shows the unread chat badge with a 9+ cap', () => {
-    mockQueries.getTotalUnread = 3;
+    mockBadges = { ...mockBadges, chatUnread: 3 };
     const { container } = render(<Sidebar />);
     const badge = container.querySelector('a[href="/chat"]')?.querySelector('.absolute');
     expect(badge?.textContent).toBe('3');
 
-    mockQueries.getTotalUnread = 25;
+    mockBadges = { ...mockBadges, chatUnread: 25 };
     const { container: c2 } = render(<Sidebar />);
     const badge2 = c2.querySelector('a[href="/chat"]')?.querySelector('.absolute');
     expect(badge2?.textContent).toBe('9+');
   });
 
   it('shows the unread leaves badge for admins only', () => {
-    mockQueries.getUnreadCount = 2;
+    mockBadges = { ...mockBadges, leavesUnread: 2 };
     const { container } = render(<Sidebar />);
     const badge = container.querySelector('a[href="/leaves"]')?.querySelector('.absolute');
     expect(badge?.textContent).toBe('2');
@@ -381,7 +403,7 @@ describe('Sidebar', () => {
   });
 
   it('shows the pending signatures badge on the performance item', () => {
-    mockQueries.getMyPendingSignatures = [{ _id: 's1' }, { _id: 's2' }];
+    mockBadges = { ...mockBadges, pendingSignatures: 2 };
     render(<Sidebar />);
     // performance has children → rendered as a button in expanded mode
     const badge = screen.getByText('nav.performance').closest('button')?.querySelector('.absolute');
@@ -389,7 +411,7 @@ describe('Sidebar', () => {
   });
 
   it('shows the unread news badge on the news item', () => {
-    mockQueries.getNewsStats = { unreadCount: 7 };
+    mockBadges = { ...mockBadges, newsUnread: 7 };
     const { container } = render(<Sidebar />);
     const badge = container.querySelector('a[href="/news"]')?.querySelector('.absolute');
     expect(badge?.textContent).toBe('7');
@@ -419,11 +441,11 @@ describe('Sidebar', () => {
   });
 
   it('updates the browser tab title with the unread chat count', () => {
-    mockQueries.getTotalUnread = 4;
+    mockBadges = { ...mockBadges, chatUnread: 4 };
     const { rerender } = render(<Sidebar />);
     expect(document.title).toBe('(4) Shield HR');
 
-    mockQueries.getTotalUnread = 0;
+    mockBadges = { ...mockBadges, chatUnread: 0 };
     rerender(<Sidebar />);
     expect(document.title).toBe('Shield HR');
   });
@@ -432,7 +454,7 @@ describe('Sidebar', () => {
     render(<Sidebar />);
     expect(screen.getByText('Acme')).toBeInTheDocument();
 
-    mockQueries.getMyOrganization = undefined;
+    mockBadges = { ...mockBadges, userOrg: undefined };
     const { container } = render(<Sidebar />);
     expect(container.textContent).toContain('sidebar.orgName');
   });
@@ -529,7 +551,7 @@ describe('MobileSidebar', () => {
 
   it('shows the mobile unread chat badge', () => {
     mockSidebar.mobileOpen = true;
-    mockQueries.getTotalUnread = 5;
+    mockBadges = { ...mockBadges, chatUnread: 5 };
     const { container } = render(<MobileSidebar />);
     const badge = container.querySelector('a[href="/chat"]')?.querySelector('.absolute');
     expect(badge?.textContent).toBe('5');
@@ -537,7 +559,11 @@ describe('MobileSidebar', () => {
 
   it('shows the mobile unread task badge', () => {
     mockSidebar.mobileOpen = true;
-    mockQueries.getUserNotifications = [{ isRead: false, route: '/tasks' }];
+    mockBadges = {
+      ...mockBadges,
+      notifications: [{ isRead: false, route: '/tasks' }],
+      taskUnread: 1,
+    };
     render(<MobileSidebar />);
     const badge = screen.getByText('nav.tasks').closest('button')?.querySelector('.absolute');
     expect(badge?.textContent).toBe('1');

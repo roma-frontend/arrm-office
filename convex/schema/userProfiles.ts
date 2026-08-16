@@ -38,6 +38,8 @@ export const userProfiles = {
     dayOffBalance: v.optional(v.number()),
     maternityLeaveBalance: v.optional(v.number()),
     studyLeaveBalance: v.optional(v.number()),
+    // GDPR marker set by the superadmin toolkit when PII is scrubbed.
+    dataAnonymizedAt: v.optional(v.number()),
   })
     .index('by_user', ['userId'])
     .index('by_department', ['departmentId'])
