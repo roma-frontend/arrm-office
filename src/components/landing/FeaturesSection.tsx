@@ -573,8 +573,9 @@ export default function FeaturesSection({ initialLanguage = 'en' }: { initialLan
         />
 
         <div className="grid lg:grid-cols-2 gap-0">
-          {/* Left: feature text */}
-          <div className="relative p-6 sm:p-10 flex flex-col justify-center min-h-[320px]">
+          {/* Feature text — right column on desktop (alternates with the
+              scroll-story's text-left/phone-right rhythm above) */}
+          <div className="relative p-6 sm:p-10 flex flex-col justify-center min-h-[320px] lg:order-2">
             <div className="relative h-full">
               {FEATURES.map((f, i) => (
                 <div
@@ -637,7 +638,7 @@ export default function FeaturesSection({ initialLanguage = 'en' }: { initialLan
               switching frames glides instead of popping (the old frame used to
               unmount instantly). Fixed-height stage prevents layout jumps. */}
           <div
-            className="relative p-6 sm:p-10 flex items-center justify-center border-t lg:border-t-0 lg:border-l min-h-[280px]"
+            className="relative p-6 sm:p-10 flex items-center justify-center border-t lg:border-t-0 lg:border-r min-h-[280px] lg:order-1"
             style={{ borderColor: 'var(--landing-card-border)' }}
           >
             <div className="relative w-full h-[240px]">

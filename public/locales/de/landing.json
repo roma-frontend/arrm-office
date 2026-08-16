@@ -7,7 +7,7 @@
     "heroSubtitle": "Verbinden Sie die Unternehmensvision mit der täglichen Arbeit. Kaskadieren Sie OKRs vom Vorstand bis zu jedem Mitarbeiter, verfolgen Sie den Fortschritt in Echtzeit und erzielen Sie Ergebnisse.",
     "getStartedFree": "Kostenlos starten",
     "watchDemo": "Demo ansehen",
-    "trustedBy": "Vertrauen von über 500 Unternehmen weltweit",
+    "trustedBy": "Echte Teams, die mit Strata arbeiten",
     "vacationTracking": "Urlaubsverwaltung",
     "vacationDesc": "Verfolgen Sie bezahlten Urlaub, Urlaubstage und Feiertage",
     "mostUsed": "Am häufigsten verwendet",
@@ -66,7 +66,6 @@
     "goToDashboard": "Zum Dashboard",
     "viewAnalytics": "Analytik anzeigen",
     "signIn": "Anmelden",
-    "trustedByElite": "Vertrauen von Elite-HR-Spezialisten",
     "noCreditCard": "Keine Kreditkarte erforderlich",
     "freeToStart": "Kostenlos starten",
     "gdprReady": "DSGVO-konform, EU-Hosting",
@@ -257,17 +256,9 @@
       }
     },
     "byTheNumbers": "In Zahlen",
-    "trustedAt": "Vertrauen bei",
-    "scale": "Skalieren",
     "perfectlyManaged": "Perfekt verwaltet",
     "learnMore": "Mehr erfahren",
     "liveSync": "Live-Synchronisierung",
-    "liveTickerQ3": "Q3-OKR-Kaskade mit 48 Teams synchronisiert",
-    "liveTickerBiometric": "Biometrischer Check-in — 128 Mitarbeiter heute",
-    "liveTickerPayroll": "Lohnabrechnung Nr. 12 genehmigt",
-    "liveTickerAi": "KI-Assistent hat 23 HR-Tickets gelöst",
-    "liveTickerLeave": "Urlaubsantrag genehmigt · Anna K.",
-    "liveTickerPulse": "Engagement-Umfrage — 87 % Rücklauf",
     "solutionsMenu": {
       "title": "Lösungen",
       "byTeam": "Nach Team",
@@ -304,7 +295,7 @@
         },
         "customers": {
           "title": "Kunden",
-          "desc": "Über 500 Unternehmen vertrauen uns"
+          "desc": "Geschichten von HR-Teams, die Strata nutzen"
         },
         "tour": {
           "title": "Produkttour",
@@ -349,7 +340,13 @@
     "trustEuHosting": "EU-Hosting",
     "trustEuHostingDesc": "Daten bleiben in der EU",
     "trustUptime": "99,9 % Uptime",
-    "trustUptimeDesc": "SLA-garantierte Verfügbarkeit"
+    "trustUptimeDesc": "SLA-garantierte Verfügbarkeit",
+    "factsTitle": "Was Strata bietet",
+    "factsSubtitle": "Echte Produktdaten — keine geschönten Zahlen",
+    "metricModules": "Module",
+    "metricLanguages": "Sprachen",
+    "metricAccuracy": "Biometrische Genauigkeit",
+    "metricCheckin": "Check-in-Zeit"
   },
   "landingExtra": {
     "myAccount": "Mein Konto",
@@ -358,8 +355,6 @@
     "switchToDark": "Auf dunkles Thema wechseln",
     "signIn": "Anmelden",
     "getStarted": "Loslegen",
-    "everyLeaveType": "Jeder Urlaubstyp,",
-    "featuresSubtitle": "Von Urlauben bis zu Arztbesuchen - verfolgen und verwalten Sie jede Abwesenheit mit Präzision und Eleganz.",
     "footerBrand": "Premium-HR-Plattform für fortschrittliche Teams.",
     "footerProduct": "Produkt",
     "footerPlatform": "Plattform",
@@ -369,7 +364,6 @@
     "footerTerms": "Nutzungsbedingungen",
     "footerPrivacyDesc": "Lesen Sie unsere Datenschutzrichtlinie und den Schutz Ihrer Daten",
     "footerTermsDesc": "Lesen Sie unsere Nutzungsbedingungen und Ihre Rechte",
-    "socialProof": "500+ Unternehmen vertrauen uns",
     "footerRights": "Alle Rechte vorbehalten.",
     "securityCenter": "Sicherheitszentrum",
     "securityCritical": "⚠ Kritisch",
@@ -388,19 +382,6 @@
     "footerSoc2": "SOC 2 zertifiziert",
     "ctaTitle": "Bereit, Ihre",
     "ctaTitleHighlight": "HR-Operationen zu verbessern?",
-    "ctaSubtitle": "Schließen Sie sich den führenden HR-Spezialisten an, die Strata vertrauen, um ihre Teams zu verwalten.",
-    "statsEmployees": "Verfolgte Mitarbeiter",
-    "statsAccuracy": "Genauigkeitsprozentsatz",
-    "statsRealtime": "Echtzeit-Tracking",
-    "statsAnalytics": "Intelligente Analytik",
-    "hero": {
-      "eyebrow": "HR-Management neu definiert",
-      "title": "Vereinfachen Sie HR mit KI",
-      "subtitle": "Intuitive Benutzeroberfläche zur Verwaltung von HR-Prozessen, einschließlich Mitarbeiter-Tracking und Abwesenheitsmanagement.",
-      "cta": "Kostenlose Testversion starten",
-      "secondaryCta": "Demo anfordern",
-      "trustedBy": "Vertrauen von über 500+ Unternehmen weltweit"
-    },
     "features": {
       "title": "Alles, was Sie brauchen",
       "subtitle": "Umfassende Funktionen für das Personalmanagement",
@@ -484,17 +465,6 @@
         "stat3Value": "✓",
         "tab": "Arzt"
       }
-    },
-    "stats": {
-      "stat1": "500+ Unternehmen",
-      "stat2": "50K+ Mitarbeiter",
-      "stat3": "99,9% Kundenzufriedenheit",
-      "stat4": "Verfügbarkeit 24/7"
-    },
-    "cta": {
-      "title": "Bereit zu starten?",
-      "subtitle": "Schließen Sie sich tausenden von Unternehmen an, die unsere Plattform nutzen",
-      "button": "Kostenlose Testversion starten"
     }
   },
   "pricing": {
@@ -594,7 +564,7 @@
   "testimonials": {
     "eyebrow": "Referenzen",
     "headingStart": "Beliebt bei",
-    "headingHighlight": "führenden HR-Teams",
+    "headingHighlight": "HR-Teams",
     "subtitle": "Glauben Sie uns nicht einfach - hören Sie, was unsere Kunden sagen.",
     "hoverToPause": "Zum Anhalten hoveren",
     "testimonial1": {
@@ -666,19 +636,7 @@
     "stillHaveQuestions": "Haben Sie noch Fragen?",
     "contactSupport": "Kontaktieren Sie den Support"
   },
-  "socialProof": {
-    "activeUsers": "Aktive Benutzer",
-    "customerRating": "Kundenbewertung",
-    "uptime": "Betriebszeit",
-    "countries": "Länder",
-    "trustedBy": "Vertraut von",
-    "companies": "Unternehmen weltweit",
-    "rating": "Bewertung 4.9/5",
-    "reviews": "basierend auf 1000+ Bewertungen",
-    "customers": "Zufriedene Kunden",
-    "growth": "Wachstum von Jahr zu Jahr",
-    "activeUsersValue": "10.000+"
-  },
+  "socialProof": {},
   "newsletter": {
     "title": "Bleiben Sie auf dem Laufenden",
     "subtitle": "Erhalten Sie die neuesten Updates zu HR-Trends, Premium-Funktionen und exklusiven Einblicken direkt in Ihren Posteingang.",
@@ -794,7 +752,7 @@
     "platformTitle": "Für moderne Teams entwickelt",
     "platformSubtitle": "Funktionen auf Unternehmensebene, die mit Ihrer Organisation skalieren",
     "ctaTitle": "Bereit, HR zu transformieren?",
-    "ctaSubtitle": "Schließen Sie sich Tausenden von Teams an, die Strata bereits für effektives Personalmanagement nutzen.",
+    "ctaSubtitle": "Kostenlos starten — keine Kreditkarte nötig. In Minuten einsatzbereit.",
     "ctaButton": "Kostenlos starten",
     "ctaContact": "Kontaktieren Sie uns für eine Demo",
     "modules": {

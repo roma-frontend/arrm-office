@@ -1240,7 +1240,7 @@ export default function AIChatPage() {
             >
               <Download className="w-4 h-4" />
             </Button>
-            <Badge variant="secondary" className="gap-1 shrink-0">
+            <Badge variant="secondary" className="hidden sm:flex gap-1 shrink-0">
               <Zap className="w-3 h-3" />
               {t('aiChat.aiPowered')}
             </Badge>

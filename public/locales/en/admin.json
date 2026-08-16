@@ -601,6 +601,13 @@
         "reason": "Reason",
         "expiresAt": "Expires At",
         "targetUser": "Target User"
+      },
+      "banner": {
+        "title": "Impersonation mode",
+        "actingAs": "You are acting as",
+        "returnTo": "Return to",
+        "expiresIn": "Expires in",
+        "expired": "Expired — exiting…"
       }
     },
     "bulkActions": {
@@ -920,7 +927,9 @@
       "revoking": "Revoking…",
       "revokedAll": "{{count}} sessions revoked",
       "noSessions": "No active sessions",
-      "noSessionsHint": "Nobody is logged in right now"
+      "noSessionsHint": "Nobody is logged in right now",
+      "deviceCol": "Device",
+      "unknownDevice": "Unknown device"
     },
     "audit": {
       "title": "Audit trail",
@@ -961,7 +970,10 @@
         "bulkActions": "Bulk actions",
         "security": "Security",
         "automation": "Automation",
-        "support": "Support"
+        "support": "Support",
+        "controlCenter": "Control Center",
+        "orgRequests": "Org requests",
+        "trash": "Trash"
       },
       "liveActivity": "Live activity",
       "viewAll": "View all",
@@ -1021,6 +1033,139 @@
         "compensationModule": "Compensation Module",
         "compensationModuleDesc": "Salary bands, reviews and bonus programs"
       }
+    },
+    "controlCenter": {
+      "title": "Control Center",
+      "subtitle": "Every operator tool in one live cockpit",
+      "tabs": {
+        "monitor": "Monitor",
+        "security": "Security",
+        "sessions": "Sessions",
+        "users": "Users",
+        "orgs": "Organizations",
+        "audit": "Audit",
+        "export": "Export"
+      },
+      "per24h": "/24h",
+      "lastHour": "{{n}} last hour",
+      "justNow": "just now",
+      "minAgo": "{{n}} min ago",
+      "hAgo": "{{n}}h ago",
+      "loading": "Loading…",
+      "pulse": {
+        "logins": "Logins",
+        "registrations": "Registrations",
+        "newOrgs": "New orgs",
+        "checkIns": "Check-ins",
+        "leaveRequests": "Leave requests",
+        "tasksCreated": "Tasks created"
+      },
+      "hotOrgs": "Hottest organizations",
+      "noHotOrgs": "No activity in the last 24h yet",
+      "actions": "actions",
+      "health": "Platform health",
+      "healthOrgs": "Organizations",
+      "healthUsers": "Users",
+      "healthSubs": "Active subscriptions",
+      "healthSessions": "Active sessions",
+      "healthPendingLeaves": "Pending leaves",
+      "healthTickets": "Open tickets",
+      "healthIncidents": "Active incidents",
+      "healthTrials": "Trials expiring soon",
+      "quality": {
+        "title": "Data quality",
+        "excellent": "Excellent",
+        "good": "Good",
+        "attention": "Needs attention",
+        "critical": "Critical"
+      },
+      "backup": {
+        "title": "Backup readiness",
+        "total": "Backups",
+        "orgs": "Orgs backed up",
+        "size": "Total size",
+        "note": "Full database and employee snapshots are managed on the Backups page."
+      },
+      "security": {
+        "critical": "Critical",
+        "warn": "Warnings",
+        "info": "Info",
+        "noAlerts": "No security events in the last 24h — all quiet.",
+        "level": "Level",
+        "event": "Event",
+        "actor": "Actor / detail",
+        "when": "When",
+        "action": "Action"
+      },
+      "noSessions": "Nobody is logged in right now.",
+      "user": "User",
+      "role": "Role",
+      "org": "Organization",
+      "status": "Status",
+      "blocked": "Blocked",
+      "active": "Active",
+      "usersCount": "{{n}} users shown",
+      "loadMore": "Load more",
+      "industry": "Industry",
+      "users": "Users",
+      "noAudit": "No audit events recorded.",
+      "export": {
+        "subtitle": "Download flat snapshots for audits, backups or analysis — CSV opens in any spreadsheet, JSON keeps the full structure.",
+        "users": "Users",
+        "orgs": "Organizations",
+        "sessions": "Sessions",
+        "audit": "Audit log",
+        "fullDump": "Full snapshot",
+        "fullDumpDesc": "All four datasets in one JSON file"
+      },
+      "rows": "rows"
+    },
+    "trash": {
+      "title": "Trash",
+      "subtitle": "Soft-deleted organizations and users — restore them or purge permanently",
+      "orgs": "Organizations",
+      "users": "Users",
+      "deleted": "Deleted",
+      "restore": "Restore",
+      "purge": "Purge",
+      "emptyOrgs": "Nothing in the trash",
+      "emptyUsers": "Nothing in the trash",
+      "allEmpty": "The trash is empty. Deleting an organization or user moves it here.",
+      "orgRestored": "Organization restored",
+      "userRestored": "User restored",
+      "orgPurged": "Organization permanently deleted",
+      "userPurged": "User permanently deleted",
+      "actionFailed": "Action failed",
+      "slugMismatch": "Slug does not match — type the organization slug to confirm",
+      "typeSlug": "Type {{slug}} to confirm",
+      "purgeConfirm": "Delete forever",
+      "confirmPurgeUser": "Delete this user permanently? This cannot be undone."
+    },
+    "orgRequests": {
+      "title": "Organization requests",
+      "subtitle": "Approve or reject requests to register a new organization on the platform",
+      "status": {
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      },
+      "empty": {
+        "pending": "No pending requests",
+        "approved": "No approved requests",
+        "rejected": "No rejected requests"
+      },
+      "approve": "Approve",
+      "reject": "Reject",
+      "approved": "Organization created and request approved",
+      "rejected": "Request rejected",
+      "actionFailed": "Action failed",
+      "reasonRequired": "Enter a reason for rejection",
+      "reasonPlaceholder": "Reason for rejection (shown to the requester)",
+      "confirmReject": "Reject request",
+      "submitted": "Submitted",
+      "reviewed": "Reviewed",
+      "viewOrg": "View organization",
+      "team": "{{n}} team"
     }
   },
   "superadminSecurity": {

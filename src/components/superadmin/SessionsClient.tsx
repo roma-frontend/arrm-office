@@ -165,6 +165,9 @@ export function SessionsClient() {
                         {t('superadmin.sessions.orgCol', 'Organization')}
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-(--text-muted)">
+                        {t('superadmin.sessions.deviceCol', 'Device')}
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold text-(--text-muted)">
                         {t('superadmin.sessions.expiresCol', 'Session expires')}
                       </th>
                       <th className="px-4 py-3 text-right text-xs font-semibold text-(--text-muted)"></th>
@@ -190,6 +193,19 @@ export function SessionsClient() {
                             <Globe className="h-3.5 w-3.5 text-(--text-muted)" />
                             {session.organizationName ?? '—'}
                           </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <p className="text-(--text-secondary)">
+                            {session.device ??
+                              t('superadmin.sessions.unknownDevice', 'Unknown device')}
+                          </p>
+                          {(session.ip || session.location) && (
+                            <p className="font-mono text-xs text-(--text-muted)">
+                              {session.ip ?? ''}
+                              {session.ip && session.location ? ' · ' : ''}
+                              {session.location ?? ''}
+                            </p>
+                          )}
                         </td>
                         <td className="px-4 py-3 text-(--text-muted)">
                           {formatDate(session.sessionExpiry)}

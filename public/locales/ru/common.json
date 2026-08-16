@@ -252,7 +252,10 @@
     "aiGovernance": "AI Управление",
     "news": "Новости",
     "assets": "Активы",
-    "modules": "Все модули"
+    "modules": "Все модули",
+    "controlCenter": "Центр управления",
+    "orgRequests": "Заявки на орг.",
+    "trash": "Корзина"
   },
   "mobileNav": {
     "menu": "Меню",

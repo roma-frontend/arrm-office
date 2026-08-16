@@ -4,8 +4,7 @@ import React, { useEffect, useLayoutEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { MessageSquareOff, Undo2 } from 'lucide-react';
+import { MessageSquareOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 import { useAuthStore, type User } from '@/store/useAuthStore';
@@ -109,6 +108,11 @@ const GlobalChatNotifier = dynamic(
 
 const StatusUpdateBanner = dynamic(
   () => import('@/components/StatusUpdateBanner').then((m) => m.StatusUpdateBanner),
+  { ssr: false, loading: () => null },
+);
+
+const ImpersonationBanner = dynamic(
+  () => import('@/components/auth/ImpersonationBanner').then((m) => m.ImpersonationBanner),
   { ssr: false, loading: () => null },
 );
 
@@ -237,17 +241,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
           <div className="flex-1 flex flex-col min-w-0 overflow-clip">
             {/* Navbar — ssr:false prevents theme/user/notification mismatch */}
             <Navbar />
-            {user?.impersonation?.active && (
-              <div className="fixed top-20 right-4 z-80">
-                <Link
-                  href="/superadmin/impersonate"
-                  className="inline-flex items-center gap-2 rounded-full border border-(--warning-outline) bg-(--warning-solid) text-black px-4 py-2 text-sm font-semibold shadow-lg transition hover:scale-[1.02] hover:bg-(--warning-solid)"
-                >
-                  <Undo2 className="h-4 w-4" />
-                  {t('superadmin.impersonate.exitMode')}
-                </Link>
-              </div>
-            )}
+            {/* Impersonation banner — always visible while acting as a user */}
+            {user && <ImpersonationBanner />}
             {/* Maintenance warning banner — below navbar, above content */}
             {user && <MaintenanceBanner />}
             {/* Frozen-organization lock screen — blocks every feature */}

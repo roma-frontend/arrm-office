@@ -122,8 +122,13 @@ export const users = {
     createdAt: v.number(),
     updatedAt: v.optional(v.number()),
     lastLoginAt: v.optional(v.number()),
+    // Soft delete: set by the superadmin trash instead of removing the row,
+    // so the account (and its data) can be restored.
+    deletedAt: v.optional(v.number()),
+    deletedBy: v.optional(v.id('users')),
   })
     .index('by_email', ['email'])
+    .index('by_deleted', ['deletedAt'])
     .index('by_org', ['organizationId'])
     .index('by_org_role', ['organizationId', 'role'])
     .index('by_org_active', ['organizationId', 'isActive'])

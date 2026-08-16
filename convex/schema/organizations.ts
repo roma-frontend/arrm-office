@@ -49,12 +49,18 @@ export const organizations = {
     frozenAt: v.optional(v.number()),
     frozenBy: v.optional(v.id('users')),
     frozenReason: v.optional(v.string()),
+    // Soft delete: set by the superadmin trash instead of removing the row, so
+    // the organization (and its users) can be restored. `deletedBy` records who
+    // moved it to trash.
+    deletedAt: v.optional(v.number()),
+    deletedBy: v.optional(v.id('users')),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index('by_slug', ['slug'])
     .index('by_plan', ['plan'])
-    .index('by_active', ['isActive']),
+    .index('by_active', ['isActive'])
+    .index('by_deleted', ['deletedAt']),
 
   // Tombstone + progress tracker for a superadmin hard delete. The purge runs
   // in batched internal mutations; this row makes it resumable and auditable.

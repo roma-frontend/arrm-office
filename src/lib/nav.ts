@@ -38,6 +38,7 @@ import {
   FileText,
   FolderKanban,
   Globe,
+  Gauge,
   GraduationCap,
   Heart,
   HelpCircle,
@@ -58,6 +59,7 @@ import {
   Settings,
   ShieldCheck,
   Sparkles,
+  Trash2,
   Sun,
   Table2,
   Target,
@@ -371,6 +373,21 @@ export const navItems: NavEntry[] = [
         href: '/superadmin',
         labelKey: 'nav.superadminHub',
         icon: LayoutDashboard,
+      },
+      {
+        href: '/superadmin/control',
+        labelKey: 'nav.controlCenter',
+        icon: Gauge,
+      },
+      {
+        href: '/superadmin/org-requests',
+        labelKey: 'nav.orgRequests',
+        icon: ClipboardList,
+      },
+      {
+        href: '/superadmin/trash',
+        labelKey: 'nav.trash',
+        icon: Trash2,
       },
       { href: '/admin', labelKey: 'nav.admin', icon: ShieldCheck },
       {

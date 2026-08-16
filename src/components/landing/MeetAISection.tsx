@@ -108,8 +108,9 @@ export default function MeetAISection({ initialLanguage = 'en' }: { initialLangu
       </div>
 
       <div className="relative max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-        {/* ── Left: copy ── */}
-        <div className="section-fade">
+        {/* ── Copy — right column on desktop (alternates with the hero's
+            text-left/figure-right rhythm) ── */}
+        <div className="section-fade lg:order-2">
           <span className="section-eyebrow">{t('landing.meetAiEyebrow')}</span>
           <h2
             className="mt-3 text-3xl md:text-5xl font-black leading-tight tracking-tighter"
@@ -170,8 +171,8 @@ export default function MeetAISection({ initialLanguage = 'en' }: { initialLangu
           </ul>
         </div>
 
-        {/* ── Right: live chat demo ── */}
-        <div className="section-fade">
+        {/* ── Live chat demo — left column on desktop ── */}
+        <div className="section-fade lg:order-1">
           <div
             className="relative rounded-[1.75rem] overflow-hidden"
             style={{

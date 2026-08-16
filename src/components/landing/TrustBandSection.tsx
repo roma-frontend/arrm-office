@@ -119,13 +119,13 @@ export default function TrustBandSection({ initialLanguage = 'en' }: { initialLa
       <section
         className="relative border-y py-10 overflow-hidden"
         style={{ borderColor: 'var(--landing-card-border)' }}
-        aria-label="Companies that trust Strata"
+        aria-label="Teams that run on Strata"
       >
         <p
           className="text-center text-sm mb-8 tracking-wide uppercase"
           style={{ color: 'var(--landing-text-muted)' }}
         >
-          {t('landing.trustedBy')} {t('socialProof.companies')}
+          {t('landing.trustedBy')}
         </p>
         <div
           className="relative"

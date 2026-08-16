@@ -5,7 +5,7 @@ import { useLandingTranslation } from './useLandingTranslation';
 
 /* ── Inline SVG icons ─────────────────────────────────────────────────────── */
 
-function UsersIcon() {
+function GridIcon() {
   return (
     <svg
       width="20"
@@ -18,46 +18,10 @@ function UsersIcon() {
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-      <circle cx="9" cy="7" r="4" />
-      <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-    </svg>
-  );
-}
-function AwardIcon() {
-  return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <circle cx="12" cy="8" r="6" />
-      <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11" />
-    </svg>
-  );
-}
-function GaugeIcon() {
-  return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="m12 14 4-4" />
-      <path d="M3.34 19a10 10 0 1 1 17.32 0" />
+      <rect x="3" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="3" width="7" height="7" rx="1" />
+      <rect x="3" y="14" width="7" height="7" rx="1" />
+      <rect x="14" y="14" width="7" height="7" rx="1" />
     </svg>
   );
 }
@@ -80,31 +44,11 @@ function GlobeIcon() {
     </svg>
   );
 }
-function UsersSmallIcon() {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-      <circle cx="9" cy="7" r="4" />
-      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-    </svg>
-  );
-}
 function CheckBadgeIcon() {
   return (
     <svg
-      width="18"
-      height="18"
+      width="20"
+      height="20"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -118,11 +62,11 @@ function CheckBadgeIcon() {
     </svg>
   );
 }
-function PulseIcon() {
+function ZapIcon() {
   return (
     <svg
-      width="18"
-      height="18"
+      width="20"
+      height="20"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -131,12 +75,12 @@ function PulseIcon() {
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
     </svg>
   );
 }
 
-/* ── Count-up with suffix (e.g. "10,000+", "4.9/5", "99.9%") ──────────────── */
+/* ── Count-up with prefix/suffix (e.g. "58", "4", "99.7%", "<2s") ─────────── */
 
 function useCountUp(target: number, decimals: number, duration = 1800, start = false) {
   const [count, setCount] = useState(0);
@@ -163,6 +107,7 @@ interface Metric {
   label: string;
   color: string;
   barPct: number;
+  prefix?: string;
 }
 
 function LiveMetric({ metric, delay, index }: { metric: Metric; delay: number; index: number }) {
@@ -186,7 +131,7 @@ function LiveMetric({ metric, delay, index }: { metric: Metric; delay: number; i
     return () => obs.disconnect();
   }, []);
 
-  // Parse "10,000+" → 10000, "+" ; "4.9/5" → 4.9, "/5" ; "99.9%" → 99.9, "%"
+  // Parse "99.7%" → 99.7, "%" ; "2" → 2, ""
   const match = metric.value.match(/^([\d,.]+)(.*)$/);
   const rawNum = match?.[1]?.replace(/,/g, '') ?? '0';
   const decimals = rawNum.includes('.') ? rawNum.split('.')[1]!.length : 0;
@@ -222,7 +167,7 @@ function LiveMetric({ metric, delay, index }: { metric: Metric; delay: number; i
         transition: `opacity 0.6s cubic-bezier(0.22,1,0.36,1) ${delay}s, transform 0.6s cubic-bezier(0.22,1,0.36,1) ${delay}s, translate 0.4s cubic-bezier(0.22,1,0.36,1), scale 0.4s cubic-bezier(0.22,1,0.36,1), border-color 0.4s cubic-bezier(0.22,1,0.36,1), box-shadow 0.4s cubic-bezier(0.22,1,0.36,1)`,
       }}
       role="group"
-      aria-label={`${metric.value} ${metric.label}`}
+      aria-label={`${metric.prefix ?? ''}${metric.value} ${metric.label}`}
     >
       {/* Corner glow */}
       <div
@@ -255,7 +200,7 @@ function LiveMetric({ metric, delay, index }: { metric: Metric; delay: number; i
         className="text-3xl sm:text-4xl font-black tracking-tight tabular-nums"
         style={{ color: 'var(--landing-text-primary)' }}
       >
-        {visible ? `${count.toFixed(decimals)}${suffix}` : '0'}
+        {visible ? `${metric.prefix ?? ''}${count.toFixed(decimals)}${suffix}` : '0'}
       </div>
 
       <div className="mt-1 text-sm font-medium" style={{ color: 'var(--landing-text-secondary)' }}>
@@ -281,111 +226,41 @@ function LiveMetric({ metric, delay, index }: { metric: Metric; delay: number; i
   );
 }
 
-/* ── Live ticker — dashboard-style feed strip ─────────────────────────────── */
-
-const TICKER_KEYS = [
-  'liveTickerQ3',
-  'liveTickerBiometric',
-  'liveTickerPayroll',
-  'liveTickerAi',
-  'liveTickerLeave',
-  'liveTickerPulse',
-] as const;
-
-function LiveTicker({ t }: { t: (k: string) => string }) {
-  return (
-    <div className="relative overflow-hidden">
-      {/* Edge fades */}
-      <div
-        className="absolute left-0 top-0 bottom-0 w-16 z-10 pointer-events-none"
-        style={{ background: 'linear-gradient(to right, var(--landing-bg), transparent)' }}
-        aria-hidden="true"
-      />
-      <div
-        className="absolute right-0 top-0 bottom-0 w-16 z-10 pointer-events-none"
-        style={{ background: 'linear-gradient(to left, var(--landing-bg), transparent)' }}
-        aria-hidden="true"
-      />
-      <div className="flex w-max ticker-track gap-10" aria-hidden="true">
-        {[...TICKER_KEYS, ...TICKER_KEYS].map((key, i) => (
-          <span
-            key={i}
-            className="inline-flex items-center gap-2 text-xs font-medium whitespace-nowrap"
-            style={{ color: 'var(--landing-text-secondary)' }}
-          >
-            <span
-              className="w-1.5 h-1.5 rounded-full"
-              style={{ background: 'var(--success-text)', opacity: 0.8 }}
-            />
-            {t(`landing.${key}`)}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 /* ── Section ──────────────────────────────────────────────────────────────── */
 
 export default function LiveStatsSection({ initialLanguage = 'en' }: { initialLanguage?: string }) {
   const { t } = useLandingTranslation(initialLanguage);
 
+  // Honest product facts — everything here is verifiable from the product itself.
   const METRICS: Metric[] = [
     {
-      icon: UsersSmallIcon,
-      value: t('socialProof.activeUsersValue', '10,000+'),
-      label: t('socialProof.activeUsers'),
+      icon: GridIcon,
+      value: '58',
+      label: t('landing.metricModules', 'Modules'),
       color: '#2563eb',
       barPct: 92,
     },
     {
-      icon: AwardIcon,
-      value: '4.9/5',
-      label: t('socialProof.customerRating'),
-      color: '#f59e0b',
-      barPct: 98,
-    },
-    {
-      icon: GaugeIcon,
-      value: '99.9%',
-      label: t('socialProof.uptime'),
-      color: '#10b981',
-      barPct: 99,
-    },
-    {
       icon: GlobeIcon,
-      value: '50+',
-      label: t('socialProof.countries'),
-      color: '#2563eb',
+      value: '4',
+      label: t('landing.metricLanguages', 'Languages'),
+      color: '#06b6d4',
       barPct: 72,
     },
     {
-      icon: UsersIcon,
-      value: '500+',
-      label: t('landingExtra.statsEmployees'),
-      color: '#6366f1',
-      barPct: 85,
-    },
-    {
       icon: CheckBadgeIcon,
-      value: '99%',
-      label: t('landingExtra.statsAccuracy'),
+      value: '99.7%',
+      label: t('landing.metricAccuracy', 'Biometric accuracy'),
       color: '#10b981',
       barPct: 99,
     },
     {
-      icon: PulseIcon,
-      value: '24',
-      label: t('landingExtra.statsRealtime'),
-      color: '#06b6d4',
-      barPct: 88,
-    },
-    {
-      icon: GaugeIcon,
-      value: '360°',
-      label: t('landingExtra.statsAnalytics'),
-      color: '#8b5cf6',
-      barPct: 76,
+      icon: ZapIcon,
+      prefix: '<',
+      value: '2s',
+      label: t('landing.metricCheckin', 'Check-in time'),
+      color: '#6366f1',
+      barPct: 85,
     },
   ];
 
@@ -393,7 +268,7 @@ export default function LiveStatsSection({ initialLanguage = 'en' }: { initialLa
     <section
       className="relative px-6 md:px-12 py-10 md:py-14 overflow-hidden"
       id="stats"
-      aria-label="Platform statistics"
+      aria-label="Platform facts"
     >
       {/* Ambient orbs behind the panel */}
       <div
@@ -422,13 +297,13 @@ export default function LiveStatsSection({ initialLanguage = 'en' }: { initialLa
           className="mt-3 text-3xl md:text-4xl font-black tracking-tighter"
           style={{ color: 'var(--landing-text-primary)' }}
         >
-          {t('landing.trustedAt')} <span className="heading-gradient">{t('landing.scale')}</span>
+          {t('landing.factsTitle')}
         </h2>
         <p
           className="mt-3 text-base md:text-lg max-w-xl mx-auto"
           style={{ color: 'var(--landing-text-secondary)', opacity: 0.9 }}
         >
-          {t('socialProof.trustedBy')} {t('socialProof.companies')}
+          {t('landing.factsSubtitle')}
         </p>
       </div>
 
@@ -472,9 +347,6 @@ export default function LiveStatsSection({ initialLanguage = 'en' }: { initialLa
               {t('landing.liveSync', 'Live sync')}
             </span>
           </div>
-          <span className="text-xs font-medium" style={{ color: 'var(--landing-text-muted)' }}>
-            {t('socialProof.rating')} · {t('socialProof.reviews')}
-          </span>
         </div>
 
         {/* Metrics grid */}
@@ -485,11 +357,6 @@ export default function LiveStatsSection({ initialLanguage = 'en' }: { initialLa
           {METRICS.map((m, i) => (
             <LiveMetric key={m.label} metric={m} delay={i * 0.08} index={i} />
           ))}
-        </div>
-
-        {/* Live ticker */}
-        <div className="px-6 py-4 border-t" style={{ borderColor: 'var(--landing-card-border)' }}>
-          <LiveTicker t={t} />
         </div>
       </div>
     </section>

@@ -22,9 +22,11 @@ import {
   ArrowRight,
   Building2,
   CheckCircle2,
+  ClipboardList,
   Database,
   ExternalLink,
   FileText,
+  Gauge,
   Globe,
   History,
   Monitor,
@@ -33,6 +35,7 @@ import {
   Table2,
   Ticket,
   ToggleLeft,
+  Trash2,
   Users,
   Zap,
 } from 'lucide-react';
@@ -64,6 +67,19 @@ const LazyAudit = lazy(() =>
 const LazyImpersonate = lazy(() => import('@/components/superadmin/ImpersonationClient'));
 const LazyBulkActions = lazy(() => import('@/components/superadmin/BulkActionsClient'));
 const LazyAutomation = lazy(() => import('@/components/automation/AutomationClient'));
+const LazyControlCenter = lazy(() =>
+  import('@/components/superadmin/ControlCenterClient').then((m) => ({
+    default: m.ControlCenterClient,
+  })),
+);
+const LazyTrash = lazy(() =>
+  import('@/components/superadmin/TrashClient').then((m) => ({ default: m.TrashClient })),
+);
+const LazyOrgRequests = lazy(() =>
+  import('@/components/superadmin/OrgRequestsClient').then((m) => ({
+    default: m.OrgRequestsClient,
+  })),
+);
 // Tools whose UI lives in their page module (no separate client component).
 // They carry their own headings, so the sheet just hosts them as-is.
 const LazyBackups = lazy(() => import('@/app/(dashboard)/superadmin/backups/page'));
@@ -82,6 +98,24 @@ interface ToolDef {
 }
 
 const TOOL_LINKS: ToolDef[] = [
+  {
+    href: '/superadmin/control',
+    icon: Gauge,
+    key: 'controlCenter',
+    client: LazyControlCenter as React.ComponentType,
+  },
+  {
+    href: '/superadmin/org-requests',
+    icon: ClipboardList,
+    key: 'orgRequests',
+    client: LazyOrgRequests as React.ComponentType,
+  },
+  {
+    href: '/superadmin/trash',
+    icon: Trash2,
+    key: 'trash',
+    client: LazyTrash as React.ComponentType,
+  },
   {
     href: '/superadmin/database',
     icon: Table2,

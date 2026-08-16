@@ -7,7 +7,7 @@
     "heroSubtitle": "Align your company vision with daily execution. Cascade OKRs from the boardroom to every employee, track progress in real-time, and drive performance that matters.",
     "getStartedFree": "Get Started Free",
     "watchDemo": "Watch Demo",
-    "trustedBy": "Trusted by 500+ companies worldwide",
+    "trustedBy": "Real teams running on Strata",
     "vacationTracking": "Vacation Tracking",
     "vacationDesc": "Track PTO, vacation days, and holidays",
     "mostUsed": "Most Used",
@@ -66,7 +66,6 @@
     "goToDashboard": "Go to Dashboard",
     "viewAnalytics": "View Analytics",
     "signIn": "Sign In",
-    "trustedByElite": "Trusted by elite HR professionals",
     "noCreditCard": "No credit card required",
     "freeToStart": "Free to start",
     "gdprReady": "GDPR-ready, EU hosting",
@@ -257,17 +256,9 @@
       }
     },
     "byTheNumbers": "By the Numbers",
-    "trustedAt": "Trusted at",
-    "scale": "Scale",
     "perfectlyManaged": "Perfectly Managed",
     "learnMore": "Learn More",
     "liveSync": "Live sync",
-    "liveTickerQ3": "Q3 OKR cascade synced to 48 teams",
-    "liveTickerBiometric": "Biometric check-in — 128 employees today",
-    "liveTickerPayroll": "Payroll run #12 approved",
-    "liveTickerAi": "AI assistant resolved 23 HR tickets",
-    "liveTickerLeave": "Leave request approved · Anna K.",
-    "liveTickerPulse": "Engagement pulse survey — 87% response",
     "solutionsMenu": {
       "title": "Solutions",
       "byTeam": "By team",
@@ -304,7 +295,7 @@
         },
         "customers": {
           "title": "Customers",
-          "desc": "Trusted by 500+ companies"
+          "desc": "Stories from HR teams using Strata"
         },
         "tour": {
           "title": "Product tour",
@@ -349,7 +340,13 @@
     "trustEuHosting": "EU hosting",
     "trustEuHostingDesc": "Data stays in the EU",
     "trustUptime": "99.9% uptime",
-    "trustUptimeDesc": "SLA-backed availability"
+    "trustUptimeDesc": "SLA-backed availability",
+    "factsTitle": "What Strata ships",
+    "factsSubtitle": "Real product data — no vanity metrics",
+    "metricModules": "Modules",
+    "metricLanguages": "Languages",
+    "metricAccuracy": "Biometric accuracy",
+    "metricCheckin": "Check-in time"
   },
   "landingExtra": {
     "myAccount": "My Account",
@@ -358,8 +355,6 @@
     "switchToDark": "Switch to dark mode",
     "signIn": "Sign In",
     "getStarted": "Get Started",
-    "everyLeaveType": "Every leave type,",
-    "featuresSubtitle": "From vacation days to medical appointments - track and manage every absence with precision and elegance.",
     "footerBrand": "Premium HR management platform for sophisticated teams.",
     "footerProduct": "Product",
     "footerPlatform": "Platform",
@@ -369,7 +364,6 @@
     "footerTerms": "Terms of Service",
     "footerTermsDesc": "Read our terms of service and conditions",
     "footerPrivacyDesc": "View our privacy policy and data protection information",
-    "socialProof": "500+ companies trust us",
     "footerRights": "All rights reserved.",
     "securityCenter": "Security Center",
     "securityCritical": "⚠ Critical",
@@ -388,19 +382,6 @@
     "footerSoc2": "SOC 2 Certified",
     "ctaTitle": "Ready to elevate your",
     "ctaTitleHighlight": "HR operations?",
-    "ctaSubtitle": "Join elite HR professionals who rely on Strata to manage their teams with sophistication.",
-    "statsEmployees": "Employees Tracked",
-    "statsAccuracy": "Accuracy Rate",
-    "statsRealtime": "Real-time Tracking",
-    "statsAnalytics": "Smart Analytics",
-    "hero": {
-      "eyebrow": "Modern HR Management",
-      "title": "Simplify HR with AI",
-      "subtitle": "All-in-one platform for leave management, attendance tracking, and team collaboration",
-      "cta": "Get Started Free",
-      "secondaryCta": "Watch Demo",
-      "trustedBy": "Trusted by 500+ companies worldwide"
-    },
     "features": {
       "title": "Everything you need",
       "subtitle": "Powerful features for modern teams",
@@ -484,17 +465,6 @@
         "stat3Value": "✓",
         "tab": "Doctor"
       }
-    },
-    "stats": {
-      "stat1": "500+ Companies",
-      "stat2": "50K+ Employees",
-      "stat3": "99.9% Uptime",
-      "stat4": "24/7 Support"
-    },
-    "cta": {
-      "title": "Ready to get started?",
-      "subtitle": "Join thousands of companies using our platform",
-      "button": "Start Free Trial"
     }
   },
   "pricing": {
@@ -594,7 +564,7 @@
   "testimonials": {
     "eyebrow": "Testimonials",
     "headingStart": "Loved by",
-    "headingHighlight": "elite HR teams",
+    "headingHighlight": "HR teams",
     "subtitle": "Don't just take our word for it - hear what our distinguished clients have to say.",
     "hoverToPause": "Hover to pause",
     "testimonial1": {
@@ -666,19 +636,7 @@
     "stillHaveQuestions": "Still have questions?",
     "contactSupport": "Contact Support"
   },
-  "socialProof": {
-    "activeUsers": "Active Users",
-    "customerRating": "Customer Rating",
-    "uptime": "Uptime",
-    "countries": "Countries",
-    "trustedBy": "Trusted by",
-    "companies": "companies worldwide",
-    "rating": "Rated 4.9/5",
-    "reviews": "from 1000+ reviews",
-    "customers": "Happy customers",
-    "growth": "Year over year growth",
-    "activeUsersValue": "10,000+"
-  },
+  "socialProof": {},
   "newsletter": {
     "title": "Stay in the loop",
     "subtitle": "Get the latest updates on HR trends, premium features, and exclusive insights delivered to your inbox.",
@@ -794,7 +752,7 @@
     "platformTitle": "Built for modern teams",
     "platformSubtitle": "Enterprise-grade features that scale with your organization",
     "ctaTitle": "Ready to transform your HR?",
-    "ctaSubtitle": "Join thousands of teams already using Strata to manage their people effectively.",
+    "ctaSubtitle": "Start free — no credit card required. Go live in minutes.",
     "ctaButton": "Start free trial",
     "ctaContact": "Contact sales",
     "modules": {

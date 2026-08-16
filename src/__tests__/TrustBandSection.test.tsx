@@ -70,7 +70,7 @@ describe('TrustBandSection', () => {
   it('has an accessible section label for the marquee', async () => {
     render(<TrustBandSection />);
     await waitFor(() => {
-      expect(screen.getByLabelText('Companies that trust Strata')).toBeInTheDocument();
+      expect(screen.getByLabelText('Teams that run on Strata')).toBeInTheDocument();
     });
   });
 });

@@ -16,6 +16,7 @@ import { v } from 'convex/values';
 import { mutation, query } from '../_generated/server';
 import { getAuthCaller } from '../lib/getAuthCaller';
 import { DEFAULT_LIST_CAP } from '../lib/limits';
+import { deviceLabel, locationLabel } from '../lib/device';
 
 async function requireSuperadmin(ctx: Parameters<typeof getAuthCaller>[0]) {
   const caller = await getAuthCaller(ctx);
@@ -31,6 +32,10 @@ async function requireSuperadmin(ctx: Parameters<typeof getAuthCaller>[0]) {
  * Every user currently holding an unexpired session token, newest login
  * first. Token values never leave the server — the client sees identity,
  * expiry and org, which is all revoking needs.
+ *
+ * Session intelligence: each row is enriched from the user's most recent
+ * login attempt — device (parsed user agent), IP address and country/city
+ * location — plus last activity time.
  */
 export const listActiveSessions = query({
   args: {
@@ -59,18 +64,36 @@ export const listActiveSessions = query({
       }),
     );
 
+    // Latest login attempt per active user → device / IP / location.
+    const lastAttempts = await Promise.all(
+      active.map((u) =>
+        ctx.db
+          .query('loginAttempts')
+          .withIndex('by_user', (q) => q.eq('userId', u._id))
+          .order('desc')
+          .first(),
+      ),
+    );
+
     return active
-      .slice(0, limit)
-      .map((u) => ({
-        userId: u._id,
-        name: u.name ?? 'Unknown',
-        email: u.email ?? '',
-        role: u.role,
-        organizationId: u.organizationId ?? undefined,
-        organizationName: u.organizationId ? orgMap.get(u.organizationId)?.name : undefined,
-        sessionExpiry: u.sessionExpiry!,
-      }))
-      .sort((a, b) => b.sessionExpiry - a.sessionExpiry);
+      .map((u, i) => {
+        const attempt = lastAttempts[i];
+        return {
+          userId: u._id,
+          name: u.name ?? 'Unknown',
+          email: u.email ?? '',
+          role: u.role,
+          organizationId: u.organizationId ?? undefined,
+          organizationName: u.organizationId ? orgMap.get(u.organizationId)?.name : undefined,
+          sessionExpiry: u.sessionExpiry!,
+          device: attempt?.userAgent ? deviceLabel(attempt.userAgent) : null,
+          ip: attempt?.ip ?? null,
+          location: locationLabel(attempt?.country, attempt?.city),
+          lastActiveAt: attempt?.createdAt ?? u.lastLoginAt ?? null,
+        };
+      })
+      .sort((a, b) => b.sessionExpiry - a.sessionExpiry)
+      .slice(0, limit);
   },
 });
 

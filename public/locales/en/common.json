@@ -252,7 +252,10 @@
     "aiGovernance": "AI Governance",
     "news": "News",
     "assets": "Assets",
-    "modules": "All modules"
+    "modules": "All modules",
+    "controlCenter": "Control Center",
+    "orgRequests": "Org requests",
+    "trash": "Trash"
   },
   "mobileNav": {
     "menu": "Menu",

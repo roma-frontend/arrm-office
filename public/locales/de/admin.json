@@ -601,6 +601,13 @@
         "reason": "Grund",
         "expiresAt": "Läuft ab",
         "targetUser": "Zielbenutzer"
+      },
+      "banner": {
+        "title": "Impersonationsmodus",
+        "actingAs": "Sie handeln als",
+        "returnTo": "Zurück zu",
+        "expiresIn": "Läuft ab in",
+        "expired": "Abgelaufen — wird beendet…"
       }
     },
     "bulkActions": {
@@ -920,7 +927,9 @@
       "revoking": "Beende…",
       "revokedAll": "{{count}} Sitzungen beendet",
       "noSessions": "Keine aktiven Sitzungen",
-      "noSessionsHint": "Momentan ist niemand angemeldet"
+      "noSessionsHint": "Momentan ist niemand angemeldet",
+      "deviceCol": "Gerät",
+      "unknownDevice": "Unbekanntes Gerät"
     },
     "audit": {
       "title": "Audit-Protokoll",
@@ -961,7 +970,10 @@
         "bulkActions": "Massenaktionen",
         "security": "Sicherheit",
         "automation": "Automatisierung",
-        "support": "Support"
+        "support": "Support",
+        "controlCenter": "Control Center",
+        "orgRequests": "Org-Anfragen",
+        "trash": "Papierkorb"
       },
       "liveActivity": "Live-Aktivität",
       "viewAll": "Alle anzeigen",
@@ -1021,6 +1033,139 @@
         "compensationModule": "Vergütungs-Modul",
         "compensationModuleDesc": "Gehaltsspannen, Reviews und Bonusprogramme"
       }
+    },
+    "controlCenter": {
+      "title": "Control Center",
+      "subtitle": "Alle Operator-Tools in einem Live-Cockpit",
+      "tabs": {
+        "monitor": "Monitor",
+        "security": "Sicherheit",
+        "sessions": "Sitzungen",
+        "users": "Benutzer",
+        "orgs": "Organisationen",
+        "audit": "Audit",
+        "export": "Export"
+      },
+      "per24h": "/24h",
+      "lastHour": "{{n}} letzte Stunde",
+      "justNow": "gerade eben",
+      "minAgo": "vor {{n}} Min.",
+      "hAgo": "vor {{n}} Std.",
+      "loading": "Lädt…",
+      "pulse": {
+        "logins": "Anmeldungen",
+        "registrations": "Registrierungen",
+        "newOrgs": "Neue Orgs",
+        "checkIns": "Check-ins",
+        "leaveRequests": "Urlaubsanträge",
+        "tasksCreated": "Erstellte Aufgaben"
+      },
+      "hotOrgs": "Aktivste Organisationen",
+      "noHotOrgs": "Noch keine Aktivität in den letzten 24h",
+      "actions": "Aktionen",
+      "health": "Plattform-Status",
+      "healthOrgs": "Organisationen",
+      "healthUsers": "Benutzer",
+      "healthSubs": "Aktive Abos",
+      "healthSessions": "Aktive Sitzungen",
+      "healthPendingLeaves": "Ausstehende Urlaube",
+      "healthTickets": "Offene Tickets",
+      "healthIncidents": "Aktive Vorfälle",
+      "healthTrials": "Trials laufen ab",
+      "quality": {
+        "title": "Datenqualität",
+        "excellent": "Hervorragend",
+        "good": "Gut",
+        "attention": "Handlungsbedarf",
+        "critical": "Kritisch"
+      },
+      "backup": {
+        "title": "Backup-Bereitschaft",
+        "total": "Backups",
+        "orgs": "Orgs gesichert",
+        "size": "Gesamtgröße",
+        "note": "Vollständige Datenbank- und Mitarbeiter-Snapshots werden auf der Backups-Seite verwaltet."
+      },
+      "security": {
+        "critical": "Kritisch",
+        "warn": "Warnungen",
+        "info": "Info",
+        "noAlerts": "Keine Sicherheitsereignisse in den letzten 24h — alles ruhig.",
+        "level": "Stufe",
+        "event": "Ereignis",
+        "actor": "Akteur / Details",
+        "when": "Wann",
+        "action": "Aktion"
+      },
+      "noSessions": "Niemand ist gerade angemeldet.",
+      "user": "Benutzer",
+      "role": "Rolle",
+      "org": "Organisation",
+      "status": "Status",
+      "blocked": "Gesperrt",
+      "active": "Aktiv",
+      "usersCount": "{{n}} Benutzer angezeigt",
+      "loadMore": "Mehr laden",
+      "industry": "Branche",
+      "users": "Benutzer",
+      "noAudit": "Keine Audit-Ereignisse erfasst.",
+      "export": {
+        "subtitle": "Flache Snapshots für Audits, Backups oder Analysen herunterladen — CSV öffnet in jeder Tabelle, JSON behält die volle Struktur.",
+        "users": "Benutzer",
+        "orgs": "Organisationen",
+        "sessions": "Sitzungen",
+        "audit": "Audit-Log",
+        "fullDump": "Vollständiger Snapshot",
+        "fullDumpDesc": "Alle vier Datensätze in einer JSON-Datei"
+      },
+      "rows": "Zeilen"
+    },
+    "trash": {
+      "title": "Papierkorb",
+      "subtitle": "Weich gelöschte Organisationen und Benutzer — wiederherstellen oder endgültig löschen",
+      "orgs": "Organisationen",
+      "users": "Benutzer",
+      "deleted": "Gelöscht",
+      "restore": "Wiederherstellen",
+      "purge": "Endgültig löschen",
+      "emptyOrgs": "Papierkorb ist leer",
+      "emptyUsers": "Papierkorb ist leer",
+      "allEmpty": "Der Papierkorb ist leer. Das Löschen einer Organisation oder eines Benutzers verschiebt sie hierher.",
+      "orgRestored": "Organisation wiederhergestellt",
+      "userRestored": "Benutzer wiederhergestellt",
+      "orgPurged": "Organisation endgültig gelöscht",
+      "userPurged": "Benutzer endgültig gelöscht",
+      "actionFailed": "Aktion fehlgeschlagen",
+      "slugMismatch": "Slug stimmt nicht überein — geben Sie den Org-Slug zur Bestätigung ein",
+      "typeSlug": "{{slug}} zur Bestätigung eingeben",
+      "purgeConfirm": "Endgültig löschen",
+      "confirmPurgeUser": "Diesen Benutzer endgültig löschen? Dies kann nicht rückgängig gemacht werden."
+    },
+    "orgRequests": {
+      "title": "Organisationsanfragen",
+      "subtitle": "Anfragen zur Registrierung einer neuen Organisation genehmigen oder ablehnen",
+      "status": {
+        "pending": "Ausstehend",
+        "approved": "Genehmigt",
+        "rejected": "Abgelehnt"
+      },
+      "empty": {
+        "pending": "Keine ausstehenden Anfragen",
+        "approved": "Keine genehmigten Anfragen",
+        "rejected": "Keine abgelehnten Anfragen"
+      },
+      "approve": "Genehmigen",
+      "reject": "Ablehnen",
+      "approved": "Organisation erstellt und Anfrage genehmigt",
+      "rejected": "Anfrage abgelehnt",
+      "actionFailed": "Aktion fehlgeschlagen",
+      "reasonRequired": "Geben Sie einen Ablehnungsgrund an",
+      "reasonPlaceholder": "Ablehnungsgrund (wird dem Antragsteller angezeigt)",
+      "confirmReject": "Anfrage ablehnen",
+      "submitted": "Eingereicht",
+      "reviewed": "Geprüft",
+      "viewOrg": "Organisation ansehen",
+      "team": "Team {{n}}"
     }
   },
   "superadminSecurity": {
