@@ -58,9 +58,11 @@ describe('TestimonialsSection', () => {
     mockShowcase = { logos: [], testimonials: [] };
     render(<TestimonialsSection />);
     // Placeholder cards render i18n keys (the mock returns the key itself),
-    // wrapped in the card's typographic quotes. The marquee duplicates the
-    // track, so every card appears twice — assert on the collection.
-    expect(screen.getAllByText('“testimonials.testimonial1.text”').length).toBeGreaterThan(0);
+    // wrapped in the card's typographic quotes (separate aria-hidden spans, so
+    // the quote text node stays clean for the landing editor). The marquee
+    // duplicates the track, so every card appears twice — assert on the
+    // collection with a regex that matches inside the quote spans.
+    expect(screen.getAllByText(/testimonials\.testimonial1\.text/).length).toBeGreaterThan(0);
     // Placeholder metric keys have no value in this mock (t returns the ''
     // fallback), so no metric chip renders — real curated rows carry their own.
   });
@@ -82,18 +84,19 @@ describe('TestimonialsSection', () => {
       ],
     };
     render(<TestimonialsSection />);
-    expect(screen.getAllByText('“Strata cut our HR admin time in half.”').length).toBeGreaterThan(
-      0,
-    );
+    expect(screen.getAllByText(/Strata cut our HR admin time in half\./).length).toBeGreaterThan(0);
     expect(screen.getAllByText('Jane Doe').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Head of People, Acme Corp').length).toBeGreaterThan(0);
+    // Role and company render as separate spans (each maps to its own i18n
+    // key in the editor), so assert the parts individually.
+    expect(screen.getAllByText('Head of People').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Acme Corp').length).toBeGreaterThan(0);
     expect(screen.getAllByText('$70k').length).toBeGreaterThan(0);
   });
 
   it('renders the i18n fallback while the showcase is still loading (undefined)', () => {
     mockShowcase = undefined;
     render(<TestimonialsSection />);
-    expect(screen.getAllByText('“testimonials.testimonial1.text”').length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/testimonials\.testimonial1\.text/).length).toBeGreaterThan(0);
   });
 
   it('renders the play/pause control and toggles the marquee state', () => {
