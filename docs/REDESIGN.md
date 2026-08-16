@@ -425,3 +425,100 @@ play/pause) and `TrustBandSection.test.tsx` (real logo + marquee/trust strip).
 
 /about in landing style; changelog can be generated from git history. Lower
 priority than 7.1–7.5.
+
+### 7.8 Honest numbers — no fabricated social proof ✅
+
+All made-up platform claims were removed or replaced with real product facts:
+
+- **LiveStats panel** — was 8 fabricated metrics (`10,000+ users`, `4.9/5`
+  rating, `50+ countries`, `500+ employees`, a ticker of invented events).
+  Now 4 honest facts in one format: **58 Modules · 4 Languages · 99.7%
+  Biometric accuracy · <2s Check-in time**. Ticker and the `Rated 4.9/5
+from 1000+ reviews` header are gone.
+- **`500+ companies`** removed everywhere it was repeated 4× (hero, navbar,
+  LiveStats, TrustBand header → now `Real teams running on Strata`).
+- **`Join thousands of teams/companies`** → `Start free — no credit card
+required` in final CTA and /features.
+- Dead components deleted: `CTABanner`, `SocialProof`, `StatsSection`,
+  `StatsCard` (landing) + their tests, and ~30 unused i18n keys across all 4
+  locales (parity kept).
+
+### 7.9 Section rhythm — zigzag layout ✅
+
+Two-column sections no longer stack text on the same side twice in a row:
+Hero (text left) → **MeetAI flipped** (chat left, text right) → centered
+LiveStats/TrustBand → ScrollStory (text left) → centered StrategyCascade →
+**Features bento flipped** (visual left, text right) → centered rest. Classic
+rhythm: alternating columns with centered "breaths" between them.
+
+## 8. Superadmin — operator console (benchmarked against builder-studio)
+
+Builder-studio's `/dashboard/control` was studied (control center, live pulse,
+security feed, exports, impersonation banner, trash, org-request queue) and
+its strongest ideas were ported. Result — two committed tiers:
+
+### 8.1 Tier 1 — Control Center `/superadmin/control` ✅
+
+One operator page, 7 tabs, in hub style (tokens, glass, smoothness):
+
+| Tab          | Contents                                                                                                                                                                                                                                              |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Monitor**  | Live pulse — 6 real metrics (logins, registrations, new orgs, check-ins, leave requests, tasks created) with 1h/24h windows and day-over-day trend arrows; top hot orgs; platform health (8 indicators); data-quality score per org; backup readiness |
+| **Security** | Leveled alert feed (critical/warn/info with counts): blocked/failed/high-risk logins, active impersonations, open incidents, role changes                                                                                                             |
+| **Sessions** | Who's logged in now + remote logout (reuses sessions module)                                                                                                                                                                                          |
+| **Users**    | Paginated user catalog with load-more                                                                                                                                                                                                                 |
+| **Orgs**     | Organizations with headcount and status                                                                                                                                                                                                               |
+| **Audit**    | Global audit journal (reuses `listGlobalAuditLogs`)                                                                                                                                                                                                   |
+| **Export**   | One-click **CSV/JSON** for users/orgs/sessions/audit + full 4-set snapshot                                                                                                                                                                            |
+
+Backend `convex/superadmin/controlCenter.ts`: `getControlPulse`,
+`getControlSecurity`, `getDataQuality`, `getControlExports` — all under the
+superadmin gate, read-only. Entry points: first item in the superadmin
+sidebar + hub card (opens as sheet and as full page).
+
+### 8.2 Tier 2 — impersonation banner + session intelligence ✅
+
+- **`ImpersonationBanner`** (global, mounted in `Providers`): pulsing
+  indicator, "acting as … · back to Root", **live expiry countdown** ticking
+  each second with auto-exit at 0:00, and a direct exit button that calls
+  `/api/auth/impersonation/end`. Survives reloads via the auth store.
+- **Session intelligence**: `listActiveSessions` now enriches each session
+  from the user's latest `loginAttempts` row — device (`Chrome · Windows`),
+  IP and location (`Yerevan, Armenia`), plus `lastActiveAt`. New
+  `convex/lib/device.ts` (UA parser helpers, tested). UI column "Device" with
+  IP/location in `SessionsClient` and Control Center → Sessions.
+
+### 8.3 Tier 2 — trash + org-request queue ✅
+
+- **Soft-delete trash** (`convex/superadmin/trash.ts`): `deletedAt` on
+  `organizations` and `users` with indexes; `listTrash`, `moveOrgToTrash`,
+  `moveUserToTrash`, `restoreOrg`, `restoreUser`, `purgeUser` (pagination over
+  dependent tables before a hard delete). UI `/superadmin/trash` with
+  Organizations/Users tabs, restore with confirmation, purge for users only.
+- **Org-request queue**: backend existed, no operator UI. New
+  `OrgRequestsClient` `/superadmin/org-requests` — Pending/Approved/Rejected
+  tabs with approve/reject and live updates; **pending-count badge** on the
+  nav item and hub card.
+
+### 8.4 Left from builder-studio (not started)
+
+- Access matrix (role × capability grid)
+- Data-quality drill-down per org
+- Session kill-all per user, device/IP columns already shipped (see 8.2)
+- Global alert routing (email/webhook) instead of in-app feed only
+
+All tiers shipped so far: tests in `convex-superadmin-control-center.test.ts`,
+`convex-lib-device.test.ts`, `convex-sessions-intel.test.ts`,
+`convex-superadmin-trash.test.ts`, `ControlCenterClient.test.tsx`,
+`ImpersonationBanner.test.tsx`, `SuperadminTrashOrgRequests.test.tsx`.
+
+## 9. Verification (local, before every push)
+
+- `npx tsc --noEmit` — 0 errors
+- `npx eslint` on touched files — clean
+- `npx jest --silent` — 415 suites / 9394 tests green
+- Coverage thresholds 69/61/63/70 — passed (70.05 / 61.57 / 64.02 / 71.2)
+- `npm run build` — ✓ 148 static pages
+- `npx convex dev --once` — dev deployment for localhost testing
+- CI: full pipeline green incl. E2E; Security Audit annotation is a stale
+  workflow-line label, the check-run itself is `success`
