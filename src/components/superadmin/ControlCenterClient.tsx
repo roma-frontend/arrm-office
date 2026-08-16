@@ -631,7 +631,6 @@ export function ControlCenterClient() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-(--border)/60 text-left text-xs uppercase tracking-widest text-muted-foreground">
-                    {' '}
                     <th className="px-4 py-3 font-semibold">
                       {t('superadmin.sessions.userCol', 'User')}
                     </th>
@@ -658,7 +657,7 @@ export function ControlCenterClient() {
                           {s.name}
                         </p>
                         <p className="text-xs text-muted-foreground">{s.email}</p>
-                      </td>{' '}
+                      </td>
                       <td className="hidden px-4 py-3 text-muted-foreground md:table-cell">
                         {s.organizationName ?? '—'}
                       </td>
