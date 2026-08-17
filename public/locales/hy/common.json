@@ -254,6 +254,7 @@
     "assets": "Ակտիվներ",
     "modules": "Բոլոր մոդուլները",
     "controlCenter": "Կառավարման կենտրոն",
+    "operatorTools": "Օպերատորի գործիքներ",
     "orgRequests": "Կազմ. հայտեր",
     "trash": "Զամբյուղ",
     "landingEditor": "Լենդինգի խմբագրիչ"
@@ -782,7 +783,7 @@
     "appearance": "Արտաքին տեսք",
     "language": "Լեզու",
     "timezone": "Ժամային գոտի",
-    "regenerate": "Regenerate"
+    "regenerate": "Վերարտադրել"
   },
   "time": {
     "today": "Այսօր",
@@ -898,7 +899,7 @@
     "saveChanges": "Պահպանել փոփոխությունները",
     "saveAllChanges": "Պահպանել բոլոր փոփոխությունները",
     "discardChanges": "Հրաժարվել փոփոխություններից",
-    "backToLogin": "Back to Login",
+    "backToLogin": "Վերադառնալ Մուտք",
     "allCaughtUp": "Ամեն ինչ պատրաստ է",
     "noPendingApprovals": "Չկան սպասվող հաստատումներ",
     "userApprovals": "Օգտատերերի հաստատում",
@@ -1848,7 +1849,7 @@
     "viewAll": "Դիտել բոլոր հաստիքները"
   },
   "chatWidget": {
-    "viewFullScreen": "View full response"
+    "viewFullScreen": "Դիտել ամբողջ պատասխանը"
   },
   "aiAgent": {
     "general": "Ընդհանուր",

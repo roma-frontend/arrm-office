@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
   <defs>
     <linearGradient id="appleGradPng" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#2563eb" />
-      <stop offset="100%" stop-color="#7c3aed" />
+      <stop offset="0%" stop-color="#1d73b0" />
+      <stop offset="100%" stop-color="#2c8cd5" />
     </linearGradient>
     <filter id="softGlowPng">
       <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
@@ -12,28 +12,28 @@
       </feMerge>
     </filter>
   </defs>
-  
+
   <!-- Background with rounded corners for iOS -->
   <rect width="256" height="256" fill="#ffffff" rx="60"/>
-  
+
   <!-- Subtle gradient background -->
   <rect width="256" height="256" fill="url(#appleGradPng)" rx="60" opacity="0.08"/>
-  
+
   <!-- Gradient Circle -->
   <circle cx="128" cy="128" r="110" fill="url(#appleGradPng)" opacity="0.12" filter="url(#softGlowPng)"/>
-  
+
   <!-- Main Logo Circle -->
   <circle cx="128" cy="128" r="100" fill="none" stroke="url(#appleGradPng)" stroke-width="2" opacity="0.25"/>
-  
+
   <!-- HR Text - Large and bold for iOS home screen -->
-  <text x="128" y="152" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="100" font-weight="700" text-anchor="middle" fill="#0a0a1a" letter-spacing="-2">
+  <text x="128" y="152" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="100" font-weight="700" text-anchor="middle" fill="#0c1a2e" letter-spacing="-2">
     HR
   </text>
-  
+
   <!-- Accent elements -->
   <circle cx="185" cy="90" r="7" fill="url(#appleGradPng)"/>
   <circle cx="95" cy="180" r="5" fill="url(#appleGradPng)" opacity="0.6"/>
-  
+
   <!-- Subtle shine effect -->
   <ellipse cx="100" cy="100" rx="60" ry="60" fill="white" opacity="0.03"/>
 </svg>

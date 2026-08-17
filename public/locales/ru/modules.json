@@ -1331,7 +1331,7 @@
     "candidate": {
       "addTitle": "Добавить кандидата",
       "name": "ФИО",
-      "email": "Email",
+      "email": "Электронная почта",
       "phone": "Телефон",
       "source": "Источник",
       "resume": "Резюме / Краткое описание",
@@ -1424,7 +1424,7 @@
     "formResume": "Резюме / Сопроводительное письмо",
     "resumePlaceholder": "Расскажите о себе, своём опыте и почему вас заинтересовала эта роль...",
     "consent": "Я согласен(на) на обработку персональных данных для целей подбора персонала.",
-    "cvLabel": "CV (PDF)",
+    "cvLabel": "Резюме (PDF)",
     "cvHint": "PDF до 10 МБ. HR рассмотрит его перед следующим этапом.",
     "cvMustBePdf": "CV должно быть в формате PDF",
     "cvTooLarge": "CV должно быть меньше 10 МБ",
@@ -1924,7 +1924,7 @@
       "freeTrial": "14 дней бесплатно",
       "securedFooter": "Платежи защищены Stripe · Отмена в любое время · Соответствие GDPR",
       "starter": {
-        "name": "Starter",
+        "name": "Стартовый",
         "description": "Идеально для небольших команд на старте",
         "button": "Начать бесплатный период",
         "features": [
@@ -1936,7 +1936,7 @@
         ]
       },
       "professional": {
-        "name": "Professional",
+        "name": "Профессиональный",
         "description": "Для растущих команд, которым нужно больше возможностей",
         "button": "Перейти на Professional",
         "features": [
@@ -1950,7 +1950,7 @@
         ]
       },
       "enterprise": {
-        "name": "Enterprise",
+        "name": "Корпоративный",
         "price": "Индивидуально",
         "description": "Решение для крупных организаций",
         "button": "Связаться с отделом продаж",
@@ -2272,7 +2272,7 @@
     "days": "дней",
     "conflicts": "Конфликты",
     "typeLabel": "Тип",
-    "status": "Status"
+    "status": "Статус"
   },
   "event": {
     "types": {
@@ -2363,7 +2363,7 @@
     "syncWithOutlook": "Синхронизировать с Outlook",
     "connectOutlook": "Подключить Outlook",
     "connected": "Подключено",
-    "pro": "Pro",
+    "pro": "Про",
     "noUpcoming": "Нет предстоящих отпусков для экспорта",
     "googleSuccess": "Успешно подключено к Google Calendar!",
     "outlookSuccess": "Успешно подключено к Outlook Calendar!",
@@ -3117,7 +3117,7 @@
       "title": "Быстрая помощь",
       "subtitle": "Другие способы получить помощь",
       "email": {
-        "title": "Email",
+        "title": "Электронная почта",
         "desc": "support@example.com"
       },
       "chat": {

@@ -96,7 +96,7 @@
     "noRecordsToday": "Keine Aufzeichnungen für heute",
     "allEmployeesRated": "Alle Mitarbeiter in diesem Monat bewertet! ✅",
     "checkBackNextMonth": "Kommen Sie nächsten Monat wieder, um die Bewertungen zu sehen",
-    "lastMonth": "Last Month",
+    "lastMonth": "Letzter Monat",
     "viewDetails": "Details ansehen"
   },
   "attendanceExtra": {
@@ -1400,7 +1400,7 @@
     "formResume": "Lebenslauf / Anschreiben",
     "resumePlaceholder": "Erzählen Sie uns von sich, Ihrer Erfahrung und warum Sie an dieser Rolle interessiert sind...",
     "consent": "Ich stimme der Verarbeitung personenbezogener Daten für Personalzwecke zu.",
-    "cvLabel": "CV (PDF)",
+    "cvLabel": "Lebenslauf (PDF)",
     "cvHint": "Eine PDF bis 10 MB. HR prüft sie vor dem nächsten Schritt.",
     "cvMustBePdf": "Das CV muss eine PDF sein",
     "cvTooLarge": "Das CV muss unter 10 MB sein",
@@ -1547,13 +1547,13 @@
     "stats": {
       "active": "Aktiv",
       "completed": "Abgeschlossen",
-      "templates": "Templates",
+      "templates": "Vorlagen",
       "mentees": "Meine Mentees"
     },
     "tabs": {
       "my": "Mein Onboarding",
       "programs": "Programme",
-      "templates": "Templates"
+      "templates": "Vorlagen"
     },
     "category": {
       "documentation": "Dokumentation",
@@ -1573,7 +1573,7 @@
     "wizard": {
       "title": "Onboarding starten",
       "step1": "Mitarbeiter",
-      "step2": "Template",
+      "step2": "Vorlage",
       "step3": "Details",
       "start": "Starten",
       "success": "Onboarding gestartet!"
@@ -1591,7 +1591,7 @@
       "templateHint": "Optional. Ohne Vorlage wird die eingebaute Checkliste verwendet.",
       "noTemplatesHint": "Noch keine Vorlagen — im Tab „Vorlagen“ anlegen oder ohne Vorlage fortfahren.",
       "employeeHint": "Der Benutzer muss bereits im System existieren",
-      "template": "Template",
+      "template": "Vorlage",
       "selectTemplate": "Template auswählen (optional)",
       "startDate": "Startdatum",
       "manager": "Manager",
@@ -1712,7 +1712,7 @@
     "edit": "Bearbeiten",
     "view": "Ansehen",
     "close": "Schließen",
-    "policyType": "Policy Type"
+    "policyType": "Richtlinientyp"
   },
   "documents": {
     "title": "Dokumentenverwaltung",
@@ -1862,8 +1862,8 @@
     "billing": "Abrechnung",
     "subscription": "Abonnement",
     "plan": "Plan",
-    "upgrade": "Upgrade",
-    "downgrade": "Downgrade",
+    "upgrade": "Aufrüsten",
+    "downgrade": "Herabstufen",
     "payment": "Zahlung",
     "invoice": "Rechnung",
     "receipt": "Quittung",
@@ -3102,16 +3102,16 @@
   },
   "support": {
     "categoryNames": {
-      "travel": "Travel",
-      "meals": "Meals",
-      "accommodation": "Accommodation",
+      "travel": "Reisen",
+      "meals": "Mahlzeiten",
+      "accommodation": "Unterkunft",
       "transport": "Transport",
-      "office_supplies": "Office Supplies",
+      "office_supplies": "Bürobedarf",
       "software": "Software",
-      "training": "Training",
-      "health": "Health",
-      "communication": "Communication",
-      "other": "Other"
+      "training": "Schulung",
+      "health": "Gesundheit",
+      "communication": "Kommunikation",
+      "other": "Sonstiges"
     },
     "categories": {
       "technical": "Technisches Problem",

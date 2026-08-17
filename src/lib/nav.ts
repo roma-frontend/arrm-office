@@ -71,6 +71,7 @@ import {
   UserMinus,
   Users,
   Wallet,
+  Wrench,
 } from 'lucide-react';
 
 export type UserRole = 'superadmin' | 'admin' | 'supervisor' | 'employee' | 'driver';
@@ -379,6 +380,11 @@ export const navItems: NavEntry[] = [
         href: '/superadmin/control',
         labelKey: 'nav.controlCenter',
         icon: Gauge,
+      },
+      {
+        href: '/superadmin/operator-tools',
+        labelKey: 'nav.operatorTools',
+        icon: Wrench,
       },
       {
         href: '/superadmin/landing-editor',

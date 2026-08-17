@@ -37,17 +37,30 @@ jest.mock('react-i18next', () => {
   return {
     useTranslation: () => ({
       t: (key: string, fallback?: string) => KEY_MAP[key] ?? fallback ?? key,
-      i18n: {
-        language: 'en',
-        options: { ns: ['common'] },
-        getResourceBundle: () => ({
-          notifications: { saved: 'Saved' },
-          dashboard: { greeting: 'Hello' },
-          leaves: { title: 'Leaves' },
-        }),
-      },
+      i18n: { language: 'en' },
     }),
   };
+});
+
+// The translations studio now reads locale bundles straight from the JSON files
+// (public/locales/*) rather than from the live i18next resources, so the tests
+// serve a minimal bundle per namespace over a mocked fetch.
+const MOCK_BUNDLES: Record<string, Record<string, unknown>> = {
+  common: { notifications: { saved: 'Saved' } },
+  dashboard: { greeting: 'Hello' },
+  leaves: { title: 'Leaves' },
+};
+
+beforeEach(() => {
+  global.fetch = jest.fn(async (input: any) => {
+    const url = String(input);
+    const match = /\/locales\/(en|ru|de|hy)\/([a-z]+)\.json$/.exec(url);
+    const bundle = match ? MOCK_BUNDLES[match[2]] : undefined;
+    return {
+      ok: !!bundle,
+      json: async () => bundle ?? {},
+    } as Response;
+  }) as unknown as typeof fetch;
 });
 
 let overridesData: any[] = [];
@@ -118,7 +131,7 @@ describe('OperatorToolsClient', () => {
     expect(screen.getByText('Key')).toBeTruthy();
   });
 
-  it('renders AI-translate buttons on non-English locale cells', () => {
+  it('renders AI-translate buttons on non-English locale cells', async () => {
     overridesData = [
       {
         _id: 'ov-1',
@@ -131,7 +144,8 @@ describe('OperatorToolsClient', () => {
     ];
     render(<OperatorToolsClient />);
     // The ru cell has an override → shows the revert ✕; every non-EN cell
-    // shows the AI sparkle button.
+    // shows the AI sparkle button. Rows render after the locale files load.
+    await screen.findAllByText('Saved');
     const aiButtons = document.querySelectorAll('button[title="Translate with AI"]');
     expect(aiButtons.length).toBeGreaterThanOrEqual(3);
   });

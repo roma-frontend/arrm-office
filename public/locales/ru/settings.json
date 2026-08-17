@@ -116,7 +116,7 @@
     "avatarUpdated": "Аватар успешно обновлен!"
   },
   "settingsSecurity": {
-    "touchId": "Touch ID / Fingerprint",
+    "touchId": "Touch ID / Отпечаток пальца",
     "touchIdDesc": "Зарегистрируйте биометрическую аутентификацию для быстрого и безопасного входа",
     "touchIdEnable": "Включите Touch ID или отпечаток пальца для более быстрого и безопасного входа",
     "biometricRegistered": "Биометрическая аутентификация успешно зарегистрирована!",
@@ -230,13 +230,13 @@
   },
   "settingsAdvancedSecurity": {
     "twoFactor": "Двухфакторная аутентификация",
-    "twoFactorDesc": "Add an extra layer of security to your account",
+    "twoFactorDesc": "Добавьте дополнительный уровень безопасности для вашего аккаунта",
     "enable2fa": "Включить 2FA",
-    "enable2faDesc": "Require a verification code in addition to your password",
-    "choose2fa": "Choose 2FA Method:",
-    "smsSms": "SMS Text Message",
-    "emailCode": "Email Code",
-    "authenticatorApp": "Authenticator App (Google, Microsoft)",
+    "enable2faDesc": "Запрашивать код подтверждения в дополнение к паролю",
+    "choose2fa": "Выберите метод 2FA:",
+    "smsSms": "SMS-сообщение",
+    "emailCode": "Код по электронной почте",
+    "authenticatorApp": "Приложение-аутентификатор (Google, Microsoft)",
     "activeSessions": "Активные сессии",
     "activeSessionsDesc": "Управление устройствами, вошедшими в вашу учетную запись",
     "active": "активных",
@@ -288,11 +288,11 @@
     "refreshDataManually": "Обновить данные вручную"
   },
   "localizationSettings": {
-    "english": "🇺🇸 English",
+    "english": "🇺🇸 Английский",
     "russian": "🇷🇺 Русский",
     "spanish": "🇪 Español",
-    "french": "🇫🇷 Français",
-    "german": "🇩🇪 Deutsch",
+    "french": "🇫🇷 Французский",
+    "german": "🇩🇪 Немецкий",
     "chinese": "🇨🇳 中文",
     "japanese": "🇯🇵 日本語",
     "arabic": "🇸🇦 العربية",
@@ -362,8 +362,8 @@
     "expand": "Развернуть боковую панель",
     "collapse": "Свернуть боковую панель",
     "orgName": "Название организации",
-    "orgSubtitle": "HR Management",
-    "orgSubtitleFull": "HR Management System",
+    "orgSubtitle": "Управление персоналом",
+    "orgSubtitleFull": "Система управления персоналом",
     "search": "Поиск..."
   },
   "presence": {

@@ -83,7 +83,7 @@
     "analytics": "Аналитика",
     "reports": "Отчеты",
     "metrics": "Метрики",
-    "kpi": "KPI",
+    "kpi": "КПИ",
     "widgets": "Виджеты",
     "recent": "Недавние",
     "upcoming": "Предстоящие",
@@ -299,7 +299,7 @@
     "analysis": "Анализ",
     "insights": "Аналитика",
     "metrics": "Метрики",
-    "kpi": "KPI"
+    "kpi": "КПИ"
   },
   "reportsAnalytics": {
     "reportsAnalytics": "Отчеты и аналитика",

@@ -39,7 +39,14 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetBody,
+  SheetDescription,
+  SheetTitle,
+} from '@/components/ui/sheet';
 import {
   Select,
   SelectContent,
@@ -1036,40 +1043,39 @@ export default function HiringPacketPanel({ userId, canManage }: HiringPacketPan
 
         {/* Preview panel — a document deserves a full-height reading pane */}
         <Sheet open={previewRow !== null} onOpenChange={(open) => !open && setPreviewRow(null)}>
-          <SheetContent
-            side="right"
-            size="xl"
-            closeLabel={t('common.close', 'Close')}
-            className="overflow-y-auto"
-          >
+          <SheetContent side="right" size="xl" closeLabel={t('common.close', 'Close')}>
             {previewRow &&
               (() => {
                 const doc = buildDoc(previewRow);
                 if (!doc) {
                   return (
                     <>
-                      <SheetTitle>
-                        {t('hiringPacket.buildFailed', 'Could not build this document')}
-                      </SheetTitle>
-                      <SheetDescription>
-                        {t(
-                          'hiringPacket.buildFailedHint',
-                          'The stored content is unreadable. Revert to the standard template.',
-                        )}
-                      </SheetDescription>
+                      <SheetHeader>
+                        <SheetTitle>
+                          {t('hiringPacket.buildFailed', 'Could not build this document')}
+                        </SheetTitle>
+                        <SheetDescription>
+                          {t(
+                            'hiringPacket.buildFailedHint',
+                            'The stored content is unreadable. Revert to the standard template.',
+                          )}
+                        </SheetDescription>
+                      </SheetHeader>
                     </>
                   );
                 }
                 return (
                   <>
-                    <SheetTitle className="pr-8">{doc.title}</SheetTitle>
-                    <SheetDescription>
-                      {orgName}
-                      {doc.documentNumber && <> · {doc.documentNumber}</>}
-                    </SheetDescription>
-                    <div className="mt-4">
+                    <SheetHeader>
+                      <SheetTitle className="pr-8">{doc.title}</SheetTitle>
+                      <SheetDescription>
+                        {orgName}
+                        {doc.documentNumber && <> · {doc.documentNumber}</>}
+                      </SheetDescription>
+                    </SheetHeader>
+                    <SheetBody>
                       <DocumentPreview doc={doc} />
-                    </div>
+                    </SheetBody>
                   </>
                 );
               })()}

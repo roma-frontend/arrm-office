@@ -249,7 +249,7 @@
     "deactivatedNoAccess": "Deaktiviert — kein Zugriff"
   },
   "employeeInfo": {
-    "email": "Email",
+    "email": "E‑Mail",
     "phone": "Telefon",
     "department": "Abteilung",
     "joined": "Beigetreten",
@@ -308,7 +308,7 @@
     "efficiencyBreakdown": "Effizienzaufgliederung",
     "ratePerformance": "Leistung bewerten",
     "cancelRating": "Bewertung abbrechen",
-    "email": "Email",
+    "email": "E‑Mail",
     "phone": "Telefon",
     "department": "Abteilung",
     "joined": "Beigetreten",
@@ -395,7 +395,7 @@
   "roles": {
     "superAdmin": "Superadministrator",
     "admin": "Administrator",
-    "supervisor": "Supervisor",
+    "supervisor": "Vorgesetzter",
     "supervisors": "Supervisoren",
     "employee": "Mitarbeiter",
     "driver": "Fahrer"

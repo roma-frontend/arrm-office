@@ -1,4 +1,4 @@
-﻿import { ImageResponse } from 'next/og';
+import { ImageResponse } from 'next/og';
 
 export const runtime = 'edge';
 
@@ -10,7 +10,7 @@ export default function Image() {
   return new ImageResponse(
     <div
       style={{
-        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)',
+        background: 'linear-gradient(135deg, #191b1d 0%, #242729 50%, #191b1d 100%)',
         width: '100%',
         height: '100%',
         display: 'flex',
@@ -29,7 +29,7 @@ export default function Image() {
           width: 80,
           height: 80,
           borderRadius: 20,
-          background: 'linear-gradient(135deg, #2c8cd5, #1d73b0)',
+          background: 'linear-gradient(135deg, #006db4, #2c8cd5)',
           marginBottom: 32,
           fontSize: 36,
           fontWeight: 800,
@@ -45,7 +45,7 @@ export default function Image() {
           display: 'flex',
           fontSize: 56,
           fontWeight: 800,
-          color: '#e8f0fe',
+          color: '#f0f2f4',
           textAlign: 'center',
           letterSpacing: '-0.02em',
           marginBottom: 16,
@@ -60,7 +60,7 @@ export default function Image() {
           display: 'flex',
           fontSize: 28,
           fontWeight: 400,
-          color: '#7ab3f5',
+          color: '#58acf1',
           textAlign: 'center',
           marginBottom: 48,
         }}
@@ -74,7 +74,7 @@ export default function Image() {
           display: 'flex',
           gap: 32,
           fontSize: 20,
-          color: '#94a3b8',
+          color: '#9a9fa4',
         }}
       >
         <div>📊 Attendance</div>
@@ -90,7 +90,7 @@ export default function Image() {
           bottom: 40,
           display: 'flex',
           fontSize: 18,
-          color: '#475569',
+          color: '#51565b',
           gap: 8,
         }}
       >

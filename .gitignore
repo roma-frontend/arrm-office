@@ -80,6 +80,8 @@ scripts/*
 # Generates convex/lib/localeCatalog.ts from public/locales — npm run
 # build:convex-locales, and `-- --check` in CI to catch a stale catalog.
 !scripts/build-convex-locales.mjs
+# Bulk-translates untranslated locale keys via the AI providers (ru/de/hy).
+!scripts/translate-untranslated.mjs
 .vercel
 .env*.local
 

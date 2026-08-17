@@ -656,14 +656,17 @@ export default function TeamClient() {
           {isLoading ? (
             <div
               className={cn(
-                'grid gap-3',
-                view === 'grid' ? 'sm:grid-cols-2 2xl:grid-cols-3' : 'grid-cols-1',
+                'grid',
+                view === 'grid' ? 'gap-3 sm:grid-cols-2 2xl:grid-cols-3' : 'gap-1.5 grid-cols-1',
               )}
             >
               {Array.from({ length: 6 }).map((_, index) => (
                 <div
                   key={index}
-                  className="h-28 animate-pulse rounded-2xl border border-(--border)"
+                  className={cn(
+                    'animate-pulse rounded-2xl border border-(--border)',
+                    view === 'grid' ? 'h-28' : 'h-10',
+                  )}
                   style={{ background: 'var(--background-subtle)' }}
                 />
               ))}
@@ -699,8 +702,8 @@ export default function TeamClient() {
           ) : (
             <div
               className={cn(
-                'grid gap-3',
-                view === 'grid' ? 'sm:grid-cols-2 2xl:grid-cols-3' : 'grid-cols-1',
+                'grid',
+                view === 'grid' ? 'gap-3 sm:grid-cols-2 2xl:grid-cols-3' : 'gap-1.5 grid-cols-1',
               )}
             >
               {visible.map((member, index) => (
@@ -913,6 +916,109 @@ function MemberCard({
   const presenceCfg = PRESENCE[presence];
   const RoleIcon = ROLE_ICON[member.role] ?? User;
   const tint = roleTint(member.role);
+
+  // List mode is a true directory: one slim row per person, so a large team
+  // stays on screen instead of turning into an endless scroll of big cards.
+  if (compact) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay }}
+        className="group relative overflow-hidden rounded-xl border border-(--border) transition-colors hover:border-(--primary)/45 hover:bg-(--background-subtle)/60"
+        style={{ background: 'var(--card)' }}
+      >
+        {/* Role stripe: keeps the colour-coding from the grid card. */}
+        <span
+          aria-hidden
+          className="absolute inset-y-0 left-0 w-[3px]"
+          style={{ background: tint }}
+        />
+
+        <Link
+          href={`/employees/${member._id}`}
+          className="flex items-center gap-3 px-4 py-2 pl-5 focus:outline-none focus-visible:ring-2 focus-visible:ring-(--primary)/40"
+        >
+          <span className="relative shrink-0">
+            <Avatar
+              name={member.name}
+              src={member.avatarUrl ?? member.faceImageUrl}
+              role={member.role}
+              size={30}
+              ring={isMe ? 'rgba(44,140,213,0.35)' : undefined}
+            />
+            <span
+              aria-hidden
+              className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-(--card)"
+              style={{ background: presenceCfg.dot }}
+            />
+          </span>
+
+          <span className="flex min-w-0 flex-1 items-center gap-2">
+            <span className="truncate text-sm font-semibold text-(--text-primary)">
+              {member.name}
+            </span>
+            {isMe && (
+              <span
+                className="shrink-0 rounded-full px-1.5 py-px text-[10px] font-bold"
+                style={{ background: 'rgba(44,140,213,0.14)', color: 'var(--primary)' }}
+              >
+                {t('team.you', { defaultValue: 'You' })}
+              </span>
+            )}
+            <span className="hidden min-w-0 truncate text-xs text-(--text-muted) sm:block">
+              {member.position || t(`roles.${member.role}`, { defaultValue: member.role })}
+            </span>
+          </span>
+
+          {member.department && (
+            <span className="hidden items-center gap-1 text-[11px] text-(--text-muted) md:inline-flex">
+              <Building2 className="h-3 w-3 shrink-0" />
+              <span className="truncate">{member.department}</span>
+            </span>
+          )}
+
+          {(away || birthday) && (
+            <span className="hidden items-center gap-1.5 lg:inline-flex">
+              {away && (
+                <span
+                  className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold"
+                  style={{ background: 'var(--danger-quiet)', color: 'var(--danger-text)' }}
+                >
+                  <PlaneTakeoff className="h-2.5 w-2.5" />
+                  {outToday
+                    ? t('team.backOn', {
+                        defaultValue: 'Back {{date}}',
+                        date: formatShortDate(away.endDate),
+                      })
+                    : t('team.awayFrom', {
+                        defaultValue: 'Away {{date}}',
+                        date: formatShortDate(away.startDate),
+                      })}
+                </span>
+              )}
+              {birthday && (
+                <span
+                  className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold"
+                  style={{ background: 'var(--warning-quiet)', color: 'var(--warning-text)' }}
+                >
+                  <Cake className="h-2.5 w-2.5" />
+                  {birthday.isToday
+                    ? t('team.birthdayToday', { defaultValue: 'Today' })
+                    : t('team.inDays', { defaultValue: 'in {{days}}d', days: birthday.daysUntil })}
+                </span>
+              )}
+            </span>
+          )}
+
+          <span className="ml-auto hidden min-w-0 items-center gap-1.5 text-[11px] font-medium text-(--text-muted) xl:inline-flex">
+            <Mail className="h-3 w-3 shrink-0" />
+            <span className="truncate">{member.email}</span>
+          </span>
+        </Link>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div

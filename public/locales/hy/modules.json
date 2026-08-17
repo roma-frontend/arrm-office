@@ -1712,7 +1712,7 @@
     "edit": "Խմբագրել",
     "view": "Դիտել",
     "close": "Փակել",
-    "policyType": "Policy Type"
+    "policyType": "Պոլիսի տեսակ"
   },
   "documents": {
     "title": "Փաստաթղթերի կառավարում",
@@ -1900,7 +1900,7 @@
       "freeTrial": "14-օրյա անվճար փորձաշրջան",
       "securedFooter": "Վճարումներն ապահովագրված են Stripe-ով · Չեղարկեք ցանկացած պահ · GDPR համապատասխան",
       "starter": {
-        "name": "Starter",
+        "name": "Ստարտեր",
         "description": "Իդեալական փոքր թիմերի համար, որոնք նոր են սկսում",
         "button": "Սկսել անվճար փորձաշրջանը",
         "features": [
@@ -1912,7 +1912,7 @@
         ]
       },
       "professional": {
-        "name": "Professional",
+        "name": "Պրոֆեսիոնալ",
         "description": "Աճող թիմերի համար, որոնց անհրաժեշտ են ավելի շատ հնարավորություններ",
         "button": "Անցնել Professional-ի",
         "features": [
@@ -2248,7 +2248,7 @@
     "days": "օր",
     "conflicts": "Հակասություններ",
     "typeLabel": "Տեսակ",
-    "status": "Status"
+    "status": "Կարգավիճակ"
   },
   "event": {
     "types": {
@@ -3083,7 +3083,7 @@
       "title": "Արագ օգնություն",
       "subtitle": "Օգնություն ստանալու այլ եղանակներ",
       "email": {
-        "title": "Email",
+        "title": "էլփոստ",
         "desc": "support@example.com"
       },
       "chat": {
@@ -3102,16 +3102,16 @@
   },
   "support": {
     "categoryNames": {
-      "travel": "Travel",
-      "meals": "Meals",
-      "accommodation": "Accommodation",
-      "transport": "Transport",
-      "office_supplies": "Office Supplies",
-      "software": "Software",
-      "training": "Training",
-      "health": "Health",
-      "communication": "Communication",
-      "other": "Other"
+      "travel": "Տուր",
+      "meals": "Ելք",
+      "accommodation": "Բնակարան",
+      "transport": "Տրանսպորտ",
+      "office_supplies": "Օֆիսային նյութեր",
+      "software": "Ծրագրային ապահովում",
+      "training": "Կրթություն",
+      "health": "Բարיאות",
+      "communication": "Հաղորդակցություն",
+      "other": "Այլ"
     },
     "categories": {
       "technical": "Տեխնիկական խնդիր",
@@ -3220,7 +3220,7 @@
   "plan": {
     "starter10Employees": "Starter (10 աշխատակից)",
     "professional50Employees": "Professional (50 աշխատակից)",
-    "enterprise100Plus": "Enterprise (100+)"
+    "enterprise100Plus": "Ընդհանուր (100+)"
   },
   "planGate": {
     "upgradeRequired": "Անհրաժեշտ է թարմացում",

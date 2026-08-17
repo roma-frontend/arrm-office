@@ -116,7 +116,7 @@
     "avatarUpdated": "Avatar erfolgreich aktualisiert!"
   },
   "settingsSecurity": {
-    "touchId": "Touch ID / Fingerprint",
+    "touchId": "Touch ID / Fingerabdruck",
     "touchIdDesc": "Registrieren Sie die biometrische Authentifizierung für einen schnellen und sicheren Login",
     "touchIdEnable": "Aktivieren Sie Touch ID oder Fingerabdruck für einen schnelleren und sichereren Login",
     "biometricRegistered": "Biometrische Authentifizierung erfolgreich registriert!",
@@ -236,7 +236,7 @@
     "choose2fa": "Wählen Sie die 2FA-Methode:",
     "smsSms": "SMS-Nachrichten",
     "emailCode": "E-Mail-Code",
-    "authenticatorApp": "Authenticator App (Google, Microsoft)",
+    "authenticatorApp": "Authenticator-App (Google, Microsoft)",
     "activeSessions": "Aktive Sitzungen",
     "activeSessionsDesc": "Verwaltung der Geräte, die in Ihrem Konto angemeldet sind",
     "active": "aktiv",
@@ -288,10 +288,10 @@
     "refreshDataManually": "Daten manuell aktualisieren"
   },
   "localizationSettings": {
-    "english": "🇺🇸 English",
+    "english": "🇺🇸 Englisch",
     "russian": "🇷🇺 Русский",
     "spanish": "🇪 Español",
-    "french": "🇫🇷 Français",
+    "french": "🇫🇷 Französisch",
     "german": "🇩🇪 Deutsch",
     "chinese": "🇨🇳 中文",
     "japanese": "🇯🇵 日本語",

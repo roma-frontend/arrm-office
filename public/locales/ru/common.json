@@ -254,6 +254,7 @@
     "assets": "Активы",
     "modules": "Все модули",
     "controlCenter": "Центр управления",
+    "operatorTools": "Инструменты оператора",
     "orgRequests": "Заявки на орг.",
     "trash": "Корзина",
     "landingEditor": "Редактор лендинга"
@@ -550,7 +551,7 @@
     "registered": "Зарегистрирован",
     "leaveBalances": "Остатки отпусков",
     "phone": "Телефон",
-    "email": "Email",
+    "email": "Электронная почта",
     "dates": "Даты",
     "to": "Кому",
     "approved": "Одобрено"
@@ -1683,7 +1684,7 @@
     "failedLogins": "Неудачные входы",
     "lastIncident": "Последний инцидент",
     "monitor": "Монитор безопасности",
-    "live": "Live"
+    "live": "В реальном времени"
   },
   "productivity": {
     "breakTime": "Время перерыва! ☕",
@@ -1879,7 +1880,7 @@
     "policyDesc": "Политики компании, комплаенс и документы",
     "analytics": "Аналитика",
     "analyticsDesc": "Отчёты, тренды и аналитика данных",
-    "kpi": "KPI",
+    "kpi": "КПИ",
     "kpiDesc": "OKR, цели и стратегия эффективности",
     "hint": "Специализированные агенты для задач в конкретных доменах"
   },
@@ -1962,7 +1963,7 @@
     "filterGeneral": "Общий",
     "filterRecruitment": "Рекрутинг",
     "filterPolicy": "Политики",
-    "filterKpi": "KPI",
+    "filterKpi": "КПИ",
     "actionAnalyticsQuery": "Аналитический запрос",
     "actionCandidatesSearch": "Поиск кандидатов",
     "actionPolicyLookup": "Поиск политик",

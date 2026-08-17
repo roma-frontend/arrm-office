@@ -331,8 +331,8 @@
     "veryGood": "Sehr gut",
     "excellent": "Ausgezeichnet",
     "timeValidation": {
-      "en": "🇬🇧 Start time must be earlier than end time",
-      "ru": "🇷🇺 Время начала должно быть раньше времени окончания",
+      "en": "🇬🇧 Startzeit muss vor der Endzeit liegen",
+      "ru": "🇷🇺 Startzeit muss vor der Endzeit liegen",
       "hy": "🇦🇲 Սկիզբի ժամանակը պետք է ավելի վաղ լինի, քան ավարտի ժամանակը"
     },
     "pleaseSelectDriver": "Bitte wählen Sie einen Fahrer",

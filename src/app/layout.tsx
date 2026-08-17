@@ -45,7 +45,7 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://strata.work';
 export const viewport: Viewport = {
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#2c8cd5' },
-    { media: '(prefers-color-scheme: dark)', color: '#60a5fa' },
+    { media: '(prefers-color-scheme: dark)', color: '#2c8cd5' },
   ],
   width: 'device-width',
   initialScale: 1,

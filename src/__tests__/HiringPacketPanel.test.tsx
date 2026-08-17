@@ -172,6 +172,8 @@ jest.mock('@/components/ui/sheet', () => ({
       {children}
     </div>
   ),
+  SheetHeader: ({ children }: any) => <div>{children}</div>,
+  SheetBody: ({ children }: any) => <div>{children}</div>,
   SheetTitle: ({ children }: any) => <div>{children}</div>,
   SheetDescription: ({ children }: any) => <div>{children}</div>,
 }));

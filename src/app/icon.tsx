@@ -1,4 +1,4 @@
-﻿import { ImageResponse } from 'next/og';
+import { ImageResponse } from 'next/og';
 
 export const runtime = 'edge';
 export const size = { width: 32, height: 32 };
@@ -25,7 +25,7 @@ export default function Icon() {
           fontFamily: 'sans-serif',
         }}
       >
-        H
+        S
       </div>
     </div>,
     { ...size },

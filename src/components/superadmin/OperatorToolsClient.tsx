@@ -10,7 +10,7 @@
 
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery } from 'convex/react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -41,6 +41,27 @@ import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { cn } from '@/lib/utils';
 
 const LOCALES = ['en', 'ru', 'de', 'hy'] as const;
+// Namespaces of the app's locale files (public/locales/<lng>/<ns>.json). Kept
+// local instead of importing from @/i18n/config, which boots i18next on import
+// and breaks the Jest mocks that replace react-i18next wholesale.
+const NAMESPACES = [
+  'common',
+  'landing',
+  'auth',
+  'dashboard',
+  'leaves',
+  'tasks',
+  'employees',
+  'chat',
+  'admin',
+  'drivers',
+  'settings',
+  'modules',
+  'payroll',
+  'compensation',
+  'learning',
+  'expenses',
+] as const;
 type Tab = 'translations' | 'limits' | 'scheduled' | 'maintenance';
 
 const TABS: Array<{ id: Tab; labelKey: string; icon: typeof Languages }> = [
@@ -93,18 +114,57 @@ export function OperatorToolsClient() {
   // Which cell is currently being AI-translated (key::locale).
   const [translating, setTranslating] = useState<string | null>(null);
 
-  // All known EN keys across namespaces (flattened from i18next resources).
+  // Read locale bundles straight from the JSON files (public/locales/*), not
+  // from the live i18next resources: i18next only loads the active language +
+  // EN at runtime, so getResourceBundle('de'|'hy') would be empty and the
+  // DE/HY columns would show English even though the files are translated.
+  const [fileBundles, setFileBundles] = useState<Record<
+    string,
+    Record<string, Record<string, unknown>>
+  > | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const result: Record<string, Record<string, Record<string, unknown>>> = {
+        en: {},
+        ru: {},
+        de: {},
+        hy: {},
+      };
+      await Promise.all(
+        LOCALES.map(async (loc) => {
+          await Promise.all(
+            NAMESPACES.map(async (ns) => {
+              try {
+                const res = await fetch(`/locales/${loc}/${ns}.json`);
+                if (res.ok) result[loc]![ns] = (await res.json()) as Record<string, unknown>;
+              } catch {
+                /* missing namespace file — skip */
+              }
+            }),
+          );
+        }),
+      );
+      if (!cancelled) setFileBundles(result);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // All known EN keys across namespaces (flattened from the EN bundle files).
   const allKeys = useMemo(() => {
+    if (!fileBundles) return [];
     const out: Array<{ full: string; namespace: string; path: string; value: string }> = [];
-    for (const ns of i18n.options.ns as string[]) {
-      const bundle = (i18n.getResourceBundle('en', ns) ?? {}) as Record<string, unknown>;
+    for (const [ns, bundle] of Object.entries(fileBundles.en ?? {})) {
       const flat = flatten(bundle);
       for (const [path, value] of Object.entries(flat)) {
         out.push({ full: `${ns}.${path}`, namespace: ns, path, value });
       }
     }
     return out.sort((a, b) => a.full.localeCompare(b.full));
-  }, [i18n]);
+  }, [fileBundles]);
 
   const overrideByKey = useMemo(() => {
     const m = new Map<string, Record<string, string>>();
@@ -115,22 +175,31 @@ export function OperatorToolsClient() {
     return m;
   }, [overrides]);
 
-  // The CURRENT value of every key in every locale — i.e. what the app actually
-  // renders today, read from the live i18next resources (which already include
-  // published overrides). The RU/DE/HY columns should show the real translation
-  // for that locale, falling back to English only when a key is untranslated.
+  // The CURRENT value of every key in every locale, read from the JSON files
+  // plus any published overrides (the same source of truth the app renders
+  // with). The RU/DE/HY columns show the real translation for that locale,
+  // falling back to English only when a key is untranslated.
   const localeValues = useMemo(() => {
     const byLocale: Record<string, Record<string, string>> = { en: {}, ru: {}, de: {}, hy: {} };
     for (const loc of LOCALES) {
       const map: Record<string, string> = {};
-      for (const ns of i18n.options.ns as string[]) {
-        const bundle = (i18n.getResourceBundle(loc as string, ns) ?? {}) as Record<string, unknown>;
+      for (const bundle of Object.values(fileBundles?.[loc as string] ?? {})) {
         Object.assign(map, flatten(bundle));
       }
       byLocale[loc as string] = map;
     }
+    // Published overrides win over the files — they are what the app renders.
+    for (const [fullKey, perLocale] of overrideByKey) {
+      const dot = fullKey.indexOf('.');
+      if (dot <= 0) continue;
+      const path = fullKey.slice(dot + 1);
+      for (const [loc, value] of Object.entries(perLocale)) {
+        byLocale[loc] = byLocale[loc] ?? {};
+        byLocale[loc][path] = value;
+      }
+    }
     return byLocale;
-  }, [i18n]);
+  }, [fileBundles, overrideByKey]);
 
   const filteredKeys = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -262,18 +331,18 @@ export function OperatorToolsClient() {
               </span>
             </div>
 
-            <div className="rounded-2xl border border-(--border) overflow-hidden">
-              <table className="w-full text-sm">
+            <div className="rounded-2xl border border-(--border) overflow-x-auto">
+              <table className="w-full min-w-[900px] table-fixed text-sm">
                 <thead>
                   <tr className="border-b border-(--border)/60 text-left text-xs uppercase tracking-widest text-muted-foreground">
-                    <th className="px-4 py-3 font-semibold w-1/3">
+                    <th className="w-[24%] px-4 py-3 font-semibold">
                       {t('superadmin.operatorTools.keyCol', 'Key')}
                     </th>
-                    <th className="px-4 py-3 font-semibold">
+                    <th className="w-[14%] px-4 py-3 font-semibold">
                       {t('superadmin.operatorTools.enValue', 'English (current)')}
                     </th>
                     {LOCALES.map((loc) => (
-                      <th key={loc} className="px-4 py-3 font-semibold min-w-[180px]">
+                      <th key={loc} className="w-[15.5%] px-2 py-3 font-semibold">
                         {localeName(loc)}
                         {overrideByKey.get(filteredKeys[0]?.full ?? '')?.[loc] && (
                           <span className="ml-1 text-[10px] text-(--brand)">●</span>
@@ -302,8 +371,8 @@ export function OperatorToolsClient() {
                         const value = draft ?? ov ?? current;
                         const hasOverride = !!ov;
                         return (
-                          <td key={loc} className="px-4 py-2.5">
-                            <div className="flex items-center gap-1.5">
+                          <td key={loc} className="px-2 py-2.5">
+                            <div className="flex items-center gap-1">
                               <Input
                                 value={value}
                                 onChange={(e) =>
@@ -312,7 +381,10 @@ export function OperatorToolsClient() {
                                     [id]: e.target.value,
                                   }))
                                 }
-                                className={cn('h-8 text-xs', hasOverride && 'border-(--brand)/50')}
+                                className={cn(
+                                  'h-8 min-w-0 flex-1 text-xs',
+                                  hasOverride && 'border-(--brand)/50',
+                                )}
                               />
                               {loc !== 'en' && draft === undefined && (
                                 <Button
@@ -514,7 +586,9 @@ export function OperatorToolsClient() {
                         {t(`superadmin.operatorTools.jobDesc.${op.jobKey}`, op.description)}
                       </p>
                     </td>
-                    <td className="px-4 py-3 text-xs text-(--text-secondary)">{op.schedule}</td>
+                    <td className="px-4 py-3 text-xs text-(--text-secondary)">
+                      {t(`superadmin.operatorTools.jobSchedule.${op.jobKey}`, op.schedule)}
+                    </td>
                     <td className="px-4 py-3">
                       <p className="text-xs text-(--text-secondary)">{fmtDate(op.lastRunAt)}</p>
                       <Badge

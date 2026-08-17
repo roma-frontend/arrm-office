@@ -1,25 +1,25 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
   <defs>
     <linearGradient id="mainGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#3b82f6" />
-      <stop offset="100%" stop-color="#8b5cf6" />
+      <stop offset="0%" stop-color="#1d73b0" />
+      <stop offset="100%" stop-color="#2c8cd5" />
     </linearGradient>
   </defs>
-  
+
   <!-- White Background -->
   <rect width="256" height="256" fill="#ffffff" rx="48"/>
-  
+
   <!-- Gradient Circle -->
   <circle cx="128" cy="128" r="110" fill="url(#mainGradient)" opacity="0.15"/>
-  
+
   <!-- Main Logo Circle -->
   <circle cx="128" cy="128" r="95" fill="none" stroke="url(#mainGradient)" stroke-width="2" opacity="0.3"/>
-  
+
   <!-- HR Text - Dark for light background -->
-  <text x="128" y="148" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="96" font-weight="700" text-anchor="middle" fill="#1e293b" letter-spacing="-2">
+  <text x="128" y="148" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="96" font-weight="700" text-anchor="middle" fill="#0c1a2e" letter-spacing="-2">
     HR
   </text>
-  
+
   <!-- Accent dot -->
   <circle cx="180" cy="96" r="6" fill="url(#mainGradient)"/>
 </svg>

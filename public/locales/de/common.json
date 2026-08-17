@@ -206,7 +206,7 @@
     "quickActions": "Schnellaktionen",
     "support": "Unterstützung",
     "emergency": "Notfallmodus",
-    "impersonate": "Impersonation",
+    "impersonate": "Impersonierung",
     "accessTokens": "Temporärer Zugriff",
     "bulkActions": "Massenaktionen",
     "aiChat": "AI-Chat",
@@ -253,7 +253,8 @@
     "news": "Neuigkeiten",
     "assets": "Anlagen",
     "modules": "Alle Module",
-    "controlCenter": "Control Center",
+    "controlCenter": "Kontrollzentrum",
+    "operatorTools": "Operator-Tools",
     "orgRequests": "Org-Anfragen",
     "trash": "Papierkorb",
     "landingEditor": "Landing-Editor"
@@ -988,7 +989,7 @@
     "aug": "Aug",
     "sep": "Sep",
     "oct": "Okt",
-    "nov": "Nov",
+    "nov": "Nov.",
     "dec": "Dez",
     "january": "Januar",
     "february": "Februar",
@@ -1848,7 +1849,7 @@
     "viewAll": "Alle Stellen bei"
   },
   "chatWidget": {
-    "viewFullScreen": "View full response"
+    "viewFullScreen": "Vollständige Antwort anzeigen"
   },
   "aiAgent": {
     "general": "Allgemein",

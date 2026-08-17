@@ -2,16 +2,16 @@
   <defs>
     <style>
       @media (prefers-color-scheme: dark) {
-        .bg-dark { fill: #0a0a1a; }
-        .text-light { fill: #ffffff; }
-        .gradient-stop1 { stop-color: #3b82f6; }
-        .gradient-stop2 { stop-color: #8b5cf6; }
+        .bg-dark { fill: #191b1d; }
+        .text-light { fill: #f0f2f4; }
+        .gradient-stop1 { stop-color: #006db4; }
+        .gradient-stop2 { stop-color: #58acf1; }
       }
       @media (prefers-color-scheme: light) {
         .bg-dark { fill: #ffffff; }
-        .text-light { fill: #0a0a1a; }
-        .gradient-stop1 { stop-color: #2563eb; }
-        .gradient-stop2 { stop-color: #7c3aed; }
+        .text-light { fill: #0c1a2e; }
+        .gradient-stop1 { stop-color: #1d73b0; }
+        .gradient-stop2 { stop-color: #2c8cd5; }
       }
     </style>
     <linearGradient id="grad32" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -19,21 +19,21 @@
       <stop offset="100%" class="gradient-stop2" />
     </linearGradient>
   </defs>
-  
+
   <!-- Background -->
   <rect width="256" height="256" class="bg-dark" rx="24"/>
-  
+
   <!-- Gradient accent -->
   <circle cx="128" cy="128" r="85" fill="url(#grad32)" opacity="0.12"/>
-  
+
   <!-- Inner circle -->
   <circle cx="128" cy="128" r="75" fill="none" stroke="url(#grad32)" stroke-width="1" opacity="0.25"/>
-  
+
   <!-- HR Text - optimized for 32x32 -->
   <text x="128" y="144" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="76" font-weight="700" text-anchor="middle" class="text-light" letter-spacing="-1.5">
     HR
   </text>
-  
+
   <!-- Small accent dot -->
   <circle cx="165" cy="105" r="4" fill="url(#grad32)"/>
 </svg>
