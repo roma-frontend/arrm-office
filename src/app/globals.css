@@ -271,6 +271,14 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 @import 'tailwindcss';
 
+/* Keep the self-hosted woff2 files (and the DejaVu TTFs used for server-side
+   document rendering) out of Tailwind's automatic source scanning. woff2 is
+   zlib-compressed and contains no NUL bytes, so the scanner's binary heuristic
+   lets it through and "candidates" extracted from the compressed soup generate
+   garbage utilities like `.accent-[<ctrl bytes>!]` — which then fail PostCSS
+   with "Parsing CSS source code failed" in dev. */
+@source not '../../public/fonts';
+
 /* Drive Tailwind's `dark:` variant off the app's `.dark` class (toggled by
    ThemeProvider on <html>) instead of the browser's prefers-color-scheme.
    Without this, Tailwind v4 defaults `dark:` to @media (prefers-color-scheme:
