@@ -883,30 +883,28 @@ body {
 }
 
 /* ── Scrollbar ─────────────────────────────────────────────────────────────
-   Track stays invisible, the thumb is a rounded hairline that only reaches full
-   contrast on hover. A permanently dark 4px square thumb is a surprisingly
-   large part of why a dense interface reads as utilitarian. */
+   Track stays invisible, the thumb is a straight-edged hairline that only
+   reaches full contrast on hover. Arrow buttons are hidden. */
 ::-webkit-scrollbar {
-  width: 4px;
-  height: 10px;
+  width: 6px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 
+::-webkit-scrollbar-button {
+  display: none;
+}
+
 ::-webkit-scrollbar-thumb {
   background: var(--border-strong);
-  border-radius: var(--radius-pill);
-  /* Transparent border shrinks the visible thumb to 6px while keeping a 10px
-     hit area — the trick every native-feeling web scroller uses. */
-  border: 2px solid transparent;
-  background-clip: content-box;
+  border-radius: 0;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-3);
-  background-clip: content-box;
 }
 
 ::-webkit-scrollbar-corner {
@@ -915,6 +913,7 @@ body {
 
 * {
   scrollbar-color: var(--border-strong) transparent;
+  scrollbar-width: thin;
 }
 
 .scrollbar-width-none {

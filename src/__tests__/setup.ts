@@ -1,5 +1,18 @@
 import '@testing-library/jest-dom';
 
+// Prevent HttpBackend from attempting XHR in jsdom test environment which
+// sometimes results in `XMLHttpRequest` errors. Provide a minimal mock so
+// i18next.init() can call `use(HttpBackend)` safely during tests.
+jest.mock('i18next-http-backend', () => {
+  // Return the backend constructor function directly so `import HttpBackend`
+  // yields a callable plugin that i18next.use() accepts.
+  return function I18nextHttpBackendMock(this: any) {
+    this.type = 'backend';
+    this.init = () => {};
+    this.read = (_lng: string, _ns: string, cb: (err: any, data?: any) => void) => cb(null, {});
+  };
+});
+
 // Provide a default JWT_SECRET so modules that validate it at import time
 // (e.g. src/lib/jwt.ts) load cleanly under test. Individual tests can still
 // delete/override it to exercise the validation path.

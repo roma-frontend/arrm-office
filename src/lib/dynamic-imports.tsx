@@ -58,7 +58,9 @@ export const Legend = dynamic(() => import('recharts').then((mod) => mod.Legend)
 
 export const ResponsiveContainer = dynamic(
   () => import('recharts').then((mod) => mod.ResponsiveContainer),
-  { ssr: false },
+  {
+    ssr: false,
+  },
 );
 
 export const Area = dynamic(() => import('recharts').then((mod) => mod.Area), { ssr: false });

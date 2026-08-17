@@ -367,7 +367,7 @@ export function LandingEditorClient() {
         </div>
         <div
           ref={canvasRef}
-          className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain"
+          className="relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain"
         >
           <LandingPageClient initialLanguage={locale} editorOverrides={editorOverrides} embedded />
           <LandingEditBridge

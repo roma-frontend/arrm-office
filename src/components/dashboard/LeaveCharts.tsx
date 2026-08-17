@@ -70,7 +70,7 @@ export function LeaveCharts({ monthlyTrend, pieData }: LeaveChartsProps) {
           <CardContent className="flex min-h-0 flex-1 flex-col px-2 pb-4 sm:px-3">
             {hasTrend ? (
               <div className="min-h-[220px] flex-1">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height={220} minHeight={0}>
                   <BarChart data={monthlyTrend} margin={{ top: 8, right: 8, left: -22, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
                     <XAxis

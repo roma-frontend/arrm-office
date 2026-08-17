@@ -495,6 +495,11 @@ export default function ScrollStorySection({
   const reduced = useReducedMotion();
   const ref = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLElement | null>(null);
+  // Whether a real scrollable element was found (vs. the window scrolling).
+  // Only pass `container` to useScroll when one exists — passing a ref whose
+  // `.current` is null makes framer-motion throw "Container ref is defined but
+  // not hydrated".
+  const [hasScrollContainer, setHasScrollContainer] = useState(false);
   const [active, setActive] = useState(0);
   const [touring, setTouring] = useState(false);
   const touringRef = useRef(false);
@@ -518,17 +523,20 @@ export default function ScrollStorySection({
       }
       // html/body are the window's scroll containers — let useScroll fall back
       // to window instead of double-counting documentElement scroll.
-      if (el && el.tagName !== 'HTML' && el.tagName !== 'BODY') {
-        scrollContainerRef.current = el;
-      } else {
-        scrollContainerRef.current = null;
-      }
+      const container = el && el.tagName !== 'HTML' && el.tagName !== 'BODY' ? el : null;
+      scrollContainerRef.current = container;
+      setHasScrollContainer(container !== null);
     }
   }, []);
 
   const { scrollYProgress } = useScroll({
     target: ref,
-    container: scrollContainerRef,
+    // Pass a container ref only when a real scrollable element exists. On the
+    // public landing the window scrolls, so the ref stays null there — and
+    // framer-motion treats a passed ref with `.current === null` as "defined
+    // but not hydrated", throwing an invariant in its effect. Omitting the
+    // option entirely falls back to tracking the window.
+    container: hasScrollContainer ? scrollContainerRef : undefined,
     offset: ['start start', 'end end'],
   });
 
@@ -633,6 +641,7 @@ export default function ScrollStorySection({
     return (
       <section
         id="story"
+        ref={setSectionRef}
         className="relative px-6 md:px-12 py-16 md:py-24"
         aria-label="How it works"
       >

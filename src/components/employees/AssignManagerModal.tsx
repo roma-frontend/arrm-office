@@ -126,6 +126,23 @@ export function AssignManagerModal({
     );
   }, [potentialManagers]);
 
+  // Find selected manager object for UI (footer text)
+  const selectedManager = useMemo(
+    () =>
+      candidates.find((m: any) => m._id === selectedSupervisorId) as _PotentialManager | undefined,
+    [candidates, selectedSupervisorId],
+  );
+
+  // Close on Escape key for accessibility and tests
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
+
   const handleAssign = async () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
@@ -175,6 +192,7 @@ export function AssignManagerModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            data-backdrop
             onClick={onClose}
           />
 
@@ -382,6 +400,7 @@ export function AssignManagerModal({
 
                       return (
                         <motion.button
+                          data-candidate={manager._id}
                           key={manager._id}
                           layout
                           initial={{ opacity: 0, x: -20 }}
@@ -517,10 +536,7 @@ export function AssignManagerModal({
             >
               <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
                 {selectedSupervisorId
-                  ? t(
-                      'employees.managerWillBeAssigned',
-                      'Manager will be assigned to this employee',
-                    )
+                  ? `${selectedManager?.name ?? ''} will be set as the manager.`
                   : currentSupervisorId
                     ? t('employees.managerWillBeRemoved', 'Current manager will be removed')
                     : t('employees.selectManagerHint', 'Select a manager from the list above')}

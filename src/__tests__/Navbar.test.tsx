@@ -564,6 +564,18 @@ describe('Navbar', () => {
     expect(header.className).toContain('-translate-y-full');
   });
 
+  it('animates the hide via the translate property (Tailwind v4), not transform', () => {
+    // Tailwind v4's -translate-y-full sets the `translate` CSS property, and
+    // `transform` stays "none". The transition list must therefore cover
+    // `translate`, or the bar snaps while the margin animates, leaving a gap
+    // between the vanished header and the content (and overlapping it on show).
+    mockScrollDirection = 'down';
+    const { container } = render(<Navbar />);
+    const header = container.querySelector('header') as HTMLElement;
+    expect(header.className).toContain('transition-[translate,margin,colors]');
+    expect(header.className).not.toContain('transition-[transform,margin,colors]');
+  });
+
   it('applies the fallback initial when the user has no name', () => {
     mockUser = { ...mockUser, name: '' };
     render(<Navbar />);

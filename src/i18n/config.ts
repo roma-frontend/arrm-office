@@ -81,7 +81,9 @@ const getInitialLanguage = () => {
 };
 
 if (!i18n.isInitialized) {
-  if (typeof window !== 'undefined') {
+  // Avoid registering the HttpBackend during Jest runs (jsdom) where XHR
+  // behaviour can be problematic. Tests mock `react-i18next` as needed.
+  if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'test') {
     i18n.use(HttpBackend);
     i18n.use(LanguageDetector);
   }
