@@ -30,6 +30,7 @@ import {
   KeyRound,
   Maximize2,
   Minimize2,
+  Pencil,
   Plus,
   RefreshCw,
   Search,
@@ -46,6 +47,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
+import { DocJsonEditor } from '@/components/superadmin/DocJsonEditor';
 import { cn } from '@/lib/utils';
 
 interface RowDoc {
@@ -107,6 +109,9 @@ export function DataBrowserClient() {
 
   const tables = useQuery(api.superadmin.dbAdmin.listTables);
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
+  const [searchInput, setSearchInput] = useState('');
+  // Debounced copy of the search box — the backend scans the whole table, so
+  // we only fire a query once the user pauses instead of on every keystroke.
   const [search, setSearch] = useState('');
   const [columnFilter, setColumnFilter] = useState<string>('');
   const [columnValue, setColumnValue] = useState('');
@@ -115,6 +120,7 @@ export function DataBrowserClient() {
   const [fullscreen, setFullscreen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [detailRow, setDetailRow] = useState<RowDoc | null>(null);
+  const [editingRow, setEditingRow] = useState<RowDoc | null>(null);
 
   // Editor state — inline cell editing and the JSON insert panel.
   const [editingCell, setEditingCell] = useState<{
@@ -174,6 +180,12 @@ export function DataBrowserClient() {
     setSelectedIds(new Set());
   }, [selectedTable, search, columnFilter, columnValue]);
 
+  // Debounce the search box → query mapping (300 ms).
+  useEffect(() => {
+    const id = setTimeout(() => setSearch(searchInput), 300);
+    return () => clearTimeout(id);
+  }, [searchInput]);
+
   const sortedTables = useMemo(() => {
     if (!tables) return [];
     return [...tables].sort((a, b) => a.name.localeCompare(b.name));
@@ -181,6 +193,7 @@ export function DataBrowserClient() {
 
   const selectTable = (name: string) => {
     setSelectedTable(name);
+    setSearchInput('');
     setSearch('');
     setColumnFilter('');
     setColumnValue('');
@@ -188,6 +201,7 @@ export function DataBrowserClient() {
     setEditingCell(null);
     setCreatingRow(false);
     setDetailRow(null);
+    setEditingRow(null);
     setSelectedIds(new Set());
   };
 
@@ -454,10 +468,14 @@ export function DataBrowserClient() {
                 <div className="relative ml-auto">
                   <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-(--text-muted)" />
                   <Input
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
                     placeholder={t('superadmin.database.searchRows', 'Search rows…')}
-                    className="h-8 w-40 pl-8 text-xs"
+                    className="h-8 w-48 pl-8 text-xs"
+                    title={t(
+                      'superadmin.database.searchHint',
+                      'Searches every field of every row in this table',
+                    )}
                   />
                 </div>
 
@@ -606,9 +624,14 @@ export function DataBrowserClient() {
                                 />
                               </td>
                               <td className="max-w-[160px] px-2 py-1.5">
-                                <code className="block truncate font-mono text-[11px] text-(--text-muted)">
+                                <button
+                                  type="button"
+                                  onClick={() => setDetailRow(row)}
+                                  className="block w-full truncate rounded px-1 py-0.5 text-left font-mono text-[11px] text-(--brand-text) transition-colors hover:bg-(--brand-quiet)"
+                                  title={t('superadmin.database.openDoc', 'Open document')}
+                                >
                                   {row.id}
-                                </code>
+                                </button>
                               </td>
                               {columns.map((col) => {
                                 const value = row.doc[col];
@@ -795,7 +818,9 @@ export function DataBrowserClient() {
                 <SheetTitle className="flex items-center gap-2 font-mono text-sm">
                   <KeyRound className="h-4 w-4 text-(--brand-text)" />
                   {selectedTable}
-                  <span className="text-(--text-muted)">· {detailRow.id}</span>
+                  <span className="max-w-[260px] truncate text-(--text-muted)">
+                    · {detailRow.id}
+                  </span>
                 </SheetTitle>
               </SheetHeader>
               <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4">
@@ -803,6 +828,14 @@ export function DataBrowserClient() {
                   {JSON.stringify(detailRow.doc, null, 2)}
                 </pre>
                 <div className="flex items-center justify-end gap-2">
+                  <Button
+                    className="gap-1.5"
+                    disabled={deletingId === detailRow.id}
+                    onClick={() => setEditingRow(detailRow)}
+                  >
+                    <Pencil className="h-4 w-4" />
+                    {t('superadmin.database.edit', 'Edit')}
+                  </Button>
                   <Button
                     variant="outline"
                     className="gap-1.5"
@@ -830,6 +863,20 @@ export function DataBrowserClient() {
           )}
         </SheetContent>
       </Sheet>
+
+      {/* JSON document editor — opened from the detail drawer's Edit button */}
+      {editingRow && selectedTable && (
+        <DocJsonEditor
+          open={editingRow !== null}
+          onOpenChange={(open) => {
+            if (!open) setEditingRow(null);
+          }}
+          tableName={selectedTable}
+          row={editingRow}
+          patchDbRow={patchDbRow}
+          onSaved={() => setDetailRow(null)}
+        />
+      )}
 
       {/* History sheet */}
       <Sheet open={showHistory} onOpenChange={setShowHistory}>

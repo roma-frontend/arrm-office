@@ -910,7 +910,21 @@
       "alreadyUndone": "Bereits rückgängig gemacht",
       "undoFailed": "Rückgängig machen fehlgeschlagen",
       "undoneBadge": "Rückgängig gemacht",
-      "noHistory": "Noch keine Änderungen erfasst"
+      "noHistory": "Noch keine Änderungen erfasst",
+      "searchHint": "Durchsucht jedes Feld jeder Zeile dieser Tabelle",
+      "openDoc": "Dokument öffnen",
+      "editor": {
+        "title": "Dokument bearbeiten",
+        "changed": "geändert",
+        "hint": "Bearbeiten Sie die Feldwerte unten. Zurückgeschrieben werden nur geänderte Felder — über dieselbe Schema-Validierung wie die App, mit Rückgängig-Funktion im Änderungsverlauf.",
+        "new": "neu",
+        "removeField": "Feld entfernen",
+        "addField": "Feld hinzufügen",
+        "keyRequired": "Jedes Feld benötigt einen Schlüssel",
+        "duplicateKey": "Doppeltes Feld: {{key}}",
+        "invalidValue": "Ungültiger Wert für Feld: {{key}}",
+        "noChanges": "Keine Änderungen zum Speichern"
+      }
     },
     "sessions": {
       "title": "Aktive Sitzungen",

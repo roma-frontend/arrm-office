@@ -910,7 +910,21 @@
       "alreadyUndone": "Already undone",
       "undoFailed": "Could not undo",
       "undoneBadge": "Undone",
-      "noHistory": "No changes recorded yet"
+      "noHistory": "No changes recorded yet",
+      "searchHint": "Searches every field of every row in this table",
+      "openDoc": "Open document",
+      "editor": {
+        "title": "Edit document",
+        "changed": "changed",
+        "hint": "Edit field values below. Only changed fields are written back — through the same schema validation the app uses, with undo available in change history.",
+        "new": "new",
+        "removeField": "Remove field",
+        "addField": "Add field",
+        "keyRequired": "Every field needs a key",
+        "duplicateKey": "Duplicate field: {{key}}",
+        "invalidValue": "Invalid value for field: {{key}}",
+        "noChanges": "No changes to save"
+      }
     },
     "sessions": {
       "title": "Active sessions",

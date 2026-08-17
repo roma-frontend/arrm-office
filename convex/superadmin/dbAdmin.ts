@@ -170,16 +170,23 @@ export const getTableRows = query({
     const limit = Math.min(args.limit ?? 50, DEFAULT_LIST_CAP);
     const offset = Math.max(args.offset ?? 0, 0);
 
-    // @ts-expect-error -- dynamic table name: Convex validates the name at
-    // runtime and rejects unknown tables, which we already checked above.
-    const rows = await ctx.db.query(args.tableName).take(offset + limit);
-    const page = rows.slice(offset, offset + limit);
-
     const search = args.search?.trim().toLowerCase();
     const column = args.column?.trim();
     const columnValue = args.columnValue?.trim();
+    // A search term or column filter means the match can live anywhere in the
+    // table, not just on the current page — otherwise "find employee X" would
+    // silently fail once the table outgrows one page. When filtering, scan up
+    // to DEFAULT_LIST_CAP rows and filter in memory (HR tables fit comfortably;
+    // for huge tables the cap is the documented ceiling). Without filters we
+    // page directly, so browsing a big table stays cheap.
+    const filtering = Boolean(search) || (column !== undefined && columnValue !== undefined);
+    const scanCount = filtering ? DEFAULT_LIST_CAP : offset + limit;
 
-    const matches = page.filter((row) => {
+    // @ts-expect-error -- dynamic table name: Convex validates the name at
+    // runtime and rejects unknown tables, which we already checked above.
+    const rows = await ctx.db.query(args.tableName).take(scanCount);
+
+    const matches = rows.filter((row) => {
       const doc = row as Record<string, unknown>;
       if (column && columnValue !== undefined) {
         const raw = doc[column];
@@ -204,17 +211,21 @@ export const getTableRows = query({
       });
     });
 
+    const page = matches.slice(offset, offset + limit);
+
     return {
       // All column names observed on this page — drives the grid header.
       columns: collectColumns(page),
-      rows: matches.map((row) => ({
+      rows: page.map((row) => ({
         id: (row as { _id: unknown })._id as string,
         doc: stripSystemFields(row as Record<string, unknown>),
       })),
-      // True count when the whole table fits in the page; otherwise the page
-      // total so the client knows more rows exist (it can paginate).
-      total: rows.length,
-      truncated: rows.length >= offset + limit,
+      // With filters this is the match count (so the client shows how many
+      // rows matched); otherwise the fetched count, as before.
+      total: filtering ? matches.length : rows.length,
+      // Without filters a full page means more rows may exist (keep paging);
+      // with filters, truncation is exactly "matches spill past this page".
+      truncated: filtering ? matches.length > offset + limit : rows.length >= offset + limit,
     };
   },
 });

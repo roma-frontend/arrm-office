@@ -640,6 +640,50 @@ describe('Data Browser reads', () => {
     expect(searched.rows[0].id).toBe('u1');
   });
 
+  it('search scans the whole table, not just the current page', async () => {
+    mockGetAuthCaller.mockResolvedValue(superadmin);
+    // The target lives on page 2 when browsing with limit 10, so a search that
+    // only looked at the first page would never find it.
+    const users = Array.from({ length: 20 }, (_, i) => ({
+      _id: `u${i + 1}`,
+      name: `Person ${i + 1}`,
+      email: `p${i + 1}@x.com`,
+      _creationTime: i + 1,
+    }));
+    const ctx = makeCtx({ users });
+
+    const searched = await dbAdmin.getTableRows.handler(ctx, {
+      tableName: 'users',
+      search: 'person 15',
+      limit: 10,
+    });
+    expect(searched.rows).toHaveLength(1);
+    expect(searched.rows[0].id).toBe('u15');
+    // The toolbar reports the match count, not the fetched page size.
+    expect(searched.total).toBe(1);
+    expect(searched.truncated).toBe(false);
+  });
+
+  it('column filter scans the whole table too', async () => {
+    mockGetAuthCaller.mockResolvedValue(superadmin);
+    const users = Array.from({ length: 20 }, (_, i) => ({
+      _id: `u${i + 1}`,
+      name: `Person ${i + 1}`,
+      role: i === 17 ? 'superadmin' : 'employee',
+      _creationTime: i + 1,
+    }));
+    const ctx = makeCtx({ users });
+
+    const filtered = await dbAdmin.getTableRows.handler(ctx, {
+      tableName: 'users',
+      column: 'role',
+      columnValue: 'superadmin',
+      limit: 10,
+    });
+    expect(filtered.rows).toHaveLength(1);
+    expect(filtered.rows[0].id).toBe('u18');
+  });
+
   it('getTableRows rejects unknown tables and honors offset/limit', async () => {
     mockGetAuthCaller.mockResolvedValue(superadmin);
     await expect(
