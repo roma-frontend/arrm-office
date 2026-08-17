@@ -33,6 +33,11 @@ let uploadImpl: (b64: string, name: string, type: string) => Promise<string> = (
   Promise.resolve('https://cloud.example/att.pdf');
 const createEventMutation = jest.fn(async () => undefined);
 const updateEventMutation = jest.fn(async () => undefined);
+const ensureRoomAction = jest.fn(async () => ({
+  configured: true,
+  roomName: 'evt_test',
+  videoUrl: '/meetings/evt_test',
+}));
 const playNotificationSound = jest.fn();
 const sendBrowserNotification = jest.fn();
 
@@ -65,6 +70,9 @@ jest.mock('@/convex/_generated/api', () => ({
       create: { _name: 'calendarEvents.create' },
       update: { _name: 'calendarEvents.update' },
     },
+    meetingsActions: {
+      ensureRoom: { _name: 'meetingsActions.ensureRoom' },
+    },
   },
 }));
 
@@ -78,6 +86,10 @@ jest.mock('convex/react', () => ({
   useMutation: (m: any) => {
     if (m._name === 'calendarEvents.create') return createEventMutation;
     if (m._name === 'calendarEvents.update') return updateEventMutation;
+    return jest.fn();
+  },
+  useAction: (a: any) => {
+    if (a?._name === 'meetingsActions.ensureRoom') return ensureRoomAction;
     return jest.fn();
   },
 }));
@@ -374,6 +386,7 @@ beforeEach(() => {
   uploadImpl = () => Promise.resolve('https://cloud.example/att.pdf');
   createEventMutation.mockClear();
   updateEventMutation.mockClear();
+  ensureRoomAction.mockClear();
   (createEventMutation as jest.Mock).mockResolvedValue(undefined);
   (updateEventMutation as jest.Mock).mockResolvedValue(undefined);
   mockToast.mockClear();

@@ -90,6 +90,10 @@ export const create = mutation({
     category: v.string(),
     reminder: v.string(),
     attachmentUrl: v.optional(v.string()),
+    /** Video toggle intent — the actual LiveKit room/link is created by the
+     * `meetings.ensureRoom` action after this mutation succeeds. */
+    videoEnabled: v.optional(v.boolean()),
+    videoMode: v.optional(v.union(v.literal('meeting'), v.literal('webinar'))),
     ...attendeeArgs,
     ...roomArgs,
   },
@@ -162,6 +166,10 @@ export const update = mutation({
     category: v.string(),
     reminder: v.string(),
     attachmentUrl: v.optional(v.string()),
+    /** Video toggle intent: `false` removes the video link; `true` keeps it
+     * (the `meetings.ensureRoom` action refreshes/creates the room after). */
+    videoEnabled: v.optional(v.boolean()),
+    videoMode: v.optional(v.union(v.literal('meeting'), v.literal('webinar'))),
     ...attendeeArgs,
     ...roomArgs,
   },
@@ -220,6 +228,10 @@ export const update = mutation({
       attachmentUrl: args.attachmentUrl ?? event.attachmentUrl,
       roomId: args.roomId,
       roomBookingId,
+      // Turning the video toggle off removes the join link; leaving it on (or
+      // untouched) keeps whatever room was already attached.
+      videoUrl: args.videoEnabled === false ? undefined : event.videoUrl,
+      videoProvider: args.videoEnabled === false ? undefined : event.videoProvider,
       updatedAt: Date.now(),
     });
 

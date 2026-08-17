@@ -24,6 +24,7 @@ import {
   Eye,
   DoorOpen,
   Building2,
+  Video,
 } from 'lucide-react';
 import {
   format,
@@ -994,6 +995,8 @@ export const CalendarClient = React.memo(function CalendarClient() {
         roomBookingId: e.roomBookingId,
         roomName: e.roomName,
         roomColor: e.roomColor,
+        videoUrl: e.videoUrl,
+        videoProvider: e.videoProvider,
       })),
     [calendarEventsData],
   );
@@ -2035,6 +2038,17 @@ export const CalendarClient = React.memo(function CalendarClient() {
                                 <DoorOpen className="h-3 w-3 shrink-0" />
                                 <span className="truncate">{evt.roomName}</span>
                               </p>
+                            )}
+                            {evt.videoUrl && (
+                              <a
+                                href={evt.videoUrl}
+                                onClick={(e) => e.stopPropagation()}
+                                title={t('meetings.joinNow')}
+                                className="mt-1 inline-flex max-w-full items-center gap-1 truncate rounded-full bg-(--brand-quiet) px-1.5 py-0.5 text-[10px] font-medium text-(--brand-text) transition-colors duration-140 ease-spark hover:bg-(--brand) hover:text-white"
+                              >
+                                <Video className="h-3 w-3 shrink-0" />
+                                <span className="truncate">{t('meetings.joinNow')}</span>
+                              </a>
                             )}
                           </div>
                           <button

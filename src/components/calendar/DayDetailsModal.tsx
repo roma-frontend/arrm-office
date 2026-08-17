@@ -15,10 +15,13 @@ import {
   ExternalLink,
   DoorOpen,
   Building2,
+  Video,
+  Copy,
 } from 'lucide-react';
 import { format, isToday } from 'date-fns';
 import { enUS, ru, hy } from 'date-fns/locale';
 import i18n from 'i18next';
+import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 // Migrated from a hand-rolled `createPortal` centered modal to the shared
 // slide-over. The old wrapper had no `role="dialog"`, no `aria-modal`, no focus
@@ -436,6 +439,30 @@ export function DayDetailsModal({
                           <p className="text-xs text-(--text-muted) mt-1 line-clamp-2">
                             {evt.description}
                           </p>
+                        )}
+                        {evt.videoUrl && (
+                          <div className="mt-2 flex flex-wrap items-center gap-2">
+                            <a
+                              href={evt.videoUrl}
+                              className="inline-flex items-center gap-1.5 rounded-lg bg-(--brand) px-2.5 py-1 text-xs font-medium text-white transition-opacity hover:opacity-90"
+                            >
+                              <Video className="h-3.5 w-3.5" />
+                              {t('meetings.joinNow')}
+                            </a>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigator.clipboard
+                                  ?.writeText(`${window.location.origin}${evt.videoUrl}`)
+                                  .then(() => toast.success(t('meetings.linkCopied')))
+                                  .catch(() => toast.error(t('meetings.copyFailed')));
+                              }}
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-(--border-default) bg-(--surface-1) px-2.5 py-1 text-xs font-medium text-(--text-secondary) transition-colors hover:bg-(--surface-2)"
+                            >
+                              <Copy className="h-3.5 w-3.5" />
+                              {t('meetings.copyLink')}
+                            </button>
+                          </div>
                         )}
                       </div>
                     </motion.div>

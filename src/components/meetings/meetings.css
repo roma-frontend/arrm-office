@@ -1,0 +1,124 @@
+/*
+ * LiveKit components-kit theming — maps the kit's `--lk-*` variables onto the
+ * app design tokens (tokens.css) so the meeting room looks native in both
+ * light and dark mode. The semantic tokens already flip under `.dark`, so
+ * there is no per-mode block here — only `.dark` tweaks that the palette can't
+ * express (e.g. control-bar translucency).
+ */
+.lk-room {
+  --lk-bg: transparent;
+  --lk-bg2: var(--surface-2);
+  --lk-bg3: var(--surface-1);
+  --lk-bg4: var(--surface-2);
+  --lk-bg5: var(--surface-1);
+  --lk-bg-control: var(--surface-1);
+  --lk-fg: var(--text-primary);
+  --lk-fg5: var(--text-muted);
+  --lk-border-color: var(--border-default);
+  --lk-accent-bg: var(--brand);
+  --lk-accent-fg: #ffffff;
+  --lk-accent2: var(--brand-quiet);
+  --lk-accent3: var(--brand-outline);
+  --lk-accent4: var(--brand-text);
+  --lk-primary-bg: var(--brand);
+  --lk-primary-color: #ffffff;
+  --lk-danger: var(--danger);
+  --lk-danger-fg: #ffffff;
+  --lk-danger2: var(--danger-quiet);
+  --lk-danger3: var(--danger-outline);
+  --lk-border-radius: 0.9rem;
+  --lk-font-family: inherit;
+  --lk-font-size: 0.875rem;
+  --lk-grid-gap: 0.75rem;
+  --lk-control-bar-height: 4rem;
+  --lk-control-bg: color-mix(in srgb, var(--surface-1) 82%, transparent);
+  --lk-control-fg: var(--text-primary);
+  --lk-control-hover-bg: var(--surface-2);
+  --lk-control-active-bg: var(--brand-quiet);
+  --lk-control-active-hover-bg: var(--brand-outline);
+  --lk-box-shadow: 0 8px 30px rgb(0 0 0 / 0.08);
+}
+
+.lk-room .lk-participant-tile {
+  background-color: var(--surface-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.9rem;
+  overflow: hidden;
+}
+
+.lk-room .lk-participant-placeholder {
+  background: linear-gradient(135deg, var(--surface-2), var(--surface-1));
+  color: var(--text-muted);
+}
+
+.lk-room .lk-video-conference {
+  background: transparent;
+}
+
+.lk-room .lk-focus-layout-wrapper {
+  background: transparent;
+}
+
+.lk-room .lk-control-bar {
+  background: var(--lk-control-bg);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.lk-room .lk-chat {
+  background: var(--surface-1);
+  border-left: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+}
+
+.lk-room .lk-chat-form {
+  border-top: 1px solid var(--border-subtle);
+  background: var(--surface-1);
+}
+
+.lk-room .lk-chat-messages {
+  color: var(--text-secondary);
+}
+
+.lk-room .lk-participant-name {
+  background: rgb(0 0 0 / 0.45);
+  border-radius: 0.5rem;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+.lk-room .lk-connection-quality {
+  background: rgb(0 0 0 / 0.35);
+  border-radius: 999px;
+}
+
+/* Speaking ring in the app's brand colour. */
+.lk-room .lk-speaking-indicator {
+  box-shadow: inset 0 0 0 2px var(--brand);
+}
+
+/* Reaction tray + chat panel float above the grid with our elevation. */
+.lk-room .lk-reaction-tray,
+.lk-room .lk-chat-toggle {
+  background: var(--surface-1);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+}
+
+/* Dark mode: soften the control bar so it does not glare. */
+.dark .lk-room {
+  --lk-control-bg: color-mix(in srgb, var(--surface-2) 70%, transparent);
+  --lk-box-shadow: 0 8px 30px rgb(0 0 0 / 0.45);
+}
+
+/* Buttons inside the kit inherit the app's press feedback. */
+.lk-room .lk-button {
+  transition:
+    background-color 140ms ease,
+    color 140ms ease,
+    transform 140ms ease;
+}
+
+.lk-room .lk-button:active {
+  transform: scale(0.96);
+}

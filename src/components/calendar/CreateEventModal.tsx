@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import {
@@ -119,6 +119,9 @@ export interface CalendarEvent {
   roomBookingId?: string;
   roomName?: string;
   roomColor?: string;
+  /** LiveKit video conference link (`/meetings/{roomName}`), when enabled. */
+  videoUrl?: string;
+  videoProvider?: 'livekit';
 }
 
 interface OrgUser {
@@ -145,6 +148,7 @@ export function CreateEventModal({
   const selectedOrgId = useSelectedOrganization();
   const createEventMutation = useMutation(api.calendarEvents.create);
   const updateEventMutation = useMutation(api.calendarEvents.update);
+  const ensureRoomAction = useAction(api.meetingsActions.ensureRoom);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [step, setStep] = useState<Step>('details');
@@ -163,6 +167,8 @@ export function CreateEventModal({
   const [attendeeSearch, setAttendeeSearch] = useState('');
   const [showPeoplePicker, setShowPeoplePicker] = useState(false);
   const [roomId, setRoomId] = useState<string | null>(null);
+  const [videoEnabled, setVideoEnabled] = useState(false);
+  const [videoMode, setVideoMode] = useState<'meeting' | 'webinar'>('meeting');
 
   const organizationId = (selectedOrgId ?? user?.organizationId) as Id<'organizations'> | undefined;
   const requesterId = user?.id as Id<'users'> | undefined;
@@ -356,6 +362,10 @@ export function CreateEventModal({
       setCategory(editEvent.category);
       setReminder(editEvent.reminder);
       setRoomId(editEvent.roomId ?? null);
+      // The toggle reflects what the event actually has: a link or the provider
+      // marker (the link may briefly be absent between save and room creation).
+      setVideoEnabled(Boolean(editEvent.videoUrl || editEvent.videoProvider === 'livekit'));
+      setVideoMode(editEvent.videoProvider === 'livekit' ? 'meeting' : 'meeting');
     } else if (selectedDate) {
       setDate(format(selectedDate, 'yyyy-MM-dd'));
     }
@@ -378,6 +388,8 @@ export function CreateEventModal({
     setAttendeeSearch('');
     setShowPeoplePicker(false);
     setRoomId(null);
+    setVideoEnabled(false);
+    setVideoMode('meeting');
     setUploading(false);
   };
 
@@ -395,6 +407,8 @@ export function CreateEventModal({
       reminder,
       roomId,
       attendees,
+      videoEnabled,
+      videoMode,
     }),
     [
       title,
@@ -408,6 +422,8 @@ export function CreateEventModal({
       reminder,
       roomId,
       attendees,
+      videoEnabled,
+      videoMode,
     ],
   );
 
@@ -425,6 +441,8 @@ export function CreateEventModal({
       category: editEvent?.category ?? 'meeting',
       reminder: editEvent?.reminder ?? '15min',
       roomId: editEvent?.roomId ?? null,
+      videoEnabled: Boolean(editEvent?.videoUrl || editEvent?.videoProvider === 'livekit'),
+      videoMode: 'meeting' as const,
     }),
     [editEvent, selectedDate],
   );
@@ -441,6 +459,8 @@ export function CreateEventModal({
     if (d.category !== undefined) setCategory(d.category);
     if (d.reminder !== undefined) setReminder(d.reminder);
     if (d.roomId !== undefined) setRoomId(d.roomId);
+    if (d.videoEnabled !== undefined) setVideoEnabled(d.videoEnabled);
+    if (d.videoMode !== undefined) setVideoMode(d.videoMode);
     if (Array.isArray(d.attendees)) setAttendees(d.attendees as OrgUser[]);
     setStep(STEPS[Math.min(Math.max(savedStep, 0), STEPS.length - 1)] as Step);
   }, []);
@@ -470,6 +490,8 @@ export function CreateEventModal({
     setCategory(pristineForm.category);
     setReminder(pristineForm.reminder);
     setRoomId(pristineForm.roomId);
+    setVideoEnabled(pristineForm.videoEnabled);
+    setVideoMode('meeting');
   };
 
   /**
@@ -554,12 +576,47 @@ export function CreateEventModal({
         // from `attendeeIds` (resolveAttendees), so a client cannot record
         // somebody under a name that is not theirs.
         attendeeIds: attendees.map((a) => a._id),
+        videoEnabled,
+        videoMode,
       };
+
+      // `eventId` for the room creation — the update targets the existing
+      // event, the create gets its freshly minted id back.
+      let savedEventId: Id<'calendarEvents'> | undefined = editEvent?.id as
+        | Id<'calendarEvents'>
+        | undefined;
+      let savedVideoUrl: string | undefined = editEvent?.videoUrl;
 
       if (editEvent?.id && organizationId) {
         await updateEventMutation({ id: editEvent.id as Id<'calendarEvents'>, ...payload });
       } else if (organizationId) {
-        await createEventMutation({ organizationId, ...payload });
+        const createdId = await createEventMutation({ organizationId, ...payload });
+        savedEventId = createdId;
+      }
+
+      // Video: the mutation above saved the event (and cleared the link when
+      // the toggle is off). When it is on, create/refresh the LiveKit room —
+      // idempotent, so re-saving an event with video never forks the room.
+      if (videoEnabled && organizationId && savedEventId) {
+        try {
+          const result = await ensureRoomAction({
+            eventId: savedEventId,
+            organizationId,
+            mode: videoMode,
+          });
+          if (result.configured && result.videoUrl) {
+            savedVideoUrl = result.videoUrl;
+            toast.success(t('createMeeting.videoCreated'));
+          } else {
+            toast.warning(t('createMeeting.videoNotConfigured'));
+          }
+        } catch (err) {
+          toast.error(
+            `${t('createMeeting.videoFailed')} — ${
+              err instanceof Error ? err.message : String(err)
+            }`,
+          );
+        }
       }
 
       toast.success(
@@ -589,6 +646,8 @@ export function CreateEventModal({
         roomId: roomId ?? undefined,
         roomName: selectedRoom?.name,
         roomColor: selectedRoom?.color,
+        videoUrl: savedVideoUrl,
+        videoProvider: savedVideoUrl ? 'livekit' : undefined,
       };
       onSave?.(event);
       clearDraft();
@@ -1136,27 +1195,55 @@ export function CreateEventModal({
               {/* Step 3: Extras */}
               {step === 'extras' && (
                 <div className="space-y-5">
-                  {/* Teams Meeting */}
-                  <div className="flex items-center justify-between rounded-card border border-(--border-subtle) bg-(--surface-2) p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex size-10 items-center justify-center rounded-card bg-(--purple-quiet)">
-                        <Video className="w-4.5 h-4.5 text-(--purple-text)" />
+                  {/* Video conference (LiveKit) */}
+                  <div className="overflow-hidden rounded-card border border-(--border-subtle) bg-(--surface-2)">
+                    <div className="flex items-center justify-between p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex size-10 items-center justify-center rounded-card bg-(--brand-quiet)">
+                          <Video className="w-4.5 h-4.5 text-(--brand)" />
+                        </div>
+                        <div>
+                          <p className="text-label font-semibold text-(--text-primary)">
+                            {t('createMeeting.videoConference')}
+                          </p>
+                          <p className="text-caption text-(--text-muted)">
+                            {t('createMeeting.videoConferenceDesc')}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-label font-semibold text-(--text-primary)">
-                          {t('createMeeting.teamsMeeting')}
-                        </p>
-                        <p className="text-caption text-(--text-muted)">
-                          {t('createMeeting.teamsMeetingDesc')}
-                        </p>
+                      <Switch
+                        checked={videoEnabled}
+                        onCheckedChange={(v) => setVideoEnabled(Boolean(v))}
+                      />
+                    </div>
+                    {videoEnabled && (
+                      <div className="flex items-center gap-3 border-t border-(--border-subtle) px-4 py-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-caption font-medium text-(--text-secondary)">
+                            {t('createMeeting.videoModeLabel')}
+                          </p>
+                          <p className="text-caption text-(--text-muted)">
+                            {t('createMeeting.videoModeDesc')}
+                          </p>
+                        </div>
+                        <div className="flex shrink-0 gap-1.5 rounded-pill bg-(--surface-1) p-1">
+                          {(['meeting', 'webinar'] as const).map((mode) => (
+                            <button
+                              key={mode}
+                              type="button"
+                              onClick={() => setVideoMode(mode)}
+                              className={`rounded-pill px-3 py-1.5 text-caption font-medium transition-colors duration-140 ease-spark ${
+                                videoMode === mode
+                                  ? 'bg-(--brand) text-white'
+                                  : 'text-(--text-muted) hover:text-(--text-primary)'
+                              }`}
+                            >
+                              {t(`createMeeting.videoMode.${mode}`)}
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="rounded-pill bg-(--purple-quiet) px-2.5 py-1 text-[10px] font-semibold text-(--purple-text)">
-                        {t('createMeeting.comingSoon')}
-                      </span>
-                      <Switch disabled checked={false} />
-                    </div>
+                    )}
                   </div>
 
                   {/* File Attachment */}

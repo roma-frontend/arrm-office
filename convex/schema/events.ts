@@ -56,6 +56,15 @@ export const events = {
     roomId: v.optional(v.id('meetingRooms')),
     /** The reservation that backs `roomId`; cancelled when the event is removed. */
     roomBookingId: v.optional(v.id('roomBookings')),
+    /**
+     * LiveKit video conference link, auto-created by `meetings.ensureRoom` when
+     * the organizer enables video. Stored relative ("meetings/{roomName}") so it
+     * works on any origin (dev, preview, prod) without a domain config.
+     */
+    videoUrl: v.optional(v.string()),
+    videoProvider: v.optional(v.literal('livekit')),
+    /** Recording link attached after the meeting ends (Egress → storage). */
+    videoRecordingUrl: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.optional(v.number()),
   })

@@ -1771,6 +1771,17 @@
       "bookDriver": "Fahrer buchen",
       "viewDay": "Tagesdetails",
       "copyDate": "Datum kopieren"
+    },
+    "videoConference": "Videokonferenz",
+    "videoConferenceDesc": "Teilnahmelink erstellen und zum Termin hinzufügen",
+    "videoModeLabel": "Modus",
+    "videoModeDesc": "Meeting — alle sprechen · Webinar — nur Vortragende sprechen",
+    "videoCreated": "Videokonferenz erstellt — Link zum Termin hinzugefügt",
+    "videoNotConfigured": "Videoanrufe sind noch nicht eingerichtet. Bitten Sie den Administrator, die LIVEKIT-Variablen zu setzen.",
+    "videoFailed": "Videokonferenz konnte nicht erstellt werden",
+    "videoMode": {
+      "meeting": "Meeting",
+      "webinar": "Webinar"
     }
   },
   "dayDetails": {
@@ -2364,5 +2375,34 @@
     "exitFullscreen": "Vollbild beenden",
     "allModulesTitle": "Alle Module",
     "overdueCount": "{{count}} überfällig"
+  },
+  "meetings": {
+    "joinNow": "Beitreten",
+    "joinWithoutVideo": "Ohne Video beitreten",
+    "copyLink": "Link kopieren",
+    "copied": "Kopiert",
+    "copyFailed": "Link konnte nicht kopiert werden",
+    "linkCopied": "Meeting-Link kopiert",
+    "leave": "Verlassen",
+    "meeting": "Meeting",
+    "webinar": "Webinar",
+    "untitled": "Meeting ohne Titel",
+    "name": "Name",
+    "namePlaceholder": "Ihr Name",
+    "micOn": "Mikrofon an",
+    "micOff": "Mikrofon aus",
+    "camOn": "Kamera an",
+    "camOff": "Kamera aus",
+    "joinHint": "Direkt aus dem Browser beitreten — kein Download nötig.",
+    "joinError": "Beitritt fehlgeschlagen",
+    "secureNote": "Sicheres WebRTC in Ihrem Browser",
+    "notFoundTitle": "Meeting nicht gefunden",
+    "notFoundDesc": "Dieses Meeting wurde möglicherweise entfernt, oder Sie haben keinen Zugriff.",
+    "backToDashboard": "Zurück zum Dashboard",
+    "status": {
+      "scheduled": "Geplant",
+      "live": "Live",
+      "ended": "Beendet"
+    }
   }
 }

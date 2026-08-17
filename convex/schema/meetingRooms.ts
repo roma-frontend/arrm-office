@@ -26,6 +26,10 @@ export const meetingRooms = {
     photoUrl: v.optional(v.string()),
     /** Archived rooms keep their history but cannot be booked. */
     isActive: v.boolean(),
+    /** True = a virtual room backed by LiveKit rather than a physical one. */
+    isVirtual: v.optional(v.boolean()),
+    /** LiveKit room name backing a virtual room; unset for physical rooms. */
+    livekitRoomName: v.optional(v.string()),
     /** Optional booking window, e.g. 08:00–20:00 ("HH:mm"). */
     openFrom: v.optional(v.string()),
     openTo: v.optional(v.string()),

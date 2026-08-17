@@ -1771,6 +1771,17 @@
       "bookDriver": "Book Driver",
       "viewDay": "View Day Details",
       "copyDate": "Copy Date"
+    },
+    "videoConference": "Video conference",
+    "videoConferenceDesc": "Create a join link and add it to the event",
+    "videoModeLabel": "Mode",
+    "videoModeDesc": "Meeting — everyone talks · Webinar — only presenters speak",
+    "videoCreated": "Video conference created — join link added to the event",
+    "videoNotConfigured": "Video calls are not configured yet. Ask the administrator to set the LIVEKIT variables.",
+    "videoFailed": "Could not create the video conference",
+    "videoMode": {
+      "meeting": "Meeting",
+      "webinar": "Webinar"
     }
   },
   "dayDetails": {
@@ -2364,5 +2375,34 @@
     "exitFullscreen": "Exit fullscreen",
     "allModulesTitle": "All modules",
     "overdueCount": "{{count}} overdue"
+  },
+  "meetings": {
+    "joinNow": "Join",
+    "joinWithoutVideo": "Join without video",
+    "copyLink": "Copy link",
+    "copied": "Copied",
+    "copyFailed": "Could not copy the link",
+    "linkCopied": "Meeting link copied",
+    "leave": "Leave",
+    "meeting": "Meeting",
+    "webinar": "Webinar",
+    "untitled": "Untitled meeting",
+    "name": "Name",
+    "namePlaceholder": "Your name",
+    "micOn": "Mic on",
+    "micOff": "Mic off",
+    "camOn": "Camera on",
+    "camOff": "Camera off",
+    "joinHint": "Join from your browser — no downloads needed.",
+    "joinError": "Could not join",
+    "secureNote": "Secure WebRTC in your browser",
+    "notFoundTitle": "Meeting not found",
+    "notFoundDesc": "This meeting may have been removed, or you don't have access to it.",
+    "backToDashboard": "Back to dashboard",
+    "status": {
+      "scheduled": "Scheduled",
+      "live": "Live",
+      "ended": "Ended"
+    }
   }
 }
