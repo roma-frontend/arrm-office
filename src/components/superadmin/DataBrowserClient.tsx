@@ -336,7 +336,9 @@ export function DataBrowserClient() {
     setImportRunning(false);
     setImportTables(null);
     if (failed === 0) {
-      toast.success(t('superadmin.database.imported', 'Imported {{count}} rows', { count: inserted }));
+      toast.success(
+        t('superadmin.database.imported', 'Imported {{count}} rows', { count: inserted }),
+      );
     } else {
       toast.error(
         t('superadmin.database.importedPartial', 'Imported {{inserted}} rows, {{failed}} failed', {

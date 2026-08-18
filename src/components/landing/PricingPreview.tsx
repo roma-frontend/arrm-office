@@ -328,9 +328,7 @@ function FeatureNavigator({
         <div
           style={{
             gridArea: 'stack',
-            transform: activeGroup
-              ? 'translateX(0) scale(1)'
-              : 'translateX(100%) scale(0.95)',
+            transform: activeGroup ? 'translateX(0) scale(1)' : 'translateX(100%) scale(0.95)',
             opacity: activeGroup ? 1 : 0,
             pointerEvents: activeGroup ? 'auto' : 'none',
             transition: 'all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)',
@@ -1145,7 +1143,11 @@ export default function PricingPreview() {
       descriptionText: p.plan.tagline ?? undefined,
       featureTexts: p.modules.map((m) => t(`billing.modules.${m.key}`, m.name)),
       featureGroups: groupFeaturesByCategory(
-        p.modules.map((m) => ({ key: m.key, name: t(`billing.modules.${m.key}`, m.name), category: m.category })),
+        p.modules.map((m) => ({
+          key: m.key,
+          name: t(`billing.modules.${m.key}`, m.name),
+          category: m.category,
+        })),
       ),
       ctaText: isCustom
         ? t('pricing.contactSales', 'Contact sales')

@@ -101,10 +101,19 @@ async function notifyAttendees(
     uninvited: ['notifications.titles.meetingUninvited', 'notifications.messages.meetingUninvited'],
   }[kind];
   const fallbacks = {
-    invited: [`📅 You're invited: ${event.title}`, `${actorName} invited you to "${event.title}" (${event.date} ${event.startTime})`],
-    updated: [`📅 Meeting updated: ${event.title}`, `${actorName} updated "${event.title}" (${event.date} ${event.startTime})`],
+    invited: [
+      `📅 You're invited: ${event.title}`,
+      `${actorName} invited you to "${event.title}" (${event.date} ${event.startTime})`,
+    ],
+    updated: [
+      `📅 Meeting updated: ${event.title}`,
+      `${actorName} updated "${event.title}" (${event.date} ${event.startTime})`,
+    ],
     cancelled: [`📅 Meeting cancelled: ${event.title}`, `${actorName} cancelled "${event.title}"`],
-    uninvited: [`📅 Invitation withdrawn: ${event.title}`, `${actorName} removed you from "${event.title}"`],
+    uninvited: [
+      `📅 Invitation withdrawn: ${event.title}`,
+      `${actorName} removed you from "${event.title}"`,
+    ],
   }[kind]!;
   for (const attendeeId of attendeeIds) {
     if (attendeeId === actorId) continue;

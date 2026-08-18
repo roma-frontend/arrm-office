@@ -4,7 +4,12 @@ import { getAuthCaller, type AuthenticatedCaller } from './lib/getAuthCaller';
 import { isSuperadmin } from './lib/auth';
 import { DEFAULT_LIST_CAP } from './lib/limits';
 import { patchProfile } from './lib/userProfile';
-import { assertModuleAccess, assertQuota, decrementUsage, incrementUsage } from './lib/entitlements';
+import {
+  assertModuleAccess,
+  assertQuota,
+  decrementUsage,
+  incrementUsage,
+} from './lib/entitlements';
 import { ALL_LEAVE_TYPES, getActiveLeaveTypes } from './lib/leaveTypes';
 import type { Id } from './_generated/dataModel';
 
