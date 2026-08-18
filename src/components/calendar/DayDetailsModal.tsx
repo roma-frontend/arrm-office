@@ -15,6 +15,7 @@ import {
   ExternalLink,
   DoorOpen,
   Building2,
+  Users,
   Video,
   Copy,
 } from 'lucide-react';
@@ -428,6 +429,29 @@ export function DayDetailsModal({
                           <p className="text-xs text-(--text-muted) mt-1 flex items-center gap-1">
                             <MapPin className="w-3 h-3" /> {evt.location}
                           </p>
+                        )}
+                        {evt.attendees.length > 0 && (
+                          <div
+                            className="mt-1.5 flex items-center gap-1.5"
+                            title={evt.attendees.join(', ')}
+                          >
+                            <Users className="h-3.5 w-3.5 shrink-0 text-(--text-muted)" />
+                            <span className="flex -space-x-1">
+                              {evt.attendees.slice(0, 4).map((name, ai) => (
+                                <span
+                                  key={`a-${ai}`}
+                                  className="flex size-5 items-center justify-center rounded-full border border-(--card) bg-(--surface-2) text-[8px] font-bold text-(--text-secondary)"
+                                >
+                                  {getInitials(name).slice(0, 2)}
+                                </span>
+                              ))}
+                              {evt.attendees.length > 4 && (
+                                <span className="flex size-5 items-center justify-center rounded-full border border-(--card) bg-(--surface-3) text-[8px] font-bold text-(--text-secondary)">
+                                  +{evt.attendees.length - 4}
+                                </span>
+                              )}
+                            </span>
+                          </div>
                         )}
                         {evt.roomName && (
                           <p className="mt-1 inline-flex items-center gap-1 rounded-full bg-(--card) px-2 py-0.5 text-xs text-(--text-secondary)">

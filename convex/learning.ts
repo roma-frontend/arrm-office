@@ -5,6 +5,7 @@ import { MAX_PAGE_SIZE } from './pagination';
 import { isSuperadmin } from './lib/auth';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { getAuthCaller } from './lib/getAuthCaller';
+import { assertModuleAccess } from './lib/entitlements';
 
 // ─── Helper: Check permissions ───────────────────────────────────────────────
 // Identity is derived from the verified JWT (getAuthCaller), never from client args.
@@ -128,6 +129,7 @@ export const createCourse = mutation({
     tags: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'learning');
     const { requesterId, isSuperadmin } = await checkAccess(ctx, args.organizationId);
     if (!isSuperadmin) throw new Error('Only admins can create courses');
 
@@ -166,6 +168,7 @@ export const updateCourse = mutation({
     tags: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'learning');
     const course = await ctx.db.get(args.courseId);
     if (!course) throw new Error('Course not found');
     const { isSuperadmin } = await checkAccess(ctx, course.organizationId);
@@ -372,6 +375,7 @@ export const enrollInCourse = mutation({
     enrolledBy: v.optional(v.id('users')),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'learning');
     const { requesterId } = await checkAccess(ctx, args.organizationId);
 
     const existing = await ctx.db
@@ -705,6 +709,7 @@ export const submitQuizAttempt = mutation({
     answers: v.any(),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'learning');
     const { requesterId } = await checkAccess(ctx, args.organizationId);
 
     const quiz = await ctx.db.get(args.quizId);
@@ -807,6 +812,7 @@ export const issueCertificate = mutation({
     metadata: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'learning');
     const { isSuperadmin } = await checkAccess(ctx, args.organizationId);
     if (!isSuperadmin) throw new Error('Only admins can issue certificates');
 

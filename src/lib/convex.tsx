@@ -4,14 +4,57 @@ import { ConvexProviderWithAuth, ConvexReactClient } from 'convex/react';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useAuthStoreHydrated } from '@/hooks/useAuthStoreHydrated';
+import { parsePlanGateError } from '@/lib/planGateErrors';
+import { useUpgradeModalStore } from '@/store/useUpgradeModalStore';
 
 let convexInstance: ConvexReactClient | null = null;
+
+/**
+ * Surface plan-gate rejections through the global Upgrade modal.
+ *
+ * The server refuses writes whose module isn't in the caller's plan
+ * ("Module X is not included in your … plan") or whose quota is exhausted
+ * ("Quota exceeded: …"). Instead of leaving every call site with a bare
+ * error, the client intercepts those rejections on the shared Convex client
+ * (used by every `useMutation` / `useAction` in the app) and opens the
+ * upgrade dialog — then rethrows so existing error handling still works.
+ */ function installPlanGateInterceptor(client: ConvexReactClient) {
+  // Some test environments substitute a stub client without the transport
+  // methods — nothing to intercept there.
+  if (typeof client.mutation !== 'function' || typeof client.action !== 'function') return;
+
+  const surfacePlanGate = (err: unknown) => {
+    const info = parsePlanGateError(err);
+    if (info) useUpgradeModalStore.getState().openUpgrade(info);
+  };
+  // The client's methods are generic over the function reference; the
+  // interceptor is deliberately loosely typed — it only needs pass-through +
+  // a rejection side-effect. Static typing of `client.mutation(...)` call
+  // sites comes from the declared class type, not this runtime patch.
+  type AnyPromiseFn = (...args: unknown[]) => Promise<unknown>;
+
+  const originalMutation = client.mutation.bind(client) as unknown as AnyPromiseFn;
+  const originalAction = client.action.bind(client) as unknown as AnyPromiseFn;
+
+  const intercept = (method: AnyPromiseFn): AnyPromiseFn => {
+    return (...args: unknown[]) => {
+      const promise = method(...args);
+      promise.catch(surfacePlanGate);
+      return promise;
+    };
+  };
+
+  const patched = client as unknown as { mutation: AnyPromiseFn; action: AnyPromiseFn };
+  patched.mutation = intercept(originalMutation);
+  patched.action = intercept(originalAction);
+}
 
 function getConvexClient() {
   if (!convexInstance) {
     convexInstance = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!, {
       unsavedChangesWarning: false,
     });
+    installPlanGateInterceptor(convexInstance);
   }
   return convexInstance;
 }

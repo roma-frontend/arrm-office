@@ -2463,7 +2463,7 @@ describe('checkWarrantyReminders', () => {
     orgCh.take.mockResolvedValue([orgDoc()]);
     const catCh = chain(chains, 'assetCatalog');
     catCh.take.mockResolvedValue([
-      assetDoc({ warrantyExpiry: now + 10 * day }), // in window → notify
+      assetDoc({ warrantyExpiry: now + 7 * day }), // in window → notify
       assetDoc({ _id: ASSET_2, warrantyExpiry: now + 45 * day }), // beyond → skip
       assetDoc({ _id: 'asset_3', warrantyExpiry: now - 5 * day }), // expired → skip
       assetDoc({ _id: 'asset_4', warrantyExpiry: undefined }), // none → skip
@@ -2478,7 +2478,7 @@ describe('checkWarrantyReminders', () => {
         organizationId: ORG_A,
         userId: ADMIN_ID,
         titleKey: 'notifications.titles.warrantyExpiring',
-        params: { assetName: 'MacBook Pro', count: 10 },
+        params: { assetName: 'MacBook Pro', count: 7 },
         route: '/assets',
       }),
     );

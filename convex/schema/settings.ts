@@ -31,6 +31,17 @@ export const settings = {
         createdAt: v.optional(v.number()),
       }),
     ),
+    // Plan-editor linkage: the billingPlans row + the published version the
+    // subscriber signed up on (billingPlanVersions.version). Overrides are a
+    // JSON blob of per-org limit/price adjustments granted manually.
+    planId: v.optional(v.id('billingPlans')),
+    planVersion: v.optional(v.number()),
+    overrides: v.optional(v.string()),
+    // Per-org custom Enterprise deal: a full PlanSnapshot JSON (plan + module
+    // entitlements) granted by the superadmin. When present it takes priority
+    // over the published catalog snapshot, so each Enterprise customer gets
+    // exactly the modules and limits they paid for.
+    customSnapshot: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })

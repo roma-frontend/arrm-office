@@ -8,6 +8,12 @@ import { getAuthCaller, type AuthenticatedCaller } from './lib/getAuthCaller';
 import { notify } from './lib/notify';
 import { sha256Hex } from './lib/sha256';
 import type { Doc, Id } from './_generated/dataModel';
+import {
+  assertModuleAccess,
+  assertQuota,
+  currentPeriodKey,
+  incrementUsage,
+} from './lib/entitlements';
 
 /**
  * Content hash stored alongside the immutable document snapshot and printed in
@@ -316,6 +322,7 @@ export const createTemplate = mutation({
     createdBy: v.id('users'),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'signatures');
     const caller = await assertCallerIs(ctx, args.createdBy);
     if (!managesOrg(caller, args.organizationId)) {
       throw new Error('Only organization managers can create document templates');
@@ -457,11 +464,23 @@ export const createDocument = mutation({
     createdBy: v.id('users'),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'signatures');
     const caller = await assertCallerIs(ctx, args.createdBy);
     if (!managesOrg(caller, args.organizationId)) {
       throw new Error('Only organization managers can send documents for signature');
     }
-    return await insertSignatureDocument(ctx, args);
+    // A new envelope consumes one of the monthly `envelopes` on the plan.
+    await assertQuota(ctx, 'signatures', 'envelopes', 1, currentPeriodKey());
+    const documentId = await insertSignatureDocument(ctx, args);
+    await incrementUsage(
+      ctx,
+      args.organizationId,
+      'signatures',
+      'envelopes',
+      1,
+      currentPeriodKey(),
+    );
+    return documentId;
   },
 });
 
@@ -472,6 +491,7 @@ export const signDocument = mutation({
     userId: v.id('users'),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'signatures');
     const { requestId, signatureData, userId } = args;
     // Without this the client-supplied `userId` was the only thing standing
     // between an attacker and signing an employment contract as someone else.
@@ -862,6 +882,7 @@ export const cancelDocument = mutation({
     userId: v.id('users'),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'signatures');
     const { documentId, userId } = args;
     const caller = await assertCallerIs(ctx, userId);
     const doc = await ctx.db.get(documentId);

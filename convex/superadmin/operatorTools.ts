@@ -251,6 +251,42 @@ export const CRON_REGISTRY: Array<{
     description: 'Produces recurring task occurrences on each rule day.',
     schedule: 'hourly',
   },
+  {
+    jobKey: 'performance-deadline-checks',
+    label: 'Performance review deadline reminders',
+    description: 'Nudges reviewers before a review window closes.',
+    schedule: 'daily 09:00 UTC',
+  },
+  {
+    jobKey: 'okr-checkin-reminders',
+    label: 'OKR check-in reminders',
+    description: 'Weekly nudge for key results with a check-in due.',
+    schedule: 'weekly Mon 10:00 UTC',
+  },
+  {
+    jobKey: 'survey-auto-activation',
+    label: 'Survey auto-activation',
+    description: 'Activates scheduled surveys and notifies the creator.',
+    schedule: 'hourly',
+  },
+  {
+    jobKey: 'survey-auto-closure',
+    label: 'Survey auto-closure',
+    description: 'Closes expired surveys and notifies the creator.',
+    schedule: 'hourly',
+  },
+  {
+    jobKey: 'asset-warranty-reminders',
+    label: 'Asset warranty reminders',
+    description: 'Heads-up at 30/15/7/1 days before a warranty expires.',
+    schedule: 'daily 08:00 UTC',
+  },
+  {
+    jobKey: 'asset-maintenance-reminders',
+    label: 'Asset maintenance reminders',
+    description: 'Daily nudge while scheduled maintenance is due or overdue.',
+    schedule: 'daily 08:30 UTC',
+  },
 ];
 
 export const listScheduledOps = query({
@@ -369,6 +405,24 @@ export const dispatchCron = internalAction({
           break;
         case 'recurring-tasks-generate':
           await ctx.runMutation(internal.recurringTasks.generateDueRecurringTasks, {});
+          break;
+        case 'performance-deadline-checks':
+          await ctx.runMutation(internal.performance.checkDeadlineNotifications, {});
+          break;
+        case 'okr-checkin-reminders':
+          await ctx.runMutation(internal.goals.sendWeeklyCheckinReminders, {});
+          break;
+        case 'survey-auto-activation':
+          await ctx.runMutation(internal.surveys.activateScheduledSurveys, {});
+          break;
+        case 'survey-auto-closure':
+          await ctx.runMutation(internal.surveys.closeExpiredSurveys, {});
+          break;
+        case 'asset-warranty-reminders':
+          await ctx.runMutation(internal.assets.checkWarrantyReminders, {});
+          break;
+        case 'asset-maintenance-reminders':
+          await ctx.runMutation(internal.assets.checkMaintenanceReminders, {});
           break;
         default:
           throw new Error(`Unknown cron job key: ${args.jobKey}`);

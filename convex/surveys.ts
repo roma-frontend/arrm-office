@@ -6,6 +6,7 @@ import { MAX_PAGE_SIZE } from './pagination';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
 import { notify } from './lib/notify';
+import { assertModuleAccess } from './lib/entitlements';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // QUERIES
@@ -255,6 +256,7 @@ export const createSurvey = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'surveys');
     await assertFeatureEnabled(ctx, 'surveys.module');
     const now = Date.now();
 
@@ -303,6 +305,7 @@ export const publishSurvey = mutation({
     organizationId: v.id('organizations'),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'surveys');
     await assertFeatureEnabled(ctx, 'surveys.module');
     const { surveyId, organizationId } = args;
     const survey = await ctx.db.get(surveyId);
@@ -399,6 +402,7 @@ export const submitResponse = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'surveys');
     await assertFeatureEnabled(ctx, 'surveys.module');
     const survey = await ctx.db.get(args.surveyId);
     if (!survey || survey.organizationId !== args.organizationId) {
@@ -594,6 +598,7 @@ export const updateSurvey = mutation({
     endsAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'surveys');
     await assertFeatureEnabled(ctx, 'surveys.module');
     const { surveyId, organizationId, ...updates } = args;
     const survey = await ctx.db.get(surveyId);

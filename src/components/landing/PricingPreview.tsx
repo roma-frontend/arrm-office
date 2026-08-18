@@ -2,12 +2,14 @@
 
 import { useRef, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useQuery } from 'convex/react';
 import { toast } from 'sonner';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useRouter } from 'next/navigation';
 import { useCurrency } from '@/hooks/useCurrency';
+import { api } from '@/convex/_generated/api';
 import { logger } from '@/lib/logger';
 
 // Inline SVG icons to eliminate lucide-react import overhead
@@ -184,9 +186,18 @@ interface PricingTier {
   nameKey: string;
   priceKey: string;
   priceMonthly?: number;
+  priceYearly?: number;
   descriptionKey: string;
   icon: React.ReactNode;
   featureKeys: string[];
+  /** Direct values win when the tier comes from live billing data. */
+  nameText?: string;
+  descriptionText?: string;
+  featureTexts?: string[];
+  /** Category-grouped features (data-driven tiers) — rendered as smoothly
+   *  collapsible sections, like the sidebar's sub-items. */
+  featureGroups?: Array<{ category: string; items: string[] }>;
+  ctaText?: string;
   buttonTextKey: string;
   popular?: boolean;
   badgeKey?: string;
@@ -194,6 +205,211 @@ interface PricingTier {
   accentTo: string;
   glowColor: string;
   trialEligible?: boolean;
+}
+
+// Category display order for the grouped feature list — mirrors the billing
+// catalog (convex/billing/modules.ts) without pulling it into the landing
+// bundle. Categories not listed here sort after these, alphabetically.
+const FEATURE_CATEGORY_ORDER = [
+  'people',
+  'time',
+  'performance',
+  'talent',
+  'finance',
+  'communication',
+  'documents',
+  'platform',
+  'ai',
+  'security',
+  'future',
+] as const;
+
+function groupFeaturesByCategory(
+  modules: Array<{ key: string; name: string; category: string }>,
+): Array<{ category: string; items: string[] }> {
+  const byCategory = new Map<string, string[]>();
+  for (const m of modules) {
+    const list = byCategory.get(m.category) ?? [];
+    list.push(m.name);
+    byCategory.set(m.category, list);
+  }
+  const order = new Map<string, number>(FEATURE_CATEGORY_ORDER.map((c, i) => [c, i]));
+  return [...byCategory.entries()]
+    .sort((a, b) => {
+      const ai = order.get(a[0]);
+      const bi = order.get(b[0]);
+      if (ai !== undefined && bi !== undefined) return ai - bi;
+      if (ai !== undefined) return -1;
+      if (bi !== undefined) return 1;
+      return a[0].localeCompare(b[0]);
+    })
+    .map(([category, items]) => ({ category, items }));
+}
+
+/**
+ * Sidebar-style feature navigator: the plan's categories are listed as rows
+ * (like main sidebar items); clicking one slides a sub-menu in from the right
+ * (back button + that category's features), exactly like the sidebar's sub-nav
+ * — same springy cubic-bezier, staggered items, and no scroll: the panel is
+ * exactly as tall as its content.
+ */
+function FeatureNavigator({
+  groups,
+  accentFrom,
+}: {
+  groups: Array<{ category: string; items: string[] }>;
+  accentFrom: string;
+}) {
+  const { t } = useTranslation();
+  const [active, setActive] = useState<string | null>(null);
+  const activeGroup = groups.find((g) => g.category === active) ?? null;
+
+  return (
+    <div className="relative overflow-hidden">
+      <div className="grid" style={{ gridTemplateAreas: "'stack'" }}>
+        {/* Master view — category rows */}
+        <div
+          style={{
+            gridArea: 'stack',
+            opacity: activeGroup ? 0 : 1,
+            transform: activeGroup ? 'translateX(-24px)' : 'translateX(0)',
+            transition: 'all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)',
+            pointerEvents: activeGroup ? 'none' : 'auto',
+          }}
+        >
+          {groups.map((group, i) => (
+            <button
+              key={group.category}
+              type="button"
+              onClick={() => setActive(group.category)}
+              className="group w-full flex items-center gap-2.5 px-2.5 py-2.5 rounded-xl text-left transition-all duration-200 hover:bg-(--landing-card-border)/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-(--primary)/40"
+              style={{
+                opacity: activeGroup ? 0 : 1,
+                transform: activeGroup ? 'translateX(-20px)' : 'translateX(0)',
+                transition: `all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) ${i * 0.02}s`,
+              }}
+            >
+              <span
+                className="flex-1 min-w-0 text-xs sm:text-sm truncate"
+                style={{ color: 'var(--landing-text-secondary)', opacity: 0.9 }}
+              >
+                {t(`billing.categories.${group.category}`, group.category)}
+              </span>
+              <span
+                className="shrink-0 min-w-5 text-center text-[10px] tabular-nums px-1.5 py-0.5 rounded-full"
+                style={{
+                  color: accentFrom,
+                  background: `${accentFrom}14`,
+                  border: `1px solid ${accentFrom}33`,
+                }}
+              >
+                {group.items.length}
+              </span>
+              <svg
+                width={12}
+                height={12}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                className="shrink-0 transition-transform duration-300 group-hover:translate-x-0.5"
+                style={{ color: 'var(--landing-text-muted)' }}
+              >
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </button>
+          ))}
+        </div>
+
+        {/* Detail view — one category's features, slides in from the right */}
+        <div
+          style={{
+            gridArea: 'stack',
+            transform: activeGroup
+              ? 'translateX(0) scale(1)'
+              : 'translateX(100%) scale(0.95)',
+            opacity: activeGroup ? 1 : 0,
+            pointerEvents: activeGroup ? 'auto' : 'none',
+            transition: 'all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)',
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => setActive(null)}
+            className="group/back w-full flex items-center gap-2 px-2.5 py-2 mb-1 rounded-xl transition-all duration-300 hover:bg-(--landing-card-border)/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-(--primary)/40"
+            style={{
+              opacity: activeGroup ? 1 : 0,
+              transform: activeGroup ? 'translateX(0)' : 'translateX(20px)',
+              transition: `all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) ${activeGroup ? '0.1s' : '0ms'}`,
+            }}
+          >
+            <svg
+              width={13}
+              height={13}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              className="transition-transform duration-300 group-hover/back:-translate-x-0.5"
+              style={{ color: 'var(--landing-text-muted)' }}
+            >
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+            <span
+              className="text-xs sm:text-sm truncate"
+              style={{ color: 'var(--landing-text-secondary)', opacity: 0.9 }}
+            >
+              {activeGroup
+                ? t(`billing.categories.${activeGroup.category}`, activeGroup.category)
+                : ''}
+            </span>
+          </button>
+
+          <ul className="space-y-2 py-1">
+            {(activeGroup?.items ?? []).map((feature, i) => (
+              <li
+                key={`${activeGroup?.category}-${i}`}
+                className="flex items-start gap-2 sm:gap-2.5 px-1"
+                style={{
+                  opacity: activeGroup ? 1 : 0,
+                  transform: activeGroup ? 'translateX(0)' : 'translateX(30px)',
+                  transition: `all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) ${
+                    activeGroup ? 0.15 + i * 0.05 : 0
+                  }s`,
+                }}
+              >
+                <div
+                  className="w-4 h-4 sm:w-[18px] sm:h-[18px] rounded-full flex items-center justify-center shrink-0 mt-0.5"
+                  style={{
+                    background: `${accentFrom}22`,
+                    border: `1px solid ${accentFrom}44`,
+                  }}
+                >
+                  <CheckIcon
+                    size={10}
+                    className="sm:w-[11px] sm:h-[11px]"
+                    style={{ color: accentFrom }}
+                  />
+                </div>
+                <span
+                  className="text-xs sm:text-sm flex-1 leading-relaxed"
+                  style={{ color: 'var(--landing-text-secondary)', opacity: 0.9 }}
+                >
+                  {feature}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // ── Plans ─────────────────────────────────────────────────────────────────────
@@ -346,7 +562,10 @@ function PricingCard({
   const { symbol } = useCurrency();
   const [loading, setLoading] = useState(false);
   const [hovered, setHovered] = useState(false);
-  const isCurrentPlan = currentPlan === tier.id;
+  // Legacy subscriptions use 'professional' while the editor's plan key is
+  // 'pro' — treat them as the same tier so the CTA shows "Current plan".
+  const isCurrentPlan =
+    currentPlan === tier.id || (tier.id === 'pro' && currentPlan === 'professional');
   const router = useRouter();
 
   // Count-up the digits when the plan or billing period changes — the price
@@ -491,13 +710,13 @@ function PricingCard({
                 className="text-lg sm:text-xl font-bold"
                 style={{ color: 'var(--landing-text-primary)' }}
               >
-                {t(tier.nameKey)}
+                {tier.nameText ?? t(tier.nameKey)}
               </h3>
               <p
                 className="text-xs sm:text-sm mt-1"
                 style={{ color: 'var(--landing-text-secondary)', opacity: 0.9 }}
               >
-                {t(tier.descriptionKey)}
+                {tier.descriptionText ?? t(tier.descriptionKey)}
               </p>
             </div>
           </div>
@@ -549,32 +768,40 @@ function PricingCard({
             )}
           </div>
 
-          {/* Features */}
-          <ul className="space-y-2.5 sm:space-y-3 mb-6 sm:mb-8 flex-1">
-            {tier.featureKeys.map((feature, i) => (
-              <li key={i} className="flex items-start gap-2 sm:gap-3">
-                <div
-                  className="w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5"
-                  style={{
-                    background: `${tier.accentFrom}22`,
-                    border: `1px solid ${tier.accentFrom}44`,
-                  }}
-                >
-                  <CheckIcon
-                    size={10}
-                    className="sm:w-[11px] sm:h-[11px]"
-                    style={{ color: tier.accentFrom }}
-                  />
-                </div>
-                <span
-                  className="text-xs sm:text-sm flex-1 leading-relaxed"
-                  style={{ color: 'var(--landing-text-secondary)', opacity: 0.9 }}
-                >
-                  {t(feature)}
-                </span>
-              </li>
-            ))}
-          </ul>
+          {/* Features — grouped into a sidebar-style navigator for data-driven
+              tiers (categories on the card, sub-menu slides in from the right),
+              flat checklist for the short bundled tiers. */}
+          {tier.featureGroups && tier.featureGroups.length > 0 ? (
+            <div className="flex-1 mb-6 sm:mb-8 -mx-1 px-1">
+              <FeatureNavigator groups={tier.featureGroups} accentFrom={tier.accentFrom} />
+            </div>
+          ) : (
+            <ul className="space-y-2.5 sm:space-y-3 mb-6 sm:mb-8 flex-1">
+              {(tier.featureTexts ?? tier.featureKeys.map((k) => t(k))).map((feature, i) => (
+                <li key={i} className="flex items-start gap-2 sm:gap-3">
+                  <div
+                    className="w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5"
+                    style={{
+                      background: `${tier.accentFrom}22`,
+                      border: `1px solid ${tier.accentFrom}44`,
+                    }}
+                  >
+                    <CheckIcon
+                      size={10}
+                      className="sm:w-[11px] sm:h-[11px]"
+                      style={{ color: tier.accentFrom }}
+                    />
+                  </div>
+                  <span
+                    className="text-xs sm:text-sm flex-1 leading-relaxed"
+                    style={{ color: 'var(--landing-text-secondary)', opacity: 0.9 }}
+                  >
+                    {feature}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
 
           {/* CTA Button */}
           <button
@@ -618,7 +845,7 @@ function PricingCard({
               </>
             ) : (
               <>
-                {t(tier.buttonTextKey)}
+                {tier.ctaText ?? t(tier.buttonTextKey)}
                 <ArrowRightIcon
                   size={15}
                   className="group-hover/btn:translate-x-0.5 transition-transform"
@@ -861,6 +1088,35 @@ function SavingsCalculator({
 }
 
 // ── Section ───────────────────────────────────────────────────────────────────
+// Accent palettes for the three plan columns (data-driven tiers reuse these).
+const DATA_ACCENTS: Array<{
+  accentFrom: string;
+  accentTo: string;
+  glowColor: string;
+  icon: React.ReactNode;
+}> = [
+  {
+    accentFrom: '#10b981',
+    accentTo: '#059669',
+    glowColor: 'rgba(16,185,129,0.35)',
+    icon: <ZapIcon size={22} />,
+  },
+  {
+    accentFrom: '#3b82f6',
+    accentTo: '#2563eb',
+    glowColor: 'rgba(59,130,246,0.4)',
+    icon: <BuildingIcon size={22} />,
+  },
+  {
+    accentFrom: '#8b5cf6',
+    accentTo: '#6d28d9',
+    glowColor: 'rgba(139,92,246,0.35)',
+    icon: <RocketIcon size={22} />,
+  },
+];
+
+const FALLBACK_CURRENCY = { symbol: '$', amount: 79 };
+
 export default function PricingPreview() {
   const { ref, style } = useReveal();
   const { t } = useTranslation();
@@ -869,25 +1125,76 @@ export default function PricingPreview() {
   const currency = useCurrency();
   const [billing, setBilling] = useState<'monthly' | 'annual'>('monthly');
 
+  // Live tariffs from the plan editor: the superadmin publishes plans in
+  // /superadmin/plans and this section re-renders within ~100ms (Convex live
+  // query). Falls back to the bundled hardcoded tiers until the first publish.
+  const publishedPlans = useQuery(api.billing.plans.getPublishedPlans);
+
+  const dataTiers: PricingTier[] = (publishedPlans ?? []).map((p, i) => {
+    const accent = DATA_ACCENTS[i % DATA_ACCENTS.length] ?? DATA_ACCENTS[0]!;
+    const isCustom = p.plan.isCustom;
+    return {
+      id: p.plan.key,
+      nameKey: 'pricing.starter',
+      priceKey: 'pricing.starterPrice',
+      priceMonthly: p.plan.priceMonthly ?? undefined,
+      priceYearly: p.plan.priceYearly ?? undefined,
+      descriptionKey: 'pricing.starterDesc',
+      featureKeys: [],
+      nameText: p.plan.name,
+      descriptionText: p.plan.tagline ?? undefined,
+      featureTexts: p.modules.map((m) => t(`billing.modules.${m.key}`, m.name)),
+      featureGroups: groupFeaturesByCategory(
+        p.modules.map((m) => ({ key: m.key, name: t(`billing.modules.${m.key}`, m.name), category: m.category })),
+      ),
+      ctaText: isCustom
+        ? t('pricing.contactSales', 'Contact sales')
+        : p.plan.ctaLabel || t('pricing.startFreeTrial', 'Start free trial'),
+      buttonTextKey: 'pricing.startFreeTrial',
+      popular: p.plan.isPopular,
+      badgeKey: 'pricing.mostPopular',
+      icon: accent.icon,
+      accentFrom: accent.accentFrom,
+      accentTo: accent.accentTo,
+      glowColor: accent.glowColor,
+      trialEligible: !isCustom,
+    };
+  });
+
+  const tiers = dataTiers.length > 0 ? dataTiers : pricingTiers;
+
   // Only show current plan if user is logged in
   const currentPlan = user ? plan : undefined;
 
   // Numeric amounts (in the current currency) for the count-up animation and
-  // the savings calculator. enterprise is custom — no number to animate.
-  const priceAmounts: Record<string, number | null> = {
-    starter: Math.round(currency.starter.amount * (billing === 'annual' ? 0.8 : 1)),
-    professional: Math.round(currency.professional.amount * (billing === 'annual' ? 0.8 : 1)),
-    enterprise: null,
-  };
+  // the savings calculator. Data-driven tiers prefer their explicit yearly
+  // price; bundled tiers apply the 20% annual discount. Custom plans are null.
+  const priceAmounts: Record<string, number | null> = Object.fromEntries(
+    tiers.map((tier) => {
+      const base =
+        billing === 'annual'
+          ? (tier.priceYearly ??
+            (tier.priceMonthly !== undefined ? tier.priceMonthly * 0.8 : undefined))
+          : tier.priceMonthly;
+      return [tier.id, base === undefined ? null : Math.round(base)];
+    }),
+  );
 
   // Build price strings from the numeric amount so annual pricing survives
   // currency formatting with thousand separators (₽2,610 → ₽2,090).
   const fmtPrice = (amount: number) => `${currency.symbol}${amount.toLocaleString()}`;
-  const priceMap: Record<string, string> = {
-    starter: fmtPrice(priceAmounts.starter!),
-    professional: fmtPrice(priceAmounts.professional!),
-    enterprise: t('pricing.custom', 'Custom'),
-  };
+  const priceMap: Record<string, string> = Object.fromEntries(
+    tiers.map((tier) => [
+      tier.id,
+      priceAmounts[tier.id] === null
+        ? t('pricing.custom', 'Custom')
+        : fmtPrice(priceAmounts[tier.id]!),
+    ]),
+  );
+
+  const proTier = tiers.find((tier) => tier.id === 'pro' || tier.id === 'professional');
+  const professionalAmount =
+    proTier?.priceMonthly ?? currency.professional.amount ?? FALLBACK_CURRENCY.amount;
 
   return (
     <section id="pricing" className="relative z-10 px-6 md:px-12 py-12 md:py-24 overflow-hidden">
@@ -985,7 +1292,7 @@ export default function PricingPreview() {
 
       {/* Cards grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-6xl mx-auto items-start pt-6">
-        {pricingTiers.map((tier, i) => (
+        {tiers.map((tier, i) => (
           <PricingCard
             key={tier.id}
             tier={tier}
@@ -999,10 +1306,7 @@ export default function PricingPreview() {
       </div>
 
       {/* Savings calculator — team size → annual savings, live and animated */}
-      <SavingsCalculator
-        professionalAmount={currency.professional.amount}
-        symbol={currency.symbol}
-      />
+      <SavingsCalculator professionalAmount={professionalAmount} symbol={currency.symbol} />
 
       {/* Footer note */}
       <p

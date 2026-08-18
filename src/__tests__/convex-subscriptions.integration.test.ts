@@ -19,8 +19,17 @@ import type { Id } from '../../convex/_generated/dataModel';
 const modules = {
   './_generated/api.ts': () => import('../../convex/_generated/api'),
   './subscriptions.ts': () => import('../../convex/subscriptions'),
+  './subscriptions_admin.ts': () => import('../../convex/subscriptions_admin'),
+  './organizationRequests.ts': () => import('../../convex/organizationRequests'),
   './lib/auth.ts': () => import('../../convex/lib/auth'),
   './lib/limits.ts': () => import('../../convex/lib/limits'),
+  './lib/getAuthCaller.ts': () => import('../../convex/lib/getAuthCaller'),
+  './lib/notify.ts': () => import('../../convex/lib/notify'),
+  './lib/entitlements.ts': () => import('../../convex/lib/entitlements'),
+  './superadmin/featureToggles.ts': () => import('../../convex/superadmin/featureToggles'),
+  './billing/plans.ts': () => import('../../convex/billing/plans'),
+  './billing/modules.ts': () => import('../../convex/billing/modules'),
+  './billing/defaults.ts': () => import('../../convex/billing/defaults'),
 } as unknown as Record<string, () => Promise<unknown>>;
 
 type Ctx = Awaited<ReturnType<typeof seed>>;
@@ -157,6 +166,34 @@ describe('upsertSubscription', () => {
       expect(subs).toHaveLength(1);
       expect(subs[0]?.plan).toBe('enterprise');
       expect(subs[0]?.status).toBe('trialing');
+    });
+  });
+
+  it('pins planId/planVersion from the billing catalog when seeded', async () => {
+    const c = await seed();
+    const proPlanId = await c.t.run(async (ctx) => {
+      return await ctx.db.insert('billingPlans', {
+        key: 'pro',
+        name: 'Pro',
+        currency: 'USD',
+        isActive: true,
+        isPopular: true,
+        isCustom: false,
+        sortOrder: 2,
+        publishedVersion: 3,
+        publishedAt: Date.now(),
+        createdBy: c.superadminId,
+        updatedAt: Date.now(),
+      } as never);
+    });
+
+    // 'professional' (legacy key) maps to billing plan key 'pro'.
+    await c.t.run((ctx) => ctx.runMutation(api.subscriptions.upsertSubscription, subArgs(c)));
+
+    await c.t.run(async (ctx) => {
+      const sub = await ctx.db.query('subscriptions').first();
+      expect(sub?.planId).toBe(proPlanId);
+      expect(sub?.planVersion).toBe(3);
     });
   });
 });
@@ -467,5 +504,137 @@ describe('listAll', () => {
     const res = await asSuper(c).query(api.subscriptions.listAll, {});
     expect(res).toHaveLength(1);
     expect(res[0]?.stripeSubscriptionId).toBe('sub_123');
+  });
+});
+
+// ── Plan linkage at checkout / onboarding ────────────────────────────────────
+describe('plan linkage (checkout + onboarding)', () => {
+  it('createStarterOrganization creates a linked Starter subscription', async () => {
+    const c = await seed();
+    const starterPlanId = await c.t.run(async (ctx) => {
+      return await ctx.db.insert('billingPlans', {
+        key: 'starter',
+        name: 'Starter',
+        currency: 'USD',
+        isActive: true,
+        isPopular: false,
+        isCustom: false,
+        sortOrder: 1,
+        publishedVersion: 1,
+        publishedAt: Date.now(),
+        createdBy: c.superadminId,
+        updatedAt: Date.now(),
+      } as never);
+    });
+
+    const res = await c.t.run((ctx) =>
+      ctx.runMutation(api.organizationRequests.createStarterOrganization, {
+        name: 'NewCo',
+        slug: `newco-${Math.random().toString(36).slice(2)}`,
+        email: 'owner@newco.test',
+        password: 'hashed',
+        userName: 'Owner',
+      }),
+    );
+
+    await c.t.run(async (ctx) => {
+      const sub = await ctx.db
+        .query('subscriptions')
+        .withIndex('by_org', (q) =>
+          q.eq('organizationId', res.organizationId as Id<'organizations'>),
+        )
+        .first();
+      expect(sub?.plan).toBe('starter');
+      expect(sub?.status).toBe('active');
+      expect(sub?.planId).toBe(starterPlanId);
+      expect(sub?.planVersion).toBe(1);
+    });
+  });
+
+  it('createManualSubscription pins planId/planVersion', async () => {
+    const c = await seed();
+    const proPlanId = await c.t.run(async (ctx) => {
+      return await ctx.db.insert('billingPlans', {
+        key: 'pro',
+        name: 'Pro',
+        currency: 'USD',
+        isActive: true,
+        isPopular: true,
+        isCustom: false,
+        sortOrder: 2,
+        publishedVersion: 2,
+        publishedAt: Date.now(),
+        createdBy: c.superadminId,
+        updatedAt: Date.now(),
+      } as never);
+    });
+
+    const res = await asSuper(c).mutation(api.subscriptions_admin.createManualSubscription, {
+      organizationId: c.organizationId,
+      plan: 'professional',
+    });
+    expect(res.success).toBe(true);
+
+    await c.t.run(async (ctx) => {
+      const sub = await ctx.db
+        .query('subscriptions')
+        .withIndex('by_org', (q) => q.eq('organizationId', c.organizationId))
+        .first();
+      expect(sub?.planId).toBe(proPlanId);
+      expect(sub?.planVersion).toBe(2);
+    });
+  });
+
+  it('approveOrganizationRequest creates a linked subscription for the requested plan', async () => {
+    const c = await seed();
+    const entPlanId = await c.t.run(async (ctx) => {
+      return await ctx.db.insert('billingPlans', {
+        key: 'enterprise',
+        name: 'Enterprise',
+        currency: 'USD',
+        isActive: true,
+        isPopular: false,
+        isCustom: false,
+        sortOrder: 3,
+        publishedVersion: 1,
+        publishedAt: Date.now(),
+        createdBy: c.superadminId,
+        updatedAt: Date.now(),
+      } as never);
+    });
+
+    const requestId = await c.t.run(async (ctx) => {
+      return await ctx.db.insert('organizationRequests', {
+        requestedName: 'BigCo',
+        requestedSlug: `bigco-${Math.random().toString(36).slice(2)}`,
+        requesterName: 'Boss',
+        requesterEmail: 'boss@bigco.test',
+        requesterPassword: 'hashed',
+        requestedPlan: 'enterprise',
+        status: 'pending',
+        createdAt: Date.now(),
+      } as never);
+    });
+
+    const res = await c.t.run((ctx) =>
+      ctx.runMutation(api.organizationRequests.approveOrganizationRequest, {
+        superadminUserId: c.superadminId,
+        requestId: requestId as Id<'organizationRequests'>,
+      }),
+    );
+
+    await c.t.run(async (ctx) => {
+      const sub = await ctx.db
+        .query('subscriptions')
+        .withIndex('by_org', (q) =>
+          q.eq('organizationId', res.organizationId as Id<'organizations'>),
+        )
+        .first();
+      expect(sub?.plan).toBe('enterprise');
+      expect(sub?.status).toBe('active');
+      expect(sub?.planId).toBe(entPlanId);
+      expect(sub?.planVersion).toBe(1);
+      expect(sub?.metadata?.manual).toBe(true);
+    });
   });
 });

@@ -17,6 +17,12 @@ import { v } from 'convex/values';
 import type { Id } from './_generated/dataModel';
 import { getAuthCaller } from './lib/getAuthCaller';
 import { isSuperadmin } from './lib/auth';
+import {
+  assertModuleAccess,
+  assertQuota,
+  currentPeriodKey,
+  incrementUsage,
+} from './lib/entitlements';
 
 /** Room names are derived from the event so re-saves never fork the room. */
 export function roomNameForEvent(eventId: Id<'calendarEvents'>): string {
@@ -29,6 +35,19 @@ export function videoUrlForRoom(roomName: string): string {
 }
 
 // ── Queries ─────────────────────────────────────────────────────────────────
+
+/**
+ * Whether video calls can actually be created right now. The calendar form
+ * shows an inline hint instead of letting a save silently skip the join link.
+ * Returns a boolean only — no configuration values leave the server.
+ */
+export const livekitConfigured = query({
+  args: {},
+  handler: async () => {
+    const url = process.env.LIVEKIT_URL ?? process.env.NEXT_PUBLIC_LIVEKIT_URL;
+    return Boolean(url && process.env.LIVEKIT_API_KEY && process.env.LIVEKIT_API_SECRET);
+  },
+});
 
 export const getByRoomName = query({
   args: { roomName: v.string() },
@@ -92,6 +111,7 @@ export const register = mutation({
     mode: v.union(v.literal('meeting'), v.literal('webinar')),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'videoConferences');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     if (!isSuperadmin(caller) && caller.organizationId !== args.organizationId) {
@@ -115,6 +135,8 @@ export const register = mutation({
         updatedAt: now,
       });
     } else {
+      // A new video room consumes a seat of the monthly `rooms` quota.
+      await assertQuota(ctx, 'videoConferences', 'rooms', 1, currentPeriodKey());
       await ctx.db.insert('meetings', {
         eventId: args.eventId,
         organizationId: args.organizationId,
@@ -134,6 +156,16 @@ export const register = mutation({
       videoProvider: 'livekit',
       updatedAt: now,
     });
+    if (!existing && caller.organizationId) {
+      await incrementUsage(
+        ctx,
+        caller.organizationId,
+        'videoConferences',
+        'rooms',
+        1,
+        currentPeriodKey(),
+      );
+    }
     return { success: true };
   },
 });
@@ -144,6 +176,7 @@ export const setStatus = mutation({
     status: v.union(v.literal('scheduled'), v.literal('live'), v.literal('ended')),
   },
   handler: async (ctx, { roomName, status }) => {
+    await assertModuleAccess(ctx, 'videoConferences');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     const meeting = await ctx.db
@@ -166,6 +199,7 @@ export const setRecording = mutation({
     recordingUrl: v.string(),
   },
   handler: async (ctx, { roomName, recordingUrl }) => {
+    await assertModuleAccess(ctx, 'videoConferences');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     const meeting = await ctx.db
@@ -195,6 +229,7 @@ export const setRecording = mutation({
 export const removeVideo = mutation({
   args: { eventId: v.id('calendarEvents') },
   handler: async (ctx, { eventId }) => {
+    await assertModuleAccess(ctx, 'videoConferences');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     const event = await ctx.db.get(eventId);

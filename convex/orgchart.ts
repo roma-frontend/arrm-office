@@ -5,6 +5,7 @@ import { MAX_PAGE_SIZE } from './pagination';
 import { isSuperadmin } from './lib/auth';
 import { getProfile } from './lib/userProfile';
 import { getAuthCaller } from './lib/getAuthCaller';
+import { assertModuleAccess } from './lib/entitlements';
 import { requireCapability } from './lib/capabilities';
 import {
   assertAssignable,
@@ -170,6 +171,7 @@ export const generateOrgChartFromUsers = mutation({
     organizationId: v.id('organizations'),
   },
   handler: async (ctx, { organizationId }) => {
+    await assertModuleAccess(ctx, 'orgchart');
     const requester = await getAuthCaller(ctx);
     if (!requester) throw new Error('Not authenticated');
     await requireCapability(ctx, requester._id, 'org.manage', organizationId);
@@ -379,6 +381,7 @@ export const createNode = mutation({
     order: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'orgchart');
     const requester = await getAuthCaller(ctx);
     if (!requester) throw new Error('Not authenticated');
 
@@ -424,6 +427,7 @@ export const updateNode = mutation({
     userId: v.optional(v.id('users')),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'orgchart');
     const requester = await getAuthCaller(ctx);
     if (!requester) throw new Error('Not authenticated');
 
@@ -473,6 +477,7 @@ export const deleteNode = mutation({
     nodeId: v.id('orgChartNodes'),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'orgchart');
     const requester = await getAuthCaller(ctx);
     if (!requester) throw new Error('Not authenticated');
 
@@ -516,6 +521,7 @@ export const moveNode = mutation({
     newParentId: v.optional(v.id('orgChartNodes')),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'orgchart');
     const requester = await getAuthCaller(ctx);
     if (!requester) throw new Error('Not authenticated');
 
@@ -593,6 +599,7 @@ export const saveLayout = mutation({
     isDefault: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'orgchart');
     const requester = await getAuthCaller(ctx);
     if (!requester) throw new Error('Not authenticated');
 

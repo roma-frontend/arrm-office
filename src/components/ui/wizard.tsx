@@ -159,7 +159,7 @@ export function Wizard({
   };
 
   return (
-    <div className={cn('flex flex-col', className)}>
+    <div className={cn('h-full flex flex-col', className)}>
       {/* Scrollable Content Area */}
       <div className="flex-1 overflow-y-auto overflow-x-clip px-0 py-4 md:px-6 md:py-5 scrollbar-hide">
         <WizardDraftNotice
@@ -203,7 +203,7 @@ export function Wizard({
       </div>
 
       {/* Navigation Buttons - Fixed at bottom */}
-      <div className="shrink-0 border-t border-(--border-subtle) bg-(--surface-1) px-4 py-4 md:px-6 md:py-5">
+      <div className="shrink-0 border-t border-(--border-subtle) bg-(--surface-1) px-4 py-4 md:px-6 md:py-5 mt-auto">
         <div className="flex flex-col-reverse items-stretch justify-between gap-2 sm:flex-row sm:items-center sm:gap-3">
           <Button
             variant="outline"

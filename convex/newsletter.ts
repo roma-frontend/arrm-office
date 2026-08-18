@@ -12,6 +12,7 @@ import { Resend } from 'resend';
 import { WeeklyDigestEmail } from '../src/emails/WeeklyDigestEmail';
 import { DEFAULT_LIST_CAP } from './lib/limits';
 import { logger } from '../src/lib/logger';
+import { assertModuleAccess } from './lib/entitlements';
 
 /** Shape of the JSON the AI is asked to return for the weekly digest. */
 export interface NewsletterContent {
@@ -406,6 +407,7 @@ export const updateLanguage = mutation({
     language: v.union(v.literal('en'), v.literal('ru'), v.literal('hy'), v.literal('de')),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'newsletter');
     const sub = await ctx.db
       .query('newsletterSubscribers')
       .withIndex('by_telegram', (q) => q.eq('telegramChatId', args.chatId))
@@ -429,6 +431,7 @@ export const updateTopics = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'newsletter');
     const sub = await ctx.db
       .query('newsletterSubscribers')
       .withIndex('by_telegram', (q) => q.eq('telegramChatId', args.chatId))
@@ -442,6 +445,7 @@ export const updateTopics = mutation({
 export const pauseSubscription = mutation({
   args: { chatId: v.string(), weeks: v.number() },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'newsletter');
     const sub = await ctx.db
       .query('newsletterSubscribers')
       .withIndex('by_telegram', (q) => q.eq('telegramChatId', args.chatId))
@@ -604,6 +608,7 @@ export const createPoll = mutation({
     durationHours: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'newsletter');
     const now = Date.now();
     const duration = (args.durationHours || 48) * 60 * 60 * 1000;
     return await ctx.db.insert('newsletterPolls', {
@@ -658,6 +663,7 @@ export const getPoll = internalQuery({
 export const votePoll = mutation({
   args: { pollId: v.id('newsletterPolls'), chatId: v.string(), optionIndex: v.number() },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'newsletter');
     const sub = await ctx.db
       .query('newsletterSubscribers')
       .withIndex('by_telegram', (q) => q.eq('telegramChatId', args.chatId))

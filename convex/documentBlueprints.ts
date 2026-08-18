@@ -28,6 +28,7 @@ import type { Doc } from './_generated/dataModel';
 import { assertOrgStaff, resolveOrgStaff, scopeOwnsRecord } from './lib/orgAccess';
 import { SMALL_LIST_CAP } from './lib/limits';
 import { normalizeSeries } from './lib/documentNumbers';
+import { assertModuleAccess } from './lib/entitlements';
 
 /** Locales a blueprint can be authored in. */
 const localeValidator = v.union(v.literal('en'), v.literal('ru'), v.literal('hy'), v.literal('de'));
@@ -216,6 +217,7 @@ export const create = mutation({
     forkedFromTemplateId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'documentBuilder');
     const scope = await assertOrgStaff(ctx, args.organizationId);
     if (!scope.organizationId) throw new Error('No organization in scope');
 
@@ -272,6 +274,7 @@ export const update = mutation({
     series: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'documentBuilder');
     const blueprint = await ctx.db.get(args.blueprintId);
     if (!blueprint) throw new Error('Document not found');
     const scope = await assertOrgStaff(ctx, blueprint.organizationId);
@@ -326,6 +329,7 @@ export const update = mutation({
 export const publish = mutation({
   args: { blueprintId: v.id('documentBlueprints') },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'documentBuilder');
     const blueprint = await ctx.db.get(args.blueprintId);
     if (!blueprint) throw new Error('Document not found');
     const scope = await assertOrgStaff(ctx, blueprint.organizationId);
@@ -405,6 +409,7 @@ export const setArchived = mutation({
 export const remove = mutation({
   args: { blueprintId: v.id('documentBlueprints') },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'documentBuilder');
     const blueprint = await ctx.db.get(args.blueprintId);
     if (!blueprint) throw new Error('Document not found');
     const scope = await assertOrgStaff(ctx, blueprint.organizationId, { adminOnly: true });

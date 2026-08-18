@@ -24,6 +24,7 @@ import {
   CheckCircle2,
   ClipboardCopy,
   Clock,
+  Copy,
   Download,
   ExternalLink,
   FileText,
@@ -39,6 +40,7 @@ import {
   Tag,
   User,
   Users,
+  Video,
   X,
   XCircle,
 } from 'lucide-react';
@@ -471,9 +473,24 @@ function MilestoneRail({
 // Facts
 // ─────────────────────────────────────────────────────────────────────────────
 
+/** Relative hrefs (`/meetings/…`) become absolute so copied links are shareable. */
+function absoluteUrl(href: string): string {
+  if (/^https?:\/\//.test(href)) return href;
+  return typeof window !== 'undefined' ? `${window.location.origin}${href}` : href;
+}
+
 function FactGrid({ timeline }: { timeline: EventTimeline }) {
   const { t } = useTranslation();
   if (timeline.facts.length === 0) return null;
+
+  const copyLink = async (href: string) => {
+    try {
+      await navigator.clipboard.writeText(absoluteUrl(href));
+      toast.success(t('eventTimeline.actions.linkCopied'));
+    } catch {
+      toast.error(t('eventTimeline.actions.copyFailed'));
+    }
+  };
 
   return (
     <section>
@@ -481,6 +498,56 @@ function FactGrid({ timeline }: { timeline: EventTimeline }) {
       <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
         {timeline.facts.map((fact, index) => {
           const Icon = FACT_ICONS[fact.icon];
+
+          // The video call gets a real call-to-action instead of a bare link
+          // card: join in one click, or copy a shareable link for a colleague.
+          if (fact.id === 'videoCall' && fact.href) {
+            return (
+              <motion.div
+                key={fact.id}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: Math.min(index * 0.04, 0.3) }}
+                className="sm:col-span-2"
+              >
+                <div className="flex h-full flex-col gap-3 rounded-xl border border-(--primary)/40 bg-(--background-subtle)/60 p-3">
+                  <span className="flex items-center gap-3">
+                    <span
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+                      style={{ background: `${timeline.accent}14`, color: timeline.accent }}
+                    >
+                      <Icon className="h-4 w-4" />
+                    </span>
+                    <span className="text-[10px] font-semibold tracking-wider text-(--text-muted) uppercase">
+                      {fact.label}
+                    </span>
+                  </span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <a
+                      href={absoluteUrl(fact.href)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-(--primary) px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:opacity-90"
+                    >
+                      <Video className="h-3.5 w-3.5" />
+                      {fact.value}
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => copyLink(fact.href!)}
+                      title={t('eventTimeline.actions.copyLink')}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-(--border) bg-(--card) px-3 py-1.5 text-xs font-medium text-(--text-secondary) transition-colors hover:border-(--primary)/50 hover:text-(--text-primary)"
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                      {t('eventTimeline.actions.copyLink')}
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            );
+          }
+
           const body = (
             <>
               <span

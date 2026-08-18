@@ -244,6 +244,16 @@
   --text-3: var(--n-550); /* #3d6196 */
   --text-4: var(--n-300); /* #93bef7 — disabled only */
 
+  /* ── Paper — the always-white printed sheet (document previews) ──────────
+     Previews simulate a printed page: the sheet stays white in both themes,
+     so its ink must not follow the theme tokens — in dark mode those turn
+     light and vanish on white. Declared once here (never re-declared in
+     `.dark`), so both themes share one fixed value per role. */
+  --paper: var(--n-0);
+  --paper-ink: var(--n-ink);
+  --paper-muted: var(--n-550);
+  --paper-line: var(--n-400);
+
   /* ── Brand ──────────────────────────────────────────────────────────────
      `quiet` is the tinted surface used for selected rows and soft badges;
      `contrast` is the only text colour allowed on it. Opacities are the ones

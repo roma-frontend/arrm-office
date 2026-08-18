@@ -12,6 +12,7 @@ import { DEFAULT_LIST_CAP, SMALL_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits'
 import { getProfile } from './lib/userProfile';
 import { notify } from './lib/notify';
 import { logger } from '../src/lib/logger';
+import { assertModuleAccess } from './lib/entitlements';
 
 // ─── CREATE TICKET ───────────────────────────────────────────────────────────
 export const createTicket = mutation({
@@ -27,6 +28,7 @@ export const createTicket = mutation({
     relatedTaskId: v.optional(v.id('tasks')),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'supportTickets');
     const now = Date.now();
 
     // Generate ticket number: SUP-YYYYMMDD-XXXX
@@ -329,6 +331,7 @@ export const updateTicketStatus = mutation({
     userId: v.id('users'),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'supportTickets');
     const ticket = await ctx.db.get(args.ticketId);
     if (!ticket) throw new Error('Ticket not found');
 
@@ -400,6 +403,7 @@ export const assignTicket = mutation({
     userId: v.id('users'), // Who is making the assignment
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'supportTickets');
     const ticket = await ctx.db.get(args.ticketId);
     if (!ticket) throw new Error('Ticket not found');
 
@@ -447,6 +451,7 @@ export const addTicketComment = mutation({
     isInternal: v.boolean(),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'supportTickets');
     const ticket = await ctx.db.get(args.ticketId);
     if (!ticket) throw new Error('Ticket not found');
 
@@ -509,6 +514,7 @@ export const resolveTicket = mutation({
     userId: v.id('users'),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'supportTickets');
     const ticket = await ctx.db.get(args.ticketId);
     if (!ticket) throw new Error('Ticket not found');
 
@@ -568,6 +574,7 @@ export const bulkUpdateTickets = mutation({
     userId: v.id('users'),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'supportTickets');
     const now = Date.now();
     let success = 0;
     let failed = 0;

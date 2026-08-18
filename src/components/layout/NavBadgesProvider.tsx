@@ -39,6 +39,8 @@ export interface NavBadgesValue {
   chatUnread: number;
   /** Unread notifications routed to /tasks. */
   taskUnread: number;
+  /** Unread notifications routed to /calendar (meeting invites and updates). */
+  calendarUnread: number;
   /** All unread notifications (navbar bell). */
   notificationsUnread: number;
   /** Pending leave requests awaiting review (staff only). */
@@ -56,6 +58,7 @@ const EMPTY: NavBadgesValue = {
   userOrg: undefined,
   chatUnread: 0,
   taskUnread: 0,
+  calendarUnread: 0,
   notificationsUnread: 0,
   leavesUnread: 0,
   pendingSignatures: 0,
@@ -96,6 +99,7 @@ export function NavBadgesProvider({ children }: { children: React.ReactNode }) {
       // titles are localized and matching English words silently zeroed this
       // badge in every other language.
       taskUnread: list.filter((n) => !n.isRead && n.route === '/tasks').length,
+      calendarUnread: list.filter((n) => !n.isRead && n.route === '/calendar').length,
       notificationsUnread: list.filter((n) => !n.isRead).length,
       leavesUnread: badges?.leavesUnread ?? 0,
       pendingSignatures: badges?.pendingSignatures ?? 0,

@@ -5,6 +5,7 @@ import { DEFAULT_LIST_CAP, SMALL_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits'
 
 import { internal } from './_generated/api';
 import { notify } from './lib/notify';
+import { assertModuleAccess } from './lib/entitlements';
 
 // ═══════════════════════════════════════════════════════════════
 //  HELPERS
@@ -794,6 +795,7 @@ export const createAsset = mutation({
     createdBy: v.id('users'),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'assets');
     const { createdBy, ...fields } = args;
     await assertUniqueIdentifiers(ctx, args.organizationId, {
       serialNumber: fields.serialNumber,
@@ -862,6 +864,7 @@ export const updateAsset = mutation({
     imageUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'assets');
     const { assetId, ...fields } = args;
     const asset = await ctx.db.get(assetId);
     if (!asset) throw new Error('Asset not found');
@@ -893,6 +896,7 @@ export const updateAsset = mutation({
 export const deleteAsset = mutation({
   args: { assetId: v.id('assetCatalog') },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'assets');
     // Check no active assignments
     const activeAssignment = await ctx.db
       .query('assetAssignments')
@@ -966,6 +970,7 @@ export const assignAsset = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'assets');
     return await performAssignment(ctx, args);
   },
 });
@@ -1347,6 +1352,7 @@ export const createAssetRequest = mutation({
     urgency: v.union(v.literal('low'), v.literal('medium'), v.literal('high')),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'assets');
     const now = Date.now();
     return await ctx.db.insert('assetRequests', {
       ...args,
@@ -1972,6 +1978,10 @@ export const checkWarrantyReminders = internalMutation({
         if (!asset.warrantyExpiry) continue;
         if (asset.warrantyExpiry >= now && asset.warrantyExpiry <= in30) {
           const daysLeft = Math.ceil((asset.warrantyExpiry - now) / (24 * 60 * 60 * 1000));
+          // One nudge per threshold, not a daily drip: the cron runs every day
+          // while the asset sits in the window, and 30 identical rows would
+          // bury the bell.
+          if (![30, 15, 7, 1].includes(daysLeft)) continue;
           await notify(ctx, {
             organizationId: org._id,
             userId: asset.createdBy,

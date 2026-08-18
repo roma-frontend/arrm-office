@@ -5,11 +5,13 @@
 import { mutation } from './_generated/server';
 import { internalMutation } from './_generated/server';
 import { v } from 'convex/values';
+import { assertModuleAccess } from './lib/entitlements';
 
 // Public mutation that triggers the action
 export const runAutomation = mutation({
   args: {},
   handler: async (ctx) => {
+    await assertModuleAccess(ctx, 'automation');
     // Just create the task, action will handle the rest
     const taskId = await ctx.db.insert('automationTasks', {
       name: 'Manual automation run',
@@ -50,6 +52,7 @@ export const completeAutomationTask = internalMutation({
 export const toggleWorkflow = mutation({
   args: { workflowId: v.id('automationWorkflows') },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'automation');
     const workflow = await ctx.db.get(args.workflowId);
     if (!workflow) {
       throw new Error('Workflow not found');
@@ -71,6 +74,7 @@ export const createWorkflow = mutation({
     config: v.any(),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'automation');
     const workflowId = await ctx.db.insert('automationWorkflows', {
       name: args.name,
       description: args.description || '',
@@ -87,6 +91,7 @@ export const createWorkflow = mutation({
 export const deleteWorkflow = mutation({
   args: { workflowId: v.id('automationWorkflows') },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'automation');
     await ctx.db.delete(args.workflowId);
     return { success: true };
   },

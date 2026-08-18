@@ -7,6 +7,7 @@ import { MAX_PAGE_SIZE } from '../pagination';
 import { DEFAULT_LIST_CAP } from '../lib/limits';
 import { notify } from '../lib/notify';
 import { hasCapability } from '../lib/capabilities';
+import { assertModuleAccess } from '../lib/entitlements';
 import { deductLeaveBalance, restoreLeaveBalance } from './balances';
 import { assertLeaveTypeActive } from '../lib/leaveTypes';
 import {
@@ -41,6 +42,7 @@ export const createLeave = mutation({
     comment: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'leaves');
     // The caller comes from the verified identity, never from `args.userId`:
     // this mutation used to file a request for whatever user id it was handed,
     // so any authenticated client could book leave in someone else's name.
@@ -245,6 +247,7 @@ export const approveLeave = mutation({
     comment: v.optional(v.string()),
   },
   handler: async (ctx, { leaveId, comment }) => {
+    await assertModuleAccess(ctx, 'leaves');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     const reviewerId = caller._id;
@@ -358,6 +361,7 @@ export const rejectLeave = mutation({
     comment: v.optional(v.string()),
   },
   handler: async (ctx, { leaveId, comment }) => {
+    await assertModuleAccess(ctx, 'leaves');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     const reviewerId = caller._id;
@@ -472,6 +476,7 @@ export const updateLeave = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'leaves');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     const requesterId = caller._id;
@@ -668,6 +673,7 @@ export const deleteLeave = mutation({
     leaveId: v.id('leaveRequests'),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'leaves');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     const requesterId = caller._id;
@@ -1095,6 +1101,7 @@ export const bulkApproveLeaves = mutation({
     comment: v.optional(v.string()),
   },
   handler: async (ctx, { leaveIds, comment }) => {
+    await assertModuleAccess(ctx, 'leaves');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     const reviewerId = caller._id;
@@ -1241,6 +1248,7 @@ export const bulkRejectLeaves = mutation({
     comment: v.string(),
   },
   handler: async (ctx, { leaveIds, comment }) => {
+    await assertModuleAccess(ctx, 'leaves');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     const reviewerId = caller._id;

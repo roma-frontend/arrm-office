@@ -471,7 +471,7 @@ export const sendMessage = mutation({
         await notify(ctx, {
           organizationId: args.organizationId,
           userId: mentionedId,
-          type: 'system',
+          type: 'message_mention',
           titleKey: 'notifications.titles.mentioned',
           messageKey: 'notifications.messages.mentionedBy',
           params: {

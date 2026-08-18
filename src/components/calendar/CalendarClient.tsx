@@ -988,6 +988,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
         category: e.category,
         reminder: e.reminder,
         attendees: e.attendees ?? [],
+        attendeeIds: e.attendeeIds,
         attachmentUrl: e.attachmentUrl,
         createdAt: e.createdAt,
         createdBy: e.createdBy,
@@ -2033,6 +2034,29 @@ export const CalendarClient = React.memo(function CalendarClient() {
                                 {t('createMeeting.categories.' + evt.category, evt.category)}
                               </span>
                             </div>
+                            {evt.attendees.length > 0 && (
+                              <div
+                                className="mt-1 flex items-center gap-1"
+                                title={evt.attendees.join(', ')}
+                              >
+                                <Users className="h-3 w-3 shrink-0 text-(--text-muted)" />
+                                <span className="flex -space-x-1">
+                                  {evt.attendees.slice(0, 4).map((name, ai) => (
+                                    <span
+                                      key={`a-${ai}`}
+                                      className="flex size-4 items-center justify-center rounded-full border border-(--card) bg-(--surface-2) text-[7px] font-bold text-(--text-secondary)"
+                                    >
+                                      {getInitials(name).slice(0, 2)}
+                                    </span>
+                                  ))}
+                                  {evt.attendees.length > 4 && (
+                                    <span className="flex size-4 items-center justify-center rounded-full border border-(--card) bg-(--surface-3) text-[7px] font-bold text-(--text-secondary)">
+                                      +{evt.attendees.length - 4}
+                                    </span>
+                                  )}
+                                </span>
+                              </div>
+                            )}
                             {evt.roomName && (
                               <p className="mt-1 inline-flex max-w-full items-center gap-1 truncate rounded-full bg-(--background) px-1.5 py-0.5 text-[10px] text-(--text-secondary)">
                                 <DoorOpen className="h-3 w-3 shrink-0" />

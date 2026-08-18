@@ -11,6 +11,7 @@ import { getProfile } from './lib/userProfile';
 import { getAuthCaller } from './lib/getAuthCaller';
 import { notify } from './lib/notify';
 import { sanitizeTitle, sanitizeText } from './lib/sanitize';
+import { assertModuleAccess } from './lib/entitlements';
 
 /**
  * Organization admins, used as the fallback review queue when an employee
@@ -141,6 +142,7 @@ export const createTask = mutation({
     keyResultId: v.optional(v.id('keyResults')),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'tasks');
     // The creator is the authenticated caller, never `args.assignedBy` — that
     // argument used to be trusted without any check, so any client could create
     // tasks as someone else in any organization.
@@ -262,6 +264,25 @@ export const createTask = mutation({
           createdAt: now,
         });
       }
+    }
+
+    // The assignee is the one who has to act on a new task, so they get the
+    // headline row (the block above covers the assigner's copy and the
+    // supervisor queue). Self-assignments and superadmin assignees are skipped.
+    if (assignee._id !== caller._id && assignee.role !== 'superadmin') {
+      await notify(ctx, {
+        organizationId,
+        userId: assignee._id,
+        type: 'system',
+        titleKey: 'notifications.titles.taskAssigned',
+        messageKey: 'notifications.messages.taskAssignedBy',
+        params: { assignerName: caller.name ?? 'Someone', taskTitle: args.title },
+        fallbackTitle: '📋 Task Assigned',
+        fallbackMessage: `${caller.name ?? 'Someone'} assigned you: "${args.title}"`,
+        relatedId: taskId,
+        route: '/tasks',
+        createdAt: now,
+      });
     }
 
     // Audit log: task created
@@ -404,6 +425,7 @@ export const updateTask = mutation({
     projectId: v.optional(v.id('projects')),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'tasks');
     const { taskId, ...updates } = args;
 
     // RBAC: only same-org admins/supervisors or superadmins may edit a task.
@@ -446,6 +468,7 @@ export const updateTask = mutation({
 export const deleteTask = mutation({
   args: { taskId: v.id('tasks') },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'tasks');
     const task = await ctx.db.get(args.taskId);
     if (!task) throw new Error('Task not found');
 
@@ -478,6 +501,7 @@ export const addComment = mutation({
     content: v.string(),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'tasks');
     const task = await ctx.db.get(args.taskId);
     if (!task) throw new Error('Task not found');
 
@@ -489,6 +513,25 @@ export const addComment = mutation({
       createdAt: now,
     });
     await ctx.db.patch(args.taskId, { updatedAt: now });
+
+    // The assignee owns the task, so a comment they did not write is worth a
+    // ping; the sidebar /tasks badge blinks off the same row.
+    if (task.assignedTo !== args.authorId) {
+      const author = await ctx.db.get(args.authorId);
+      await notify(ctx, {
+        organizationId: task.organizationId,
+        userId: task.assignedTo,
+        type: 'system',
+        titleKey: 'notifications.titles.taskComment',
+        messageKey: 'notifications.messages.taskComment',
+        params: { authorName: author?.name ?? 'Someone', taskTitle: task.title },
+        fallbackTitle: '💬 New comment on task',
+        fallbackMessage: `${author?.name ?? 'Someone'} commented on "${task.title}"`,
+        relatedId: args.taskId,
+        route: '/tasks',
+        createdAt: now,
+      });
+    }
 
     // Audit log: task comment added
     await ctx.db.insert('auditLogs', {
@@ -823,6 +866,7 @@ export const addAttachment = mutation({
     uploadedBy: v.optional(v.id('users')),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'tasks');
     // This mutation had no auth check at all: any caller could bolt a file onto
     // any task in any organization and attribute it to anyone.
     const caller = await getAuthCaller(ctx);

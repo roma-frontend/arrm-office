@@ -9,6 +9,7 @@ import { mutation } from '../_generated/server';
 import { getAuthCaller } from '../lib/getAuthCaller';
 import { assertFeatureEnabled } from '../superadmin/featureToggles';
 import { isSuperadmin } from '../lib/auth';
+import { assertModuleAccess, assertQuota, incrementUsage } from '../lib/entitlements';
 
 /** Register as a driver - only organization admins can register drivers, or users can register themselves */
 export const registerAsDriver = mutation({
@@ -70,6 +71,10 @@ export const registerAsDriver = mutation({
       return existing._id;
     }
 
+    // Plan enforcement: a new driver consumes a seat of the `drivers` quota.
+    await assertModuleAccess(ctx, 'drivers');
+    await assertQuota(ctx, 'drivers', 'drivers', 1);
+
     const driverId = await ctx.db.insert('drivers', {
       organizationId: args.organizationId,
       userId: args.userId,
@@ -83,6 +88,8 @@ export const registerAsDriver = mutation({
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
+
+    await incrementUsage(ctx, args.organizationId, 'drivers', 'drivers', 1);
 
     return driverId;
   },

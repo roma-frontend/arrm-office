@@ -4,6 +4,7 @@ import { mutation, query } from './_generated/server';
 import { SUPERADMIN_EMAIL, isSuperadmin } from './lib/auth';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { notify } from './lib/notify';
+import { resolveBillingPlanLink } from './billing/plans';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PUBLIC: Create a self-service Starter organization (instant)
@@ -95,6 +96,24 @@ export const createStarterOrganization = mutation({
       fallbackTitle: '🎉 Welcome to Strata!',
       fallbackMessage: `Your organization "${args.name}" has been created successfully. You're on the Starter plan (10 employees max).`,
       route: '/dashboard',
+    });
+
+    // The chosen Starter plan becomes a real subscription pinned to the
+    // billing-catalog plan row, so entitlements gate the org from day one.
+    const planLink = await resolveBillingPlanLink(ctx, 'starter');
+    const now = Date.now();
+    await ctx.db.insert('subscriptions', {
+      organizationId: orgId,
+      userId,
+      stripeCustomerId: `self_service_${orgId}`,
+      stripeSubscriptionId: `self_service_${orgId}`,
+      plan: 'starter',
+      status: 'active',
+      cancelAtPeriodEnd: false,
+      planId: planLink.planId,
+      planVersion: planLink.planVersion,
+      createdAt: now,
+      updatedAt: now,
     });
 
     return { organizationId: orgId, userId };
@@ -314,6 +333,30 @@ export const approveOrganizationRequest = mutation({
       fallbackMessage: `Your organization "${request.requestedName}" has been approved! You can now log in and start managing your team.`,
       relatedId: requestId,
       route: '/dashboard',
+    });
+
+    // The approved Professional/Enterprise plan becomes a real subscription
+    // pinned to the billing-catalog plan row (the org pays by invoice; Stripe
+    // checkout later replaces this row with a live subscription).
+    const planLink = await resolveBillingPlanLink(ctx, request.requestedPlan);
+    const now = Date.now();
+    await ctx.db.insert('subscriptions', {
+      organizationId: orgId,
+      userId,
+      stripeCustomerId: `manual_${orgId}_${now}`,
+      stripeSubscriptionId: `manual_sub_${orgId}_${now}`,
+      plan: request.requestedPlan,
+      status: 'active',
+      cancelAtPeriodEnd: false,
+      planId: planLink.planId,
+      planVersion: planLink.planVersion,
+      metadata: {
+        manual: true,
+        createdBy: superadminUserId,
+        createdAt: now,
+      },
+      createdAt: now,
+      updatedAt: now,
     });
 
     return { organizationId: orgId, userId };

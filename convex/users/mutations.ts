@@ -24,6 +24,7 @@ import {
   validateTravelAllowanceOverride,
 } from '../lib/travelAllowance';
 import { resolveDepartmentByName, resolvePositionByTitle } from '../lib/orgUnits';
+import { getOrgEntitlements } from '../lib/entitlements';
 import type { MutationCtx } from '../_generated/server';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -190,9 +191,22 @@ export const createUser = mutation({
       .withIndex('by_org_active', (q) => q.eq('organizationId', targetOrgId).eq('isActive', true))
       .take(DEFAULT_LIST_CAP);
 
-    if (currentCount.length >= org.employeeLimit) {
+    // Plan-editor enforcement: the seats limit comes from the organization's
+    // published plan (billingPlans → billingPlanVersions). When the billing
+    // catalog hasn't been seeded yet the engine reports `source: 'defaults'`
+    // and we keep the legacy organization.employeeLimit so existing behavior
+    // is unchanged until the superadmin configures tariffs.
+    const entitlements = await getOrgEntitlements(ctx, targetOrgId);
+    const seatsLimit =
+      entitlements.source === 'billing'
+        ? entitlements.moduleMap['employees']?.limits?.seats
+        : undefined;
+    const effectiveLimit =
+      typeof seatsLimit === 'number' && seatsLimit > 0 ? seatsLimit : org.employeeLimit;
+
+    if (currentCount.length >= effectiveLimit) {
       throw new Error(
-        `Employee limit reached (${org.employeeLimit}). Upgrade your plan to add more employees.`,
+        `Employee limit reached (${effectiveLimit}). Upgrade your plan to add more employees.`,
       );
     }
 

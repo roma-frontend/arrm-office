@@ -267,7 +267,7 @@ describe('createTask', () => {
     ).rejects.toThrow('only assign tasks to people in your team');
   });
 
-  it('skips the notification for a superadmin assigner but still audits', async () => {
+  it('skips the assigner notification for a superadmin assigner but still audits', async () => {
     const { ctx, get, insert } = makeCtx();
     mockGetAuthCaller.mockResolvedValue(makeCaller('superadmin', ORG_A, ADMIN_ID));
     mockIsSuperadmin.mockReturnValue(true);
@@ -279,7 +279,16 @@ describe('createTask', () => {
       priority: 'low',
     });
 
-    expect(mockNotify).not.toHaveBeenCalled();
+    // The assigner-side block stays silent for superadmins; the assignee still
+    // has to hear about their new task.
+    expect(mockNotify).toHaveBeenCalledTimes(1);
+    expect(mockNotify).toHaveBeenCalledWith(
+      ctx,
+      expect.objectContaining({
+        userId: USER_ID,
+        titleKey: 'notifications.titles.taskAssigned',
+      }),
+    );
     expect(insert).toHaveBeenCalledWith(
       'auditLogs',
       expect.objectContaining({ action: 'task_created' }),

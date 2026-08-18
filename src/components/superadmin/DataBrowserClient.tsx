@@ -17,7 +17,7 @@
 
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useMutation, useQuery } from 'convex/react';
 import { useTranslation } from 'react-i18next';
@@ -37,6 +37,7 @@ import {
   ShieldCheck,
   Trash2,
   Undo2,
+  Upload,
   X,
 } from 'lucide-react';
 
@@ -45,7 +46,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { DocJsonEditor } from '@/components/superadmin/DocJsonEditor';
 import { cn } from '@/lib/utils';
@@ -104,11 +112,24 @@ function isIdField(field: string): boolean {
   return /Id$/.test(field) && field !== 'id';
 }
 
+/** One table's worth of rows parsed from an import file, awaiting confirmation. */
+interface ImportTablePlan {
+  name: string;
+  docs: Record<string, unknown>[];
+}
+
+/** Docs per mutation call — keeps each import mutation small enough to stay
+ *  well under Convex's limits even for wide documents. */
+const IMPORT_CHUNK = 100;
+
 export function DataBrowserClient() {
   const { t } = useTranslation();
 
   const tables = useQuery(api.superadmin.dbAdmin.listTables);
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
+  // Filters the 170+ table list in the sidebar; without it finding a table is
+  // a scroll through the whole alphabet.
+  const [tableQuery, setTableQuery] = useState('');
   const [searchInput, setSearchInput] = useState('');
   // Debounced copy of the search box — the backend scans the whole table, so
   // we only fire a query once the user pauses instead of on every keystroke.
@@ -136,6 +157,14 @@ export function DataBrowserClient() {
 
   const [showHistory, setShowHistory] = useState(false);
   const [exporting, setExporting] = useState(false);
+
+  // Import — a hidden file picker feeds the confirm sheet; the actual inserts
+  // run table-by-table in small chunks so one bad row cannot sink the rest.
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [importTables, setImportTables] = useState<ImportTablePlan[] | null>(null);
+  const [importFileName, setImportFileName] = useState('');
+  const [importRunning, setImportRunning] = useState(false);
+  const [importProgress, setImportProgress] = useState({ done: 0, total: 0, table: '' });
 
   const getTableRows = useQuery(
     api.superadmin.dbAdmin.getTableRows,
@@ -170,6 +199,7 @@ export function DataBrowserClient() {
   const bulkDeleteDbRows = useMutation(api.superadmin.dbAdmin.bulkDeleteDbRows);
   const duplicateDbRow = useMutation(api.superadmin.dbAdmin.duplicateDbRow);
   const undoDbChange = useMutation(api.superadmin.dbAdmin.undoDbChange);
+  const importTableRows = useMutation(api.superadmin.dbAdmin.importTableRows);
   const exportDatabase = useQuery(api.superadmin.dbAdmin.exportDatabase, exporting ? {} : 'skip');
 
   const pageSize = 50;
@@ -191,6 +221,12 @@ export function DataBrowserClient() {
     return [...tables].sort((a, b) => a.name.localeCompare(b.name));
   }, [tables]);
 
+  const visibleTables = useMemo(() => {
+    const query = tableQuery.trim().toLowerCase();
+    if (!query) return sortedTables;
+    return sortedTables.filter((table) => table.name.toLowerCase().includes(query));
+  }, [sortedTables, tableQuery]);
+
   const selectTable = (name: string) => {
     setSelectedTable(name);
     setSearchInput('');
@@ -208,6 +244,107 @@ export function DataBrowserClient() {
   const handleRefresh = () => {
     setRefreshing(true);
     setTimeout(() => setRefreshing(false), 350);
+  };
+
+  /**
+   * Parse a picked file into a confirm-ready plan. Accepts either a full
+   * `exportDatabase` payload (`{ tables: { name: rows[] } }`) or a bare array
+   * of rows, which lands in the currently selected table.
+   */
+  const handleImportFile = async (file: File) => {
+    try {
+      const parsed: unknown = JSON.parse(await file.text());
+      let tables: Record<string, unknown>;
+      if (Array.isArray(parsed)) {
+        if (!selectedTable) {
+          toast.error(
+            t(
+              'superadmin.database.importNeedsTable',
+              'Select a table first to import a bare array of rows',
+            ),
+          );
+          return;
+        }
+        tables = { [selectedTable]: parsed };
+      } else if (
+        typeof parsed === 'object' &&
+        parsed !== null &&
+        typeof (parsed as { tables?: unknown }).tables === 'object' &&
+        (parsed as { tables: unknown }).tables !== null
+      ) {
+        tables = (parsed as { tables: Record<string, unknown> }).tables;
+      } else {
+        toast.error(
+          t(
+            'superadmin.database.importBadFormat',
+            'Unrecognized file — expected a DB export or an array of rows',
+          ),
+        );
+        return;
+      }
+
+      const plan: ImportTablePlan[] = Object.entries(tables)
+        .filter(([, rows]) => Array.isArray(rows) && rows.length > 0)
+        .map(([name, rows]) => ({
+          name,
+          docs: (rows as unknown[]).filter(
+            (row): row is Record<string, unknown> =>
+              typeof row === 'object' && row !== null && !Array.isArray(row),
+          ),
+        }))
+        .filter((entry) => entry.docs.length > 0);
+
+      if (plan.length === 0) {
+        toast.error(t('superadmin.database.importEmpty', 'No rows found in the file'));
+        return;
+      }
+      setImportFileName(file.name);
+      setImportTables(plan);
+    } catch {
+      toast.error(t('superadmin.database.importParseFailed', 'Could not parse the file as JSON'));
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  /** Stream the confirmed plan into the database, chunk by chunk. */
+  const runImport = async () => {
+    if (!importTables || importRunning) return;
+    setImportRunning(true);
+    const total = importTables.reduce((sum, entry) => sum + entry.docs.length, 0);
+    setImportProgress({ done: 0, total, table: '' });
+
+    let inserted = 0;
+    let failed = 0;
+    for (const entry of importTables) {
+      setImportProgress((p) => ({ ...p, table: entry.name }));
+      for (let start = 0; start < entry.docs.length; start += IMPORT_CHUNK) {
+        const chunk = entry.docs.slice(start, start + IMPORT_CHUNK);
+        try {
+          const result = await importTableRows({ tableName: entry.name, docs: chunk });
+          inserted += result.inserted;
+          failed += result.failed;
+        } catch {
+          // Unknown or protected table — count the remainder and move on.
+          failed += chunk.length;
+          break;
+        }
+        setImportProgress((p) => ({ ...p, done: p.done + chunk.length }));
+      }
+    }
+
+    setImportRunning(false);
+    setImportTables(null);
+    if (failed === 0) {
+      toast.success(t('superadmin.database.imported', 'Imported {{count}} rows', { count: inserted }));
+    } else {
+      toast.error(
+        t('superadmin.database.importedPartial', 'Imported {{inserted}} rows, {{failed}} failed', {
+          inserted,
+          failed,
+        }),
+      );
+    }
   };
 
   /** Inline cell save — parse the value, patch the row, drop the editor. */
@@ -387,6 +524,17 @@ export function DataBrowserClient() {
               </p>
             </div>
 
+            {/* Table search — 170+ tables is a scroll too far without it. */}
+            <div className="relative mb-2 px-1">
+              <Search className="absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-(--text-muted)" />
+              <Input
+                value={tableQuery}
+                onChange={(e) => setTableQuery(e.target.value)}
+                placeholder={t('superadmin.database.searchTables', 'Find a table…')}
+                className="h-8 pl-8 text-xs"
+              />
+            </div>
+
             {/* Popular tables — the ones a support engineer touches most. */}
             <div className="mb-2 flex flex-wrap gap-1 px-1">
               {sortedTables
@@ -415,8 +563,14 @@ export function DataBrowserClient() {
                 <div className="flex justify-center py-8">
                   <ShieldLoader size="sm" />
                 </div>
+              ) : visibleTables.length === 0 ? (
+                <p className="px-3 py-6 text-center text-xs text-(--text-muted)">
+                  {t('superadmin.database.noTableMatch', 'No table matches "{{query}}"', {
+                    query: tableQuery,
+                  })}
+                </p>
               ) : (
-                sortedTables.map((table) => (
+                visibleTables.map((table) => (
                   <button
                     key={table.name}
                     type="button"
@@ -887,6 +1041,27 @@ export function DataBrowserClient() {
           <HistoryPanel undoDbChange={undoDbChange} />
         </SheetContent>
       </Sheet>
+
+      {/* Import — the picker is inert until a button clicks it; the confirm
+          sheet lists exactly what will be inserted before anything is. */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="application/json,.json"
+        className="hidden"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (file) void handleImportFile(file);
+        }}
+      />
+      <ImportConfirmSheet
+        plan={importTables}
+        fileName={importFileName}
+        running={importRunning}
+        progress={importProgress}
+        onCancel={() => setImportTables(null)}
+        onConfirm={() => void runImport()}
+      />
     </>
   );
 
@@ -914,6 +1089,15 @@ export function DataBrowserClient() {
         >
           <History className="h-4 w-4" />
           {t('superadmin.database.history', 'Change history')}
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={importRunning}
+          className="flex items-center gap-2"
+        >
+          <Upload className="h-4 w-4" />
+          {t('superadmin.database.import', 'Import')}
         </Button>
         <Button
           onClick={() => setExporting(true)}
@@ -969,6 +1153,15 @@ export function DataBrowserClient() {
             >
               <History className="h-4 w-4" />
               {t('superadmin.database.history', 'Change history')}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={importRunning}
+              className="flex items-center gap-2"
+            >
+              <Upload className="h-4 w-4" />
+              {t('superadmin.database.import', 'Import')}
             </Button>
             <Button
               onClick={() => setExporting(true)}
@@ -1030,6 +1223,115 @@ function ExportDownloader({ data, onDone }: { data: unknown; onDone: () => void 
     onDone();
   }, [data, onDone]);
   return null;
+}
+
+/**
+ * Confirm-before-insert panel for a parsed import file. Shows the target
+ * tables and row counts up front, then a live progress bar while the chunks
+ * stream in — a superadmin import is the one action where "what am I about to
+ * do" must be impossible to miss.
+ */
+function ImportConfirmSheet({
+  plan,
+  fileName,
+  running,
+  progress,
+  onCancel,
+  onConfirm,
+}: {
+  plan: ImportTablePlan[] | null;
+  fileName: string;
+  running: boolean;
+  progress: { done: number; total: number; table: string };
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const { t } = useTranslation();
+  const totalRows = plan?.reduce((sum, entry) => sum + entry.docs.length, 0) ?? 0;
+  const percent = progress.total > 0 ? Math.round((progress.done / progress.total) * 100) : 0;
+
+  return (
+    <Sheet
+      open={plan !== null}
+      onOpenChange={(open) => {
+        if (!open && !running) onCancel();
+      }}
+    >
+      <SheetContent side="right" size="md" closeLabel={t('common.close', 'Close')}>
+        <SheetHeader>
+          <SheetTitle>{t('superadmin.database.importTitle', 'Import database')}</SheetTitle>
+        </SheetHeader>
+        <SheetBody>
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 rounded-xl border border-(--border) bg-(--surface-2) px-3 py-2">
+              <Upload className="h-4 w-4 shrink-0 text-(--text-muted)" />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium text-(--text-primary)">{fileName}</p>
+                <p className="text-xs text-(--text-muted)">
+                  {t('superadmin.database.importSummary', '{{tables}} tables · {{rows}} rows', {
+                    tables: plan?.length ?? 0,
+                    rows: totalRows,
+                  })}
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-(--text-primary)">
+              {t(
+                'superadmin.database.importWarning',
+                'Rows are inserted as new documents with fresh ids. Every insert is recorded in the change history and can be undone. Protected tables (sessions, audit logs) are skipped.',
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              {(plan ?? []).map((entry) => (
+                <div
+                  key={entry.name}
+                  className="flex items-center justify-between rounded-lg border border-(--border) bg-(--card) px-3 py-1.5"
+                >
+                  <span className="truncate text-xs font-medium text-(--text-primary)">
+                    {entry.name}
+                  </span>
+                  <Badge variant="outline" className="shrink-0 text-[10px]">
+                    {entry.docs.length}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+
+            {running && (
+              <div className="space-y-1.5">
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-(--surface-3)">
+                  <div
+                    className="h-full rounded-full bg-(--brand) transition-all duration-200"
+                    style={{ width: `${percent}%` }}
+                  />
+                </div>
+                <p className="text-xs text-(--text-muted)">
+                  {progress.table} · {progress.done}/{progress.total}
+                </p>
+              </div>
+            )}
+          </div>
+        </SheetBody>
+        <SheetFooter>
+          <Button variant="outline" onClick={onCancel} disabled={running}>
+            {t('common.cancel', 'Cancel')}
+          </Button>
+          <Button
+            onClick={onConfirm}
+            disabled={running}
+            className="btn-gradient text-white font-medium shadow-md disabled:opacity-50"
+          >
+            <Upload className="h-4 w-4" />
+            {running
+              ? t('superadmin.database.importing', 'Importing…')
+              : t('superadmin.database.importStart', 'Import')}
+          </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
+  );
 }
 
 function HistoryPanel({

@@ -19,6 +19,7 @@ import { getAuthCaller, type AuthenticatedCaller } from './lib/getAuthCaller';
 import { isSuperadmin } from './lib/auth';
 import { MAX_PAGE_SIZE } from './pagination';
 import { notify } from './lib/notify';
+import { assertModuleAccess, assertQuota, incrementUsage } from './lib/entitlements';
 
 /** Equipment keys — kept in sync with `AMENITY_KEYS` in src/lib/meetingRooms.ts. */
 const ALLOWED_AMENITIES = [
@@ -800,6 +801,8 @@ async function assertNameIsFree(
 export const createRoom = mutation({
   args: { organizationId: v.id('organizations'), ...roomFields },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'meetingRooms');
+    await assertQuota(ctx, 'meetingRooms', 'rooms', 1);
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     assertOrgAccess(caller, args.organizationId);
@@ -812,7 +815,7 @@ export const createRoom = mutation({
     await assertNameIsFree(ctx, args.organizationId, name);
 
     const now = Date.now();
-    return await ctx.db.insert('meetingRooms', {
+    const roomId = await ctx.db.insert('meetingRooms', {
       organizationId: args.organizationId,
       name,
       description: args.description?.trim() || undefined,
@@ -830,12 +833,15 @@ export const createRoom = mutation({
       createdAt: now,
       updatedAt: now,
     });
+    await incrementUsage(ctx, args.organizationId, 'meetingRooms', 'rooms', 1);
+    return roomId;
   },
 });
 
 export const updateRoom = mutation({
   args: { roomId: v.id('meetingRooms'), ...roomFields },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'meetingRooms');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     const room = await ctx.db.get(args.roomId);
@@ -874,6 +880,7 @@ export const updateRoom = mutation({
 export const setRoomActive = mutation({
   args: { roomId: v.id('meetingRooms'), isActive: v.boolean(), reason: v.optional(v.string()) },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'meetingRooms');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     const room = await ctx.db.get(args.roomId);
@@ -917,6 +924,7 @@ export const setRoomActive = mutation({
 export const deleteRoom = mutation({
   args: { roomId: v.id('meetingRooms') },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'meetingRooms');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     const room = await ctx.db.get(args.roomId);
@@ -1005,6 +1013,7 @@ export const bookRoom = mutation({
     externalAttendees: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'meetingRooms');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     return await reserveRoom(ctx, caller, args);

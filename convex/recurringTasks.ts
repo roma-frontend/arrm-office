@@ -24,6 +24,7 @@ import { sanitizeTitle, sanitizeText } from './lib/sanitize';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { orgDayKey, addDays, orgDayStart, isDayKey } from './lib/orgDays';
 import { nextOccurrence, occursOnDay, validateRule, type RecurrenceRule } from './lib/recurrence';
+import { assertModuleAccess } from './lib/entitlements';
 
 const frequencyValidator = v.union(v.literal('weekly'), v.literal('monthly'));
 
@@ -121,6 +122,7 @@ export const createRecurringTask = mutation({
     deadlineOffsetDays: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'tasks');
     // The series owner is taken from the verified identity, never from the
     // arguments — same rule `tasks.createTask` follows for one-off tasks.
     const caller = await getAuthCaller(ctx);
@@ -410,6 +412,7 @@ export const updateRecurringTask = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'tasks');
     const { caller, series } = await requireOwnSeries(ctx, args.seriesId);
 
     if (args.assignedTo) {
@@ -546,6 +549,7 @@ export const toggleRecurringTask = mutation({
 export const deleteRecurringTask = mutation({
   args: { seriesId: v.id('recurringTasks') },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'tasks');
     const { caller, series } = await requireOwnSeries(ctx, args.seriesId);
     const now = Date.now();
 

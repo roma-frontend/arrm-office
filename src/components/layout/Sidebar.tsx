@@ -2,15 +2,16 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
-import { Building2, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Building2, ChevronLeft, ChevronRight, Lock, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSidebarStore } from '@/store/useSidebarStore';
 import { useSwipe } from '@/hooks/useSwipe';
 import { useAuthUser } from '@/store/useAuthStore';
 import { MODULE_TOGGLE_BY_HREF, useFeatureFlags } from '@/hooks/useFeatureFlags';
+import { isHrefLocked, usePlanGatedNav } from '@/lib/planGating';
 import { OrganizationSelector } from '@/components/layout/OrganizationSelector';
 import { QuickActionsPalette } from '@/components/superadmin/QuickActionsPalette';
 import { useNavBadges } from '@/components/layout/NavBadgesProvider';
@@ -19,13 +20,40 @@ import { useNavBadges } from '@/components/layout/NavBadgesProvider';
 // the same one instead of keeping a second, drifting copy.
 import { isSeparator, navItems, type NavEntry, type NavItem } from '@/lib/nav';
 
+// ── Plan-gating chrome (lock overlay + Upgrade pill) ───────────────────────────
+// Plan-locked destinations stay in the nav so users can see what a higher
+// tariff unlocks: the row shows a small lock on the icon and an Upgrade pill,
+// and clicking it goes to /pricing instead of the module.
+
+function PlanLockOverlay() {
+  return (
+    <span
+      className="absolute -top-1 -right-1 rounded-full bg-linear-to-r from-(--brand) to-(--cyan) text-white shadow-lg p-0.5"
+      aria-hidden="true"
+    >
+      <Lock className="w-2.5 h-2.5" />
+    </span>
+  );
+}
+
+function UpgradePill() {
+  const { t } = useTranslation();
+  return (
+    <span className="ml-1 shrink-0 rounded bg-linear-to-r from-(--brand) to-(--cyan) px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wide text-white shadow-sm whitespace-nowrap">
+      {t('plan.upgrade', 'Upgrade')}
+    </span>
+  );
+}
+
 // ─── Desktop Sidebar ───────────────────────────────────────────────────────────
 export function Sidebar() {
   const { t } = useTranslation();
   const pathname = usePathname();
+  const router = useRouter();
   const { collapsed, toggle } = useSidebarStore();
   const user = useAuthUser();
   const { isEnabled } = useFeatureFlags();
+  const { entitlements } = usePlanGatedNav();
   const [mounted, setMounted] = React.useState(false);
   const [hoveredItem, setHoveredItem] = React.useState<string | null>(null);
   const [activeSubNav, setActiveSubNav] = React.useState<NavItem | null>(null);
@@ -44,6 +72,7 @@ export function Sidebar() {
   const {
     userOrg,
     taskUnread: taskUnreadCount,
+    calendarUnread: calendarUnreadCount,
     leavesUnread,
     chatUnread: chatUnreadCount,
     pendingSignatures: signatureBadgeCount,
@@ -61,8 +90,9 @@ export function Sidebar() {
   const isSuperadmin = user?.role === 'superadmin';
 
   // Toggled-off modules disappear from the nav in real time (see
-  // useFeatureFlags). Items are cloned — never mutated — so flipping a toggle
-  // back on restores the original children.
+  // useFeatureFlags); plan-locked modules stay visible with a lock + Upgrade
+  // badge (isHrefLocked). Items are cloned — never mutated — so flipping a
+  // toggle back on restores the original children.
   const withModuleChildren = (item: NavItem): NavItem => {
     if (MODULE_TOGGLE_BY_HREF[item.href]) return item;
     if (!item.children?.some((c) => MODULE_TOGGLE_BY_HREF[c.href])) return item;
@@ -288,10 +318,12 @@ export function Sidebar() {
               const Icon = item.icon;
               const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
               const taskBadgeCount = taskUnreadCount;
+              const calendarBadgeCount = calendarUnreadCount;
               const leaveBadgeCount = leavesUnread;
               const chatBadgeCount = chatUnreadCount;
               const newsBadgeCount = newsUnread;
               const showTaskBadge = item.href === '/tasks' && taskBadgeCount > 0;
+              const showCalendarBadge = item.href === '/calendar' && calendarBadgeCount > 0;
               const showLeaveBadge =
                 item.href === '/leaves' && leaveBadgeCount > 0 && user?.role === 'admin';
               const showChatBadge = item.href === '/chat' && chatBadgeCount > 0;
@@ -300,6 +332,7 @@ export function Sidebar() {
               const showApprovalBadge = item.href === '/approvals' && approvalBadgeCount > 0;
               const showBadge =
                 showTaskBadge ||
+                showCalendarBadge ||
                 showLeaveBadge ||
                 showChatBadge ||
                 showSignatureBadge ||
@@ -310,20 +343,26 @@ export function Sidebar() {
                   ? leaveBadgeCount
                   : item.href === '/tasks'
                     ? taskBadgeCount
-                    : item.href === '/chat'
-                      ? chatBadgeCount
-                      : item.href === '/performance'
-                        ? signatureBadgeCount
-                        : item.href === '/news'
-                          ? newsBadgeCount
-                          : item.href === '/approvals'
-                            ? approvalBadgeCount
-                            : 0;
+                    : item.href === '/calendar'
+                      ? calendarBadgeCount
+                      : item.href === '/chat'
+                        ? chatBadgeCount
+                        : item.href === '/performance'
+                          ? signatureBadgeCount
+                          : item.href === '/news'
+                            ? newsBadgeCount
+                            : item.href === '/approvals'
+                              ? approvalBadgeCount
+                              : 0;
               // Surfaces where a new item needs to actively catch the eye blink;
               // the rest settle for a steady pulse.
               const badgeBlinks =
-                item.href === '/chat' || item.href === '/news' || item.href === '/approvals';
+                item.href === '/chat' ||
+                item.href === '/news' ||
+                item.href === '/approvals' ||
+                item.href === '/calendar';
               const hasChildren = item.children && item.children.length > 0;
+              const locked = isHrefLocked(entitlements, item.href);
 
               return (
                 <div
@@ -337,7 +376,7 @@ export function Sidebar() {
                   {hasChildren ? (
                     collapsed ? (
                       <Link
-                        href={item.href}
+                        href={locked ? '/pricing' : item.href}
                         onMouseEnter={() => setHoveredItem(item.href)}
                         onMouseLeave={() => setHoveredItem(null)}
                         className={cn(
@@ -376,6 +415,7 @@ export function Sidebar() {
                                 : 'var(--text-disabled)',
                             }}
                           />
+                          {locked && <PlanLockOverlay />}
                           {showBadge && (
                             <span
                               className={cn(
@@ -402,7 +442,7 @@ export function Sidebar() {
                       </Link>
                     ) : (
                       <button
-                        onClick={() => setActiveSubNav(item)}
+                        onClick={() => (locked ? router.push('/pricing') : setActiveSubNav(item))}
                         onMouseEnter={() => setHoveredItem(item.href)}
                         onMouseLeave={() => setHoveredItem(null)}
                         className={cn(
@@ -440,6 +480,7 @@ export function Sidebar() {
                                 : 'var(--text-disabled)',
                             }}
                           />
+                          {locked && <PlanLockOverlay />}
                           {showBadge && (
                             <span
                               className={cn(
@@ -463,15 +504,18 @@ export function Sidebar() {
                             </span>
                           )}
                         </div>
-                        <span className="flex-1 text-sm font-medium truncate text-left">
-                          {t(item.labelKey)}
+                        <span className="flex-1 min-w-0 flex items-center gap-1">
+                          <span className="text-sm font-medium truncate">{t(item.labelKey)}</span>
+                          {locked && <UpgradePill />}
                         </span>
-                        <ChevronRight className="w-4 h-4 text-text-muted transition-transform duration-300 group-hover:translate-x-0.5" />
+                        {!locked && (
+                          <ChevronRight className="w-4 h-4 text-text-muted transition-transform duration-300 group-hover:translate-x-0.5" />
+                        )}
                       </button>
                     )
                   ) : (
                     <Link
-                      href={item.href}
+                      href={locked ? '/pricing' : item.href}
                       onMouseEnter={() => setHoveredItem(item.href)}
                       onMouseLeave={() => setHoveredItem(null)}
                       className={cn(
@@ -532,8 +576,9 @@ export function Sidebar() {
                           </span>
                         )}
                       </div>
-                      <span className="flex-1 text-sm font-medium truncate">
-                        {t(item.labelKey)}
+                      <span className="flex-1 min-w-0 flex items-center gap-1">
+                        <span className="text-sm font-medium truncate">{t(item.labelKey)}</span>
+                        {locked && <UpgradePill />}
                       </span>
                     </Link>
                   )}
@@ -580,11 +625,12 @@ export function Sidebar() {
                     pathname === child.href || pathname.startsWith(child.href + '/');
                   const isSignaturesChild = child.href === '/signatures';
                   const showChildBadge = isSignaturesChild && signatureBadgeCount > 0;
+                  const childLocked = isHrefLocked(entitlements, child.href);
 
                   return (
                     <Link
                       key={child.href}
-                      href={child.href}
+                      href={childLocked ? '/pricing' : child.href}
                       onMouseEnter={() => setHoveredItem(child.href)}
                       onMouseLeave={() => setHoveredItem(null)}
                       className={cn(
@@ -627,6 +673,7 @@ export function Sidebar() {
                               : 'var(--text-disabled)',
                           }}
                         />
+                        {childLocked && <PlanLockOverlay />}
                         {showChildBadge && (
                           <span
                             className={cn(
@@ -637,8 +684,9 @@ export function Sidebar() {
                           </span>
                         )}
                       </div>
-                      <span className="flex-1 text-sm font-medium truncate">
-                        {t(child.labelKey)}
+                      <span className="flex-1 min-w-0 flex items-center gap-1">
+                        <span className="text-sm font-medium truncate">{t(child.labelKey)}</span>
+                        {childLocked && <UpgradePill />}
                       </span>
                     </Link>
                   );
@@ -690,9 +738,11 @@ export default Sidebar;
 export function MobileSidebar() {
   const { t } = useTranslation();
   const pathname = usePathname();
+  const router = useRouter();
   const { mobileOpen, setMobileOpen } = useSidebarStore();
   const user = useAuthUser();
   const { isEnabled } = useFeatureFlags();
+  const { entitlements } = usePlanGatedNav();
   const [mounted, setMounted] = React.useState(false);
   const sidebarRef = React.useRef<HTMLDivElement>(null);
   const [activeSubNav, setActiveSubNav] = React.useState<NavItem | null>(null);
@@ -705,6 +755,7 @@ export function MobileSidebar() {
   const {
     userOrg,
     taskUnread: mobileTaskBadge,
+    calendarUnread: mobileCalendarBadge,
     leavesUnread: mobileUnreadLeavesCount,
     chatUnread: mobileChatUnreadCount,
     pendingSignatures: mobileSignatureCount,
@@ -986,14 +1037,17 @@ export function MobileSidebar() {
                 const mobileBadge =
                   item.href === '/tasks'
                     ? mobileTaskCount
-                    : item.href === '/leaves' && user?.role === 'admin'
-                      ? mobileLeaveCount
-                      : item.href === '/chat'
-                        ? mobileChatCount
-                        : item.href === '/performance'
-                          ? mobileSignatureCount
-                          : 0;
+                    : item.href === '/calendar'
+                      ? mobileCalendarBadge
+                      : item.href === '/leaves' && user?.role === 'admin'
+                        ? mobileLeaveCount
+                        : item.href === '/chat'
+                          ? mobileChatCount
+                          : item.href === '/performance'
+                            ? mobileSignatureCount
+                            : 0;
                 const hasChildren = item.children && item.children.length > 0;
+                const locked = isHrefLocked(entitlements, item.href);
 
                 return (
                   <div
@@ -1007,7 +1061,7 @@ export function MobileSidebar() {
                   >
                     {hasChildren ? (
                       <button
-                        onClick={() => setActiveSubNav(item)}
+                        onClick={() => (locked ? router.push('/pricing') : setActiveSubNav(item))}
                         className={cn(
                           'flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 w-full group',
                           'focus:outline-none focus:ring-2 focus:ring-(--primary)/30',
@@ -1036,6 +1090,7 @@ export function MobileSidebar() {
                                 : 'var(--text-disabled)',
                             }}
                           />
+                          {locked && <PlanLockOverlay />}
                           {mobileBadge > 0 && (
                             <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-linear-to-r from-(--danger-solid) to-(--danger-solid) text-white text-[9px] font-bold flex items-center justify-center shadow-lg animate-pulse">
                               {mobileBadge > 9 ? '9+' : mobileBadge}
@@ -1052,15 +1107,18 @@ export function MobileSidebar() {
                             </span>
                           )}
                         </div>
-                        <span className="flex-1 text-sm font-medium text-left">
-                          {t(item.labelKey)}
+                        <span className="flex-1 min-w-0 flex items-center gap-1 text-left">
+                          <span className="text-sm font-medium truncate">{t(item.labelKey)}</span>
+                          {locked && <UpgradePill />}
                         </span>
-                        <ChevronRight className="w-4 h-4 text-text-muted transition-transform duration-300 group-hover:translate-x-0.5" />
+                        {!locked && (
+                          <ChevronRight className="w-4 h-4 text-text-muted transition-transform duration-300 group-hover:translate-x-0.5" />
+                        )}
                       </button>
                     ) : (
                       <Link
                         key={item.href}
-                        href={item.href}
+                        href={locked ? '/pricing' : item.href}
                         onClick={() => setMobileOpen(false)}
                         className={cn(
                           'flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200',
@@ -1100,6 +1158,7 @@ export function MobileSidebar() {
                                 : 'var(--text-disabled)',
                             }}
                           />
+                          {locked && <PlanLockOverlay />}
                           {mobileBadge > 0 && (
                             <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-linear-to-r from-(--danger-solid) to-(--danger-solid) text-white text-[9px] font-bold flex items-center justify-center shadow-lg animate-pulse">
                               {mobileBadge > 9 ? '9+' : mobileBadge}
@@ -1116,7 +1175,10 @@ export function MobileSidebar() {
                             </span>
                           )}
                         </div>
-                        <span className="flex-1 text-sm font-medium">{t(item.labelKey)}</span>
+                        <span className="flex-1 min-w-0 flex items-center gap-1">
+                          <span className="text-sm font-medium truncate">{t(item.labelKey)}</span>
+                          {locked && <UpgradePill />}
+                        </span>
                       </Link>
                     )}
                   </div>
@@ -1158,11 +1220,12 @@ export function MobileSidebar() {
                     pathname === child.href || pathname.startsWith(child.href + '/');
                   const isSignaturesChild = child.href === '/signatures';
                   const showChildBadge = isSignaturesChild && mobileSignatureCount > 0;
+                  const childLocked = isHrefLocked(entitlements, child.href);
 
                   return (
                     <Link
                       key={child.href}
-                      href={child.href}
+                      href={childLocked ? '/pricing' : child.href}
                       onClick={() => setMobileOpen(false)}
                       className={cn(
                         'flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200',
@@ -1202,13 +1265,17 @@ export function MobileSidebar() {
                               : 'var(--text-disabled)',
                           }}
                         />
+                        {childLocked && <PlanLockOverlay />}
                         {showChildBadge && (
                           <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-linear-to-r from-(--danger-solid) to-(--danger-solid) text-white text-[9px] font-bold flex items-center justify-center shadow-lg animate-pulse">
                             {mobileSignatureCount > 9 ? '9+' : mobileSignatureCount}
                           </span>
                         )}
                       </div>
-                      <span className="flex-1 text-sm font-medium">{t(child.labelKey)}</span>
+                      <span className="flex-1 min-w-0 flex items-center gap-1">
+                        <span className="text-sm font-medium truncate">{t(child.labelKey)}</span>
+                        {childLocked && <UpgradePill />}
+                      </span>
                     </Link>
                   );
                 })}

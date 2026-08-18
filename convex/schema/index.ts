@@ -56,6 +56,7 @@ import { landing } from './landing';
 import { landingTexts } from './landingTexts';
 import { operatorTools } from './operatorTools';
 import { meetings } from './meetings';
+import { billing } from './billing';
 
 export default defineSchema({
   ...organizations,
@@ -115,6 +116,7 @@ export default defineSchema({
   ...landingTexts,
   ...operatorTools,
   ...meetings,
+  ...billing,
 });
 
 export {
@@ -175,4 +177,5 @@ export {
   landingTexts,
   operatorTools,
   meetings,
+  billing,
 };

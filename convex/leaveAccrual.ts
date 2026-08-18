@@ -4,6 +4,7 @@ import { getAuthCaller } from './lib/getAuthCaller';
 import { patchProfile } from './lib/userProfile';
 import { DEFAULT_LIST_CAP } from './lib/limits';
 import type { Doc, Id } from './_generated/dataModel';
+import { assertModuleAccess } from './lib/entitlements';
 import { WORKING_DAYS_PER_MONTH, dailyRateFromSalary, valueLeaveDays } from './lib/leaveMoney';
 import { getTaxRule, toCountryCode, type CountryCode } from './lib/taxRules';
 import { resolvePensionExemption } from './lib/pension';
@@ -70,6 +71,7 @@ export const adjustBalance = mutation({
     reason: v.string(),
   },
   handler: async (ctx, { userId, field, delta, reason }) => {
+    await assertModuleAccess(ctx, 'leaves');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
 

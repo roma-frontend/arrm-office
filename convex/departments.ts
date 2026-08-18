@@ -11,6 +11,7 @@ import { query, mutation } from './_generated/server';
 import { DEFAULT_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
 import { assertOrgStaff, resolveOrgScope, scopeOwnsRecord } from './lib/orgAccess';
+import { assertModuleAccess } from './lib/entitlements';
 
 export const list = query({
   args: {
@@ -102,6 +103,7 @@ export const create = mutation({
     color: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'departments');
     const scope = await assertOrgStaff(ctx, args.organizationId);
     const orgId = scope.organizationId ?? args.organizationId;
     const name = args.name.trim();
@@ -139,6 +141,7 @@ export const update = mutation({
   },
   handler: async (ctx, args) => {
     const { id, ...updates } = args;
+    await assertModuleAccess(ctx, 'departments');
     const department = await ctx.db.get(id);
     if (!department) throw new Error('Department not found');
     const scope = await assertOrgStaff(ctx, department.organizationId);
@@ -165,6 +168,7 @@ export const update = mutation({
 export const remove = mutation({
   args: { id: v.id('departments') },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'departments');
     const department = await ctx.db.get(args.id);
     if (!department) throw new Error('Department not found');
     const scope = await assertOrgStaff(ctx, department.organizationId);

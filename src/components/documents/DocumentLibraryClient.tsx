@@ -272,8 +272,11 @@ export default function DocumentLibraryClient() {
           {/* Employee selector + actions */}
           <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
             <div className="flex-1 min-w-0">
+              {/* `''` keeps the Select controlled for its whole life — passing
+                  `undefined` while nothing is picked makes Radix flip from
+                  uncontrolled to controlled on first selection. */}
               <Select
-                value={selectedEmployeeId || undefined}
+                value={selectedEmployeeId ?? ''}
                 onValueChange={(v) => setSelectedEmployeeId(v as Id<'users'>)}
               >
                 <SelectTrigger>
@@ -320,9 +323,11 @@ export default function DocumentLibraryClient() {
             </div>
           )}
 
-          {/* Live preview — styled like a printed page */}
+          {/* Live preview — styled like a printed page. The sheet stays white
+              in both themes, so its ink is pinned to fixed shades: theme
+              tokens would turn light-on-white in dark mode and vanish. */}
           {resolved ? (
-            <div className="rounded-lg border bg-white shadow-sm overflow-hidden">
+            <div className="rounded-lg border bg-(--paper) shadow-sm overflow-hidden">
               <div className="px-8 pt-8">
                 <div className="text-lg font-bold" style={{ color: accentHex }}>
                   {mergeData?.organization.name ?? user?.organizationName ?? ''}
@@ -333,20 +338,20 @@ export default function DocumentLibraryClient() {
                 <h1 className="text-2xl font-bold mb-4" style={{ color: accentHex }}>
                   {resolved.title}
                 </h1>
-                <div className="whitespace-pre-wrap text-sm leading-relaxed text-(--text-1)">
+                <div className="whitespace-pre-wrap text-sm leading-relaxed text-(--paper-ink)">
                   {resolved.body}
                 </div>
                 {template?.signature && (
                   <div className="mt-10 grid grid-cols-2 gap-8">
                     <div>
-                      <div className="border-b border-(--border-default) h-8" />
-                      <div className="text-xs text-(--text-3) mt-1">
+                      <div className="border-b border-(--paper-line) h-8" />
+                      <div className="text-xs text-(--paper-muted) mt-1">
                         {labels.name} / {labels.position}
                       </div>
                     </div>
                     <div>
-                      <div className="border-b border-(--border-default) h-8" />
-                      <div className="text-xs text-(--text-3) mt-1">{labels.date}</div>
+                      <div className="border-b border-(--paper-line) h-8" />
+                      <div className="text-xs text-(--paper-muted) mt-1">{labels.date}</div>
                     </div>
                   </div>
                 )}

@@ -4,6 +4,7 @@ import type { Id } from '../_generated/dataModel';
 import type { QueryCtx } from '../_generated/server';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { getProfile } from '../lib/userProfile';
+import { assertModuleAccess, assertQuota, incrementUsage } from '../lib/entitlements';
 
 async function getUserOrgId(ctx: QueryCtx, userId: Id<'users'>): Promise<Id<'organizations'>> {
   const user = await ctx.db.get(userId);
@@ -151,6 +152,7 @@ export const getOrCreatePersonalConversation = mutation({
     otherUserId: v.id('users'),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'chat');
     const { userId, otherUserId } = args;
     if (userId === otherUserId) throw new Error('Cannot create conversation with yourself');
 
@@ -209,8 +211,10 @@ export const createGroupConversation = mutation({
     participantIds: v.array(v.id('users')),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'chat');
     const { creatorId, name, participantIds } = args;
     const orgId = await getUserOrgId(ctx, creatorId);
+    await assertQuota(ctx, 'chat', 'channels', 1);
     const now = Date.now();
 
     const convId = await ctx.db.insert('chatConversations', {
@@ -221,6 +225,7 @@ export const createGroupConversation = mutation({
       createdAt: now,
       updatedAt: now,
     });
+    await incrementUsage(ctx, orgId, 'chat', 'channels', 1);
 
     // Add creator as owner
     await ctx.db.insert('chatMembers', {

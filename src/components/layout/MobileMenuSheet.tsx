@@ -61,11 +61,13 @@ import {
   UserMinus,
   Users,
   Wallet,
+  Lock,
   X,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MODULE_TOGGLE_BY_HREF, useFeatureFlags } from '@/hooks/useFeatureFlags';
+import { isHrefLocked, usePlanGatedNav } from '@/lib/planGating';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 
@@ -304,6 +306,7 @@ export function MobileMenuSheet({ open, onClose, role, bottomInset }: MobileMenu
   }, [open, onClose]);
 
   const { isEnabled } = useFeatureFlags();
+  const { entitlements } = usePlanGatedNav();
 
   const visibleGroups = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -421,21 +424,34 @@ export function MobileMenuSheet({ open, onClose, role, bottomInset }: MobileMenu
                   {t(group.titleKey)}
                 </h3>
                 <div className="grid grid-cols-3 gap-2.5">
-                  {group.items.map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={onClose}
-                      className="flex flex-col items-center justify-start gap-2 rounded-2xl border border-(--border)/70 bg-(--background-subtle) p-3 text-center transition-[transform,background-color] active:scale-[0.97] active:bg-(--card-hover)"
-                    >
-                      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-(--primary)/10 text-(--primary)">
-                        <item.icon className="h-5 w-5" />
-                      </span>
-                      <span className="line-clamp-2 text-[11px] font-medium leading-tight text-(--text-primary)">
-                        {t(item.labelKey)}
-                      </span>
-                    </Link>
-                  ))}
+                  {group.items.map((item) => {
+                    const locked = isHrefLocked(entitlements, item.href);
+                    return (
+                      <Link
+                        key={item.href}
+                        href={locked ? '/pricing' : item.href}
+                        onClick={onClose}
+                        className="flex flex-col items-center justify-start gap-2 rounded-2xl border border-(--border)/70 bg-(--background-subtle) p-3 text-center transition-[transform,background-color] active:scale-[0.97] active:bg-(--card-hover)"
+                      >
+                        <span className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-(--primary)/10 text-(--primary)">
+                          <item.icon className="h-5 w-5" />
+                          {locked && (
+                            <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-(--warning-solid) text-white shadow">
+                              <Lock className="h-2.5 w-2.5" />
+                            </span>
+                          )}
+                        </span>
+                        <span className="line-clamp-2 text-[11px] font-medium leading-tight text-(--text-primary)">
+                          {t(item.labelKey)}
+                        </span>
+                        {locked && (
+                          <span className="rounded-full bg-(--warning-quiet) px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wide text-(--warning-text)">
+                            {t('plan.upgrade', 'Upgrade')}
+                          </span>
+                        )}
+                      </Link>
+                    );
+                  })}
                 </div>
               </section>
             ))

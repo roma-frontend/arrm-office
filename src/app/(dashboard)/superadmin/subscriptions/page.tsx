@@ -7,7 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
-import { Users, Plus, Calendar, Shield, X, CheckCircle, ShieldAlert } from 'lucide-react';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetBody } from '@/components/ui/sheet';
+import { Users, Plus, Calendar, Shield, X, CheckCircle, ShieldAlert, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import type { Id } from '@/convex/_generated/dataModel';
@@ -114,17 +115,36 @@ export default function SubscriptionsManagementPage() {
         </div>
       </div>
 
-      {/* Create Manual Subscription Form - Using Wizard */}
-      {showForm && (
-        <Card className="border-(--primary)/20 bg-(--card)">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="w-5 h-5 text-(--primary)" />
-              {t('superadmin.subscriptions.createManualSubscription')}
-            </CardTitle>
-            <CardDescription>{t('superadmin.subscriptions.createManualSubDesc')}</CardDescription>
-          </CardHeader>
-          <CardContent>
+      {/* Create Manual Subscription — slide-over Sheet */}
+      <Sheet
+        open={showForm}
+        onOpenChange={(next) => {
+          if (!next) setShowForm(false);
+        }}
+      >
+        <SheetContent
+          side="right"
+          size="xl"
+          closeLabel={t('common.close', 'Close')}
+          className="gap-0 p-0"
+        >
+          <SheetHeader className="px-6 pt-6 pb-4 border-b border-(--border)">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-(--purple-quiet) flex items-center justify-center shrink-0">
+                <Sparkles className="w-5 h-5 text-(--purple-text)" />
+              </div>
+              <div>
+                <SheetTitle className="text-base font-semibold">
+                  {t('superadmin.subscriptions.createManualSubscription')}
+                </SheetTitle>
+                <p className="text-xs text-(--text-muted) mt-0.5">
+                  {t('superadmin.subscriptions.createManualSubDesc')}
+                </p>
+              </div>
+            </div>
+          </SheetHeader>
+
+          <SheetBody className="px-6 py-6">
             <CreateManualSubscriptionWizard
               onComplete={() => {
                 setShowForm(false);
@@ -132,9 +152,9 @@ export default function SubscriptionsManagementPage() {
               }}
               onCancel={() => setShowForm(false)}
             />
-          </CardContent>
-        </Card>
-      )}
+          </SheetBody>
+        </SheetContent>
+      </Sheet>
 
       {/* Subscriptions List */}
       <Card className="bg-(--card)">

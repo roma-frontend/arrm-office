@@ -4,6 +4,7 @@ import { getAuthCaller, type AuthenticatedCaller } from './lib/getAuthCaller';
 import { isSuperadmin } from './lib/auth';
 import { DEFAULT_LIST_CAP } from './lib/limits';
 import { patchProfile } from './lib/userProfile';
+import { assertModuleAccess, assertQuota, decrementUsage, incrementUsage } from './lib/entitlements';
 import { ALL_LEAVE_TYPES, getActiveLeaveTypes } from './lib/leaveTypes';
 import type { Id } from './_generated/dataModel';
 
@@ -89,6 +90,7 @@ export const upsertLeaveTypeConfig = mutation({
     icon: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'leaves');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     if (!canAdminOrg(caller, args.organizationId)) {
@@ -117,12 +119,26 @@ export const upsertLeaveTypeConfig = mutation({
         icon: args.icon,
         updatedAt: now,
       });
+      // Disabling an active type frees its quota slot; enabling a previously
+      // disabled one re-claims it.
+      if (existing.isActive && !args.isActive) {
+        await decrementUsage(ctx, args.organizationId, 'leaves', 'leaveTypes', 1);
+      } else if (!existing.isActive && args.isActive) {
+        await assertQuota(ctx, 'leaves', 'leaveTypes', 1);
+        await incrementUsage(ctx, args.organizationId, 'leaves', 'leaveTypes', 1);
+      }
     } else {
+      if (args.isActive) {
+        await assertQuota(ctx, 'leaves', 'leaveTypes', 1);
+      }
       await ctx.db.insert('leaveTypeConfigs', {
         ...args,
         createdAt: now,
         updatedAt: now,
       });
+      if (args.isActive) {
+        await incrementUsage(ctx, args.organizationId, 'leaves', 'leaveTypes', 1);
+      }
     }
 
     // Audit log
@@ -145,6 +161,7 @@ export const upsertLeaveTypeConfig = mutation({
 export const initializeDefaultLeaveTypes = mutation({
   args: { organizationId: v.id('organizations') },
   handler: async (ctx, { organizationId }) => {
+    await assertModuleAccess(ctx, 'leaves');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     if (!canAdminOrg(caller, organizationId)) {
@@ -228,6 +245,7 @@ export const createHoliday = mutation({
     description: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'leaves');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     if (!canAdminOrg(caller, args.organizationId)) {
@@ -268,6 +286,7 @@ export const updateHoliday = mutation({
     description: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'leaves');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
 
@@ -288,6 +307,7 @@ export const updateHoliday = mutation({
 export const deleteHoliday = mutation({
   args: { holidayId: v.id('holidays') },
   handler: async (ctx, { holidayId }) => {
+    await assertModuleAccess(ctx, 'leaves');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
 

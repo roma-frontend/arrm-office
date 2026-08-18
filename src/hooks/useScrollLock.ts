@@ -57,12 +57,15 @@ function acquire(element: HTMLElement): void {
     scrollTop: element.scrollTop,
   });
 
-  // Only the element that actually shows a scrollbar needs compensation.
-  const scrollbarWidth = element.offsetWidth - element.clientWidth;
+  // Compensate only space that actually disappears. `.main-scrollable` reserves
+  // its gutter via `scrollbar-gutter: stable`, so hiding its overflow frees
+  // nothing and padding the full scrollbar width would shift content sideways.
+  const clientWidth = element.clientWidth;
   element.style.overflow = 'hidden';
-  if (scrollbarWidth > 0) {
+  const freed = element.clientWidth - clientWidth;
+  if (freed > 0) {
     const current = parseFloat(getComputedStyle(element).paddingRight) || 0;
-    element.style.paddingRight = `${current + scrollbarWidth}px`;
+    element.style.paddingRight = `${current + freed}px`;
   }
 }
 

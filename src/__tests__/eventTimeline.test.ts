@@ -442,6 +442,35 @@ describe('buildEventTimeline — custom', () => {
       'https://files.example/agenda.pdf',
     );
   });
+
+  it('exposes the reserved room and the video link as facts', () => {
+    const timeline = buildEventTimeline(
+      {
+        source: 'custom',
+        data: custom({ roomName: 'Boardroom', videoUrl: '/meetings/sprint-planning' }),
+      },
+      { now: NOW, lang: LANG, t },
+    );
+
+    const room = timeline.facts.find((f) => f.id === 'room')!;
+    expect(room.value).toBe('Boardroom');
+    expect(room.icon).toBe('building');
+
+    const video = timeline.facts.find((f) => f.id === 'videoCall')!;
+    expect(video.href).toBe('/meetings/sprint-planning');
+    expect(video.icon).toBe('link');
+  });
+
+  it('omits the room and video facts when the event has neither', () => {
+    const timeline = buildEventTimeline(
+      { source: 'custom', data: custom() },
+      { now: NOW, lang: LANG, t },
+    );
+    const ids = timeline.facts.map((f) => f.id);
+
+    expect(ids).not.toContain('room');
+    expect(ids).not.toContain('videoCall');
+  });
 });
 
 describe('buildTimelineIcs', () => {

@@ -1,6 +1,7 @@
 import { mutation, query } from './_generated/server';
 import { v } from 'convex/values';
 import { DEFAULT_LIST_CAP } from './lib/limits';
+import { assertModuleAccess } from './lib/entitlements';
 
 // ── Get current month's usage for a user ──────────────────────────────────────
 export const getCurrentMonthUsage = query({
@@ -211,6 +212,7 @@ export const createSession = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'aiSiteEditor');
     const org = await ctx.db.get(args.organizationId);
     if (!org) throw new Error('Organization not found');
 
@@ -253,6 +255,7 @@ export const updateSession = mutation({
     tokensUsed: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'aiSiteEditor');
     const { sessionId, ...updates } = args;
     await ctx.db.patch(sessionId, {
       ...updates,
@@ -284,6 +287,7 @@ export const rollbackSession = mutation({
     sessionId: v.id('aiSiteEditorSessions'),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'aiSiteEditor');
     const { sessionId } = args;
     const session = await ctx.db.get(sessionId);
     if (!session) throw new Error('Session not found');

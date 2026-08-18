@@ -27,6 +27,7 @@ import { allocateDocumentNumber } from './lib/documentNumbers';
 import { DEFAULT_LIST_CAP } from './lib/limits';
 import { notify } from './lib/notify';
 import { insertSignatureDocument } from './signatures';
+import { assertModuleAccess } from './lib/entitlements';
 
 /** Locale codes a document can be issued in. */
 const localeValidator = v.union(v.literal('en'), v.literal('ru'), v.literal('de'), v.literal('hy'));
@@ -188,6 +189,7 @@ export const generate = mutation({
     mandatoryTemplateIds: v.array(v.string()),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'hiringPackets');
     const { caller, target } = await assertCanManagePacket(ctx, args.userId, {
       manageOnly: true,
     });

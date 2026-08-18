@@ -111,7 +111,11 @@ beforeEach(() => {
   mockInsert = jest.fn(async () => 'meet-1');
   mockQuery = jest.fn();
   mockUnique = jest.fn();
-  mockQuery.mockReturnValue({ withIndex: () => ({ unique: mockUnique }) });
+  // `.first()` is used by the usage-counter lookups (billingUsageCounters) —
+  // absent rows read as null so quota never fires in these tests.
+  mockQuery.mockReturnValue({
+    withIndex: () => ({ unique: mockUnique, first: jest.fn().mockResolvedValue(null) }),
+  });
 });
 
 const registerArgs = {

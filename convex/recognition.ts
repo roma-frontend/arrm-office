@@ -14,6 +14,7 @@ import {
   resolveRecognitionSettings,
   DEFAULT_RECOGNITION_SETTINGS,
 } from './lib/points';
+import { assertModuleAccess } from './lib/entitlements';
 
 /** A kudos message long enough to say something, short enough to read. */
 const MAX_KUDOS_MESSAGE = 1000;
@@ -374,6 +375,7 @@ export const sendKudos = mutation({
     isPublic: v.boolean(),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'recognition');
     const scope = await assertOrgScope(ctx);
     const sender = scope.caller;
     const organizationId = scope.organizationId;
@@ -478,6 +480,7 @@ export const reactToKudos = mutation({
     emoji: v.string(),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'recognition');
     const { kudoId, emoji } = args;
     if (!emoji.trim() || emoji.length > 8) throw new Error('Invalid reaction');
 
@@ -548,6 +551,7 @@ export const createBadge = mutation({
     criteria: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'recognition');
     const scope = await assertOrgStaff(ctx, args.organizationId, { adminOnly: true });
     const organizationId = scope.organizationId;
     if (!organizationId) throw new Error('Organization is required');
@@ -586,6 +590,7 @@ export const awardBadge = mutation({
     points: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'recognition');
     const badge = await ctx.db.get(args.badgeId);
     if (!badge) throw new Error('Badge not found');
 

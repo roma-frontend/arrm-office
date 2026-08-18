@@ -10,10 +10,12 @@
  */
 
 import { v } from 'convex/values';
-import { mutation, query, type QueryCtx } from './_generated/server';
+import { mutation, query, type MutationCtx, type QueryCtx } from './_generated/server';
 import type { Doc, Id } from './_generated/dataModel';
 import { getAuthCaller } from './lib/getAuthCaller';
 import { isSuperadmin } from './lib/auth';
+import { assertModuleAccess } from './lib/entitlements';
+import { notify } from './lib/notify';
 import { cancelRoomBooking, reserveRoom } from './meetingRooms';
 
 /**
@@ -77,6 +79,56 @@ async function resolveAttendees(
   return { ids: members.map((user) => user._id), names: members.map((user) => user.name) };
 }
 
+/**
+ * Pings every guest whose name lands on the event (or leaves it), skipping the
+ * actor. The rows route to `/calendar` so the sidebar calendar badge blinks the
+ * same way the tasks badge does for `/tasks` rows.
+ */
+async function notifyAttendees(
+  ctx: MutationCtx,
+  organizationId: Id<'organizations'>,
+  attendeeIds: Id<'users'>[],
+  actorId: Id<'users'>,
+  actorName: string,
+  event: { id: Id<'calendarEvents'>; title: string; date: string; startTime: string },
+  kind: 'invited' | 'updated' | 'cancelled' | 'uninvited',
+  now: number,
+): Promise<void> {
+  const keys = {
+    invited: ['notifications.titles.meetingInvited', 'notifications.messages.meetingInvited'],
+    updated: ['notifications.titles.meetingUpdated', 'notifications.messages.meetingUpdated'],
+    cancelled: ['notifications.titles.meetingCancelled', 'notifications.messages.meetingCancelled'],
+    uninvited: ['notifications.titles.meetingUninvited', 'notifications.messages.meetingUninvited'],
+  }[kind];
+  const fallbacks = {
+    invited: [`📅 You're invited: ${event.title}`, `${actorName} invited you to "${event.title}" (${event.date} ${event.startTime})`],
+    updated: [`📅 Meeting updated: ${event.title}`, `${actorName} updated "${event.title}" (${event.date} ${event.startTime})`],
+    cancelled: [`📅 Meeting cancelled: ${event.title}`, `${actorName} cancelled "${event.title}"`],
+    uninvited: [`📅 Invitation withdrawn: ${event.title}`, `${actorName} removed you from "${event.title}"`],
+  }[kind]!;
+  for (const attendeeId of attendeeIds) {
+    if (attendeeId === actorId) continue;
+    await notify(ctx, {
+      organizationId,
+      userId: attendeeId,
+      type: 'system',
+      titleKey: keys[0]!,
+      messageKey: keys[1]!,
+      params: {
+        eventTitle: event.title,
+        organizerName: actorName,
+        date: event.date,
+        time: event.startTime,
+      },
+      fallbackTitle: fallbacks[0]!,
+      fallbackMessage: fallbacks[1]!,
+      relatedId: event.id,
+      route: '/calendar',
+      createdAt: now,
+    });
+  }
+}
+
 export const create = mutation({
   args: {
     organizationId: v.id('organizations'),
@@ -98,6 +150,7 @@ export const create = mutation({
     ...roomArgs,
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'calendar');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     if (!isSuperadmin(caller) && caller.organizationId !== args.organizationId) {
@@ -124,7 +177,7 @@ export const create = mutation({
     }
 
     const now = Date.now();
-    return await ctx.db.insert('calendarEvents', {
+    const eventId = await ctx.db.insert('calendarEvents', {
       organizationId: args.organizationId,
       createdBy: caller._id,
       title,
@@ -144,6 +197,21 @@ export const create = mutation({
       createdAt: now,
       updatedAt: now,
     });
+
+    // Everyone on the guest list is "mentioned" by the invite — they get the
+    // sound + bell + calendar badge like any other notification.
+    await notifyAttendees(
+      ctx,
+      args.organizationId,
+      attendees.ids ?? [],
+      caller._id,
+      caller.name ?? 'Someone',
+      { id: eventId, title, date: args.date, startTime: args.startTime },
+      'invited',
+      now,
+    );
+
+    return eventId;
   },
 });
 
@@ -174,6 +242,7 @@ export const update = mutation({
     ...roomArgs,
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'calendar');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     const event = await ctx.db.get(args.id);
@@ -235,6 +304,33 @@ export const update = mutation({
       updatedAt: Date.now(),
     });
 
+    // Guests keep their sense of the meeting from the notification: remaining
+    // and newly added attendees hear about the change, dropped ones about the
+    // withdrawn invitation.
+    const now = Date.now();
+    const newIds = attendees.ids ?? [];
+    const removedIds = (event.attendeeIds ?? []).filter((id) => !newIds.includes(id));
+    await notifyAttendees(
+      ctx,
+      event.organizationId,
+      newIds,
+      caller._id,
+      caller.name ?? 'Someone',
+      { id: args.id, title, date: args.date, startTime: args.startTime },
+      'updated',
+      now,
+    );
+    await notifyAttendees(
+      ctx,
+      event.organizationId,
+      removedIds,
+      caller._id,
+      caller.name ?? 'Someone',
+      { id: args.id, title, date: args.date, startTime: args.startTime },
+      'uninvited',
+      now,
+    );
+
     return { success: true };
   },
 });
@@ -268,6 +364,7 @@ export const getByOrganization = query({
 export const remove = mutation({
   args: { id: v.id('calendarEvents') },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'calendar');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     const event = await ctx.db.get(args.id);
@@ -285,6 +382,19 @@ export const remove = mutation({
     if (event.roomBookingId) {
       releasedRoom = await cancelRoomBooking(ctx, caller, event.roomBookingId, 'Event deleted');
     }
+
+    // The guests' notification is the only trace they get of a cancelled
+    // meeting — send it before the row disappears.
+    await notifyAttendees(
+      ctx,
+      event.organizationId,
+      event.attendeeIds ?? [],
+      caller._id,
+      caller.name ?? 'Someone',
+      { id: event._id, title: event.title, date: event.date, startTime: event.startTime },
+      'cancelled',
+      Date.now(),
+    );
 
     await ctx.db.delete(args.id);
     return { success: true, releasedRoom };

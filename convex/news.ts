@@ -12,6 +12,7 @@ import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { assertOrgScope, assertOrgStaff, resolveOrgScope, scopeOwnsRecord } from './lib/orgAccess';
 import type { OrgScope } from './lib/orgAccess';
 import { notify } from './lib/notify';
+import { assertModuleAccess } from './lib/entitlements';
 
 const MAX_TITLE = 200;
 const MAX_CONTENT = 20_000;
@@ -131,6 +132,7 @@ export const createAnnouncement = mutation({
     expiresAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'news');
     const scope = await assertOrgStaff(ctx, args.organizationId);
     const organizationId = scope.organizationId;
     if (!organizationId) throw new Error('Organization is required');
@@ -307,6 +309,7 @@ export const updateAnnouncement = mutation({
     expiresAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'news');
     const { announcementId, ...rest } = args;
 
     const announcement = await ctx.db.get(announcementId);
@@ -360,6 +363,7 @@ export const deleteAnnouncement = mutation({
     announcementId: v.id('announcements'),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'news');
     const announcement = await ctx.db.get(args.announcementId);
     if (!announcement) throw new Error('Announcement not found');
 
@@ -452,6 +456,7 @@ export const addReaction = mutation({
     emoji: v.string(),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'news');
     const announcement = await ctx.db.get(args.announcementId);
     if (!announcement) throw new Error('Announcement not found');
 
@@ -512,6 +517,7 @@ export const addComment = mutation({
     parentCommentId: v.optional(v.id('announcementComments')),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'news');
     const announcement = await ctx.db.get(args.announcementId);
     if (!announcement) throw new Error('Announcement not found');
 

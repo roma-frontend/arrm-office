@@ -12,6 +12,7 @@ import {
   type OrgScope,
 } from './lib/orgAccess';
 import { getProfile } from './lib/userProfile';
+import { assertModuleAccess } from './lib/entitlements';
 
 /**
  * Compensation, server-side rules
@@ -329,6 +330,7 @@ export const createCompensationRecord = mutation({
     createdBy: v.id('users'),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'compensation');
     await assertFeatureEnabled(ctx, 'compensation.module');
     const { createdBy: _clientCreatedBy, ...recordData } = args;
     // Writing pay is an admin action, mirroring `canManage` in the UI.
@@ -366,6 +368,7 @@ export const updateCompensationRecord = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'compensation');
     await assertFeatureEnabled(ctx, 'compensation.module');
     const { recordId, ...updates } = args;
     const record = await ctx.db.get(recordId);
@@ -393,6 +396,7 @@ export const approveCompensationRecord = mutation({
     approvedBy: v.id('users'),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'compensation');
     await assertFeatureEnabled(ctx, 'compensation.module');
     const { recordId } = args;
     const record = await ctx.db.get(recordId);
@@ -441,6 +445,7 @@ export const deleteCompensationRecord = mutation({
     recordId: v.id('compensationRecords'),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'compensation');
     await assertFeatureEnabled(ctx, 'compensation.module');
     const { recordId } = args;
     const record = await ctx.db.get(recordId);
@@ -470,6 +475,7 @@ export const createCompensationBand = mutation({
     createdBy: v.id('users'),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'compensation');
     await assertFeatureEnabled(ctx, 'compensation.module');
     const { createdBy: _clientCreatedBy, ...bandData } = args;
     const scope = await assertOrgStaff(ctx, args.organizationId, { adminOnly: true });
@@ -556,6 +562,7 @@ export const createBonusProgram = mutation({
     createdBy: v.id('users'),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'compensation');
     await assertFeatureEnabled(ctx, 'compensation.module');
     const { createdBy: _clientCreatedBy, ...programData } = args;
     const scope = await assertOrgStaff(ctx, args.organizationId, { adminOnly: true });

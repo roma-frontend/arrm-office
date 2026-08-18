@@ -3,6 +3,7 @@ import { mutation, query } from '../_generated/server';
 import { MAX_PAGE_SIZE } from '../pagination';
 import type { Id } from '../_generated/dataModel';
 import { patchProfile } from '../lib/userProfile';
+import { assertModuleAccess } from '../lib/entitlements';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CALLS - Audio/Video calling using WebRTC (similar to web version)
@@ -19,6 +20,7 @@ export const startCall = mutation({
     callType: v.union(v.literal('audio'), v.literal('video')),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'chat');
     const { conversationId, initiatorId, callType } = args;
     const conv = await ctx.db.get(conversationId);
     if (!conv) throw new Error('Conversation not found');
@@ -81,6 +83,7 @@ export const endCall = mutation({
     duration: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'chat');
     const { callMessageId, userId, duration } = args;
     const call = await ctx.db.get(callMessageId);
     if (!call) throw new Error('Call not found');

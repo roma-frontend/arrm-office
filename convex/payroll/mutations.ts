@@ -9,6 +9,13 @@ import { requireOrgAdmin } from '../lib/rbac';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from '../lib/limits';
 import { TAX_RULE_OVERRIDE, TRAVEL_ALLOWANCE_POLICY } from '../schema/payroll';
 import { validateTravelAllowancePolicy } from '../lib/travelAllowance';
+import {
+  assertModuleAccess,
+  assertQuota,
+  currentPeriodKey,
+  decrementUsage,
+  incrementUsage,
+} from '../lib/entitlements';
 
 type RunTotals = {
   totalGross: number;
@@ -141,6 +148,7 @@ export const createPayrollRun = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'payroll');
     const { organizationId, period, notes } = args;
     const requesterId = await callerId(ctx);
     await requireOrgAdmin(ctx, requesterId, organizationId);
@@ -160,6 +168,9 @@ export const createPayrollRun = mutation({
       throw new Error('Payroll run for this period already exists');
     }
 
+    // Plan enforcement: runs are a monthly quota on the plan.
+    await assertQuota(ctx, 'payroll', 'runs', 1, currentPeriodKey());
+
     const now = Date.now();
     const runId = await ctx.db.insert('payrollRuns', {
       organizationId,
@@ -169,6 +180,8 @@ export const createPayrollRun = mutation({
       updatedAt: now,
       notes,
     });
+
+    await incrementUsage(ctx, organizationId, 'payroll', 'runs', 1, currentPeriodKey());
 
     await ctx.db.insert('payrollAuditLog', {
       organizationId,
@@ -188,6 +201,7 @@ export const calculatePayrollRun = mutation({
     payrollRunId: v.id('payrollRuns'),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'payroll');
     const requesterId = await callerId(ctx);
     const run = await ctx.db.get(args.payrollRunId);
     if (!run) {
@@ -352,6 +366,7 @@ export const approvePayrollRun = mutation({
     payrollRunId: v.id('payrollRuns'),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'payroll');
     const requesterId = await callerId(ctx);
     const run = await ctx.db.get(args.payrollRunId);
     if (!run) {
@@ -453,6 +468,7 @@ export const cancelPayrollRun = mutation({
     payrollRunId: v.id('payrollRuns'),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'payroll');
     const requesterId = await callerId(ctx);
     const run = await ctx.db.get(args.payrollRunId);
     if (!run) {
@@ -492,6 +508,9 @@ export const cancelPayrollRun = mutation({
       details: 'Payroll run cancelled',
       createdAt: Date.now(),
     });
+
+    // A cancelled run frees its monthly quota slot.
+    await decrementUsage(ctx, run.organizationId, 'payroll', 'runs', 1, currentPeriodKey());
 
     return { success: true };
   },
@@ -592,6 +611,7 @@ export const updatePayrollRecord = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'payroll');
     const requesterId = await callerId(ctx);
     const record = await ctx.db.get(args.payrollRecordId);
     if (!record) {
@@ -808,6 +828,7 @@ export const saveSalarySettings = mutation({
     travelAllowance: v.optional(TRAVEL_ALLOWANCE_POLICY),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'payroll');
     const requesterId = await callerId(ctx);
     await requireOrgAdmin(ctx, requesterId, args.organizationId);
 

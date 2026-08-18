@@ -9,6 +9,7 @@ import { mutation, query } from '../_generated/server';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { getAuthCaller } from '../lib/getAuthCaller';
 import { isSuperadmin } from '../lib/auth';
+import { assertModuleAccess } from '../lib/entitlements';
 
 /** Start a new shift for a driver */
 export const startShift = mutation({
@@ -19,6 +20,7 @@ export const startShift = mutation({
     scheduledEndTime: v.optional(v.number()),
   },
   handler: async (ctx, { driverId, organizationId, scheduledStartTime, scheduledEndTime }) => {
+    await assertModuleAccess(ctx, 'drivers');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     const driverRecord = await ctx.db.get(driverId);

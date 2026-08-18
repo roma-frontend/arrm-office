@@ -11,6 +11,7 @@ import { mutation } from '../_generated/server';
 import { SMALL_LIST_CAP } from '../lib/limits';
 import { isSuperadmin } from '../lib/auth';
 import { notify } from '../lib/notify';
+import { assertModuleAccess } from '../lib/entitlements';
 
 /** Request a driver for a trip */
 export const requestDriver = mutation({
@@ -56,6 +57,7 @@ export const requestDriver = mutation({
     requiresApproval: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'drivers');
     await assertFeatureEnabled(ctx, 'drivers.module');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');

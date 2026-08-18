@@ -137,6 +137,21 @@ const CommandPalette = dynamic(
   { ssr: false, loading: () => null },
 );
 
+// Global upgrade modal — opened by the Convex client interceptor when a
+// mutation is rejected because the module isn't in the caller's plan or its
+// quota is exhausted. Mounted once here so it works on every dashboard page.
+const UpgradeModal = dynamic(
+  () => import('@/components/billing/UpgradeModal').then((m) => m.UpgradeModal),
+  { ssr: false, loading: () => null },
+);
+
+// Route-level plan gate — replaces the page content with a "No access" screen
+// when the current route's module is not in the caller's plan.
+const PlanRouteGate = dynamic(
+  () => import('@/components/billing/PlanRouteGate').then((m) => m.PlanRouteGate),
+  { ssr: false, loading: () => <>{null}</> },
+);
+
 export function Providers({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
   const user = useAuthStore(useShallow((state: { user: User | null }) => state.user));
@@ -275,33 +290,35 @@ export function Providers({ children }: { children: React.ReactNode }) {
                     : 'flex-1 overflow-y-auto overflow-x-hidden min-h-0 main-scrollable app-main'
                 }
               >
-                {isChatDisabled ? (
-                  <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
-                    <MessageSquareOff className="h-10 w-10 text-(--text-muted)" />
-                    <h2 className="text-lg font-semibold text-(--text-primary)">
-                      {t('chat.disabled.title')}
-                    </h2>
-                    <p className="max-w-sm text-sm text-(--text-muted)">
-                      {t('chat.disabled.description')}
-                    </p>
-                  </div>
-                ) : isChatPage ? (
-                  <div className="flex flex-col flex-1 min-h-0 h-full p-0 sm:p-3 md:p-4">
-                    <div className="flex flex-col flex-1 min-h-0 h-full mx-auto w-full">
-                      {children}
+                <PlanRouteGate>
+                  {isChatDisabled ? (
+                    <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
+                      <MessageSquareOff className="h-10 w-10 text-(--text-muted)" />
+                      <h2 className="text-lg font-semibold text-(--text-primary)">
+                        {t('chat.disabled.title')}
+                      </h2>
+                      <p className="max-w-sm text-sm text-(--text-muted)">
+                        {t('chat.disabled.description')}
+                      </p>
                     </div>
-                  </div>
-                ) : isAIChatPage ? (
-                  <div className="flex flex-col flex-1 min-h-0 h-full p-0">
-                    <div className="flex flex-col flex-1 min-h-0 h-full mx-auto w-full">
-                      {children}
+                  ) : isChatPage ? (
+                    <div className="flex flex-col flex-1 min-h-0 h-full p-0 sm:p-3 md:p-4">
+                      <div className="flex flex-col flex-1 min-h-0 h-full mx-auto w-full">
+                        {children}
+                      </div>
                     </div>
-                  </div>
-                ) : (
-                  <div className="px-6 pb-mobile-dock !pt-0 mx-auto max-w-7xl w-full">
-                    <MobilePageTransition>{children}</MobilePageTransition>
-                  </div>
-                )}
+                  ) : isAIChatPage ? (
+                    <div className="flex flex-col flex-1 min-h-0 h-full p-0">
+                      <div className="flex flex-col flex-1 min-h-0 h-full mx-auto w-full">
+                        {children}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="px-6 pb-mobile-dock !pt-0 mx-auto max-w-7xl w-full">
+                      <MobilePageTransition>{children}</MobilePageTransition>
+                    </div>
+                  )}
+                </PlanRouteGate>
               </main>
             </div>
             {/* AI Chat Widget — hidden on /chat page so it doesn't cover the send
@@ -324,6 +341,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
             {hydrated && user && <IncomingCallProvider />}
             {/* Global chat notification sound + toast — works on ALL pages */}
             {hydrated && user && <GlobalChatNotifier />}
+
+            {/* Global upgrade modal — plan-gate errors surface here */}
+            {hydrated && user && <UpgradeModal />}
 
             {/* Productivity Services - only render when mounted to avoid SSR mismatch */}
             {hydrated && user && (

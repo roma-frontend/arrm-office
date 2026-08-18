@@ -14,12 +14,13 @@ import {
   SelectStep,
   CardSelectionStep,
 } from '@/components/ui/wizard-step-components';
-import { CreditCard, Building, Crown, DollarSign } from 'lucide-react';
+import { CreditCard, Building, Crown, DollarSign, Settings2 } from 'lucide-react';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
+import { EnterpriseOptionsStep, resolveCustomModules } from './EnterpriseOptionsStep';
 
 interface CreateManualSubscriptionWizardProps {
   onComplete?: () => void;
@@ -94,6 +95,17 @@ export function CreateManualSubscriptionWizard({
       ),
     },
     {
+      id: 'options',
+      title: t('subscriptionWizard.steps.options.title'),
+      description: t('subscriptionWizard.steps.options.description'),
+      icon: <Settings2 className="w-5 h-5" />,
+      content: <EnterpriseOptionsStep />,
+      validation: (data) =>
+        String(data.plan) !== 'enterprise' ||
+        (Array.isArray(data.customModules) && data.customModules.length > 0) ||
+        data.customModules === undefined,
+    },
+    {
       id: 'pricing',
       title: t('subscriptionWizard.steps.pricing.title'),
       description: t('subscriptionWizard.steps.pricing.description'),
@@ -122,11 +134,15 @@ export function CreateManualSubscriptionWizard({
     data: Record<string, string | number | boolean | string[] | null>,
   ) => {
     try {
+      const plan = String(data.plan) as 'starter' | 'professional' | 'enterprise';
       await createManual({
         organizationId: String(data.organizationId) as Id<'organizations'>,
-        plan: String(data.plan) as 'starter' | 'professional' | 'enterprise',
+        plan,
         customPrice: data.customPrice ? parseFloat(String(data.customPrice)) : undefined,
         notes: data.notes ? String(data.notes) : undefined,
+        // Per-org Enterprise options — resolved from the wizard's flat fields
+        // (falls back to core-only defaults when the step was untouched).
+        customModules: plan === 'enterprise' ? resolveCustomModules(data) : undefined,
       });
 
       toast.success(t('subscriptionWizard.toast.success'));

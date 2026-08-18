@@ -21,6 +21,7 @@ import {
   resolveTravelAllowance,
   resolveTravelAllowanceForOrg,
 } from './lib/travelAllowance';
+import { assertModuleAccess } from './lib/entitlements';
 
 const providerValidator = v.union(
   v.literal('lucky_carrot'),
@@ -245,6 +246,7 @@ export const saveIntegrationConfig = mutation({
     clearSecrets: v.optional(v.array(v.string())),
   },
   handler: async (ctx, { organizationId, provider, config, clearSecrets }) => {
+    await assertModuleAccess(ctx, 'integrations');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     if (!canAdminOrg(caller, organizationId)) {
@@ -1580,6 +1582,7 @@ export const ingestLuckyCarrotWebhook = internalAction({
 export const rotateWebhookSecret = mutation({
   args: { organizationId: v.id('organizations') },
   handler: async (ctx, { organizationId }) => {
+    await assertModuleAccess(ctx, 'integrations');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     if (!canAdminOrg(caller, organizationId)) {

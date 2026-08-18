@@ -2047,6 +2047,18 @@
         "priceDescription": "Leer lassen für Standardpreis",
         "notesLabel": "Interne Notizen",
         "notesPlaceholder": "Fügen Sie interne Notizen hinzu..."
+      },
+      "options": {
+        "title": "Enterprise-Optionen",
+        "description": "Wählen Sie, was dieser Kunde genau erhält (nur Enterprise)",
+        "hint": "Wählen Sie die Module und Limits, die die Organisation bezahlt hat. Nicht gewählte Module bleiben für sie gesperrt.",
+        "modulesLabel": "Module",
+        "limitsLabel": "Limits",
+        "limitPlaceholder": "auto",
+        "selectAll": "Alle auswählen",
+        "clearAll": "Alle löschen",
+        "required": "Wählen Sie mindestens ein Modul für ein Enterprise-Deal",
+        "coreBadge": "Immer enthalten"
       }
     },
     "plans": {
@@ -2765,6 +2777,9 @@
       "attendees": "Teilnehmer",
       "attachment": "Anhang",
       "openAttachment": "Anhang öffnen",
+      "room": "Besprechungsraum",
+      "videoCall": "Videokonferenz",
+      "joinVideoCall": "Videoanruf beitreten",
       "eventType": "Veranstaltungstyp",
       "priority": "Priorität",
       "requiredDepartments": "Erwartete Abteilungen",
@@ -2805,6 +2820,8 @@
       "addToCalendar": ".ics exportieren",
       "copied": "Details in die Zwischenablage kopiert",
       "copyFailed": "Details konnten nicht kopiert werden",
+      "copyLink": "Link kopieren",
+      "linkCopied": "Teilnahmelink kopiert",
       "downloaded": "Kalenderdatei heruntergeladen"
     },
     "hints": {

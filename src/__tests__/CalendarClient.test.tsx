@@ -843,9 +843,14 @@ describe('CalendarClient', () => {
     const rows = Array.from(document.querySelectorAll('[title="eventTimeline.hints.doubleClick"]'));
     const row = rows.find((r) => r.textContent?.includes('All hands')) as HTMLElement;
     fireEvent.click(row);
-    await waitFor(() => {
-      expect(screen.getByTestId('day-details-modal')).toBeInTheDocument();
-    });
+    // Generous timeout: the single-click → day-details path waits out the
+    // double-click detection timer, which can be slow under parallel CI load.
+    await waitFor(
+      () => {
+        expect(screen.getByTestId('day-details-modal')).toBeInTheDocument();
+      },
+      { timeout: 5000 },
+    );
   });
 
   it('closes every dialog through its close callback', () => {

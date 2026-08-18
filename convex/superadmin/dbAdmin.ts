@@ -540,6 +540,61 @@ export const undoDbChange = mutation({
   },
 });
 
+// ── Import (audited) ─────────────────────────────────────────────────────────
+
+/**
+ * Insert a batch of documents into one table — the counterpart of
+ * `exportDatabase`. System fields are stripped so an export file can be fed
+ * back verbatim; every successful insert lands in the change history as an
+ * `insert`, so a bad import is undoable row by row.
+ *
+ * Rows that fail schema validation are counted and reported, not thrown: an
+ * export from a newer deployment may carry fields this schema does not know,
+ * and one stale table must not sink the rest of the import. The client sends
+ * small chunks, so a mutation never grows unbounded.
+ */
+export const importTableRows = mutation({
+  args: {
+    tableName: v.string(),
+    docs: v.array(v.record(v.string(), v.any())),
+  },
+  handler: async (ctx, args) => {
+    const caller = await requireSuperadmin(ctx);
+    const names = allTableNames();
+    if (!names.includes(args.tableName)) throw new Error('Unknown table');
+    if (HIDDEN_TABLES.has(args.tableName)) throw new Error('This table is protected');
+
+    let inserted = 0;
+    const errors: string[] = [];
+    const now = Date.now();
+    for (const raw of args.docs) {
+      const doc = { ...raw };
+      delete doc._id;
+      delete doc._creationTime;
+      try {
+        // @ts-expect-error -- dynamic table name: Convex re-validates the doc
+        // against the table schema and rejects unknown or mistyped fields.
+        const docId = await ctx.db.insert(args.tableName, doc);
+        await ctx.db.insert('adminDbChanges', {
+          tableName: args.tableName,
+          docId: docId as string,
+          beforeJson: undefined,
+          afterJson: JSON.stringify(doc),
+          action: 'insert',
+          changedBy: caller._id,
+          createdAt: now,
+        });
+        inserted++;
+      } catch (error) {
+        if (errors.length < 5) {
+          errors.push(error instanceof Error ? error.message : String(error));
+        }
+      }
+    }
+    return { inserted, failed: args.docs.length - inserted, errors };
+  },
+});
+
 // ── Full export (redacted) ───────────────────────────────────────────────────
 
 /**

@@ -89,6 +89,40 @@ crons.interval('recurring-tasks-generate', { hours: 1 }, dispatch, {
   jobKey: 'recurring-tasks-generate',
 });
 
+// Performance review deadlines nudge the reviewer before the window closes;
+// the mutation suppresses repeats within 24h per review.
+crons.daily('performance-deadline-checks', { hourUTC: 9, minuteUTC: 0 }, dispatch, {
+  jobKey: 'performance-deadline-checks',
+});
+
+// OKR weekly check-in reminders (Monday morning) for key results with a
+// check-in due; the mutation suppresses repeats within a week.
+crons.weekly(
+  'okr-checkin-reminders',
+  { dayOfWeek: 'monday', hourUTC: 10, minuteUTC: 0 },
+  dispatch,
+  { jobKey: 'okr-checkin-reminders' },
+);
+
+// Surveys with a scheduled start/end flip state on their own; the creator is
+// notified either way so a silent survey never looks like a bug.
+crons.interval('survey-auto-activation', { hours: 1 }, dispatch, {
+  jobKey: 'survey-auto-activation',
+});
+crons.interval('survey-auto-closure', { hours: 1 }, dispatch, {
+  jobKey: 'survey-auto-closure',
+});
+
+// Asset warranty reminders fire once per threshold (30/15/7/1 days left);
+// maintenance reminders nudge daily while a scheduled job is due or overdue,
+// mirroring the onboarding-overdue daily nudge.
+crons.daily('asset-warranty-reminders', { hourUTC: 8, minuteUTC: 0 }, dispatch, {
+  jobKey: 'asset-warranty-reminders',
+});
+crons.daily('asset-maintenance-reminders', { hourUTC: 8, minuteUTC: 30 }, dispatch, {
+  jobKey: 'asset-maintenance-reminders',
+});
+
 // Maintenance windows open on their `startsAt`, close past `endsAt`, and fire
 // the pre-window broadcast once. Was every 5 minutes (288 function calls/day);
 // while the project is pre-revenue a ±30 min activation window is acceptable —

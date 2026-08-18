@@ -4,6 +4,12 @@ import { getAuthCaller, type AuthenticatedCaller } from './lib/getAuthCaller';
 import { isSuperadmin } from './lib/auth';
 import { DEFAULT_LIST_CAP } from './lib/limits';
 import type { Doc, Id } from './_generated/dataModel';
+import {
+  assertModuleAccess,
+  assertQuota,
+  decrementUsage,
+  incrementUsage,
+} from './lib/entitlements';
 
 // ── Access helpers ──────────────────────────────────────────────────────────
 // Projects are org-scoped: a caller may only touch their own organization
@@ -146,12 +152,16 @@ export const createProject = mutation({
     templateId: v.optional(v.id('projectTemplates')),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'tasks');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     if (!canManageOrg(caller, args.organizationId)) {
       throw new Error('Insufficient permissions to create projects');
     }
     if (!args.name.trim()) throw new Error('Project name is required');
+
+    // Plan enforcement: each project consumes one slot of the `projects` quota.
+    await assertQuota(ctx, 'tasks', 'projects', 1);
 
     const now = Date.now();
     const projectId = await ctx.db.insert('projects', {
@@ -175,6 +185,8 @@ export const createProject = mutation({
       }),
       createdAt: now,
     });
+
+    await incrementUsage(ctx, args.organizationId, 'tasks', 'projects', 1);
 
     // If created from a template, create default tasks
     if (args.templateId) {
@@ -232,6 +244,7 @@ export const updateProject = mutation({
     tags: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'tasks');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
 
@@ -262,6 +275,7 @@ export const updateProject = mutation({
 export const deleteProject = mutation({
   args: { projectId: v.id('projects') },
   handler: async (ctx, { projectId }) => {
+    await assertModuleAccess(ctx, 'tasks');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
 
@@ -281,6 +295,10 @@ export const deleteProject = mutation({
     }
 
     await ctx.db.delete(projectId);
+    // A deleted project frees its quota slot (org is optional on the schema).
+    if (project.organizationId) {
+      await decrementUsage(ctx, project.organizationId, 'tasks', 'projects', 1);
+    }
 
     await ctx.db.insert('auditLogs', {
       organizationId: project.organizationId,

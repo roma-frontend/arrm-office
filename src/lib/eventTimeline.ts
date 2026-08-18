@@ -202,6 +202,10 @@ export interface CustomTimelineData {
   attendees: string[];
   attachmentUrl?: string;
   createdAt?: number;
+  /** Meeting room held by the event, when one was reserved. */
+  roomName?: string;
+  /** LiveKit join link (`/meetings/{roomName}`), when video is enabled. */
+  videoUrl?: string;
 }
 
 /**
@@ -1029,6 +1033,12 @@ function buildCustomTimeline(
     icon: 'location',
   });
   pushFact(facts, {
+    id: 'room',
+    label: t('eventTimeline.facts.room'),
+    value: event.roomName,
+    icon: 'building',
+  });
+  pushFact(facts, {
     id: 'reminder',
     label: t('eventTimeline.facts.reminder'),
     value: reminderLabel,
@@ -1040,6 +1050,15 @@ function buildCustomTimeline(
     value: event.attendees.length ? String(event.attendees.length) : '',
     icon: 'users',
   });
+  if (event.videoUrl) {
+    facts.push({
+      id: 'videoCall',
+      label: t('eventTimeline.facts.videoCall'),
+      value: t('eventTimeline.facts.joinVideoCall'),
+      icon: 'link',
+      href: event.videoUrl,
+    });
+  }
   pushFact(facts, {
     id: 'description',
     label: t('eventTimeline.facts.description'),

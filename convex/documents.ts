@@ -5,6 +5,12 @@ import { MAX_PAGE_SIZE } from './pagination';
 import { isSuperadmin } from './lib/auth';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import type { Doc, Id } from './_generated/dataModel';
+import {
+  assertModuleAccess,
+  assertQuota,
+  decrementUsage,
+  incrementUsage,
+} from './lib/entitlements';
 
 // ─── Helper: Check permissions ───────────────────────────────────────────────
 
@@ -133,11 +139,16 @@ export const createDocument = mutation({
     tags: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'documents');
     const { requester, canManage } = await checkAccess(ctx, args.organizationId);
     if (!canManage) throw new Error('Only admins can create documents');
 
+    // Plan enforcement: each document consumes one slot of the `documents`
+    // quota (the constructor sets the per-plan limit).
+    await assertQuota(ctx, 'documents', 'documents', 1);
+
     const now = Date.now();
-    return await ctx.db.insert('documents', {
+    const documentId = await ctx.db.insert('documents', {
       organizationId: args.organizationId,
       title: args.title,
       description: args.description,
@@ -154,6 +165,9 @@ export const createDocument = mutation({
       createdAt: now,
       updatedAt: now,
     });
+
+    await incrementUsage(ctx, args.organizationId, 'documents', 'documents', 1);
+    return documentId;
   },
 });
 
@@ -173,6 +187,7 @@ export const updateDocument = mutation({
     tags: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'documents');
     const doc = await ctx.db.get(args.documentId);
     if (!doc) throw new Error('Document not found');
     const { canManage } = await checkAccess(ctx, doc.organizationId);
@@ -201,6 +216,7 @@ export const deleteDocument = mutation({
     documentId: v.id('documents'),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'documents');
     const doc = await ctx.db.get(args.documentId);
     if (!doc) throw new Error('Document not found');
     // Same gate as create/update: this deletes the record *and* everyone's read
@@ -217,6 +233,8 @@ export const deleteDocument = mutation({
     for (const view of views) await ctx.db.delete(view._id);
 
     await ctx.db.delete(args.documentId);
+    // A deleted document frees its quota slot.
+    await decrementUsage(ctx, doc.organizationId, 'documents', 'documents', 1);
     return { success: true };
   },
 });
@@ -347,6 +365,7 @@ export const createDocumentCategory = mutation({
     order: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'documents');
     const { canManage } = await checkAccess(ctx, args.organizationId);
     if (!canManage) throw new Error('Only admins can create categories');
 

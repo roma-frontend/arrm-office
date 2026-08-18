@@ -313,13 +313,27 @@ function buildCsp(nonce: string, isProduction: boolean): string {
   const styleSrc =
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com";
 
+  // LiveKit: signaling runs over wss, and the client probes HTTPS endpoints
+  // (e.g. /settings/regions) before connecting. The cloud wildcard covers
+  // managed projects; the env-derived host covers self-hosted servers.
+  let livekitSrc = 'https://*.livekit.cloud wss://*.livekit.cloud';
+  const livekitUrl = process.env.NEXT_PUBLIC_LIVEKIT_URL ?? process.env.LIVEKIT_URL;
+  if (livekitUrl) {
+    try {
+      const host = new URL(livekitUrl).hostname;
+      livekitSrc += ` https://${host} wss://${host}`;
+    } catch {
+      // Unparsable URL — the livekit.cloud wildcard above still applies.
+    }
+  }
+
   return [
     "default-src 'self'",
     scriptSrc,
     styleSrc,
     "img-src 'self' blob: data: https://res.cloudinary.com https://lh3.googleusercontent.com https://*.sentry.io https://vercel.live https://va.vercel-scripts.com https://i.ytimg.com https://*.ytimg.com https://*.tile.openstreetmap.org",
     "font-src 'self' data: https://fonts.gstatic.com",
-    "connect-src 'self' https://*.convex.cloud https://*.convex.site https://*.sentry.io https://vercel.live https://*.stripe.com https://*.js.stripe.com https://va.vercel-scripts.com https://vitals.vercel-insights.com https://nominatim.openstreetmap.org https://cdn.jsdelivr.net wss://*.convex.cloud wss://*.vercel.live",
+    `connect-src 'self' https://*.convex.cloud https://*.convex.site https://*.sentry.io https://vercel.live https://*.stripe.com https://*.js.stripe.com https://va.vercel-scripts.com https://vitals.vercel-insights.com https://nominatim.openstreetmap.org https://cdn.jsdelivr.net wss://*.convex.cloud wss://*.vercel.live ${livekitSrc}`,
     "worker-src 'self' blob: https://cdn.jsdelivr.net",
     "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://*.js.stripe.com",
     "object-src 'none'",

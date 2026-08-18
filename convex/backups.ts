@@ -20,6 +20,7 @@ import type { Id, Doc } from './_generated/dataModel';
 import { DEFAULT_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits';
 // Single source of truth for secrets — merged with backup-only fields below.
 import { SENSITIVE_USER_FIELDS as REDACTED_USER_FIELDS } from './lib/userRedaction';
+import { assertModuleAccess } from './lib/entitlements';
 
 const BACKUP_RETENTION_HOURS = 48;
 
@@ -175,6 +176,7 @@ export const createOrgBackups = mutation({
     organizationId: v.id('organizations'),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'backups');
     const org = await ctx.db.get(args.organizationId);
     if (!org) {
       return { success: false, reason: 'org_not_found' };
@@ -321,6 +323,7 @@ export const restoreEmployeeBackup = mutation({
     backupId: v.id('employeeBackups'),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'backups');
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
       throw new Error('Not authenticated');

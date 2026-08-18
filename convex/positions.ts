@@ -10,6 +10,7 @@ import { query, mutation } from './_generated/server';
 import { DEFAULT_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
 import { assertOrgStaff, resolveOrgScope, scopeOwnsRecord } from './lib/orgAccess';
+import { assertModuleAccess } from './lib/entitlements';
 
 export const list = query({
   args: {
@@ -122,6 +123,7 @@ export const create = mutation({
     isDriverPosition: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'positions');
     const scope = await assertOrgStaff(ctx, args.organizationId);
     const orgId = scope.organizationId ?? args.organizationId;
     const title = args.title.trim();
@@ -168,6 +170,7 @@ export const update = mutation({
   },
   handler: async (ctx, args) => {
     const { id, ...updates } = args;
+    await assertModuleAccess(ctx, 'positions');
     const position = await ctx.db.get(id);
     if (!position) throw new Error('Position not found');
     const scope = await assertOrgStaff(ctx, position.organizationId);
@@ -199,6 +202,7 @@ export const update = mutation({
 export const remove = mutation({
   args: { id: v.id('positions') },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'positions');
     const position = await ctx.db.get(args.id);
     if (!position) throw new Error('Position not found');
     const scope = await assertOrgStaff(ctx, position.organizationId);

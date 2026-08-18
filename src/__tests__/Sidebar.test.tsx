@@ -27,8 +27,10 @@ jest.mock('react-i18next', () => ({
 }));
 
 let mockPathname = '/dashboard';
+const mockPush = jest.fn();
 jest.mock('next/navigation', () => ({
   usePathname: () => mockPathname,
+  useRouter: () => ({ push: mockPush }),
 }));
 
 jest.mock('next/link', () => ({
@@ -97,6 +99,9 @@ jest.mock('@/convex/_generated/api', () => ({
     users: { queries: { getPendingApprovalUsers: { _name: 'getPendingApprovalUsers' } } },
     superadmin: {
       featureToggles: { getMyFeatureFlags: { _name: 'getMyFeatureFlags' } },
+    },
+    billing: {
+      plans: { getMyEntitlements: { _name: 'getMyEntitlements' } },
     },
   },
 }));
@@ -168,6 +173,7 @@ jest.mock('lucide-react', () => {
     'CalendarCheck',
     'Sun',
     'Globe',
+    'Lock',
   ];
   const mocks: Record<string, any> = {};
   for (const name of names) {
@@ -181,6 +187,7 @@ import { Sidebar, MobileSidebar } from '@/components/layout/Sidebar';
 // ── Helpers ──────────────────────────────────────────────────────────────────
 const link = (href: string) => document.querySelector(`a[href="${href}"]`);
 function resetQueries() {
+  delete mockQueries.getMyEntitlements;
   mockQueries.getMyOrganization = { name: 'Acme' };
   mockQueries.getUserNotifications = [];
   mockQueries.getUnreadCount = 0;
@@ -470,6 +477,45 @@ describe('Sidebar', () => {
     expect(link('/approvals')).not.toBeInTheDocument();
     expect(screen.queryByText('nav.groups.finance')).not.toBeInTheDocument();
   });
+
+  it('locks plan-excluded modules: lock icon, Upgrade badge and /pricing link', () => {
+    mockQueries.getMyEntitlements = {
+      planKey: 'starter',
+      planName: 'Starter',
+      planVersion: 1,
+      isTrial: false,
+      source: 'billing',
+      moduleMap: {
+        attendance: { included: false, overLimit: 'block' },
+        employees: { included: true, overLimit: 'block' },
+      },
+    };
+    render(<Sidebar />);
+    // The excluded module no longer links to its own route…
+    expect(link('/attendance')).not.toBeInTheDocument();
+    // …it now points at the pricing page, with a lock overlay and Upgrade pill.
+    expect(link('/pricing')).toBeInTheDocument();
+    expect(screen.getAllByTestId('icon-Lock').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Upgrade').length).toBeGreaterThan(0);
+    // Included modules keep their normal destinations.
+    expect(screen.getByText('nav.employees')).toBeInTheDocument();
+  });
+
+  it('routes a locked parent module to /pricing instead of opening its sub-nav', () => {
+    mockQueries.getMyEntitlements = {
+      planKey: 'starter',
+      planName: 'Starter',
+      planVersion: 1,
+      isTrial: false,
+      source: 'billing',
+      moduleMap: {
+        employees: { included: false, overLimit: 'block' },
+      },
+    };
+    render(<Sidebar />);
+    fireEvent.click(screen.getByText('nav.employees'));
+    expect(mockPush).toHaveBeenCalledWith('/pricing');
+  });
 });
 
 // ── Mobile Sidebar ───────────────────────────────────────────────────────────
@@ -626,5 +672,23 @@ describe('MobileSidebar', () => {
     render(<MobileSidebar />);
     expect(screen.getByText('Alice')).toBeInTheDocument();
     expect(screen.getByText('Acme')).toBeInTheDocument();
+  });
+
+  it('locks plan-excluded modules in the mobile sidebar too', () => {
+    mockQueries.getMyEntitlements = {
+      planKey: 'starter',
+      planName: 'Starter',
+      planVersion: 1,
+      isTrial: false,
+      source: 'billing',
+      moduleMap: {
+        attendance: { included: false, overLimit: 'block' },
+      },
+    };
+    mockSidebar.mobileOpen = true;
+    render(<MobileSidebar />);
+    expect(link('/pricing')).toBeInTheDocument();
+    expect(link('/attendance')).not.toBeInTheDocument();
+    expect(screen.getAllByText('Upgrade').length).toBeGreaterThan(0);
   });
 });

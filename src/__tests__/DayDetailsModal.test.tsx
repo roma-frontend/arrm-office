@@ -188,6 +188,9 @@ const CUSTOM: any[] = [
     location: '',
     roomName: '',
     description: '',
+    // Attendees is a newer field on the timeline event shape — present but
+    // empty for these fixtures, like real events without a guest list.
+    attendees: [],
   },
   {
     id: 'c2',
@@ -198,6 +201,7 @@ const CUSTOM: any[] = [
     location: 'Room A',
     roomName: 'Boardroom',
     description: 'Hands-on session',
+    attendees: [],
   },
 ];
 

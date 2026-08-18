@@ -47,6 +47,8 @@ import {
   CheckCircle,
   DoorOpen,
   Sparkles,
+  Copy,
+  ExternalLink,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -150,6 +152,15 @@ export function CreateEventModal({
   const updateEventMutation = useMutation(api.calendarEvents.update);
   const ensureRoomAction = useAction(api.meetingsActions.ensureRoom);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Whether LiveKit env vars exist — the toggle can stay usable while video is
+  // not configured, but the form must say so instead of failing silently.
+  const livekitConfigured = useQuery(api.meetings.livekitConfigured, {}) ?? false;
+  // The webinar/meeting mode lives on the `meetings` row, not the event, so it
+  // takes a separate fetch to restore the picker state on edit.
+  const editMeeting = useQuery(
+    api.meetings.getByEvent,
+    open && editEvent?.id ? { eventId: editEvent.id as Id<'calendarEvents'> } : 'skip',
+  ) as { mode?: 'meeting' | 'webinar' } | null | undefined;
 
   const [step, setStep] = useState<Step>('details');
   const [title, setTitle] = useState('');
@@ -365,12 +376,36 @@ export function CreateEventModal({
       // The toggle reflects what the event actually has: a link or the provider
       // marker (the link may briefly be absent between save and room creation).
       setVideoEnabled(Boolean(editEvent.videoUrl || editEvent.videoProvider === 'livekit'));
-      setVideoMode(editEvent.videoProvider === 'livekit' ? 'meeting' : 'meeting');
+      setVideoMode('meeting');
     } else if (selectedDate) {
       setDate(format(selectedDate, 'yyyy-MM-dd'));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, editId]);
+
+  // Editing: the picker needs the users themselves, not just names. Without
+  // this the picker opens empty and a re-save would wipe the guest list —
+  // `attendeeIds` (not `attendees`) is what survives a round-trip. Resolves
+  // against the org roster once it loads; a restored draft takes precedence.
+  const hydratedAttendeesRef = useRef<string | null>(null);
+  React.useEffect(() => {
+    if (!open || !editEvent?.attendeeIds?.length || !orgUsers) return;
+    if (restoredDraftRef.current || hydratedAttendeesRef.current === editEvent.id) return;
+    hydratedAttendeesRef.current = editEvent.id;
+    const ids = new Set(editEvent.attendeeIds);
+    setAttendees(orgUsers.filter((u) => ids.has(u._id)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, editId, orgUsers]);
+
+  // The saved webinar/meeting mode arrives asynchronously (separate table) —
+  // apply it once per edit, after the base hydration above set the default.
+  const restoredModeRef = useRef<string | null>(null);
+  React.useEffect(() => {
+    if (!open || !editEvent || !editMeeting || restoredModeRef.current === editEvent.id) return;
+    restoredModeRef.current = editEvent.id;
+    setVideoMode(editMeeting.mode ?? 'meeting');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, editId, editMeeting]);
 
   const resetForm = () => {
     setStep('details');
@@ -391,6 +426,8 @@ export function CreateEventModal({
     setVideoEnabled(false);
     setVideoMode('meeting');
     setUploading(false);
+    hydratedAttendeesRef.current = null;
+    restoredModeRef.current = null;
   };
 
   // ── Черновик: введённые данные переживают случайное закрытие модалки ───────
@@ -478,6 +515,8 @@ export function CreateEventModal({
   const handleStartOver = () => {
     clearDraft();
     restoredDraftRef.current = false;
+    hydratedAttendeesRef.current = null;
+    restoredModeRef.current = null;
     // Вернуть «нетронутую» форму: данные редактируемого события или пустоту.
     resetForm();
     setTitle(pristineForm.title);
@@ -492,6 +531,27 @@ export function CreateEventModal({
     setRoomId(pristineForm.roomId);
     setVideoEnabled(pristineForm.videoEnabled);
     setVideoMode('meeting');
+    // Участники — тоже часть «нетронутой» состояния при редактировании.
+    if (editEvent?.attendeeIds?.length && orgUsers) {
+      const ids = new Set(editEvent.attendeeIds);
+      setAttendees(orgUsers.filter((u) => ids.has(u._id)));
+    }
+  };
+
+  // The stored link is a relative path (`/meetings/…`); a shareable one needs
+  // the origin so a colleague can open it straight from a chat message.
+  const absoluteVideoUrl = editEvent?.videoUrl
+    ? `${typeof window !== 'undefined' ? window.location.origin : ''}${editEvent.videoUrl}`
+    : '';
+
+  const copyVideoLink = async () => {
+    if (!absoluteVideoUrl) return;
+    try {
+      await navigator.clipboard.writeText(absoluteVideoUrl);
+      toast.success(t('createMeeting.linkCopied'));
+    } catch {
+      toast.error(t('eventTimeline.actions.copyFailed'));
+    }
   };
 
   /**
@@ -608,7 +668,11 @@ export function CreateEventModal({
             savedVideoUrl = result.videoUrl;
             toast.success(t('createMeeting.videoCreated'));
           } else {
-            toast.warning(t('createMeeting.videoNotConfigured'));
+            // Easy to miss as a blink-and-gone toast — spell out the fix.
+            toast.warning(t('createMeeting.videoNotConfigured'), {
+              description: 'LIVEKIT_URL · LIVEKIT_API_KEY · LIVEKIT_API_SECRET',
+              duration: 8000,
+            });
           }
         } catch (err) {
           toast.error(
@@ -642,10 +706,15 @@ export function CreateEventModal({
         category,
         reminder,
         attendees: attendees.map((a) => a.name),
+        attendeeIds: attendees.map((a) => a._id),
         attachmentUrl,
         roomId: roomId ?? undefined,
         roomName: selectedRoom?.name,
         roomColor: selectedRoom?.color,
+        // A re-book happened server-side when the room or slot changed, so the
+        // old booking id is only still true when the room stayed the same.
+        roomBookingId:
+          roomId && roomId === editEvent?.roomId ? editEvent?.roomBookingId : undefined,
         videoUrl: savedVideoUrl,
         videoProvider: savedVideoUrl ? 'livekit' : undefined,
       };
@@ -706,7 +775,9 @@ export function CreateEventModal({
         {/* Header — title plus the step map. The connector between the pills is
             the progress bar, so the header costs one row instead of two. */}
         <SheetHeader className="gap-3.5">
-          <SheetTitle>{t('createMeeting.title')}</SheetTitle>
+          <SheetTitle>
+            {editEvent ? t('createMeeting.editTitle') : t('createMeeting.title')}
+          </SheetTitle>
           <WizardStepper
             steps={stepperSteps}
             current={stepIndex}
@@ -1096,6 +1167,14 @@ export function CreateEventModal({
                           const fits = capacityFits(room.capacity, attendees.length);
                           const free = !roomWindowValid || availability?.available !== false;
                           const isSelected = room._id === roomId;
+                          // The event's own reservation is excluded from the
+                          // busy check (so it cannot clash with itself), which
+                          // would otherwise read as "not booked" — mark it.
+                          const bookedByThisEvent = Boolean(
+                            isSelected &&
+                            editEvent?.roomBookingId &&
+                            room.bookings?.some((b) => b._id === editEvent.roomBookingId),
+                          );
                           const roomLocation = formatRoomLocation(room, (key, options) =>
                             t(key, options),
                           );
@@ -1140,6 +1219,11 @@ export function CreateEventModal({
                                         people: headcount,
                                         max: room.capacity,
                                       })}
+                                    </span>
+                                  ) : bookedByThisEvent ? (
+                                    <span className="inline-flex items-center gap-1 rounded-pill bg-(--brand-quiet) px-2 py-0.5 text-[10px] font-medium text-(--brand-text)">
+                                      <CheckCircle className="w-3 h-3" />
+                                      {t('createMeeting.room.bookedByThisEvent')}
                                     </span>
                                   ) : free ? (
                                     <span className="inline-flex items-center gap-1 rounded-pill bg-(--success-quiet) px-2 py-0.5 text-[10px] font-medium text-(--success-text)">
@@ -1242,6 +1326,56 @@ export function CreateEventModal({
                             </button>
                           ))}
                         </div>
+                      </div>
+                    )}
+                    {!livekitConfigured && (
+                      <div className="flex items-start gap-2.5 border-t border-(--warning-outline) bg-(--warning-quiet) px-4 py-3">
+                        <AlertTriangle className="w-4 h-4 shrink-0 text-(--warning-text)" />
+                        <p className="text-caption text-(--warning-text)">
+                          {t('createMeeting.videoNotConfiguredHint')}
+                        </p>
+                      </div>
+                    )}
+                    {livekitConfigured && videoEnabled && editEvent && !editEvent.videoUrl && (
+                      <div className="flex items-start gap-2.5 border-t border-(--border-subtle) px-4 py-3">
+                        <Sparkles className="w-4 h-4 shrink-0 text-(--brand)" />
+                        <p className="text-caption text-(--text-secondary)">
+                          {t('createMeeting.videoWillBeCreated')}
+                        </p>
+                      </div>
+                    )}
+                    {editEvent?.videoUrl && (
+                      <div className="space-y-2 border-t border-(--border-subtle) px-4 py-3">
+                        <p className="text-caption font-medium text-(--text-secondary)">
+                          {t('createMeeting.videoLinkLabel')}
+                        </p>
+                        <div className="flex items-center gap-1.5">
+                          <code className="min-w-0 flex-1 truncate rounded-field border border-(--border-subtle) bg-(--surface-1) px-2.5 py-1.5 text-caption text-(--text-secondary)">
+                            {absoluteVideoUrl}
+                          </code>
+                          <button
+                            type="button"
+                            onClick={copyVideoLink}
+                            title={t('createMeeting.copyLink')}
+                            className="inline-flex shrink-0 items-center gap-1.5 rounded-control border border-(--border-subtle) bg-(--card) px-2.5 py-1.5 text-caption font-medium text-(--text-secondary) transition-colors duration-140 ease-spark hover:border-(--brand) hover:text-(--brand-text)"
+                          >
+                            <Copy className="h-3.5 w-3.5" />
+                            {t('createMeeting.copyLink')}
+                          </button>
+                          <a
+                            href={absoluteVideoUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title={t('createMeeting.openLink')}
+                            className="inline-flex shrink-0 items-center gap-1.5 rounded-control border border-(--border-subtle) bg-(--card) px-2.5 py-1.5 text-caption font-medium text-(--text-secondary) transition-colors duration-140 ease-spark hover:border-(--brand) hover:text-(--brand-text)"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" />
+                            {t('createMeeting.openLink')}
+                          </a>
+                        </div>
+                        <p className="text-caption text-(--text-muted)">
+                          {t('createMeeting.videoLinkHint')}
+                        </p>
                       </div>
                     )}
                   </div>

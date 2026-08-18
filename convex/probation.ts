@@ -7,6 +7,7 @@ import { DEFAULT_LIST_CAP } from './lib/limits';
 import { notify } from './lib/notify';
 import { assertOrgScope, resolveOrgScope, scopeOwnsRecord, type OrgScope } from './lib/orgAccess';
 import { resolveServiceAssignee } from './lib/resolveServiceAssignee';
+import { assertModuleAccess } from './lib/entitlements';
 
 // Statutory-flavoured defaults: a standard 3-month term, and a hard 6-month
 // cap measured from the start date — extensions included. Organizations can
@@ -144,6 +145,7 @@ export const startProbation = mutation({
     durationDays: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'probation');
     const employee = await ctx.db.get(args.employeeId);
     if (!employee) throw new Error('Employee not found');
     if (employee.organizationId !== args.organizationId) {
@@ -215,6 +217,7 @@ export const extendProbation = mutation({
     reason: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'probation');
     const period = await ctx.db.get(args.probationId);
     if (!period) throw new Error('Probation period not found');
     if (period.status !== 'active') throw new Error('This probation period is not active');
@@ -293,6 +296,7 @@ export const completeProbation = mutation({
     withOffboarding: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'probation');
     const period = await ctx.db.get(args.probationId);
     if (!period) throw new Error('Probation period not found');
     if (period.status !== 'active') throw new Error('This probation period is not active');

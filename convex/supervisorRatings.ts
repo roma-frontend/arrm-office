@@ -8,6 +8,7 @@ import { getProfile } from './lib/userProfile';
 import { creditBalance, resolveRecognitionSettings } from './lib/points';
 import { hasCapability, hasOrgWideReach } from './lib/capabilities';
 import { getOrgHeadId, isAncestorOf, resolveSupervisorId } from './lib/reportingLine';
+import { assertModuleAccess } from './lib/entitlements';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Who rates whom
@@ -84,6 +85,7 @@ export const createRating = mutation({
     ratingPeriod: v.optional(v.string()), // e.g., "2026-02"
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'reviews');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
 

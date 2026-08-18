@@ -8,6 +8,12 @@ import { assertFeatureEnabled } from './superadmin/featureToggles';
 import { SMALL_LIST_CAP } from './lib/limits';
 import { getAuthCaller } from './lib/getAuthCaller';
 import { assertLeaveTypeActive } from './lib/leaveTypes';
+import {
+  assertModuleAccess,
+  assertQuota,
+  currentPeriodKey,
+  incrementUsage,
+} from './lib/entitlements';
 
 /** Generate a URL-safe random token (share links). */
 function randomToken(bytes = 24): string {
@@ -22,6 +28,7 @@ export const createConversation = mutation({
     title: v.string(),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'aiAssistant');
     await assertFeatureEnabled(ctx, 'ai.assistant');
     const conversationId = await ctx.db.insert('aiConversations', {
       userId: args.userId,
@@ -40,6 +47,7 @@ export const updateConversationTitle = mutation({
     title: v.string(),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'aiAssistant');
     await assertFeatureEnabled(ctx, 'ai.assistant');
     await ctx.db.patch(args.conversationId, {
       title: args.title,
@@ -53,6 +61,7 @@ export const updateConversationTitle = mutation({
 export const deleteConversation = mutation({
   args: { conversationId: v.id('aiConversations') },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'aiAssistant');
     await assertFeatureEnabled(ctx, 'ai.assistant');
     // Delete all messages first
     const messages = await ctx.db
@@ -92,13 +101,28 @@ export const addMessage = mutation({
     content: v.string(),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'aiAssistant');
     await assertFeatureEnabled(ctx, 'ai.assistant');
+    // Every assistant turn consumes one of the monthly `queries` on the plan.
+    await assertQuota(ctx, 'aiAssistant', 'queries', 1, currentPeriodKey());
     const messageId = await ctx.db.insert('aiMessages', {
       conversationId: args.conversationId,
       role: args.role,
       content: args.content,
       createdAt: Date.now(),
     });
+
+    const caller = await getAuthCaller(ctx);
+    if (caller?.organizationId) {
+      await incrementUsage(
+        ctx,
+        caller.organizationId,
+        'aiAssistant',
+        'queries',
+        1,
+        currentPeriodKey(),
+      );
+    }
 
     // Update conversation updatedAt
     await ctx.db.patch(args.conversationId, {
@@ -276,6 +300,7 @@ export const createShare = mutation({
     createdBy: v.id('users'),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'aiAssistant');
     await assertFeatureEnabled(ctx, 'ai.assistant');
     const existing = await ctx.db
       .query('aiShares')

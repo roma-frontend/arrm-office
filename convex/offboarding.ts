@@ -29,6 +29,7 @@ import {
   scopeOwnsRecord,
   type OrgScope,
 } from './lib/orgAccess';
+import { assertModuleAccess } from './lib/entitlements';
 
 /** `lastDay` is a timestamp; notifications show a plain ISO date. */
 function isoDate(timestamp: number): string {
@@ -290,6 +291,7 @@ export const startOffboarding = mutation({
     reasonNote: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'offboarding');
     const scope = await assertOrgStaff(ctx, args.organizationId);
     const orgId = scope.organizationId ?? args.organizationId;
     const now = Date.now();
@@ -445,6 +447,7 @@ export const startOffboarding = mutation({
 export const completeTask = mutation({
   args: { taskId: v.id('offboardingTasks') },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'offboarding');
     const task = await ctx.db.get(args.taskId);
     if (!task) throw new Error('Task not found');
 
@@ -520,6 +523,7 @@ export const addTask = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'offboarding');
     const { program } = await loadProgramForWrite(ctx, args.programId, {
       staffOnly: true,
       mustBeActive: true,
@@ -609,6 +613,7 @@ export const completeProgram = mutation({
     force: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'offboarding');
     const { program, scope } = await loadProgramForWrite(ctx, args.programId, {
       staffOnly: true,
       mustBeActive: true,

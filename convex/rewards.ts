@@ -42,6 +42,7 @@ import {
   SETTINGS_BOUNDS,
   type RecognitionSettings,
 } from './lib/points';
+import { assertModuleAccess } from './lib/entitlements';
 
 const MAX_CATALOG_ITEMS = 200;
 const MAX_CODES_PER_UPLOAD = 500;
@@ -533,6 +534,7 @@ export const createItem = mutation({
     sortOrder: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'rewards');
     const scope = await assertOrgStaff(ctx, args.organizationId);
     const organizationId = scope.organizationId;
     if (!organizationId) throw new Error('Organization is required');
@@ -594,6 +596,7 @@ export const updateItem = mutation({
     sortOrder: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'rewards');
     const item = await ctx.db.get(args.itemId);
     if (!item) throw new Error('Reward not found');
     const scope = await assertOrgStaff(ctx, item.organizationId);
@@ -665,6 +668,7 @@ export const setItemStatus = mutation({
 export const removeItem = mutation({
   args: { itemId: v.id('rewardItems') },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'rewards');
     const item = await ctx.db.get(args.itemId);
     if (!item) throw new Error('Reward not found');
     const scope = await assertOrgStaff(ctx, item.organizationId, { adminOnly: true });
@@ -777,6 +781,7 @@ export const redeem = mutation({
     companionId: v.optional(v.id('users')),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'rewards');
     const item = await ctx.db.get(args.itemId);
     if (!item) throw new Error('Reward not found');
 
@@ -919,6 +924,7 @@ export const redeem = mutation({
 export const approveVoucher = mutation({
   args: { voucherId: v.id('rewardVouchers') },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'rewards');
     const voucher = await ctx.db.get(args.voucherId);
     if (!voucher) throw new Error('Voucher not found');
     const scope = await assertOrgStaff(ctx, voucher.organizationId);

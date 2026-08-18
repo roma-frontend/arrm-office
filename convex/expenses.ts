@@ -12,6 +12,12 @@ import {
   type OrgScope,
 } from './lib/orgAccess';
 import { getProfile } from './lib/userProfile';
+import {
+  assertModuleAccess,
+  assertQuota,
+  currentPeriodKey,
+  incrementUsage,
+} from './lib/entitlements';
 
 /**
  * Expense money flow, server-side rules
@@ -414,6 +420,7 @@ export const createExpense = mutation({
     createdBy: v.id('users'),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'expenses');
     await assertFeatureEnabled(ctx, 'expenses.module');
     const { createdBy: _clientCreatedBy, ...expenseData } = args;
     // Filing for somebody else is a staff action; everyone else files for self.
@@ -475,6 +482,7 @@ export const updateExpense = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'expenses');
     await assertFeatureEnabled(ctx, 'expenses.module');
     const { expenseId, ...updates } = args;
     const expense = await ctx.db.get(expenseId);
@@ -519,6 +527,7 @@ export const submitExpense = mutation({
     expenseId: v.id('expenses'),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'expenses');
     await assertFeatureEnabled(ctx, 'expenses.module');
     const { expenseId } = args;
     const expense = await ctx.db.get(expenseId);
@@ -544,6 +553,7 @@ export const approveExpense = mutation({
     reviewNotes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'expenses');
     await assertFeatureEnabled(ctx, 'expenses.module');
     const { expenseId, reviewNotes } = args;
     const expense = await ctx.db.get(expenseId);
@@ -626,6 +636,7 @@ export const deleteExpense = mutation({
     expenseId: v.id('expenses'),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'expenses');
     await assertFeatureEnabled(ctx, 'expenses.module');
     const { expenseId } = args;
     const expense = await ctx.db.get(expenseId);
@@ -806,12 +817,15 @@ export const createExpenseReport = mutation({
     createdBy: v.id('users'),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'expenses');
     await assertFeatureEnabled(ctx, 'expenses.module');
     const { createdBy: _clientCreatedBy, ...reportData } = args;
     const scope = await assertOrgScope(ctx, args.organizationId);
     if (!scope.isStaff && args.userId !== scope.caller._id) {
       throw new Error('Not authorized to create a report for another user');
     }
+    // Plan enforcement: expense reports are a monthly quota on the plan.
+    await assertQuota(ctx, 'expenses', 'reports', 1, currentPeriodKey());
     const now = Date.now();
 
     const reportId = await ctx.db.insert('expenseReports', {
@@ -824,6 +838,7 @@ export const createExpenseReport = mutation({
       updatedAt: now,
     });
 
+    await incrementUsage(ctx, args.organizationId, 'expenses', 'reports', 1, currentPeriodKey());
     return reportId;
   },
 });
@@ -931,6 +946,7 @@ export const submitExpenseReport = mutation({
     reportId: v.id('expenseReports'),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'expenses');
     await assertFeatureEnabled(ctx, 'expenses.module');
     const { reportId } = args;
     const report = await ctx.db.get(reportId);

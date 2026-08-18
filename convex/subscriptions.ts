@@ -2,6 +2,7 @@ import { mutation, query } from './_generated/server';
 import { v } from 'convex/values';
 import { isSuperadmin } from './lib/auth';
 import { DEFAULT_LIST_CAP, PLAN_EMPLOYEE_LIMITS } from './lib/limits';
+import { resolveBillingPlanLink } from './billing/plans';
 
 // ── Upsert subscription after checkout.session.completed ─────────────────────
 export const upsertSubscription = mutation({
@@ -46,9 +47,15 @@ export const upsertSubscription = mutation({
       }
     }
 
+    // Pin the billing-catalog plan the customer signed on, so entitlements
+    // resolve from a real published snapshot instead of the legacy fallback.
+    const planLink = await resolveBillingPlanLink(ctx, args.plan);
+
     if (existing) {
       await ctx.db.patch(existing._id, {
         ...args,
+        planId: planLink.planId ?? existing.planId,
+        planVersion: planLink.planVersion ?? existing.planVersion,
         updatedAt: now,
       });
       return existing._id;
@@ -56,6 +63,8 @@ export const upsertSubscription = mutation({
 
     return await ctx.db.insert('subscriptions', {
       ...args,
+      planId: planLink.planId,
+      planVersion: planLink.planVersion,
       createdAt: now,
       updatedAt: now,
     });

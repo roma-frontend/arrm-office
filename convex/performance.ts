@@ -5,6 +5,7 @@ import { Id } from './_generated/dataModel';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
 import { notify } from './lib/notify';
+import { assertModuleAccess } from './lib/entitlements';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -388,6 +389,7 @@ export const createCycle = mutation({
     createdBy: v.id('users'),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'performance');
     // Resolve competencies from template or args or defaults
     let competencies = args.competencies || DEFAULT_COMPETENCIES;
     if (args.templateId) {
@@ -434,6 +436,7 @@ export const launchCycle = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'performance');
     const cycle = await ctx.db.get(args.cycleId);
     if (!cycle) throw new Error('Cycle not found');
     if (cycle.status !== 'draft') throw new Error('Cycle must be in draft status to launch');
@@ -558,6 +561,7 @@ export const submitReview = mutation({
     generalComments: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'performance');
     const assignment = await ctx.db.get(args.assignmentId);
     if (!assignment) throw new Error('Assignment not found');
     if (assignment.status === 'submitted') throw new Error('Already submitted');
@@ -642,6 +646,7 @@ export const submitReview = mutation({
 export const closeCycle = mutation({
   args: { cycleId: v.id('reviewCycles') },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'performance');
     const cycle = await ctx.db.get(args.cycleId);
     if (!cycle) throw new Error('Cycle not found');
 
@@ -668,6 +673,7 @@ export const closeCycle = mutation({
 export const cancelCycle = mutation({
   args: { cycleId: v.id('reviewCycles') },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'performance');
     const cycle = await ctx.db.get(args.cycleId);
     if (!cycle) throw new Error('Cycle not found');
 

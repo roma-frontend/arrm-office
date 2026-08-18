@@ -35,6 +35,7 @@ import { allocateDocumentNumber, DEFAULT_DOCUMENT_SERIES } from './lib/documentN
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { notify } from './lib/notify';
 import { insertSignatureDocument } from './signatures';
+import { assertModuleAccess } from './lib/entitlements';
 
 const localeValidator = v.union(v.literal('en'), v.literal('ru'), v.literal('hy'), v.literal('de'));
 
@@ -311,6 +312,7 @@ export const issue = mutation({
     note: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'signatures');
     const scope = await assertOrgStaff(ctx, args.organizationId);
     if (!scope.organizationId) throw new Error('No organization in scope');
 
@@ -620,6 +622,7 @@ export const sendForSignature = mutation({
 export const cancel = mutation({
   args: { issuedDocumentId: v.id('issuedDocuments') },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'signatures');
     const row = await ctx.db.get(args.issuedDocumentId);
     if (!row) throw new Error('Document not found');
     await staffScopeFor(ctx, row);
@@ -640,6 +643,7 @@ export const cancel = mutation({
 export const remove = mutation({
   args: { issuedDocumentId: v.id('issuedDocuments') },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'signatures');
     const row = await ctx.db.get(args.issuedDocumentId);
     if (!row) throw new Error('Document not found');
     await staffScopeFor(ctx, row);

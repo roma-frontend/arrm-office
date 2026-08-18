@@ -73,6 +73,10 @@ jest.mock('@/convex/_generated/api', () => ({
     meetingsActions: {
       ensureRoom: { _name: 'meetingsActions.ensureRoom' },
     },
+    meetings: {
+      livekitConfigured: { _name: 'meetings.livekitConfigured' },
+      getByEvent: { _name: 'meetings.getByEvent' },
+    },
   },
 }));
 
@@ -81,6 +85,10 @@ jest.mock('convex/react', () => ({
     if (!q || q === 'skip') return undefined;
     if (q._name === 'users.getUsersByOrganizationId') return mockOrgUsers;
     if (q._name === 'meetingRooms.getRoomsWithBookings') return mockRooms;
+    // LiveKit backend queries: configured (env present) but no meeting row on
+    // the events under test — the video toggle renders, editMeeting is null.
+    if (q._name === 'meetings.livekitConfigured') return true;
+    if (q._name === 'meetings.getByEvent') return null;
     return undefined;
   },
   useMutation: (m: any) => {

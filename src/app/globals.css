@@ -327,8 +327,16 @@ body.scroll-locked {
   }
 }
 
-/* Prevent Radix UI from adding padding-right shift on body */
-body[data-scroll-locked] {
+/* Prevent Radix UI from shifting the layout while a dialog locks the scroll.
+   react-remove-scroll-bar injects `body[data-scroll-locked] { margin-right: Npx
+   !important }` via a runtime <style> appended AFTER the bundled CSS, so an
+   override with the same selector loses the cascade regardless of !important.
+   The higher-specificity `html body[...]` wins deterministically. The
+   compensation is unwanted anyway: the dashboard scrolls inside
+   .main-scrollable and <html> never shows a scrollbar (scrollbar-width: none),
+   so removing "the body scrollbar" frees no space and the margin only shifts
+   the page left by the gutter width. */
+html body[data-scroll-locked] {
   padding-right: 0 !important;
   margin-right: 0 !important;
 }
@@ -454,6 +462,18 @@ body.lang-switching #main-content {
   }
   100% {
     background-position: -200% 0;
+  }
+}
+
+/* Plan editor — the price number ticks when Monthly/Yearly is toggled. */
+@keyframes priceTick {
+  0% {
+    opacity: 0.25;
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 

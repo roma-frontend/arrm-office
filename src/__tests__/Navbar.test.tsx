@@ -89,6 +89,9 @@ jest.mock('../../convex/_generated/api', () => ({
       mutations: { updatePresenceStatus: { _name: 'updatePresenceStatus' } },
       queries: { getUserById: { _name: 'getUserById' } },
     },
+    billing: {
+      plans: { getMyEntitlements: { _name: 'getMyEntitlements' } },
+    },
   },
 }));
 

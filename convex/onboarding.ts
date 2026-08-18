@@ -15,6 +15,7 @@ import {
   scopeOwnsRecord,
   type OrgScope,
 } from './lib/orgAccess';
+import { assertModuleAccess } from './lib/entitlements';
 
 /**
  * Fallback checklist used when a programme is started without a template.
@@ -395,6 +396,7 @@ export const createTemplate = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'onboarding');
     const scope = await assertOrgStaff(ctx, args.organizationId);
     if (args.tasks.length === 0) {
       throw new Error('A template needs at least one task');
@@ -494,6 +496,7 @@ export const startOnboarding = mutation({
     managerId: v.id('users'),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'onboarding');
     const scope = await assertOrgStaff(ctx, args.organizationId);
     const orgId = scope.organizationId ?? args.organizationId;
     const createdBy = scope.caller._id;
@@ -696,6 +699,7 @@ export const addTask = mutation({
     dueDate: v.number(),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'onboarding');
     const { program } = await loadProgramForWrite(ctx, args.programId, {
       staffOnly: true,
       mustBeActive: true,
@@ -802,6 +806,7 @@ export const repairOnboardingAssignments = mutation({
 export const completeTask = mutation({
   args: { taskId: v.id('onboardingTasks') },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'onboarding');
     const { taskId } = args;
     const task = await ctx.db.get(taskId);
     if (!task) throw new Error('Task not found');
@@ -917,6 +922,7 @@ export const assignBuddy = mutation({
 export const completeProgram = mutation({
   args: { programId: v.id('onboardingPrograms') },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'onboarding');
     const { programId } = args;
     const { program, scope } = await loadProgramForWrite(ctx, programId, {
       staffOnly: true,

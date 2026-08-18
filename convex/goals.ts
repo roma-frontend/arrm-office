@@ -4,6 +4,7 @@ import type { Id } from './_generated/dataModel';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
 import { notify } from './lib/notify';
+import { assertModuleAccess } from './lib/entitlements';
 
 // Helper: compute KR completion percentage respecting direction
 function computeKRProgress(
@@ -292,6 +293,7 @@ export const createObjective = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'goals');
     const { keyResults, ...objectiveData } = args;
 
     // Validate parent objective belongs to same org
@@ -358,6 +360,7 @@ export const updateObjective = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'goals');
     const { objectiveId, ...updates } = args;
     const obj = await ctx.db.get(objectiveId);
     if (!obj) throw new Error('Objective not found');
@@ -374,6 +377,7 @@ export const updateObjective = mutation({
 export const deleteObjective = mutation({
   args: { objectiveId: v.id('objectives') },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'goals');
     const { objectiveId } = args;
     const obj = await ctx.db.get(objectiveId);
     if (!obj) throw new Error('Objective not found');
@@ -427,6 +431,7 @@ export const addKeyResult = mutation({
     ownerId: v.id('users'),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'goals');
     const { objectiveId, ...krData } = args;
     const obj = await ctx.db.get(objectiveId);
     if (!obj) throw new Error('Objective not found');
@@ -574,6 +579,7 @@ export const checkin = mutation({
 export const completeObjective = mutation({
   args: { objectiveId: v.id('objectives') },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'goals');
     const { objectiveId } = args;
     const obj = await ctx.db.get(objectiveId);
     if (!obj) throw new Error('Objective not found');

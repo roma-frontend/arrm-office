@@ -12,6 +12,7 @@ import { assertFeatureEnabled } from '../superadmin/featureToggles';
 import { getAuthCaller } from '../lib/getAuthCaller';
 import { isSuperadmin } from '../lib/auth';
 import { notify } from '../lib/notify';
+import { assertModuleAccess } from '../lib/entitlements';
 
 /** Create a recurring trip template */
 export const createRecurringTrip = mutation({
@@ -34,6 +35,7 @@ export const createRecurringTrip = mutation({
     }),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'drivers');
     await assertFeatureEnabled(ctx, 'drivers.module');
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');

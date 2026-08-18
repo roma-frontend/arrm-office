@@ -7,6 +7,7 @@ import { getProfile } from './lib/userProfile';
 import { creditBalance, resolveRecognitionSettings } from './lib/points';
 import { getAuthCaller } from './lib/getAuthCaller';
 import { hasCapability, hasOrgWideReach } from './lib/capabilities';
+import { assertModuleAccess } from './lib/entitlements';
 import { isAncestorOf } from './lib/reportingLine';
 import { canAccessUser } from './lib/rbac';
 
@@ -116,6 +117,7 @@ export const checkIn = mutation({
     userId: v.optional(v.id('users')),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'attendance');
     const userId = await assertMayRecordAttendance(ctx, args.userId);
     const now = Date.now();
     const today = getTodayDate();
@@ -217,6 +219,7 @@ export const checkOut = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'attendance');
     const userId = await assertMayRecordAttendance(ctx, args.userId);
     const now = Date.now();
     const today = getTodayDate();
@@ -662,6 +665,7 @@ export const markAbsent = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'attendance');
     // Marking somebody absent is always an act about another person: it needs
     // `attendance.manage`, and nobody records it against themselves.
     const userId = await assertMayRecordAttendance(ctx, args.userId, { selfAllowed: false });

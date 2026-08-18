@@ -17,6 +17,7 @@ import {
   scopeOwnsRecord,
   type OrgScope,
 } from './lib/orgAccess';
+import { assertModuleAccess } from './lib/entitlements';
 
 /**
  * Candidate records are personal data: a name, an email, a phone number, a CV and
@@ -394,6 +395,7 @@ export const createVacancy = mutation({
     hiringManagerId: v.id('users'),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'recruitment');
     await assertFeatureEnabled(ctx, 'recruitment.module');
     const scope = await assertOrgStaff(ctx, args.organizationId);
     const organizationId = scope.organizationId ?? args.organizationId;
@@ -439,6 +441,7 @@ export const updateVacancy = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'recruitment');
     await assertFeatureEnabled(ctx, 'recruitment.module');
     const { vacancyId, ...updates } = args;
     const vac = await ctx.db.get(vacancyId);
@@ -576,6 +579,7 @@ export const addCandidate = mutation({
     cvMimeType: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'recruitment');
     await assertFeatureEnabled(ctx, 'recruitment.module');
     const {
       vacancyId,
@@ -739,6 +743,7 @@ export const moveCandidate = mutation({
     reason: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'recruitment');
     await assertFeatureEnabled(ctx, 'recruitment.module');
     const { applicationId, newStage, reason } = args;
     const scope = await assertOrgStaff(ctx, undefined);
@@ -1167,6 +1172,7 @@ export const hireCandidate = mutation({
     department: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'recruitment');
     await assertFeatureEnabled(ctx, 'recruitment.module');
     const { applicationId, startDate, position, department } = args;
     // Hiring creates a user account with access to the organization, so it is an

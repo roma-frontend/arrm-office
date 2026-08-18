@@ -5,6 +5,7 @@ import { markConversationRead } from './conversations';
 import { getProfile } from '../lib/userProfile';
 import { DEFAULT_LIST_CAP } from '../lib/limits';
 import { notify } from '../lib/notify';
+import { assertModuleAccess } from '../lib/entitlements';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET CONVERSATION MESSAGES — uses chatMessages
@@ -88,6 +89,7 @@ export const sendMessage = mutation({
     scheduledFor: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'chat');
     const membership = await ctx.db
       .query('chatMembers')
       .withIndex('by_conversation_user', (q) =>
@@ -202,6 +204,7 @@ export const deleteMessage = mutation({
     userId: v.id('users'),
   },
   handler: async (ctx, { messageId, userId }) => {
+    await assertModuleAccess(ctx, 'chat');
     const message = await ctx.db.get(messageId);
     if (!message) throw new Error('Message not found');
     if (message.senderId !== userId) throw new Error('Can only delete your own messages');
@@ -227,6 +230,7 @@ export const editMessage = mutation({
     content: v.string(),
   },
   handler: async (ctx, { messageId, userId, content }) => {
+    await assertModuleAccess(ctx, 'chat');
     const message = await ctx.db.get(messageId);
     if (!message) throw new Error('Message not found');
     if (message.senderId !== userId) throw new Error('Can only edit your own messages');
