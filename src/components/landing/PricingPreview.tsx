@@ -454,7 +454,7 @@ const pricingTiers: PricingTier[] = [
     accentFrom: '#3b82f6',
     accentTo: '#2563eb',
     glowColor: 'rgba(59,130,246,0.4)',
-    trialEligible: false,
+    trialEligible: true,
   },
   {
     id: 'enterprise',
@@ -720,7 +720,7 @@ function PricingCard({
           </div>
 
           {/* Price — animated when the plan or billing period changes */}
-          <div className="mb-6 sm:mb-8">
+          <div className="mb-6">
             <div className="flex items-end gap-2">
               <span
                 className="text-3xl font-black leading-none tabular-nums"
@@ -737,24 +737,24 @@ function PricingCard({
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-2 mt-1.5 min-h-4">
-              {billing === 'annual' && tier.priceMonthly !== undefined && (
-                <span
-                  className="text-[10px] font-semibold line-through"
-                  style={{ color: 'var(--landing-text-muted)', opacity: 0.8 }}
-                >
-                  {`${symbol}${Math.round((priceAmount ?? 0) / 0.8).toLocaleString()}`}
-                </span>
-              )}
-              {tier.priceMonthly !== undefined && (
+            {tier.priceMonthly !== undefined && (
+              <div className="flex items-center gap-2 mt-1.5">
+                {billing === 'annual' && (
+                  <span
+                    className="text-[10px] font-semibold line-through"
+                    style={{ color: 'var(--landing-text-muted)', opacity: 0.8 }}
+                  >
+                    {`${symbol}${Math.round((priceAmount ?? 0) / 0.8).toLocaleString()}`}
+                  </span>
+                )}
                 <span
                   className="text-[10px] font-semibold"
                   style={{ color: 'var(--landing-text-muted)', opacity: 0.85 }}
                 >
                   {t(billing === 'annual' ? 'pricing.billedAnnually' : 'pricing.billedMonthly')}
                 </span>
-              )}
-            </div>
+              </div>
+            )}
             {tier.priceMonthly !== undefined && tier.priceMonthly >= 0 && tier.trialEligible && (
               <p
                 className="text-xs mt-2 flex items-center gap-1.5"
