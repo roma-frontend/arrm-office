@@ -68,7 +68,7 @@ function formatDateTime(ts: number): string {
 
 function PipelineProgress({ currentStage }: { currentStage: string }) {
   const { t } = useTranslation();
-  const currentIdx = STAGE_ORDER.indexOf(currentStage as any);
+  const currentIdx = STAGE_ORDER.indexOf(currentStage as (typeof STAGE_ORDER)[number]);
   const isRejected = currentStage === 'rejected';
 
   return (

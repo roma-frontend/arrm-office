@@ -6,19 +6,17 @@ import { useTranslation } from 'react-i18next';
 import { api } from '../../../convex/_generated/api';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import type { Id } from '../../../convex/_generated/dataModel';
-import { Clock, CheckCircle, Zap, TrendingUp } from 'lucide-react';
+import { Clock, Zap } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { SectionHeader } from '@/components/dashboard/SectionHeader';
-import { cn } from '@/lib/utils';
 
 interface OvertimeWidgetProps {
   userId: Id<'users'>;
 }
 
 export default React.memo(
-  function OvertimeWidget({ userId }: OvertimeWidgetProps) {
+  function OvertimeWidget({ userId: _userId }: OvertimeWidgetProps) {
     const { t } = useTranslation();
     const stats = useQuery(api.overtime.getOvertimeStats, {});
     const limitsRemaining = useQuery(api.overtime.getOvertimeLimitsRemaining);

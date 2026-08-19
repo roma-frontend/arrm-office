@@ -129,7 +129,7 @@ export function AssignManagerModal({
   // Find selected manager object for UI (footer text)
   const selectedManager = useMemo(
     () =>
-      candidates.find((m: any) => m._id === selectedSupervisorId) as _PotentialManager | undefined,
+      candidates.find((m: _PotentialManager) => m._id === selectedSupervisorId) as _PotentialManager | undefined,
     [candidates, selectedSupervisorId],
   );
 
