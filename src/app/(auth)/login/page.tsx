@@ -25,6 +25,7 @@ import { SmartErrorMessage, parseAuthError } from '@/components/auth/SmartErrorM
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import dynamic from 'next/dynamic';
+import { useLoginBranding } from '@/hooks/useLoginBranding';
 
 // Lazy load FaceLogin to prevent TensorFlow.js from loading on every page view
 const FaceLogin = dynamic(
@@ -648,15 +649,18 @@ export default function LoginPage() {
                         <ShieldCheck className="w-6 h-6 text-white" />
                       </div>
                       <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
-                        Two-Factor Authentication
+                        {t('auth.twoFactor', 'Two-Factor Authentication')}
                       </h2>
                       <p
                         className="text-xs mt-1 text-center"
                         style={{ color: 'var(--text-muted)' }}
                       >
                         {isBackupCode
-                          ? 'Enter one of your backup codes'
-                          : 'Enter the 6-digit code from your authenticator app'}
+                          ? t('auth.enterBackupCode', 'Enter one of your backup codes')
+                          : t(
+                              'auth.enterTotpCode',
+                              'Enter the 6-digit code from your authenticator app',
+                            )}
                       </p>
                     </div>
 

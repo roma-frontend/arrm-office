@@ -79,6 +79,9 @@ jest.mock('@/convex/_generated/api', () => ({
       searchOrganizations: { _name: 'searchOrganizations' },
       getOrganizationBySlug: { _name: 'getOrganizationBySlug' },
     },
+    branding: {
+      getBrandingByOrg: { _name: 'getBrandingByOrg' },
+    },
   },
 }));
 
@@ -86,6 +89,7 @@ jest.mock('@/convex/_generated/api', () => ({
 const mockPush = jest.fn();
 jest.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush }),
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 // ── I18nProvider: passthrough (keeps focus on the page logic) ────────────────

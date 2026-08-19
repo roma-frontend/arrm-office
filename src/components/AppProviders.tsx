@@ -9,6 +9,8 @@ import { StatusUpdateProvider } from '@/context/StatusUpdateContext';
 import { ConvexClientProvider } from '@/lib/convex';
 import { AuthSyncProvider } from '@/components/providers/AuthSyncProvider';
 import { ThemeProvider } from '@/components/ThemeProvider';
+import { BrandingProvider } from '@/components/providers/BrandingProvider';
+import { BrandingPreviewProvider } from '@/context/BrandingPreviewContext';
 import { Toaster } from 'sonner';
 import { MaintenanceAutoLogout } from '@/components/MaintenanceAutoLogout';
 import { HtmlLangUpdater } from '@/components/HtmlLangUpdater';
@@ -35,22 +37,26 @@ export function AppProviders({ children }: { children: ReactNode }) {
                     enableSystem
                     disableTransitionOnChange
                   >
-                    {children}
-                    <RadixScrollLockFix />
-                    <Toaster
-                      position="top-right"
-                      closeButton
-                      expand={false}
-                      duration={4000}
-                      toastOptions={{
-                        style: {
-                          background: 'var(--card)',
-                          border: '1px solid var(--border)',
-                          color: 'var(--foreground)',
-                        },
-                        className: 'sonner-toast',
-                      }}
-                    />
+                    <BrandingPreviewProvider>
+                      <BrandingProvider>
+                        {children}
+                        <RadixScrollLockFix />
+                        <Toaster
+                          position="top-right"
+                          closeButton
+                          expand={false}
+                          duration={4000}
+                          toastOptions={{
+                            style: {
+                              background: 'var(--card)',
+                              border: '1px solid var(--border)',
+                              color: 'var(--foreground)',
+                            },
+                            className: 'sonner-toast',
+                          }}
+                        />
+                      </BrandingProvider>
+                    </BrandingPreviewProvider>
                   </ThemeProvider>
                 </AuthSyncProvider>
               </ConvexClientProvider>

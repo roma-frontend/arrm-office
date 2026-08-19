@@ -59,6 +59,13 @@ jest.mock('next/navigation', () => ({
   useSearchParams: () => ({ get: (k: string) => mockParams[k] ?? null }),
 }));
 
+jest.mock('@/hooks/useLoginBranding', () => ({
+  useLoginBranding: () => null,
+}));
+jest.mock('@/hooks/useOrgBranding', () => ({
+  useOrgBranding: () => null,
+}));
+
 import ForgotPasswordPage from '@/app/(auth)/forgot-password/page';
 import ResetPasswordPage from '@/app/(auth)/reset-password/page';
 

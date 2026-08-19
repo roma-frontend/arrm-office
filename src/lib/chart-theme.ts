@@ -36,10 +36,10 @@ function readChannel(name: string): string | null {
 /** Build palette by reading `--chart-1..8` tokens; fall back to sensible defaults. */
 function resolvePalette(): readonly string[] {
   const fallback = [
-    '#2563eb',
-    '#10b981',
-    '#f59e0b',
-    '#8b5cf6',
+    '#1e3a5f',
+    '#0d7377',
+    '#c2410c',
+    '#059669',
     '#06b6d4',
     '#ec4899',
     '#f43f5e',
@@ -54,10 +54,10 @@ function resolvePalette(): readonly string[] {
 /** Resolve semantic status colours from tokens. */
 function resolveStatus() {
   return {
-    success: readToken('--success-solid', '#059669'),
+    success: readToken('--success-solid', '#0d7377'),
     warning: readToken('--warning-solid', '#f59e0b'),
     danger: readToken('--danger-solid', '#ef4444'),
-    brand: readToken('--brand', '#2563eb'),
+    brand: readToken('--brand', '#1e3a5f'),
     info: readToken('--cyan', '#06b6d4'),
     accentAlt: readToken('--pink-500', '#ec4899'),
   } as const;

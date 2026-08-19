@@ -29,6 +29,7 @@ import {
   X,
 } from 'lucide-react';
 import Image from 'next/image';
+import { useOrgBranding } from '@/hooks/useOrgBranding';
 
 interface Organization {
   _id: Id<'organizations'>;
@@ -150,6 +151,9 @@ export default function SelectOrganizationPage() {
     return organizations.find((o) => o.slug.toLowerCase() === prefilledOrgSlug) ?? null;
   }, [organizations, prefilledOrgSlug]);
 
+  // Fetch branding for the prefilled org (if any)
+  const orgBranding = useOrgBranding(prefilledOrg?._id);
+
   const handleRequestJoin = async (organizationId: Id<'organizations'>, name: string) => {
     if (!user?.id) return;
 
@@ -230,10 +234,16 @@ export default function SelectOrganizationPage() {
       (prefilledOrg && !autoJoinTriggered));
 
   if (slugStillResolving || (prefilledOrgSlug && autoJoinTriggered && prefilledOrg)) {
+    const brandingGradient = orgBranding
+      ? `bg-gradient-to-br ${orgBranding.primaryColor} ${orgBranding.secondaryColor}`
+      : 'btn-gradient';
+
     return (
       <div className="min-h-screen flex items-center justify-center px-4">
         <div className="flex flex-col items-center gap-4 text-center">
-          <div className="btn-gradient inline-flex h-14 w-14 items-center justify-center rounded-2xl shadow-lg">
+          <div
+            className={`${brandingGradient} inline-flex h-14 w-14 items-center justify-center rounded-2xl shadow-lg`}
+          >
             <Building2 className="h-7 w-7 text-white" />
           </div>
           <Loader2 className="h-6 w-6 animate-spin text-(--text-muted)" />
@@ -265,17 +275,50 @@ export default function SelectOrganizationPage() {
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 h-72 overflow-hidden -z-0"
       >
-        <div className="absolute -top-32 left-1/2 -translate-x-1/2 h-72 w-[40rem] rounded-full opacity-30 blur-3xl bg-gradient-to-br from-(--primary-hover) via-(--brand) bg-(--brand)" />
+        <div
+          className="absolute -top-32 left-1/2 -translate-x-1/2 h-72 w-[40rem] rounded-full opacity-30 blur-3xl bg-gradient-to-br"
+          style={
+            orgBranding
+              ? {
+                  background: `linear-gradient(to bottom right, ${orgBranding.primaryColor}, ${orgBranding.secondaryColor})`,
+                }
+              : undefined
+          }
+        />
       </div>
 
       <div className="relative mx-auto max-w-3xl px-4 sm:px-6 py-10 sm:py-14 animate-fade-in">
         {/* ── Header ──────────────────────────────────────── */}
         <div className="text-center mb-8">
-          <div className="btn-gradient inline-flex h-14 w-14 items-center justify-center rounded-2xl shadow-lg mb-4">
-            <Building2 className="h-7 w-7 text-white" />
+          <div
+            className="btn-gradient inline-flex h-14 w-14 items-center justify-center rounded-2xl shadow-lg mb-4"
+            style={
+              orgBranding
+                ? {
+                    background: `linear-gradient(to bottom right, ${orgBranding.primaryColor}, ${orgBranding.accentColor})`,
+                  }
+                : undefined
+            }
+          >
+            {orgBranding?.logoUrl ? (
+              <Image
+                src={orgBranding.logoUrl}
+                alt={orgBranding.brandName ?? ''}
+                width={56}
+                height={56}
+                className="object-contain rounded-2xl"
+              />
+            ) : (
+              <Building2 className="h-7 w-7 text-white" />
+            )}
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-(--text-primary)">
-            {t('auth.joinOrg.title')}
+            {orgBranding?.brandName
+              ? t('auth.joinOrg.titleBrand', {
+                  name: orgBranding.brandName,
+                  defaultValue: `Join ${orgBranding.brandName}`,
+                })
+              : t('auth.joinOrg.title')}
           </h1>
           <p className="mt-3 text-sm sm:text-base text-(--text-secondary) max-w-xl mx-auto">
             {t('auth.joinOrg.subtitle')}

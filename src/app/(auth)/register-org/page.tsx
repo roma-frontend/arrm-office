@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { motion } from '@/lib/cssMotion';
 import { Building2, Check, Zap, Crown, ArrowRight } from 'lucide-react';
 import { useCurrency } from '@/hooks/useCurrency';
+import { useLoginBranding } from '@/hooks/useLoginBranding';
 
 type Plan = 'starter' | 'professional' | 'enterprise';
 
@@ -15,6 +16,9 @@ export default function RegisterOrgPage() {
   const router = useRouter();
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const currency = useCurrency();
+  const branding = useLoginBranding();
+  const brandPrimary = branding?.primaryColor ?? '#2563eb';
+  const brandSecondary = branding?.secondaryColor ?? '#059669';
 
   const plans = [
     {
@@ -100,11 +104,11 @@ export default function RegisterOrgPage() {
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div
           className="absolute -top-40 -right-40 w-96 h-96 rounded-full blur-3xl opacity-20"
-          style={{ background: 'radial-gradient(circle, var(--brand), transparent)' }}
+          style={{ background: `radial-gradient(circle, ${brandPrimary}, transparent)` }}
         />
         <div
           className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full blur-3xl opacity-20"
-          style={{ background: 'radial-gradient(circle, var(--brand-hover), transparent)' }}
+          style={{ background: `radial-gradient(circle, ${brandSecondary}, transparent)` }}
         />
       </div>
 

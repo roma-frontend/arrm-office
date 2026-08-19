@@ -11,6 +11,7 @@ import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useOrgBranding } from '@/hooks/useOrgBranding';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Clock, Mail, Building2, XCircle } from 'lucide-react';
@@ -37,6 +38,11 @@ export default function PendingApprovalPage() {
 
   const pendingRequest = myRequests?.find((req: { status: string }) => req.status === 'pending');
   const rejectedRequest = myRequests?.find((req: { status: string }) => req.status === 'rejected');
+
+  // Fetch branding for the org the user requested to join
+  const orgBranding = useOrgBranding(
+    pendingRequest?.organizationId as Id<'organizations'> | undefined,
+  );
 
   // Check if user was approved while on this page
   React.useEffect(() => {
@@ -72,12 +78,32 @@ export default function PendingApprovalPage() {
     );
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-linear-to-br bg-(--warning-solid) bg-(--warning-solid) dark:bg-(--surface-3) dark:bg-(--surface-3) p-4">
+    <div
+      className="min-h-screen flex items-center justify-center bg-linear-to-br dark:bg-(--surface-3) p-4"
+      style={
+        orgBranding
+          ? {
+              background: `linear-gradient(to bottom right, ${orgBranding.primaryColor}22, ${orgBranding.secondaryColor}22)`,
+            }
+          : { background: 'var(--warning-solid)' }
+      }
+    >
       <div className="w-full max-w-lg">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white dark:bg-(--surface-3) shadow-lg mb-4">
-            <Clock className="w-10 h-10 text-(--warning-text)" />
+          <div
+            className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white dark:bg-(--surface-3) shadow-lg mb-4"
+            style={orgBranding ? { background: orgBranding.primaryColor } : undefined}
+          >
+            {orgBranding?.logoUrl ? (
+              <img
+                src={orgBranding.logoUrl}
+                alt=""
+                className="w-12 h-12 object-contain rounded-full"
+              />
+            ) : (
+              <Clock className="w-10 h-10 text-(--warning-text)" />
+            )}
           </div>
           <h1 className="text-3xl font-bold mb-2">
             {t('onboarding.pendingApproval', 'Pending Approval')}

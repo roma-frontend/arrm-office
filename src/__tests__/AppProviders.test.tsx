@@ -53,6 +53,14 @@ jest.mock('@/components/HtmlLangUpdater', () => ({
 jest.mock('@/components/RadixScrollLockFix', () => ({
   RadixScrollLockFix: () => <span data-testid="radix-fix" />,
 }));
+jest.mock('@/components/providers/BrandingProvider', () => ({
+  BrandingProvider: ({ children }: any) => <div data-testid="prov-branding">{children}</div>,
+}));
+jest.mock('@/context/BrandingPreviewContext', () => ({
+  BrandingPreviewProvider: ({ children }: any) => (
+    <div data-testid="prov-branding-preview">{children}</div>
+  ),
+}));
 jest.mock('sonner', () => ({
   Toaster: (props: any) => <div data-testid="toaster" data-position={props.position} />,
 }));
@@ -76,6 +84,8 @@ describe('AppProviders', () => {
       'prov-convex',
       'prov-auth',
       'prov-theme',
+      'prov-branding-preview',
+      'prov-branding',
     ];
     // Find the outermost nested divs in document order.
     const ids = order.map((id) => container.querySelector(`[data-testid="${id}"]`)).filter(Boolean);

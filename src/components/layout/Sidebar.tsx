@@ -13,6 +13,8 @@ import { useAuthUser } from '@/store/useAuthStore';
 import { MODULE_TOGGLE_BY_HREF, useFeatureFlags } from '@/hooks/useFeatureFlags';
 import { isHrefLocked, usePlanGatedNav } from '@/lib/planGating';
 import { OrganizationSelector } from '@/components/layout/OrganizationSelector';
+import { useQuery } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 import { QuickActionsPalette } from '@/components/superadmin/QuickActionsPalette';
 import { useNavBadges } from '@/components/layout/NavBadgesProvider';
 
@@ -58,6 +60,9 @@ export function Sidebar() {
   const [hoveredItem, setHoveredItem] = React.useState<string | null>(null);
   const [activeSubNav, setActiveSubNav] = React.useState<NavItem | null>(null);
   const [searchQuery, setSearchQuery] = React.useState('');
+
+  // Org branding — null means no branding configured (use defaults).
+  const branding = useQuery(api.branding.getBranding, user?.organizationId ? {} : 'skip');
 
   React.useEffect(() => setMounted(true), []);
 
@@ -183,9 +188,14 @@ export function Sidebar() {
               href="/"
               className="flex items-center gap-2 hover:opacity-80 cursor-pointer transition-opacity duration-300"
             >
-              <div className="btn-gradient w-8 h-8 rounded-lg flex items-center justify-center shadow-lg transition-all duration-300">
-                <span className="text-white font-bold text-sm">HR</span>
-              </div>
+              {branding?.logoUrl ? (
+                /* eslint-disable-next-line @next/next/no-img-element -- org branding logo */
+                <img src={branding.logoUrl} alt="" className="w-8 h-8 rounded-lg object-contain" />
+              ) : (
+                <div className="btn-gradient w-8 h-8 rounded-lg flex items-center justify-center shadow-lg transition-all duration-300">
+                  <span className="text-white font-bold text-sm">HR</span>
+                </div>
+              )}
               <div
                 className="overflow-hidden whitespace-nowrap"
                 style={{
@@ -196,7 +206,9 @@ export function Sidebar() {
                   width: collapsed ? 0 : 'auto',
                 }}
               >
-                <h1 className="text-sm font-bold text-text-primary">{t('sidebar.appName')}</h1>
+                <h1 className="text-sm font-bold text-text-primary">
+                  {branding?.brandName || t('sidebar.appName')}
+                </h1>
                 <p className="text-[10px] text-text-muted">{t('sidebar.subtitle')}</p>
               </div>
             </Link>
@@ -747,6 +759,7 @@ export function MobileSidebar() {
   const sidebarRef = React.useRef<HTMLDivElement>(null);
   const [activeSubNav, setActiveSubNav] = React.useState<NavItem | null>(null);
   const [searchQuery, setSearchQuery] = React.useState('');
+  const branding = useQuery(api.branding.getBranding, user?.organizationId ? {} : 'skip');
 
   React.useEffect(() => setMounted(true), []);
 
@@ -905,12 +918,17 @@ export function MobileSidebar() {
             className="flex items-center gap-2 hover:opacity-80 cursor-pointer"
             title={t('auth.logoTooltip')}
           >
-            <div className="btn-gradient w-8 h-8 rounded-lg flex items-center justify-center shadow-lg transition-all duration-300">
-              <span className="text-white font-bold text-sm">HR</span>
-            </div>
+            {branding?.logoUrl ? (
+              /* eslint-disable-next-line @next/next/no-img-element -- org branding logo */
+              <img src={branding.logoUrl} alt="" className="w-8 h-8 rounded-lg object-contain" />
+            ) : (
+              <div className="btn-gradient w-8 h-8 rounded-lg flex items-center justify-center shadow-lg transition-all duration-300">
+                <span className="text-white font-bold text-sm">HR</span>
+              </div>
+            )}
             <div>
               <h1 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
-                {t('sidebar.appName')}
+                {branding?.brandName || t('sidebar.appName')}
               </h1>
               <p className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
                 {t('sidebar.subtitle')}

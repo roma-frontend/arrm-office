@@ -34,6 +34,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import { useLoginBranding } from '@/hooks/useLoginBranding';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface OrgResult {
@@ -221,6 +222,9 @@ function RegisterPageContent() {
   const { t } = useTranslation();
   const router = useRouter();
   const { login } = useAuthStore();
+  const branding = useLoginBranding();
+  const brandPrimary = branding?.primaryColor ?? '#2563eb';
+  const brandSecondary = branding?.secondaryColor ?? '#059669';
   const [isPending, startTransition] = useTransition();
   // Read URL params synchronously on first render to avoid a flicker of
   // the "search org" step when we already know which org to join.
@@ -358,11 +362,11 @@ function RegisterPageContent() {
         <div className="fixed inset-0 pointer-events-none overflow-hidden">
           <div
             className="absolute -top-40 -right-40 w-96 h-96 rounded-full blur-3xl opacity-20"
-            style={{ background: 'radial-gradient(circle, var(--brand), transparent)' }}
+            style={{ background: `radial-gradient(circle, ${brandPrimary}, transparent)` }}
           />
           <div
             className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full blur-3xl opacity-20"
-            style={{ background: 'radial-gradient(circle, var(--brand-hover), transparent)' }}
+            style={{ background: `radial-gradient(circle, ${brandSecondary}, transparent)` }}
           />
         </div>
 
@@ -384,9 +388,23 @@ function RegisterPageContent() {
                 className="flex flex-col items-center justify-center py-16 gap-4 group"
                 title={t('auth.logoTooltip')}
               >
-                <div className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg btn-gradient transition-transform group-hover:scale-105">
-                  <Building2 className="w-7 h-7 text-white" />
-                </div>
+                {branding?.logoUrl ? (
+                  /* eslint-disable-next-line @next/next/no-img-element -- org branding logo */
+                  <img
+                    src={branding.logoUrl}
+                    alt=""
+                    className="w-14 h-14 rounded-2xl object-contain shadow-lg transition-transform group-hover:scale-105"
+                  />
+                ) : (
+                  <div
+                    className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-105"
+                    style={{
+                      background: `linear-gradient(135deg, ${brandPrimary}, ${brandSecondary})`,
+                    }}
+                  >
+                    <Building2 className="w-7 h-7 text-white" />
+                  </div>
+                )}
                 <ShieldLoader size="sm" variant="inline" />
                 <p className="text-sm text-center" style={{ color: 'var(--text-muted)' }}>
                   {t('auth.loadingOrganization', 'Loading organization…')}
@@ -400,9 +418,23 @@ function RegisterPageContent() {
                   className="flex flex-col items-center mb-6 mt-14 md:mt-0 group"
                   title={t('auth.logoTooltip')}
                 >
-                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 shadow-lg btn-gradient transition-transform group-hover:scale-105">
-                    <Building2 className="w-7 h-7 text-white" />
-                  </div>
+                  {branding?.logoUrl ? (
+                    /* eslint-disable-next-line @next/next/no-img-element -- org branding logo */
+                    <img
+                      src={branding.logoUrl}
+                      alt=""
+                      className="w-14 h-14 rounded-2xl object-contain mb-4 shadow-lg transition-transform group-hover:scale-105"
+                    />
+                  ) : (
+                    <div
+                      className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 shadow-lg transition-transform group-hover:scale-105"
+                      style={{
+                        background: `linear-gradient(135deg, ${brandPrimary}, ${brandSecondary})`,
+                      }}
+                    >
+                      <Building2 className="w-7 h-7 text-white" />
+                    </div>
+                  )}
                   <h1 className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
                     {step === 'org'
                       ? t('auth.findYourOrg', 'Find your organization')

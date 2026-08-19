@@ -40,9 +40,9 @@ export const PassengerStatsGrid = memo(function PassengerStatsGrid({
         label={t('driver.totalTrips', 'Total Trips')}
         value={totalTrips}
         icon={CheckCircle}
-        gradientFrom="#3b82f6"
-        gradientTo="#2563eb"
-        iconBgColor="rgba(59, 130, 246, 0.1)"
+        gradientFrom="#2d5a8a"
+        gradientTo="#1e3a5f"
+        iconBgColor="rgba(30, 58, 95, 0.1)"
       />
     </div>
   );

@@ -68,6 +68,15 @@ let mockUser: Record<string, unknown> = {
 };
 jest.mock('@/store/useAuthStore', () => ({
   useAuthUser: () => mockUser,
+  useAuthStore: Object.assign(
+    (selector: any) =>
+      selector
+        ? selector({ user: mockUser, isAuthenticated: true })
+        : { user: mockUser, isAuthenticated: true },
+    {
+      getState: () => ({ user: mockUser, isAuthenticated: true }),
+    },
+  ),
 }));
 
 // ── Swipe (captures handlers) ────────────────────────────────────────────────
@@ -102,6 +111,9 @@ jest.mock('@/convex/_generated/api', () => ({
     },
     billing: {
       plans: { getMyEntitlements: { _name: 'getMyEntitlements' } },
+    },
+    branding: {
+      getBranding: { _name: 'getBranding' },
     },
   },
 }));

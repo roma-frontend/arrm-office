@@ -7,9 +7,11 @@ import { Mail, AlertCircle, Building2, CheckCircle2, ArrowLeft } from 'lucide-re
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { Input } from '@/components/ui/input';
 import { useTranslation } from 'react-i18next';
+import { useLoginBranding } from '@/hooks/useLoginBranding';
 
 export default function ForgotPasswordPage() {
   const { t } = useTranslation();
+  const branding = useLoginBranding();
   const [isPending, startTransition] = useTransition();
   const [email, setEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -79,10 +81,10 @@ export default function ForgotPasswordPage() {
                 className="font-bold text-base leading-tight"
                 style={{ color: 'var(--text-primary)' }}
               >
-                Strata
+                {branding?.brandName || 'Strata'}
               </p>
               <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                HR Management System
+                {branding?.brandName ? '' : t('auth.hrSystem', 'HR Management System')}
               </p>
             </div>
           </Link>

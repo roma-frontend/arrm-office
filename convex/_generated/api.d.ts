@@ -31,6 +31,7 @@ import type * as billing_modules from "../billing/modules.js";
 import type * as billing_plans from "../billing/plans.js";
 import type * as billing_seed from "../billing/seed.js";
 import type * as birthdays from "../birthdays.js";
+import type * as branding from "../branding.js";
 import type * as calendarEvents from "../calendarEvents.js";
 import type * as candidatePortal from "../candidatePortal.js";
 import type * as careers from "../careers.js";
@@ -310,6 +311,7 @@ declare const fullApi: ApiFromModules<{
   "billing/plans": typeof billing_plans;
   "billing/seed": typeof billing_seed;
   birthdays: typeof birthdays;
+  branding: typeof branding;
   calendarEvents: typeof calendarEvents;
   candidatePortal: typeof candidatePortal;
   careers: typeof careers;

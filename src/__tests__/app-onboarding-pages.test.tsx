@@ -104,6 +104,9 @@ jest.mock('@/convex/_generated/api', () => ({
       getActiveOrganizations: { _name: 'getActiveOrganizations' },
       requestJoinOrganization: { _name: 'requestJoinOrganization' },
     },
+    branding: {
+      getBrandingByOrg: { _name: 'getBrandingByOrg' },
+    },
   },
 }));
 

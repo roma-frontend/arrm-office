@@ -812,7 +812,7 @@ export default function TeamClient() {
 
           <RailCard
             icon={Crown}
-            color="#2563eb"
+            color="#1e3a5f"
             title={t('team.rail.reportingLine', { defaultValue: 'Your reporting line' })}
             loading={reportingLine === undefined}
             empty={

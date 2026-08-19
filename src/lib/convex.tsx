@@ -75,6 +75,12 @@ function useAuthForConvex() {
   // stays unauthenticated and every query returns nothing until a hard reload.
   const storeAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
+  // Track user identity so the Convex token refreshes when the user changes
+  // (e.g. during impersonation where isAuthenticated stays true but the
+  // underlying user/org switches). Without this, impersonation leaves the old
+  // Convex token in place and every query resolves against the wrong identity.
+  const storeUserId = useAuthStore((s) => s.user?.id);
+
   const fetchAccessToken = useCallback(
     async ({ forceRefreshToken }: { forceRefreshToken: boolean }) => {
       if (!forceRefreshToken && tokenRef.current) return tokenRef.current;
@@ -117,10 +123,13 @@ function useAuthForConvex() {
 
   // Re-fetch the Convex token whenever the app auth state changes (login/logout)
   // so the Convex client picks up the freshly-set `hr-auth-token` cookie.
+  // Also re-fetch when the user identity changes (e.g. impersonation) —
+  // otherwise the Convex token still carries the previous user's identity
+  // and every query resolves against the wrong org.
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- re-fetch the token after login/logout
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- re-fetch the token after login/logout/impersonation
     fetchAccessToken({ forceRefreshToken: true });
-  }, [storeAuthenticated, fetchAccessToken]);
+  }, [storeAuthenticated, storeUserId, fetchAccessToken]);
 
   return useMemo(
     () => ({

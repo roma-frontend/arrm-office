@@ -94,30 +94,30 @@
   --blue-300: #93c5fd;
   --blue-400: #60a5fa;
   --blue-500: #3b82f6;
-  --blue-600: #2563eb;
+  --blue-600: #1e3a5f;
   --blue-800: #1e40af;
   --blue-500-ch: 59 130 246;
   --blue-400-ch: 96 165 250;
   --blue-300-ch: 147 197 253;
 
-  /* Brand ramp — 600 is the historical brand blue (#2563eb), unchanged. */
-  --brand-50: #eff4ff;
-  --brand-100: #dce7fe;
-  --brand-200: #bfd3fe;
-  --brand-300: #93b4fd;
-  --brand-400: #608ffa;
-  --brand-500: #3b76f6;
-  --brand-600: #2563eb;
-  --brand-700: #1d4fd7;
-  --brand-800: #1e43ae;
-  --brand-900: #1e3a8a;
-  --brand-950: #172554;
+  /* Brand ramp — Corporate Navy (#1e3a5f). */
+  --brand-50: #f0f4f8;
+  --brand-100: #d9e2ec;
+  --brand-200: #bcccdc;
+  --brand-300: #9fb3c8;
+  --brand-400: #829ab1;
+  --brand-500: #627d98;
+  --brand-600: #1e3a5f;
+  --brand-700: #162d4a;
+  --brand-800: #0f2035;
+  --brand-900: #0a1628;
+  --brand-950: #060e1a;
 
   /* Channel triplets, for tints built with rgb(… / …%). */
-  --brand-400-ch: 96 143 250;
-  --brand-500-ch: 59 118 246;
-  --brand-600-ch: 37 99 235;
-  --brand-700-ch: 29 79 215;
+  --brand-400-ch: 130 154 177;
+  --brand-500-ch: 98 125 152;
+  --brand-600-ch: 30 58 95;
+  --brand-700-ch: 22 45 74;
   --ink-ch: 11 13 18; /* shadow / overlay ink */
 
   /* Status hues — one light-theme and one dark-theme step each. */
@@ -349,9 +349,9 @@
      Categorical, ordered by how often a series is the "primary" one. Was
      copy-pasted as a literal array in six components; those read tokens now. */
   --chart-1: var(--brand-600);
-  --chart-2: #10b981;
-  --chart-3: #f59e0b;
-  --chart-4: #8b5cf6;
+  --chart-2: #0d7377;
+  --chart-3: #c2410c;
+  --chart-4: #059669;
   --chart-5: #06b6d4;
   --chart-6: #ec4899;
   --chart-7: #f43f5e;

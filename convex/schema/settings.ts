@@ -90,4 +90,34 @@ export const settings = {
     .index('by_org', ['organizationId'])
     .index('by_org_active', ['organizationId', 'isActive'])
     .index('by_function', ['functionName']),
+
+  /**
+   * Per-organization branding configuration.
+   * Exactly one row per org — upserted by the saveBranding mutation.
+   */
+  orgBranding: defineTable({
+    organizationId: v.id('organizations'),
+    // Light theme colors
+    primaryColor: v.string(),
+    secondaryColor: v.string(),
+    accentColor: v.string(),
+    // Dark theme color overrides (optional — falls back to light when absent)
+    primaryColorDark: v.optional(v.string()),
+    secondaryColorDark: v.optional(v.string()),
+    accentColorDark: v.optional(v.string()),
+    // Typography
+    headingFont: v.optional(v.string()),
+    bodyFont: v.optional(v.string()),
+    // Custom CSS injection (power users)
+    customCss: v.optional(v.string()),
+    // Assets
+    logoUrl: v.optional(v.string()),
+    faviconUrl: v.optional(v.string()),
+    brandName: v.optional(v.string()),
+    // White-label
+    enableWhiteLabel: v.boolean(),
+    hidePoweredBy: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index('by_org', ['organizationId']),
 };

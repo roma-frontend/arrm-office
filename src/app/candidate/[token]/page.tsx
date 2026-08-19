@@ -466,7 +466,7 @@ export default function CandidatePortalPage({ params }: { params: Promise<{ toke
 
         {/* Footer */}
         <p className="text-center text-[10px] text-muted-foreground py-4">
-          {orgName} · Powered by Strata HR
+          {orgName} · {t('candidate.poweredBy', 'Powered by Strata HR')}
         </p>
       </div>
     </div>

@@ -8,11 +8,15 @@ import { motion, AnimatePresence } from '@/lib/cssMotion';
 import { Eye, EyeOff, Lock, AlertCircle, Building2, CheckCircle2 } from 'lucide-react';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { Input } from '@/components/ui/input';
+import { useLoginBranding } from '@/hooks/useLoginBranding';
 
 function ResetPasswordForm() {
   const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const branding = useLoginBranding();
+  const brandPrimary = branding?.primaryColor ?? '#2563eb';
+  const brandSecondary = branding?.secondaryColor ?? '#059669';
   const token = searchParams.get('token') || '';
 
   const [isPending, startTransition] = useTransition();
@@ -78,11 +82,11 @@ function ResetPasswordForm() {
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div
           className="absolute -top-40 -right-40 w-96 h-96 rounded-full blur-3xl opacity-20"
-          style={{ background: 'radial-gradient(circle, var(--brand), transparent)' }}
+          style={{ background: `radial-gradient(circle, ${brandPrimary}, transparent)` }}
         />
         <div
           className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full blur-3xl opacity-20"
-          style={{ background: 'radial-gradient(circle, var(--brand-hover), transparent)' }}
+          style={{ background: `radial-gradient(circle, ${brandSecondary}, transparent)` }}
         />
       </div>
 
@@ -102,15 +106,29 @@ function ResetPasswordForm() {
             className="flex items-center justify-center gap-3 mb-8 group"
             title={t('auth.logoTooltip')}
           >
-            <div className="w-10 h-10 rounded-xl bg-linear-to-br from-(--brand) to-(--brand-hover) flex items-center justify-center shadow-lg transition-transform group-hover:scale-105">
-              <Building2 className="w-5 h-5 text-white" />
-            </div>
+            {branding?.logoUrl ? (
+              /* eslint-disable-next-line @next/next/no-img-element -- org branding logo */
+              <img
+                src={branding.logoUrl}
+                alt=""
+                className="w-10 h-10 rounded-xl object-contain shadow-lg transition-transform group-hover:scale-105"
+              />
+            ) : (
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-105"
+                style={{
+                  background: `linear-gradient(135deg, ${brandPrimary}, ${brandSecondary})`,
+                }}
+              >
+                <Building2 className="w-5 h-5 text-white" />
+              </div>
+            )}
             <div>
               <p
                 className="font-bold text-base leading-tight"
                 style={{ color: 'var(--text-primary)' }}
               >
-                Strata
+                {branding?.brandName || 'Strata'}
               </p>
               <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
                 {t('resetPassword.hrSystemTitle')}
