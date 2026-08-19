@@ -3,7 +3,17 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { motion } from '@/lib/cssMotion';
 import { useTranslation } from 'react-i18next';
-import { Plus, Search, CheckCircle, XCircle, Trash2, Eye, CalendarDays } from 'lucide-react';
+import {
+  Plus,
+  Search,
+  CheckCircle,
+  XCircle,
+  Trash2,
+  Eye,
+  CalendarDays,
+  List,
+  LayoutGrid,
+} from 'lucide-react';
 import { format } from 'date-fns';
 import { enUS, ru, hy } from 'date-fns/locale';
 import i18n from 'i18next';
@@ -24,11 +34,13 @@ import {
 } from '@/components/ui/select';
 import { LeaveRequestModal } from '@/components/leaves/LeaveRequestModal';
 import { LeaveSheet } from '@/components/leaves/LeaveSheet';
+import { TimeOffCalendar } from '@/components/leaves/TimeOffCalendar';
 import { useAuthStore, type User } from '@/store/useAuthStore';
 import { useShallow } from 'zustand/shallow';
 import {
   LEAVE_TYPE_LABELS,
   getLeaveTypeLabel,
+  getLeaveTypeColor,
   type LeaveType,
   type LeaveStatus,
 } from '@/lib/types';
@@ -73,17 +85,15 @@ function StatusBadge({ status }: { status: LeaveStatus }) {
 
 function LeaveTypeBadge({ type }: { type: LeaveType }) {
   const { t } = useTranslation();
-  const colorMap: Record<LeaveType, string> = {
-    paid: 'bg-(--brand)/20 text-(--brand-text) border-(--brand)/30',
-    unpaid: 'bg-(--warning-quiet) text-(--warning-text) border-(--warning-outline)',
-    sick: 'bg-(--danger-quiet) text-(--danger-text) border-(--danger-outline)',
-    family: 'bg-(--success-quiet) text-(--success-text) border-(--success-outline)',
-    doctor: 'bg-(--cyan-quiet) text-(--cyan-text) border-(--cyan-outline)',
-  };
+  // Colour comes from the shared catalogue so every schema type renders —
+  // the badge tint, text and border are all derived from the same hex.
+  const c = getLeaveTypeColor(type);
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${colorMap[type]}`}
+      className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium"
+      style={{ background: `${c}1a`, color: c, borderColor: `${c}4d` }}
     >
+      <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: c }} />
       {getLeaveTypeLabel(type, t)}
     </span>
   );
@@ -95,6 +105,7 @@ export function LeavesClient() {
   const selectedOrgId = useSelectedOrganization();
   const lang = i18n.language || 'en';
   const _dateFnsLocale = lang === 'ru' ? ru : lang === 'hy' ? hy : enUS;
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [modalOpen, setModalOpen] = useState(false);
   /** Request shown in the slide-over, with the requester's name for the header. */
   const [sheetLeave, setSheetLeave] = useState<{
@@ -289,12 +300,31 @@ export function LeavesClient() {
             </h2>
             <p className="text-(--text-muted) text-sm mt-1">{t('leave.manageAndTrack')}</p>
           </div>
-          <Button
-            onClick={() => setModalOpen(true)}
-            className="flex items-center gap-2 w-full sm:w-auto justify-center btn-gradient text-white font-medium shadow-md hover:shadow-lg"
-          >
-            <Plus className="w-5 h-5" /> {t('dashboard.newRequest')}
-          </Button>
+          <div className="flex items-center gap-2">
+            {/* View toggle */}
+            <div className="flex items-center bg-(--surface-2) rounded-lg p-0.5">
+              <button
+                onClick={() => setViewMode('list')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${viewMode === 'list' ? 'bg-(--background) text-(--text-primary) shadow-sm' : 'text-(--text-muted) hover:text-(--text-primary)'}`}
+              >
+                <List className="w-3.5 h-3.5" />
+                {t('actions.list', 'List')}
+              </button>
+              <button
+                onClick={() => setViewMode('calendar')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${viewMode === 'calendar' ? 'bg-(--background) text-(--text-primary) shadow-sm' : 'text-(--text-muted) hover:text-(--text-primary)'}`}
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+                {t('actions.calendar', 'Calendar')}
+              </button>
+            </div>
+            <Button
+              onClick={() => setModalOpen(true)}
+              className="flex items-center gap-2 w-full sm:w-auto justify-center btn-gradient text-white font-medium shadow-md hover:shadow-lg"
+            >
+              <Plus className="w-5 h-5" /> {t('dashboard.newRequest')}
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -348,368 +378,392 @@ export function LeavesClient() {
         </Card>
       </motion.div>
 
-      {/* Table */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-      >
-        <Card className="glass-panel shadow-sm">
-          <CardContent className="p-0">
-            {isLoading ? (
-              <div className="overflow-x-auto">
-                <SkeletonTable rows={5} />
-              </div>
-            ) : filtered.length === 0 ? (
-              <div className="p-12 text-center">
-                <p className="text-(--text-muted) text-sm">{t('leave.noLeaves')}</p>
-                <Button className="mt-4" size="sm" onClick={() => setModalOpen(true)}>
-                  <Plus className="w-4 h-4" /> {t('leave.createFirst')}
-                </Button>
-              </div>
-            ) : (
-              <div>
-                {/* Mobile Card View */}
-                <div className="md:hidden space-y-3 p-4">
-                  {filtered.map((req) => (
-                    <motion.div
-                      key={req._id}
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="rounded-xl border border-(--border) bg-(--card)/60 dark:bg-(--card)/80 backdrop-blur-md overflow-hidden"
-                    >
-                      {/* Card Header */}
-                      <div
-                        className="flex items-center justify-between p-4 cursor-pointer"
-                        onClick={() => openLeave(req)}
+      {/* Calendar View */}
+      {viewMode === 'calendar' ? (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <TimeOffCalendar onLeaveClick={openLeave} />
+        </motion.div>
+      ) : (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <Card className="glass-panel shadow-sm">
+            <CardContent className="p-0">
+              {isLoading ? (
+                <div className="overflow-x-auto">
+                  <SkeletonTable rows={5} />
+                </div>
+              ) : filtered.length === 0 ? (
+                <div className="p-12 text-center">
+                  <p className="text-(--text-muted) text-sm">{t('leave.noLeaves')}</p>
+                  <Button className="mt-4" size="sm" onClick={() => setModalOpen(true)}>
+                    <Plus className="w-4 h-4" /> {t('leave.createFirst')}
+                  </Button>
+                </div>
+              ) : (
+                <div>
+                  {/* Mobile Card View */}
+                  <div className="md:hidden space-y-3 p-4">
+                    {filtered.map((req) => (
+                      <motion.div
+                        key={req._id}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="rounded-xl border border-(--border) bg-(--card)/60 dark:bg-(--card)/80 backdrop-blur-md overflow-hidden"
                       >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-10 h-10 rounded-xl bg-(--brand)/20 flex items-center justify-center shrink-0">
-                            <span className="text-sm font-bold text-(--brand-text)">
-                              {(req.userName ?? '?').charAt(0).toUpperCase()}
+                        {/* Card Header */}
+                        <div
+                          className="flex items-center justify-between p-4 cursor-pointer"
+                          onClick={() => openLeave(req)}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-10 h-10 rounded-xl bg-(--brand)/20 flex items-center justify-center shrink-0">
+                              <span className="text-sm font-bold text-(--brand-text)">
+                                {(req.userName ?? '?').charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold text-(--text-primary) truncate">
+                                {req.userName}
+                              </p>
+                              <p className="text-xs text-(--text-muted)">{req.userDepartment}</p>
+                            </div>
+                          </div>
+                          <StatusBadge status={req.status as LeaveStatus} />
+                        </div>
+
+                        {/* Card Body */}
+                        <div className="px-4 pb-4 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <LeaveTypeBadge type={req.type as LeaveType} />
+                            <span className="text-xs text-(--text-muted)">
+                              {req.days}
+                              {t('leave.daysSuffix')}
                             </span>
                           </div>
-                          <div className="min-w-0">
-                            <p className="text-sm font-semibold text-(--text-primary) truncate">
-                              {req.userName}
-                            </p>
-                            <p className="text-xs text-(--text-muted)">{req.userDepartment}</p>
+                          <div className="flex items-center gap-1.5 text-xs text-(--text-muted)">
+                            <CalendarDays className="w-3.5 h-3.5 shrink-0" />
+                            <span>
+                              {safeFormat(req.startDate, 'MMM d')} –{' '}
+                              {safeFormat(req.endDate, 'MMM d, yyyy')}
+                            </span>
                           </div>
+                          {req.reason && (
+                            <p className="text-xs text-(--text-muted) line-clamp-2">{req.reason}</p>
+                          )}
                         </div>
-                        <StatusBadge status={req.status as LeaveStatus} />
-                      </div>
 
-                      {/* Card Body */}
-                      <div className="px-4 pb-4 space-y-2">
-                        <div className="flex items-center gap-2">
-                          <LeaveTypeBadge type={req.type as LeaveType} />
-                          <span className="text-xs text-(--text-muted)">
-                            {req.days}
-                            {t('leave.daysSuffix')}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-xs text-(--text-muted)">
-                          <CalendarDays className="w-3.5 h-3.5 shrink-0" />
-                          <span>
-                            {safeFormat(req.startDate, 'MMM d')} –{' '}
-                            {safeFormat(req.endDate, 'MMM d, yyyy')}
-                          </span>
-                        </div>
-                        {req.reason && (
-                          <p className="text-xs text-(--text-muted) line-clamp-2">{req.reason}</p>
-                        )}
-                      </div>
-
-                      {/* Admin Actions */}
-                      {isAdmin && (
-                        <div className="border-t border-(--border) px-4 py-2.5 flex items-center gap-1">
-                          {req.status === 'pending' && (
+                        {/* Admin Actions */}
+                        {isAdmin && (
+                          <div className="border-t border-(--border) px-4 py-2.5 flex items-center gap-1">
+                            {req.status === 'pending' && (
+                              <Button
+                                size="icon-sm"
+                                variant="ghost"
+                                className="text-(--text-muted) hover:text-(--text-primary)"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setExpandedRow(expandedRow === req._id ? null : req._id);
+                                }}
+                              >
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                            )}
+                            {req.status === 'pending' && (
+                              <>
+                                <Button
+                                  size="icon-sm"
+                                  variant="ghost"
+                                  className="text-(--success-text) hover:text-(--success-text) ml-auto"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleApprove(req._id);
+                                  }}
+                                >
+                                  <CheckCircle className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  size="icon-sm"
+                                  variant="ghost"
+                                  className="text-(--danger-text) hover:text-(--danger-text)"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleReject(req._id);
+                                  }}
+                                >
+                                  <XCircle className="w-4 h-4" />
+                                </Button>
+                              </>
+                            )}
+                            {req.status === 'cancel_requested' && req.userId !== user?.id && (
+                              <>
+                                <Button
+                                  size="icon-sm"
+                                  variant="ghost"
+                                  className="text-(--success-text) hover:text-(--success-text) ml-auto"
+                                  title={t('leave.approveCancellation')}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleApproveCancellation(req._id);
+                                  }}
+                                >
+                                  <CheckCircle className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  size="icon-sm"
+                                  variant="ghost"
+                                  className="text-(--danger-text) hover:text-(--danger-text)"
+                                  title={t('leave.rejectCancellation')}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleRejectCancellation(req._id);
+                                  }}
+                                >
+                                  <XCircle className="w-4 h-4" />
+                                </Button>
+                              </>
+                            )}
                             <Button
                               size="icon-sm"
                               variant="ghost"
-                              className="text-(--text-muted) hover:text-(--text-primary)"
+                              className="text-(--text-muted) hover:text-(--danger-text)"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setExpandedRow(expandedRow === req._id ? null : req._id);
+                                handleDelete(req._id, req.userId === user?.id);
                               }}
                             >
-                              <Eye className="w-4 h-4" />
+                              <Trash2 className="w-4 h-4" />
                             </Button>
-                          )}
-                          {req.status === 'pending' && (
-                            <>
-                              <Button
-                                size="icon-sm"
-                                variant="ghost"
-                                className="text-(--success-text) hover:text-(--success-text) ml-auto"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleApprove(req._id);
-                                }}
-                              >
-                                <CheckCircle className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                size="icon-sm"
-                                variant="ghost"
-                                className="text-(--danger-text) hover:text-(--danger-text)"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleReject(req._id);
-                                }}
-                              >
-                                <XCircle className="w-4 h-4" />
-                              </Button>
-                            </>
-                          )}
-                          {req.status === 'cancel_requested' && req.userId !== user?.id && (
-                            <>
-                              <Button
-                                size="icon-sm"
-                                variant="ghost"
-                                className="text-(--success-text) hover:text-(--success-text) ml-auto"
-                                title={t('leave.approveCancellation')}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleApproveCancellation(req._id);
-                                }}
-                              >
-                                <CheckCircle className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                size="icon-sm"
-                                variant="ghost"
-                                className="text-(--danger-text) hover:text-(--danger-text)"
-                                title={t('leave.rejectCancellation')}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleRejectCancellation(req._id);
-                                }}
-                              >
-                                <XCircle className="w-4 h-4" />
-                              </Button>
-                            </>
-                          )}
-                          <Button
-                            size="icon-sm"
-                            variant="ghost"
-                            className="text-(--text-muted) hover:text-(--danger-text)"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDelete(req._id, req.userId === user?.id);
-                            }}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      )}
-
-                      {/* AI Assistant Expandable */}
-                      {isAdmin && req.status === 'pending' && expandedRow === req._id && (
-                        <div className="px-4 pb-4 bg-(--background-subtle) border-t border-(--border) animate-fade-in">
-                          <AILeaveAssistant
-                            leaveRequestId={req._id}
-                            userId={req.userId}
-                            onApprove={(comment?: string) => handleApprove(req._id, comment)}
-                            onReject={(comment?: string) => handleReject(req._id, comment)}
-                          />
-                        </div>
-                      )}
-                    </motion.div>
-                  ))}
-                </div>
-
-                {/* Desktop Table View */}
-                <div className="hidden md:block overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-(--border)">
-                        <th className="text-left px-6 py-3 text-xs font-medium text-(--text-muted) uppercase tracking-wider">
-                          {t('dashboard.employee')}
-                        </th>
-                        <th className="text-left px-4 py-3 text-xs font-medium text-(--text-muted) uppercase tracking-wider">
-                          {t('dashboard.type')}
-                        </th>
-                        <th className="text-left px-4 py-3 text-xs font-medium text-(--text-muted) uppercase tracking-wider hidden md:table-cell">
-                          {t('dashboard.dates')}
-                        </th>
-                        <th className="text-left px-4 py-3 text-xs font-medium text-(--text-muted) uppercase tracking-wider hidden sm:table-cell">
-                          {t('dashboard.days')}
-                        </th>
-                        <th className="text-left px-4 py-3 text-xs font-medium text-(--text-muted) uppercase tracking-wider hidden lg:table-cell">
-                          {t('common.reason')}
-                        </th>
-                        <th className="text-left px-4 py-3 text-xs font-medium text-(--text-muted) uppercase tracking-wider">
-                          {t('dashboard.status')}
-                        </th>
-                        {isAdmin && (
-                          <th className="text-left px-4 py-3 text-xs font-medium text-(--text-muted) uppercase tracking-wider">
-                            {t('common.actions')}
-                          </th>
+                          </div>
                         )}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-(--border)">
-                      {filtered.map((req, _i) => (
-                        <React.Fragment key={req._id}>
-                          <tr className="hover:bg-(--background-subtle) transition-colors">
-                            <td className="px-6 py-3 cursor-pointer" onClick={() => openLeave(req)}>
-                              <div>
-                                <p className="text-sm font-medium text-(--text-primary) hover:text-(--brand-text) transition-colors">
-                                  {req.userName}
+
+                        {/* AI Assistant Expandable */}
+                        {isAdmin && req.status === 'pending' && expandedRow === req._id && (
+                          <div className="px-4 pb-4 bg-(--background-subtle) border-t border-(--border) animate-fade-in">
+                            <AILeaveAssistant
+                              leaveRequestId={req._id}
+                              userId={req.userId}
+                              onApprove={(comment?: string) => handleApprove(req._id, comment)}
+                              onReject={(comment?: string) => handleReject(req._id, comment)}
+                            />
+                          </div>
+                        )}
+                      </motion.div>
+                    ))}
+                  </div>
+
+                  {/* Desktop Table View */}
+                  <div className="hidden md:block overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-(--border)">
+                          <th className="text-left px-6 py-3 text-xs font-medium text-(--text-muted) uppercase tracking-wider">
+                            {t('dashboard.employee')}
+                          </th>
+                          <th className="text-left px-4 py-3 text-xs font-medium text-(--text-muted) uppercase tracking-wider">
+                            {t('dashboard.type')}
+                          </th>
+                          <th className="text-left px-4 py-3 text-xs font-medium text-(--text-muted) uppercase tracking-wider hidden md:table-cell">
+                            {t('dashboard.dates')}
+                          </th>
+                          <th className="text-left px-4 py-3 text-xs font-medium text-(--text-muted) uppercase tracking-wider hidden sm:table-cell">
+                            {t('dashboard.days')}
+                          </th>
+                          <th className="text-left px-4 py-3 text-xs font-medium text-(--text-muted) uppercase tracking-wider hidden lg:table-cell">
+                            {t('common.reason')}
+                          </th>
+                          <th className="text-left px-4 py-3 text-xs font-medium text-(--text-muted) uppercase tracking-wider">
+                            {t('dashboard.status')}
+                          </th>
+                          {isAdmin && (
+                            <th className="text-left px-4 py-3 text-xs font-medium text-(--text-muted) uppercase tracking-wider">
+                              {t('common.actions')}
+                            </th>
+                          )}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-(--border)">
+                        {filtered.map((req, _i) => (
+                          <React.Fragment key={req._id}>
+                            <tr className="hover:bg-(--background-subtle) transition-colors">
+                              <td
+                                className="px-6 py-3 cursor-pointer"
+                                onClick={() => openLeave(req)}
+                              >
+                                <div>
+                                  <p className="text-sm font-medium text-(--text-primary) hover:text-(--brand-text) transition-colors">
+                                    {req.userName}
+                                  </p>
+                                  <p className="text-xs text-(--text-muted)">
+                                    {req.userDepartment}
+                                  </p>
+                                </div>
+                              </td>
+                              <td
+                                className="px-4 py-3 cursor-pointer"
+                                onClick={() => openLeave(req)}
+                              >
+                                <LeaveTypeBadge type={req.type as LeaveType} />
+                              </td>
+                              <td
+                                className="px-4 py-3 hidden md:table-cell cursor-pointer"
+                                onClick={() => openLeave(req)}
+                              >
+                                <p className="text-xs text-(--text-secondary) capitalize">
+                                  {safeFormat(req.startDate, 'MMM d')} –{' '}
+                                  {safeFormat(req.endDate, 'MMM d, yyyy')}
                                 </p>
-                                <p className="text-xs text-(--text-muted)">{req.userDepartment}</p>
-                              </div>
-                            </td>
-                            <td className="px-4 py-3 cursor-pointer" onClick={() => openLeave(req)}>
-                              <LeaveTypeBadge type={req.type as LeaveType} />
-                            </td>
-                            <td
-                              className="px-4 py-3 hidden md:table-cell cursor-pointer"
-                              onClick={() => openLeave(req)}
-                            >
-                              <p className="text-xs text-(--text-secondary) capitalize">
-                                {safeFormat(req.startDate, 'MMM d')} –{' '}
-                                {safeFormat(req.endDate, 'MMM d, yyyy')}
-                              </p>
-                            </td>
-                            <td
-                              className="px-4 py-3 hidden sm:table-cell cursor-pointer"
-                              onClick={() => openLeave(req)}
-                            >
-                              <span className="text-sm font-medium text-(--text-primary)">
-                                {req.days}
-                                {t('leave.daysSuffix')}
-                              </span>
-                            </td>
-                            <td
-                              className="px-4 py-3 hidden lg:table-cell cursor-pointer"
-                              onClick={() => openLeave(req)}
-                            >
-                              <p className="text-xs text-(--text-muted) max-w-45 truncate">
-                                {req.reason}
-                              </p>
-                            </td>
-                            <td className="px-4 py-3 cursor-pointer" onClick={() => openLeave(req)}>
-                              <StatusBadge status={req.status as LeaveStatus} />
-                            </td>
-                            {isAdmin && (
-                              <td className="px-4 py-3">
-                                <div className="flex items-center gap-1">
-                                  {req.status === 'pending' && (
+                              </td>
+                              <td
+                                className="px-4 py-3 hidden sm:table-cell cursor-pointer"
+                                onClick={() => openLeave(req)}
+                              >
+                                <span className="text-sm font-medium text-(--text-primary)">
+                                  {req.days}
+                                  {t('leave.daysSuffix')}
+                                </span>
+                              </td>
+                              <td
+                                className="px-4 py-3 hidden lg:table-cell cursor-pointer"
+                                onClick={() => openLeave(req)}
+                              >
+                                <p className="text-xs text-(--text-muted) max-w-45 truncate">
+                                  {req.reason}
+                                </p>
+                              </td>
+                              <td
+                                className="px-4 py-3 cursor-pointer"
+                                onClick={() => openLeave(req)}
+                              >
+                                <StatusBadge status={req.status as LeaveStatus} />
+                              </td>
+                              {isAdmin && (
+                                <td className="px-4 py-3">
+                                  <div className="flex items-center gap-1">
+                                    {req.status === 'pending' && (
+                                      <Button
+                                        size="icon-sm"
+                                        variant="ghost"
+                                        className="text-(--text-muted) hover:text-(--text-primary)"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setExpandedRow(expandedRow === req._id ? null : req._id);
+                                        }}
+                                      >
+                                        <Eye className="w-4 h-4" />
+                                      </Button>
+                                    )}
+                                    {req.status === 'pending' && (
+                                      <>
+                                        <Button
+                                          size="icon-sm"
+                                          variant="ghost"
+                                          className="text-(--success-text) hover:text-(--success-text)"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleApprove(req._id);
+                                          }}
+                                        >
+                                          <CheckCircle className="w-4 h-4" />
+                                        </Button>
+                                        <Button
+                                          size="icon-sm"
+                                          variant="ghost"
+                                          className="text-(--danger-text) hover:text-(--danger-text)"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleReject(req._id);
+                                          }}
+                                        >
+                                          <XCircle className="w-4 h-4" />
+                                        </Button>
+                                      </>
+                                    )}
+                                    {req.status === 'cancel_requested' &&
+                                      req.userId !== user?.id && (
+                                        <>
+                                          <Button
+                                            size="icon-sm"
+                                            variant="ghost"
+                                            className="text-(--success-text) hover:text-(--success-text)"
+                                            title={t('leave.approveCancellation')}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleApproveCancellation(req._id);
+                                            }}
+                                          >
+                                            <CheckCircle className="w-4 h-4" />
+                                          </Button>
+                                          <Button
+                                            size="icon-sm"
+                                            variant="ghost"
+                                            className="text-(--danger-text) hover:text-(--danger-text)"
+                                            title={t('leave.rejectCancellation')}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleRejectCancellation(req._id);
+                                            }}
+                                          >
+                                            <XCircle className="w-4 h-4" />
+                                          </Button>
+                                        </>
+                                      )}
                                     <Button
                                       size="icon-sm"
                                       variant="ghost"
-                                      className="text-(--text-muted) hover:text-(--text-primary)"
+                                      className="text-(--text-muted) hover:text-(--danger-text)"
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        setExpandedRow(expandedRow === req._id ? null : req._id);
+                                        handleDelete(req._id, req.userId === user?.id);
                                       }}
                                     >
-                                      <Eye className="w-4 h-4" />
+                                      <Trash2 className="w-4 h-4" />
                                     </Button>
-                                  )}
-                                  {req.status === 'pending' && (
-                                    <>
-                                      <Button
-                                        size="icon-sm"
-                                        variant="ghost"
-                                        className="text-(--success-text) hover:text-(--success-text)"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleApprove(req._id);
-                                        }}
-                                      >
-                                        <CheckCircle className="w-4 h-4" />
-                                      </Button>
-                                      <Button
-                                        size="icon-sm"
-                                        variant="ghost"
-                                        className="text-(--danger-text) hover:text-(--danger-text)"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleReject(req._id);
-                                        }}
-                                      >
-                                        <XCircle className="w-4 h-4" />
-                                      </Button>
-                                    </>
-                                  )}
-                                  {req.status === 'cancel_requested' && req.userId !== user?.id && (
-                                    <>
-                                      <Button
-                                        size="icon-sm"
-                                        variant="ghost"
-                                        className="text-(--success-text) hover:text-(--success-text)"
-                                        title={t('leave.approveCancellation')}
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleApproveCancellation(req._id);
-                                        }}
-                                      >
-                                        <CheckCircle className="w-4 h-4" />
-                                      </Button>
-                                      <Button
-                                        size="icon-sm"
-                                        variant="ghost"
-                                        className="text-(--danger-text) hover:text-(--danger-text)"
-                                        title={t('leave.rejectCancellation')}
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleRejectCancellation(req._id);
-                                        }}
-                                      >
-                                        <XCircle className="w-4 h-4" />
-                                      </Button>
-                                    </>
-                                  )}
-                                  <Button
-                                    size="icon-sm"
-                                    variant="ghost"
-                                    className="text-(--text-muted) hover:text-(--danger-text)"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleDelete(req._id, req.userId === user?.id);
-                                    }}
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                </div>
-                              </td>
-                            )}
-                          </tr>
-
-                          {/* AI Assistant Expandable Row */}
-                          {isAdmin && req.status === 'pending' && expandedRow === req._id && (
-                            <tr className="animate-fade-in">
-                              <td colSpan={7} className="px-6 py-4 bg-(--background-subtle)">
-                                <AILeaveAssistant
-                                  leaveRequestId={req._id}
-                                  userId={req.userId}
-                                  onApprove={(comment?: string) => handleApprove(req._id, comment)}
-                                  onReject={(comment?: string) => handleReject(req._id, comment)}
-                                />
-                              </td>
+                                  </div>
+                                </td>
+                              )}
                             </tr>
-                          )}
-                        </React.Fragment>
-                      ))}
-                    </tbody>
-                  </table>
+
+                            {/* AI Assistant Expandable Row */}
+                            {isAdmin && req.status === 'pending' && expandedRow === req._id && (
+                              <tr className="animate-fade-in">
+                                <td colSpan={7} className="px-6 py-4 bg-(--background-subtle)">
+                                  <AILeaveAssistant
+                                    leaveRequestId={req._id}
+                                    userId={req.userId}
+                                    onApprove={(comment?: string) =>
+                                      handleApprove(req._id, comment)
+                                    }
+                                    onReject={(comment?: string) => handleReject(req._id, comment)}
+                                  />
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              </div>
-            )}
-            {leavesStatus === 'CanLoadMore' && (
-              <button
-                onClick={() => loadMoreLeaves(30)}
-                className="w-full mt-3 py-2 text-sm text-(--brand-text) hover:underline"
-              >
-                {t('leaves.loadMore', { defaultValue: 'Load more requests' })}
-              </button>
-            )}
-          </CardContent>
-        </Card>
-      </motion.div>
+              )}
+              {leavesStatus === 'CanLoadMore' && (
+                <button
+                  onClick={() => loadMoreLeaves(30)}
+                  className="w-full mt-3 py-2 text-sm text-(--brand-text) hover:underline"
+                >
+                  {t('leaves.loadMore', { defaultValue: 'Load more requests' })}
+                </button>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
 
       {/* Detail slide-over: the list stays behind it, so deciding a queue of
           requests stops being one round trip per request. */}

@@ -73,6 +73,16 @@ import type { RoomWithBookings } from '@/components/rooms/types';
 const ALL_DAY_ROOM_START = '08:00';
 const ALL_DAY_ROOM_END = '20:00';
 
+function currentEventTimes(now = new Date()): { start: string; end: string } {
+  const end = new Date(now);
+  end.setMinutes(end.getMinutes() + 60);
+
+  return {
+    start: format(now, 'HH:mm'),
+    end: end.getDate() === now.getDate() ? format(end, 'HH:mm') : '23:59',
+  };
+}
+
 /** Local wall-clock ("2026-08-04", "10:00") → epoch ms in the viewer's zone. */
 function toInstant(date: string, time: string): number | null {
   if (!date || !time) return null;
@@ -161,12 +171,15 @@ export function CreateEventModal({
     api.meetings.getByEvent,
     open && editEvent?.id ? { eventId: editEvent.id as Id<'calendarEvents'> } : 'skip',
   ) as { mode?: 'meeting' | 'webinar' } | null | undefined;
+  // `open` deliberately refreshes the timestamp for each new modal session.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const defaultEventTimes = useMemo(() => currentEventTimes(), [open]);
 
   const [step, setStep] = useState<Step>('details');
   const [title, setTitle] = useState('');
   const [date, setDate] = useState('');
-  const [startTime, setStartTime] = useState('09:00');
-  const [endTime, setEndTime] = useState('10:00');
+  const [startTime, setStartTime] = useState(() => currentEventTimes().start);
+  const [endTime, setEndTime] = useState(() => currentEventTimes().end);
   const [allDay, setAllDay] = useState(false);
   const [location, setLocation] = useState('');
   const [description, setDescription] = useState('');
@@ -377,11 +390,13 @@ export function CreateEventModal({
       // marker (the link may briefly be absent between save and room creation).
       setVideoEnabled(Boolean(editEvent.videoUrl || editEvent.videoProvider === 'livekit'));
       setVideoMode('meeting');
-    } else if (selectedDate) {
-      setDate(format(selectedDate, 'yyyy-MM-dd'));
+    } else {
+      if (selectedDate) setDate(format(selectedDate, 'yyyy-MM-dd'));
+      setStartTime(defaultEventTimes.start);
+      setEndTime(defaultEventTimes.end);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, editId]);
+  }, [open, editId, defaultEventTimes]);
 
   // Editing: the picker needs the users themselves, not just names. Without
   // this the picker opens empty and a re-save would wipe the guest list —
@@ -411,8 +426,9 @@ export function CreateEventModal({
     setStep('details');
     setTitle('');
     setDate('');
-    setStartTime('09:00');
-    setEndTime('10:00');
+    const nextTimes = currentEventTimes();
+    setStartTime(nextTimes.start);
+    setEndTime(nextTimes.end);
     setAllDay(false);
     setLocation('');
     setDescription('');
@@ -470,8 +486,8 @@ export function CreateEventModal({
     () => ({
       title: editEvent?.title ?? '',
       date: editEvent?.date ?? (selectedDate ? format(selectedDate, 'yyyy-MM-dd') : ''),
-      startTime: editEvent?.startTime ?? '09:00',
-      endTime: editEvent?.endTime ?? '10:00',
+      startTime: editEvent?.startTime ?? defaultEventTimes.start,
+      endTime: editEvent?.endTime ?? defaultEventTimes.end,
       allDay: editEvent?.allDay ?? false,
       location: editEvent?.location ?? '',
       description: editEvent?.description ?? '',
@@ -481,7 +497,7 @@ export function CreateEventModal({
       videoEnabled: Boolean(editEvent?.videoUrl || editEvent?.videoProvider === 'livekit'),
       videoMode: 'meeting' as const,
     }),
-    [editEvent, selectedDate],
+    [defaultEventTimes, editEvent, selectedDate],
   );
 
   const handleRestoreDraft = useCallback((d: typeof draftData, savedStep: number) => {

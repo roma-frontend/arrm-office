@@ -1,0 +1,69 @@
+{
+  "overtime": {
+    "title": "Overtime",
+    "subtitle": "Request and manage overtime hours",
+    "requestOvertime": "Request Overtime",
+    "allStatuses": "All Statuses",
+    "noRequests": "No overtime requests",
+    "createFirst": "Create your first request",
+    "markAllRead": "Mark all read",
+    "allRead": "All marked as read",
+    "cancelled": "Request cancelled",
+    "cancelFailed": "Failed to cancel",
+    "approved": "Overtime approved",
+    "approveFailed": "Failed to approve",
+    "rejected": "Overtime rejected",
+    "rejectFailed": "Failed to reject",
+    "hours": "hours",
+    "estimatedHours": "Estimated",
+    "sentTo": "Sent to",
+    "reviewedBy": "Reviewed by",
+    "reviewComment": "Review Comment",
+    "reviewCommentPlaceholder": "Optional comment...",
+    "approve": "Approve",
+    "reject": "Reject",
+    "details": "Overtime Details",
+    "requestDetails": "Request Details",
+    "limitExceeded": "Exceeds daily limit of {{max}}h ({{used}}h used)",
+    "limitsRemaining": "Limits Remaining",
+    "daily": "Daily",
+    "weekly": "Weekly",
+    "monthly": "Monthly",
+    "status": {
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "cancelled": "Cancelled"
+    },
+    "stats": {
+      "totalHours": "Total Hours",
+      "approved": "Approved",
+      "pending": "Pending",
+      "approvedRequests": "Requests"
+    },
+    "steps": {
+      "date": "Date",
+      "time": "Time",
+      "details": "Details",
+      "confirm": "Confirm"
+    },
+    "wizard": {
+      "success": "Overtime request submitted!",
+      "waitingApproval": "Waiting for manager approval",
+      "error": "Failed to submit request",
+      "selectDate": "Select the date for your overtime request",
+      "selectTime": "Select start and end time for your overtime",
+      "provideDetails": "Provide a reason for your overtime request",
+      "reviewBeforeSubmitting": "Review your overtime request before submitting",
+      "reasonPlaceholder": "e.g., Project deadline, urgent task, client meeting...",
+      "commentPlaceholder": "Additional information...",
+      "submit": "Submit Request",
+      "subtitle": "Fill in the details for your overtime request"
+    },
+    "noSupervisor": "No supervisor assigned",
+    "noSupervisorDesc": "Please contact HR to set up your reporting line before submitting overtime requests."
+  },
+  "nav": {
+    "overtime": "Overtime"
+  }
+}

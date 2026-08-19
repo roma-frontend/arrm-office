@@ -226,6 +226,12 @@ export const drivers = {
     ownerId: v.id('users'),
     viewerId: v.id('users'),
     accessLevel: v.union(v.literal('full'), v.literal('busy_only'), v.literal('none')),
+    scope: v.optional(v.union(v.literal('person'), v.literal('organization'))),
+    status: v.optional(
+      v.union(v.literal('pending'), v.literal('approved'), v.literal('rejected')),
+    ),
+    requestedAt: v.optional(v.number()),
+    respondedAt: v.optional(v.number()),
     grantedAt: v.number(),
     expiresAt: v.optional(v.number()),
     isActive: v.boolean(),
@@ -233,6 +239,8 @@ export const drivers = {
     .index('by_org', ['organizationId'])
     .index('by_owner', ['ownerId'])
     .index('by_viewer', ['viewerId'])
+    .index('by_viewer_org', ['viewerId', 'organizationId'])
+    .index('by_owner_status', ['ownerId', 'status'])
     .index('by_owner_viewer', ['ownerId', 'viewerId']),
 
   recurringTrips: defineTable({

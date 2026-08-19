@@ -42,6 +42,7 @@ import {
   Users,
   ClipboardList,
   FileText,
+  Pencil,
   ChevronRight,
   ChevronLeft,
 } from 'lucide-react';
@@ -55,6 +56,14 @@ type TemplateTask = {
   assigneeType: 'new_hire' | 'buddy' | 'manager' | 'hr' | 'it';
   category: 'documentation' | 'access' | 'training' | 'equipment' | 'intro' | 'other';
   dayOffset: number;
+};
+
+type EditableTemplate = {
+  _id: Id<'onboardingTemplates'>;
+  name: string;
+  description?: string;
+  department?: string;
+  tasks: TemplateTask[];
 };
 
 const CATEGORIES = ['documentation', 'access', 'training', 'equipment', 'intro', 'other'] as const;
@@ -121,6 +130,7 @@ export default function OnboardingClient() {
 
   const [showStartWizard, setShowStartWizard] = useState(false);
   const [showTemplateWizard, setShowTemplateWizard] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<EditableTemplate | null>(null);
   const [selectedProgram, setSelectedProgram] = useState<Id<'onboardingPrograms'> | null>(null);
 
   const activeCount = programs?.filter((p) => p.status === 'active').length ?? 0;
@@ -354,17 +364,32 @@ export default function OnboardingClient() {
                             </Badge>
                           </div>
                         </div>
-                        <Badge
-                          className={
-                            tpl.isActive
-                              ? 'bg-(--success-quiet) text-(--success-text)'
-                              : 'bg-(--surface-3) text-(--text-3)'
-                          }
-                        >
-                          {tpl.isActive
-                            ? t('onboarding.active', 'Active')
-                            : t('onboarding.inactive', 'Inactive')}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge
+                            className={
+                              tpl.isActive
+                                ? 'bg-(--success-quiet) text-(--success-text)'
+                                : 'bg-(--surface-3) text-(--text-3)'
+                            }
+                          >
+                            {tpl.isActive
+                              ? t('onboarding.active', 'Active')
+                              : t('onboarding.inactive', 'Inactive')}
+                          </Badge>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            title={t('common.edit', 'Edit')}
+                            aria-label={t('onboarding.editTemplate', 'Edit onboarding template')}
+                            onClick={() => {
+                              setEditingTemplate(tpl as EditableTemplate);
+                              setShowTemplateWizard(true);
+                            }}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -388,9 +413,13 @@ export default function OnboardingClient() {
       {showTemplateWizard && (
         <CreateTemplateWizard
           open={showTemplateWizard}
-          onClose={() => setShowTemplateWizard(false)}
+          onClose={() => {
+            setShowTemplateWizard(false);
+            setEditingTemplate(null);
+          }}
           user={user}
           t={t}
+          initialTemplate={editingTemplate}
         />
       )}
       {selectedProgram && (
@@ -836,11 +865,13 @@ function CreateTemplateWizard({
   onClose,
   user,
   t,
+  initialTemplate,
 }: {
   open: boolean;
   onClose: () => void;
   user: User | null;
   t: TFunction;
+  initialTemplate?: EditableTemplate | null;
 }) {
   const [step, setStep] = useState(0);
   // Create into the organization the screen is showing, not the viewer's own.
@@ -848,10 +879,10 @@ function CreateTemplateWizard({
   const orgId = (selectedOrgId ?? user?.organizationId ?? undefined) as
     | Id<'organizations'>
     | undefined;
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [department, setDepartment] = useState('');
-  const [tasks, setTasks] = useState<TemplateTask[]>([]);
+  const [name, setName] = useState(initialTemplate?.name ?? '');
+  const [description, setDescription] = useState(initialTemplate?.description ?? '');
+  const [department, setDepartment] = useState(initialTemplate?.department ?? '');
+  const [tasks, setTasks] = useState<TemplateTask[]>(initialTemplate?.tasks ?? []);
   const [newTask, setNewTask] = useState<Partial<TemplateTask>>({
     assigneeType: 'new_hire',
     category: 'other',
@@ -859,6 +890,7 @@ function CreateTemplateWizard({
   });
 
   const createTemplate = useMutation(api.onboarding.createTemplate);
+  const updateTemplate = useMutation(api.onboarding.updateTemplate);
 
   const steps = [
     { id: 'basic', title: t('onboarding.templateWizard.step1', 'Basic Info') },
@@ -889,14 +921,28 @@ function CreateTemplateWizard({
   const handleSubmit = async () => {
     if (!orgId || !name || tasks.length === 0) return;
     try {
-      await createTemplate({
-        organizationId: orgId,
-        name,
-        description: description || undefined,
-        department: department || undefined,
-        tasks,
-      });
-      toast.success(t('onboarding.templateWizard.success', 'Template created!'));
+      if (initialTemplate) {
+        await updateTemplate({
+          templateId: initialTemplate._id,
+          name,
+          description: description || undefined,
+          department: department || undefined,
+          tasks,
+        });
+      } else {
+        await createTemplate({
+          organizationId: orgId,
+          name,
+          description: description || undefined,
+          department: department || undefined,
+          tasks,
+        });
+      }
+      toast.success(
+        initialTemplate
+          ? t('onboarding.templateWizard.updated', 'Template updated!')
+          : t('onboarding.templateWizard.success', 'Template created!'),
+      );
       onClose();
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : t('common.error', 'Error'));
@@ -907,7 +953,11 @@ function CreateTemplateWizard({
     <Sheet open={open} onOpenChange={onClose}>
       <SheetContent side="right" size="lg" closeLabel={t('common.close', 'Close')} className="p-0">
         <SheetHeader className="gap-3.5">
-          <SheetTitle>{t('onboarding.templateWizard.title', 'Create Template')}</SheetTitle>
+          <SheetTitle>
+            {initialTemplate
+              ? t('onboarding.templateWizard.editTitle', 'Edit Template')
+              : t('onboarding.templateWizard.title', 'Create Template')}
+          </SheetTitle>
           <WizardStepper
             steps={steps}
             current={step}
@@ -1095,7 +1145,9 @@ function CreateTemplateWizard({
           ) : (
             <Button onClick={handleSubmit}>
               <CheckCircle2 className="h-4 w-4 mr-1" />{' '}
-              {t('onboarding.templateWizard.create', 'Create')}
+              {initialTemplate
+                ? t('common.save', 'Save')
+                : t('onboarding.templateWizard.create', 'Create')}
             </Button>
           )}
         </SheetFooter>

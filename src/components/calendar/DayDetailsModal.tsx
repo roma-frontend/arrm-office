@@ -37,7 +37,13 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
-import { getLeaveTypeLabel, type LeaveType, type LeaveStatus } from '@/lib/types';
+import {
+  getLeaveTypeLabel,
+  LEAVE_TYPE_COLORS,
+  FALLBACK_LEAVE_TYPE_COLOR,
+  type LeaveType,
+  type LeaveStatus,
+} from '@/lib/types';
 import { getInitials } from '@/lib/stringUtils';
 import type { CalendarEvent } from './CreateEventModal';
 import {
@@ -149,13 +155,11 @@ function toCompanyTimeline(event: CompanyEvent): CompanyTimelineData {
   };
 }
 
-const LEAVE_TYPE_BG: Record<string, string> = {
-  paid: '#2563eb',
-  unpaid: '#f59e0b',
-  sick: '#ef4444',
-  family: '#10b981',
-  doctor: '#06b6d4',
-};
+// Full palette from the shared catalogue; unknown types fall back to grey.
+const LEAVE_TYPE_BG: Record<string, string> = new Proxy(
+  { ...LEAVE_TYPE_COLORS } as Record<string, string>,
+  { get: (target, prop: string) => target[prop] ?? FALLBACK_LEAVE_TYPE_COLOR },
+);
 
 interface DayDetailsModalProps {
   open: boolean;

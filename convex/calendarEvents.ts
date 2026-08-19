@@ -138,6 +138,188 @@ async function notifyAttendees(
   }
 }
 
+export const getMyAccessState = query({
+  args: { organizationId: v.id('organizations') },
+  handler: async (ctx, { organizationId }) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller || (!isSuperadmin(caller) && caller.organizationId !== organizationId)) {
+      return { organization: 'none' as const, people: [] };
+    }
+    if (isSuperadmin(caller)) {
+      return { organization: 'approved' as const, people: [] };
+    }
+    const organizationDoc = await ctx.db.get(organizationId);
+    if (organizationDoc?.headUserId === caller._id) {
+      return { organization: 'approved' as const, people: [] };
+    }
+
+    const rows = await ctx.db
+      .query('calendarAccess')
+      .withIndex('by_viewer_org', (q) =>
+        q.eq('viewerId', caller._id).eq('organizationId', organizationId),
+      )
+      .collect();
+    const active = rows.filter((row) => !row.expiresAt || row.expiresAt > Date.now());
+    const organization = active.find((row) => row.scope === 'organization');
+
+    return {
+      organization: organization?.isActive
+        ? ('approved' as const)
+        : (organization?.status ?? ('none' as const)),
+      people: active
+        .filter((row) => row.scope !== 'organization')
+        .map((row) => ({
+          userId: row.ownerId,
+          status: row.isActive ? ('approved' as const) : (row.status ?? ('none' as const)),
+        })),
+    };
+  },
+});
+
+export const listPendingCalendarAccessRequests = query({
+  args: { organizationId: v.id('organizations') },
+  handler: async (ctx, { organizationId }) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller || (!isSuperadmin(caller) && caller.organizationId !== organizationId)) return [];
+
+    const rows = await ctx.db
+      .query('calendarAccess')
+      .withIndex('by_owner_status', (q) => q.eq('ownerId', caller._id).eq('status', 'pending'))
+      .collect();
+    const scoped = rows.filter((row) => row.organizationId === organizationId);
+    return await Promise.all(
+      scoped.map(async (row) => ({
+        _id: row._id,
+        scope: row.scope ?? ('person' as const),
+        requestedAt: row.requestedAt,
+        requesterId: row.viewerId,
+        requesterName: (await ctx.db.get(row.viewerId))?.name ?? 'Employee',
+      })),
+    );
+  },
+});
+
+export const requestCalendarAccess = mutation({
+  args: {
+    organizationId: v.id('organizations'),
+    scope: v.union(v.literal('person'), v.literal('organization')),
+    targetUserId: v.optional(v.id('users')),
+  },
+  handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'calendar');
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    if (!isSuperadmin(caller) && caller.organizationId !== args.organizationId) {
+      throw new Error('Access denied: different organization');
+    }
+
+    const organization = await ctx.db.get(args.organizationId);
+    if (!organization) throw new Error('Organization not found');
+    const approverId = args.scope === 'organization' ? organization.headUserId : args.targetUserId;
+    if (!approverId) throw new Error('No approver is configured for this calendar');
+    if (approverId === caller._id) throw new Error('You already own this calendar');
+    const approver = await ctx.db.get(approverId);
+    if (!approver || approver.organizationId !== args.organizationId) {
+      throw new Error('Calendar owner does not belong to this organization');
+    }
+
+    const existing = await ctx.db
+      .query('calendarAccess')
+      .withIndex('by_owner_viewer', (q) =>
+        q.eq('ownerId', approverId).eq('viewerId', caller._id),
+      )
+      .filter((q) => q.eq(q.field('scope'), args.scope))
+      .first();
+    if (existing?.isActive) return { status: 'approved' as const };
+
+    const now = Date.now();
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        status: 'pending',
+        requestedAt: now,
+        respondedAt: undefined,
+        accessLevel: 'full',
+        isActive: false,
+      });
+    } else {
+      await ctx.db.insert('calendarAccess', {
+        organizationId: args.organizationId,
+        ownerId: approverId,
+        viewerId: caller._id,
+        accessLevel: 'full',
+        scope: args.scope,
+        status: 'pending',
+        requestedAt: now,
+        grantedAt: 0,
+        isActive: false,
+      });
+    }
+
+    await notify(ctx, {
+      organizationId: args.organizationId,
+      userId: approverId,
+      type: 'status_change',
+      titleKey: 'notifications.titles.calendarAccessRequest',
+      messageKey:
+        args.scope === 'organization'
+          ? 'notifications.messages.calendarOrganizationAccessRequest'
+          : 'notifications.messages.calendarAccessRequest',
+      params: { requesterName: caller.name },
+      fallbackTitle: 'Calendar access request',
+      fallbackMessage:
+        args.scope === 'organization'
+          ? `${caller.name} wants to view the organization calendar`
+          : `${caller.name} wants to view your calendar`,
+      route: '/calendar',
+      extra: { type: 'calendar_access_request', scope: args.scope, requesterId: caller._id },
+    });
+    return { status: 'pending' as const };
+  },
+});
+
+export const respondToCalendarAccess = mutation({
+  args: {
+    accessId: v.id('calendarAccess'),
+    approved: v.boolean(),
+  },
+  handler: async (ctx, { accessId, approved }) => {
+    await assertModuleAccess(ctx, 'calendar');
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const access = await ctx.db.get(accessId);
+    if (!access || access.status !== 'pending') throw new Error('Access request not found');
+    if (!isSuperadmin(caller) && access.ownerId !== caller._id) {
+      throw new Error('Only the calendar owner can respond to this request');
+    }
+
+    const now = Date.now();
+    await ctx.db.patch(accessId, {
+      status: approved ? 'approved' : 'rejected',
+      isActive: approved,
+      grantedAt: approved ? now : access.grantedAt,
+      respondedAt: now,
+    });
+    await notify(ctx, {
+      organizationId: access.organizationId,
+      userId: access.viewerId,
+      type: 'status_change',
+      titleKey: approved
+        ? 'notifications.titles.calendarAccessGranted'
+        : 'notifications.titles.calendarAccessRejected',
+      messageKey: approved
+        ? 'notifications.messages.calendarAccessGranted'
+        : 'notifications.messages.calendarAccessRejected',
+      fallbackTitle: approved ? 'Calendar access granted' : 'Calendar access declined',
+      fallbackMessage: approved
+        ? 'Your calendar access request was approved'
+        : 'Your calendar access request was declined',
+      route: '/calendar',
+      extra: { type: 'calendar_access_response', scope: access.scope, approved },
+    });
+    return { success: true };
+  },
+});
+
 export const create = mutation({
   args: {
     organizationId: v.id('organizations'),
@@ -354,6 +536,10 @@ async function withRoom(ctx: QueryCtx, event: Doc<'calendarEvents'>) {
 export const getByOrganization = query({
   args: {
     organizationId: v.id('organizations'),
+    view: v.optional(
+      v.union(v.literal('personal'), v.literal('person'), v.literal('organization')),
+    ),
+    targetUserId: v.optional(v.id('users')),
   },
   handler: async (ctx, args) => {
     const caller = await getAuthCaller(ctx);
@@ -366,7 +552,72 @@ export const getByOrganization = query({
       .order('desc')
       .take(200);
 
-    return await Promise.all(events.map((event) => withRoom(ctx, event)));
+    let visible = events.filter(
+      (event) =>
+        event.createdBy === caller._id || (event.attendeeIds ?? []).includes(caller._id),
+    );
+    if (isSuperadmin(caller)) {
+      visible = events;
+    } else if (args.view === 'organization') {
+      const organization = await ctx.db.get(args.organizationId);
+      const isHead = organization?.headUserId === caller._id;
+      const grants = await ctx.db
+        .query('calendarAccess')
+        .withIndex('by_viewer_org', (q) =>
+          q.eq('viewerId', caller._id).eq('organizationId', args.organizationId),
+        )
+        .collect();
+      const approved = grants.some(
+        (grant) =>
+          grant.scope === 'organization' &&
+          grant.status === 'approved' &&
+          grant.isActive &&
+          (!grant.expiresAt || grant.expiresAt > Date.now()),
+      );
+      visible = isHead || approved ? events : visible;
+    } else if (args.view === 'person' && args.targetUserId) {
+      if (args.targetUserId === caller._id) {
+        visible = events.filter(
+          (event) =>
+            event.createdBy === caller._id || (event.attendeeIds ?? []).includes(caller._id),
+        );
+      } else {
+        const organizationGrants = await ctx.db
+          .query('calendarAccess')
+          .withIndex('by_viewer_org', (q) =>
+            q.eq('viewerId', caller._id).eq('organizationId', args.organizationId),
+          )
+          .collect();
+        const organizationApproved = organizationGrants.some(
+          (grant) =>
+            grant.scope === 'organization' &&
+            grant.status === 'approved' &&
+            grant.isActive &&
+            (!grant.expiresAt || grant.expiresAt > Date.now()),
+        );
+        const grant = await ctx.db
+          .query('calendarAccess')
+          .withIndex('by_owner_viewer', (q) =>
+            q.eq('ownerId', args.targetUserId!).eq('viewerId', caller._id),
+          )
+          .filter((q) => q.eq(q.field('scope'), 'person'))
+          .first();
+        const approved =
+          organizationApproved ||
+          (grant?.status === 'approved' &&
+            grant.isActive &&
+            (!grant.expiresAt || grant.expiresAt > Date.now()));
+        visible = approved
+          ? events.filter(
+              (event) =>
+                event.createdBy === args.targetUserId ||
+                (event.attendeeIds ?? []).includes(args.targetUserId!),
+            )
+          : visible;
+      }
+    }
+
+    return await Promise.all(visible.map((event) => withRoom(ctx, event)));
   },
 });
 

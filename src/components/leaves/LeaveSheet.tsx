@@ -35,9 +35,11 @@ export interface LeaveSheetProps {
   onClose: () => void;
   /** Requester's name, shown as the title before the query resolves. */
   requesterName?: string;
+  /** Raise the panel above a fullscreen overlay (e.g. the timesheet at z-70). */
+  elevated?: boolean;
 }
 
-export function LeaveSheet({ leaveId, onClose, requesterName }: LeaveSheetProps) {
+export function LeaveSheet({ leaveId, onClose, requesterName, elevated }: LeaveSheetProps) {
   const { t } = useTranslation();
 
   return (
@@ -48,6 +50,7 @@ export function LeaveSheet({ leaveId, onClose, requesterName }: LeaveSheetProps)
       title={t('leave.requestDetails', 'Request details')}
       {...(requesterName ? { subtitle: requesterName } : {})}
       {...(leaveId ? { deepLink: `/leaves/${leaveId}` } : {})}
+      {...(elevated ? { contentClassName: 'z-[75]', overlayClassName: 'z-[74]' } : {})}
     >
       {leaveId && <LeaveDetailClient key={leaveId} leaveId={leaveId} onDone={onClose} />}
     </DetailSheet>

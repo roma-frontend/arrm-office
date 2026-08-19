@@ -67,6 +67,7 @@ import {
   Ticket,
   ToggleLeft,
   User,
+  Zap,
   UserCheck,
   UserMinus,
   Users,
@@ -128,6 +129,12 @@ export const navItems: NavEntry[] = [
     href: '/leaves',
     labelKey: 'nav.leaves',
     icon: ClipboardList,
+    roles: ['superadmin', 'admin', 'supervisor', 'employee', 'driver'],
+  },
+  {
+    href: '/overtime',
+    labelKey: 'nav.overtime',
+    icon: Zap,
     roles: ['superadmin', 'admin', 'supervisor', 'employee', 'driver'],
   },
   {

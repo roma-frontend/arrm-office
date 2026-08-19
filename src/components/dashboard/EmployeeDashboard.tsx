@@ -56,6 +56,10 @@ const ReportingLineWidget = dynamic(
   () => import('@/components/dashboard/widgets/ReportingLineWidget'),
   { loading: () => <div className="h-64 bg-(--surface-2) rounded-lg animate-pulse" />, ssr: true },
 );
+const OvertimeWidget = dynamic(() => import('@/components/dashboard/OvertimeWidget'), {
+  loading: () => <div className="h-64 bg-(--surface-2) rounded-lg animate-pulse" />,
+  ssr: true,
+});
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -366,6 +370,13 @@ export function EmployeeDashboard() {
           </Card>
         </motion.div>
       </div>
+
+      {/* Overtime Widget */}
+      {user?.id && (
+        <motion.div variants={itemVariants}>
+          <OvertimeWidget userId={user.id as Id<'users'>} />
+        </motion.div>
+      )}
 
       {/* Leave overview — counts and my requests side by side */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-5 items-stretch">

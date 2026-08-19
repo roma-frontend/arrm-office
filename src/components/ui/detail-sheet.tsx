@@ -32,6 +32,11 @@ export interface DetailSheetProps {
   deepLink?: string;
   /** Panel width. Detail bodies are dense, so `lg` is the usual choice. */
   size?: 'md' | 'lg' | 'xl';
+  /** Extra classes for the panel — e.g. a higher z-index when the sheet must
+   *  open above a fullscreen overlay like the timesheet. */
+  contentClassName?: string;
+  /** Extra classes for the scrim, paired with `contentClassName`. */
+  overlayClassName?: string;
   children: React.ReactNode;
 }
 
@@ -42,13 +47,21 @@ export function DetailSheet({
   subtitle,
   deepLink,
   size = 'lg',
+  contentClassName,
+  overlayClassName,
   children,
 }: DetailSheetProps) {
   const { t } = useTranslation();
 
   return (
     <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
-      <SheetContent side="right" size={size} closeLabel={t('common.close', 'Close')}>
+      <SheetContent
+        side="right"
+        size={size}
+        closeLabel={t('common.close', 'Close')}
+        className={contentClassName}
+        overlayClassName={overlayClassName}
+      >
         <SheetHeader>
           <SheetTitle>{title}</SheetTitle>
           {subtitle && <p className="text-label text-(--text-3)">{subtitle}</p>}

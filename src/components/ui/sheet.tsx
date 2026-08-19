@@ -84,6 +84,9 @@ export interface SheetContentProps extends React.ComponentPropsWithoutRef<
    * which one wins as the accessible name is not defined.
    */
   label?: string;
+  /** Extra classes for the scrim — pair with a raised `className` when the
+   *  sheet must open above another fixed overlay (e.g. `z-[74]`). */
+  overlayClassName?: string;
 }
 
 const SheetContent = React.forwardRef<
@@ -99,12 +102,13 @@ const SheetContent = React.forwardRef<
       hideClose,
       closeLabel = 'Close',
       label,
+      overlayClassName,
       ...props
     },
     ref,
   ) => (
     <SheetPortal>
-      <SheetOverlay />
+      <SheetOverlay className={overlayClassName} />
       <DialogPrimitive.Content
         ref={ref}
         data-side={side}

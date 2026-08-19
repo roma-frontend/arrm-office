@@ -10,6 +10,7 @@ export {
   getLeaveById,
   getReviewEligibility,
   listLeavesPaginated,
+  getLeavesForDateRange,
 } from './queries';
 export {
   createLeave,

@@ -766,6 +766,19 @@ describe('CreateEventModal — meeting rooms', () => {
 });
 
 describe('CreateEventModal — save flows', () => {
+  it('defaults a new event to the current local time', async () => {
+    jest.useFakeTimers().setSystemTime(new Date(2026, 7, 4, 14, 37));
+    mockOrgUsers = [];
+    mockRooms = [];
+
+    renderModal({ selectedDate: new Date(2026, 7, 4) });
+
+    const timeInputs = screen.getAllByTestId('input-time');
+    expect(timeInputs[0]).toHaveValue('14:37');
+    expect(timeInputs[1]).toHaveValue('15:37');
+    jest.useRealTimers();
+  });
+
   it('creates an event with attendees and a reserved room', async () => {
     mockOrgUsers = makeUsers();
     mockRooms = [makeRoom()];

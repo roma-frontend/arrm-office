@@ -5,7 +5,7 @@
 
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useWizardDraft } from '@/hooks/useWizardDraft';
 import { WizardDraftNotice } from '@/components/ui/WizardDraftNotice';
 import { useTranslation } from 'react-i18next';
@@ -28,12 +28,15 @@ import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
+  Stethoscope,
+  Coffee,
+  Baby,
+  GraduationCap,
 } from 'lucide-react';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id, Doc } from '@/convex/_generated/dataModel';
 import { toast } from 'sonner';
-import type { LeaveType } from '@/lib/types';
 import { calculateDays } from '@/lib/types';
 import { format } from 'date-fns';
 import { enUS, ru, hy } from 'date-fns/locale';
@@ -57,12 +60,23 @@ interface LeaveRequestWizardProps {
 
 interface StepData {
   selectedUserId?: string;
-  type?: LeaveType;
+  type?: RequestLeaveType;
   startDate?: string;
   endDate?: string;
   reason?: string;
   comment?: string;
 }
+
+type RequestLeaveType =
+  | 'paid'
+  | 'unpaid'
+  | 'sick'
+  | 'family'
+  | 'doctor'
+  | 'day_off'
+  | 'maternity'
+  | 'paternity'
+  | 'study';
 
 export function LeaveRequestWizard({
   userId,
@@ -93,6 +107,7 @@ export function LeaveRequestWizard({
     api.users.queries.getUserById,
     safeUserId ? { userId: safeUserId } : 'skip',
   ) as Doc<'users'> | undefined;
+  const activeLeaveTypes = useQuery(api.leaveSettings.getMyActiveLeaveTypes);
 
   const canSelectEmployee = isSuperadmin ?? false;
 
@@ -107,6 +122,12 @@ export function LeaveRequestWizard({
     endDate: preselectedEndDate,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (stepData.type && activeLeaveTypes && !activeLeaveTypes.includes(stepData.type)) {
+      setStepData((previous) => ({ ...previous, type: undefined }));
+    }
+  }, [activeLeaveTypes, stepData.type]);
 
   const currentStepId = stepIds[currentStepIdx];
 
@@ -253,7 +274,8 @@ export function LeaveRequestWizard({
             {currentStepId === 'type' && (
               <TypeStep
                 value={stepData.type}
-                onChange={(v) => updateStepData('type', v as LeaveType)}
+                activeTypes={activeLeaveTypes}
+                onChange={(v) => updateStepData('type', v)}
               />
             )}
             {currentStepId === 'dates' && (
@@ -370,10 +392,18 @@ function EmployeeStep({
 }
 
 // ─── Leave Type Step ─────────────────────────────────────────────────────
-function TypeStep({ value, onChange }: { value?: LeaveType; onChange: (v: LeaveType) => void }) {
+function TypeStep({
+  value,
+  activeTypes,
+  onChange,
+}: {
+  value?: RequestLeaveType;
+  activeTypes?: readonly RequestLeaveType[];
+  onChange: (v: RequestLeaveType) => void;
+}) {
   const { t } = useTranslation();
   const types: {
-    value: LeaveType;
+    value: RequestLeaveType;
     title: string;
     desc: string;
     icon: React.ReactNode;
@@ -408,6 +438,41 @@ function TypeStep({ value, onChange }: { value?: LeaveType; onChange: (v: LeaveT
       icon: <Briefcase className="w-4.5 h-4.5" />,
       chip: 'bg-(--surface-3) text-(--text-secondary)',
     },
+    {
+      value: 'doctor',
+      title: t('leave.types.doctor', 'Doctor Visit'),
+      desc: t('leave.types.doctorDesc', 'Medical appointment'),
+      icon: <Stethoscope className="w-4.5 h-4.5" />,
+      chip: 'bg-(--brand-quiet) text-(--brand-text)',
+    },
+    {
+      value: 'day_off',
+      title: t('leave.types.dayOff', 'Day Off'),
+      desc: t('leave.types.dayOffDesc', 'Personal day away from work'),
+      icon: <Coffee className="w-4.5 h-4.5" />,
+      chip: 'bg-(--success-quiet) text-(--success-text)',
+    },
+    {
+      value: 'maternity',
+      title: t('leave.types.maternity', 'Maternity Leave'),
+      desc: t('leave.types.maternityDesc', 'Parental leave for a new mother'),
+      icon: <Baby className="w-4.5 h-4.5" />,
+      chip: 'bg-(--pink-quiet) text-(--pink-text)',
+    },
+    {
+      value: 'paternity',
+      title: t('leave.types.paternity', 'Paternity Leave'),
+      desc: t('leave.types.paternityDesc', 'Parental leave for a new father'),
+      icon: <Users className="w-4.5 h-4.5" />,
+      chip: 'bg-(--brand-quiet) text-(--brand-text)',
+    },
+    {
+      value: 'study',
+      title: t('leave.types.study', 'Study Leave'),
+      desc: t('leave.types.studyDesc', 'Education and examinations'),
+      icon: <GraduationCap className="w-4.5 h-4.5" />,
+      chip: 'bg-(--purple-quiet) text-(--purple-text)',
+    },
   ];
 
   return (
@@ -424,7 +489,9 @@ function TypeStep({ value, onChange }: { value?: LeaveType; onChange: (v: LeaveT
         </p>
       </div>
       <div className="grid grid-cols-2 gap-2.5" role="radiogroup">
-        {types.map((type) => {
+        {types
+          .filter((type) => activeTypes?.includes(type.value))
+          .map((type) => {
           const isSelected = value === type.value;
           return (
             <button
@@ -580,12 +647,22 @@ function DetailsStep({
     sick: t('leave.types.sick', 'Sick Leave'),
     family: t('leave.types.family', 'Family Leave'),
     unpaid: t('leave.types.unpaid', 'Unpaid Leave'),
+    doctor: t('leave.types.doctor', 'Doctor Visit'),
+    day_off: t('leave.types.dayOff', 'Day Off'),
+    maternity: t('leave.types.maternity', 'Maternity Leave'),
+    paternity: t('leave.types.paternity', 'Paternity Leave'),
+    study: t('leave.types.study', 'Study Leave'),
   };
   const typeColors: Record<string, string> = {
     paid: 'text-(--warning-text)',
     sick: 'text-(--danger-text)',
     family: 'text-(--purple-text)',
     unpaid: 'text-(--text-secondary)',
+    doctor: 'text-(--brand-text)',
+    day_off: 'text-(--success-text)',
+    maternity: 'text-(--pink-text)',
+    paternity: 'text-(--brand-text)',
+    study: 'text-(--purple-text)',
   };
 
   const days =

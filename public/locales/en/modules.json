@@ -2445,6 +2445,21 @@
       "emptyMonth": "No leaves this month"
     }
   },
+  "calendarAccess": {
+    "calendarView": "Calendar view",
+    "entireOrganization": "Entire organization",
+    "requestOrganization": "Request organization calendar",
+    "awaitingCeo": "Awaiting CEO approval",
+    "pending": "Your organization calendar request is pending",
+    "requested": "Access request sent to the organization head",
+    "approved": "Calendar access approved",
+    "rejected": "Calendar access declined",
+    "personPending": "This employee has not responded yet",
+    "personRequested": "Calendar access request sent",
+    "inbox": "Calendar access requests",
+    "organizationRequest": "Requests access to the organization calendar",
+    "personRequest": "Requests access to your calendar"
+  },
   "rooms": {
     "title": "Meeting Rooms",
     "subtitle": "Real-time availability of every room in the office",

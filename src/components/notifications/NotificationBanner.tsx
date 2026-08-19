@@ -7,7 +7,11 @@ import { SmartBanner } from '@/components/ui/SmartBanner';
 import { useRouter } from 'next/navigation';
 import { MessageSquare } from 'lucide-react';
 import { playNotificationSound } from '@/lib/notificationSound';
-import { notificationMessage, notificationTitle } from '@/lib/notificationText';
+import {
+  notificationMessage,
+  notificationSoundType,
+  notificationTitle,
+} from '@/lib/notificationText';
 import { useTranslation } from 'react-i18next';
 
 const getRouteForType = (type: string): string => {
@@ -86,7 +90,7 @@ export function NotificationBanner() {
       const hasPlayed = sessionStorage.getItem(`notif_sound_${currentCount}`);
       if (!hasPlayed) {
         sessionStorage.setItem(`notif_sound_${currentCount}`, '1');
-        playNotificationSound('new_request');
+          if (latest) playNotificationSound(notificationSoundType(latest));
       }
 
       if (latest) {

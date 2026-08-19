@@ -1,0 +1,66 @@
+{
+  "overtime": {
+    "title": "Überstunden",
+    "subtitle": "Überstunden beantragen und verwalten",
+    "requestOvertime": "Überstunden beantragen",
+    "allStatuses": "Alle Status",
+    "noRequests": "Keine Überstundenanträge",
+    "createFirst": "Ersten Antrag erstellen",
+    "markAllRead": "Alle als gelesen markieren",
+    "allRead": "Alle als gelesen markiert",
+    "cancelled": "Antrag storniert",
+    "cancelFailed": "Stornierung fehlgeschlagen",
+    "approved": "Überstunden genehmigt",
+    "approveFailed": "Genehmigung fehlgeschlagen",
+    "rejected": "Überstunden abgelehnt",
+    "rejectFailed": "Ablehnung fehlgeschlagen",
+    "hours": "Stunden",
+    "estimatedHours": "Geschätzt",
+    "sentTo": "Gesendet an",
+    "reviewedBy": "Geprüft von",
+    "reviewComment": "Kommentar",
+    "reviewCommentPlaceholder": "Optionaler Kommentar...",
+    "approve": "Genehmigen",
+    "reject": "Ablehnen",
+    "details": "Überstundendetails",
+    "requestDetails": "Antragsdetails",
+    "limitExceeded": "Tageslimit überschritten: {{max}}h ({{used}}h verwendet)",
+    "limitsRemaining": "Verbleibende Limits",
+    "daily": "Täglich",
+    "weekly": "Wöchentlich",
+    "monthly": "Monatlich",
+    "status": {
+      "pending": "Ausstehend",
+      "approved": "Genehmigt",
+      "rejected": "Abgelehnt",
+      "cancelled": "Storniert"
+    },
+    "stats": {
+      "totalHours": "Gesamtstunden",
+      "approved": "Genehmigt",
+      "pending": "Ausstehend",
+      "approvedRequests": "Anträge"
+    },
+    "steps": {
+      "date": "Datum",
+      "time": "Zeit",
+      "details": "Details",
+      "confirm": "Bestätigen"
+    },
+    "wizard": {
+      "success": "Überstundenantrag eingereicht!",
+      "waitingApproval": "Warte auf Genehmigung des Vorgesetzten",
+      "error": "Antrag konnte nicht eingereicht werden",
+      "selectDate": "Wählen Sie das Datum für Ihre Überstunden",
+      "selectTime": "Wählen Sie Start- und Endzeit",
+      "provideDetails": "Geben Sie einen Grund für Ihre Überstunden an",
+      "reviewBeforeSubmitting": "Überprüfen Sie Ihren Antrag vor dem Absenden",
+      "reasonPlaceholder": "z.B. Projekt-Deadline, dringende Aufgabe, Kundentermin...",
+      "commentPlaceholder": "Zusätzliche Informationen...",
+      "submit": "Antrag einreichen"
+    }
+  },
+  "nav": {
+    "overtime": "Überstunden"
+  }
+}

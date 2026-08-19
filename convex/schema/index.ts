@@ -57,6 +57,7 @@ import { landingTexts } from './landingTexts';
 import { operatorTools } from './operatorTools';
 import { meetings } from './meetings';
 import { billing } from './billing';
+import { overtime } from './overtime';
 
 export default defineSchema({
   ...organizations,
@@ -117,12 +118,14 @@ export default defineSchema({
   ...operatorTools,
   ...meetings,
   ...billing,
+...overtime,
 });
 
 export {
   organizations,
   users,
   leaves,
+  overtime,
   notifications,
   tickets,
   automation,

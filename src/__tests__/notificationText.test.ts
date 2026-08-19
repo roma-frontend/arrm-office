@@ -1,11 +1,14 @@
+import {
+  notificationMessage,
+  notificationSoundType,
+  notificationTitle,
+} from '@/lib/notificationText';
 /**
  * Tests for notification text resolution (src/lib/notificationText.ts).
  *
  * Covers the resolution order: metadata titleKey/messageKey → per-type label →
  * stored English title/message, plus the malformed-metadata fallbacks.
  */
-import { notificationTitle, notificationMessage } from '@/lib/notificationText';
-
 function makeT() {
   return jest.fn((key: string, opts?: { defaultValue?: string }) => {
     const map: Record<string, string> = {
@@ -151,5 +154,36 @@ describe('notificationMessage', () => {
     });
     expect(message).toBe('Stored message');
     expect(message).not.toContain('notifications.messages');
+  });
+});
+
+describe('notificationSoundType', () => {
+  const base = { type: 'status_change', title: '', message: '' };
+
+  it('uses the request sound for a new calendar access request', () => {
+    expect(
+      notificationSoundType({
+        ...base,
+        metadata: JSON.stringify({ type: 'calendar_access_request' }),
+      }),
+    ).toBe('new_request');
+  });
+
+  it('uses the approval sound for an accepted calendar request', () => {
+    expect(
+      notificationSoundType({
+        ...base,
+        metadata: JSON.stringify({ type: 'calendar_access_response', approved: true }),
+      }),
+    ).toBe('approved');
+  });
+
+  it('uses the rejection sound for a declined calendar request', () => {
+    expect(
+      notificationSoundType({
+        ...base,
+        metadata: JSON.stringify({ type: 'calendar_access_response', approved: false }),
+      }),
+    ).toBe('rejected');
   });
 });

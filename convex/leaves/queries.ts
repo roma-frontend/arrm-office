@@ -163,6 +163,60 @@ export const getLeavesForOrganization = query({
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// GET LEAVES FOR DATE RANGE — for the TimeOffCalendar Gantt view
+// Returns all leaves overlapping [startDate, endDate], scoped to the caller's
+// organization (or all orgs for superadmin).
+// ─────────────────────────────────────────────────────────────────────────────
+export const getLeavesForDateRange = query({
+  args: {
+    startDate: v.string(),
+    endDate: v.string(),
+    organizationId: v.optional(v.id('organizations')),
+  },
+  handler: async (ctx, { startDate, endDate, organizationId }) => {
+    const requester = await getAuthCaller(ctx);
+    if (!requester) return [];
+
+    const userIsSuperadmin = isSuperadmin(requester);
+    const isStaff = requester.role === 'admin' || requester.role === 'supervisor';
+
+    let leaves;
+    if (userIsSuperadmin) {
+      // Superadmin: optionally scoped to a chosen org
+      if (organizationId) {
+        leaves = await ctx.db
+          .query('leaveRequests')
+          .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
+          .order('desc')
+          .take(MAX_PAGE_SIZE);
+      } else {
+        leaves = await ctx.db.query('leaveRequests').order('desc').take(MAX_PAGE_SIZE);
+      }
+    } else if (isStaff) {
+      const orgId = organizationId ?? requester.organizationId;
+      if (!orgId) return [];
+      leaves = await ctx.db
+        .query('leaveRequests')
+        .withIndex('by_org', (q) => q.eq('organizationId', orgId))
+        .order('desc')
+        .take(MAX_PAGE_SIZE);
+    } else {
+      // Employee: only own leaves
+      leaves = await ctx.db
+        .query('leaveRequests')
+        .withIndex('by_user', (q) => q.eq('userId', requester._id))
+        .order('desc')
+        .take(MAX_PAGE_SIZE);
+    }
+
+    // Filter to leaves that overlap the visible date range
+    const overlapping = leaves.filter((l) => l.startDate <= endDate && l.endDate >= startDate);
+
+    return enrichLeavesWithUserData(ctx, overlapping);
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // GET USER LEAVES — own leaves only (or admin sees all within org)
 // ─────────────────────────────────────────────────────────────────────────────
 export const getUserLeaves = query({

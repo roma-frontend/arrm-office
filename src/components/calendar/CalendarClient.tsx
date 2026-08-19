@@ -6,6 +6,7 @@ import { useMainRef } from '@/hooks/useMainRef';
 import { useHydrated } from '@/hooks/useHydrated';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import { motion, AnimatePresence } from '@/lib/cssMotion';
+import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 import {
   ChevronLeft,
@@ -25,6 +26,8 @@ import {
   DoorOpen,
   Building2,
   Video,
+  Maximize2,
+  Minimize2,
 } from 'lucide-react';
 import {
   format,
@@ -45,6 +48,13 @@ import { enUS, ru, hy } from 'date-fns/locale';
 import i18n from 'i18next';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -66,12 +76,14 @@ import { Id } from '../../../convex/_generated/dataModel';
 import {
   LEAVE_TYPE_LABELS,
   LEAVE_TYPE_COLORS,
+  FALLBACK_LEAVE_TYPE_COLOR,
   getLeaveTypeLabel,
   type LeaveType,
   type LeaveStatus,
 } from '@/lib/types';
 import { useAuthStore } from '@/store/useAuthStore';
 import { LeaveRequestModal } from '@/components/leaves/LeaveRequestModal';
+import { LeaveSheet } from '@/components/leaves/LeaveSheet';
 import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { DriverRequestModal } from './DriverRequestModal';
 import { CreateEventModal, type CalendarEvent } from './CreateEventModal';
@@ -104,6 +116,16 @@ import {
 import { getInitials } from '@/lib/stringUtils';
 import { logger } from '@/lib/logger';
 import { toast } from 'sonner';
+import nextDynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
+
+// The fullscreen mode of the calendar is the accounting timesheet («табель»):
+// employees × days with every leave type, statuses and overtime. Heavy, so
+// it is only downloaded when someone actually goes fullscreen.
+const TimeOffCalendar = nextDynamic(
+  () => import('@/components/leaves/TimeOffCalendar').then((m) => m.TimeOffCalendar),
+  { ssr: false, loading: () => <Skeleton className="h-full w-full rounded-xl" /> },
+);
 
 type LeaveRequest = {
   _id: string;
@@ -199,6 +221,19 @@ type CompanyEvent = {
   notifyDaysBefore?: number;
   createdBy?: string;
   createdAt?: number;
+};
+
+type OvertimeRequest = {
+  _id: string;
+  userId: string;
+  userName?: string;
+  userDepartment?: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  estimatedHours: number;
+  reason: string;
+  status: string;
 };
 
 // --- Helpers ------------------------------------------------------------------
@@ -375,13 +410,15 @@ function StatusIcon({ status }: { status: LeaveStatus }) {
   return <Clock className="w-3 h-3 text-(--warning-text)" />;
 }
 
-const LEAVE_TYPE_BG: Record<string, string> = {
-  paid: '#2563eb',
-  unpaid: '#f59e0b',
-  sick: '#ef4444',
-  family: '#10b981',
-  doctor: '#06b6d4',
-};
+// Full 9-type palette shared with the timesheet — every schema type gets a
+// colour, unknown values fall back to a neutral grey instead of `undefined`.
+const LEAVE_TYPE_BG: Record<string, string> = new Proxy(
+  { ...LEAVE_TYPE_COLORS } as Record<string, string>,
+  { get: (target, prop: string) => target[prop] ?? FALLBACK_LEAVE_TYPE_COLOR },
+);
+
+// Overtime color
+const OVERTIME_COLOR = '#8b5cf6'; // purple for overtime
 
 // Days of week will be translated using i18n
 
@@ -407,6 +444,7 @@ function DayCell({
   customEvents,
   roomBookings,
   companyEvents,
+  overtimeEvents,
   onClick,
   onDoubleClick,
   onDropEvent,
@@ -420,6 +458,7 @@ function DayCell({
   customEvents: CalendarEvent[];
   roomBookings: RoomBookingDoc[];
   companyEvents: CompanyEvent[];
+  overtimeEvents: OvertimeRequest[];
   onClick: () => void;
   onDoubleClick: () => void;
   /** Drag & drop target — receives custom events dropped onto this day. */
@@ -435,13 +474,15 @@ function DayCell({
   const hasCustom = customEvents.length > 0 && isCurrentMonth;
   const hasRooms = roomBookings.length > 0 && isCurrentMonth;
   const hasCompany = companyEvents.length > 0 && isCurrentMonth;
+  const hasOvertime = overtimeEvents.length > 0 && isCurrentMonth;
   const totalItems =
     leaves.length +
     googleEvents.length +
     driverEvents.length +
     customEvents.length +
     roomBookings.length +
-    companyEvents.length;
+    companyEvents.length +
+    overtimeEvents.length;
 
   return (
     <button
@@ -700,6 +741,25 @@ function DayCell({
               </div>
             );
           })}
+          {/* Overtime pills */}
+          {overtimeEvents.slice(0, 1).map((ot) => (
+            <div
+              key={`ot-${ot._id}`}
+              className="flex items-center gap-1 rounded-full px-1.5 py-0.5"
+              style={{ background: isSelected ? 'rgba(255,255,255,0.2)' : `${OVERTIME_COLOR}22` }}
+            >
+              <span
+                className="w-1.5 h-1.5 rounded-full shrink-0"
+                style={{ background: isSelected ? 'var(--n-0)' : OVERTIME_COLOR }}
+              />
+              <span
+                className="text-[9px] font-medium truncate hidden sm:block"
+                style={{ color: isSelected ? 'var(--n-0)' : OVERTIME_COLOR }}
+              >
+                {(ot.userName ?? '?').split(' ')[0]} OT
+              </span>
+            </div>
+          ))}
           {totalItems > 2 && (
             <span
               className={`text-[9px] pl-1 ${isSelected ? 'text-white/80' : 'text-(--text-muted)'}`}
@@ -729,6 +789,28 @@ export const CalendarClient = React.memo(function CalendarClient() {
   const [roomBookingRoomId, setRoomBookingRoomId] = useState<string | null>(null);
   const [detailsRoom, setDetailsRoom] = useState<RoomDoc | null>(null);
   const [editEvent, setEditEvent] = useState<CalendarEvent | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const calendarContainerRef = useRef<HTMLDivElement>(null);
+  /** Leave opened from a timesheet bar while in fullscreen. */
+  const [timesheetLeave, setTimesheetLeave] = useState<{
+    id: Id<'leaveRequests'>;
+    requesterName: string;
+  } | null>(null);
+
+  // Fullscreen = the accounting timesheet overlay («табель»). The month grid
+  // stays as-is; fullscreen swaps to the employees × days sheet with every
+  // leave type, statuses, overtime and the full filter set.
+  const toggleFullscreen = useCallback(() => {
+    setIsFullscreen((v) => !v);
+  }, []);
+
+  // If a stray native fullscreen is active (e.g. from an older session), leave
+  // it so the overlay is not trapped inside a fullscreened subtree.
+  useEffect(() => {
+    if (isFullscreen && document.fullscreenElement) {
+      document.exitFullscreen?.().catch(() => {});
+    }
+  }, [isFullscreen]);
 
   // Draft prompts. Watched only while the matching form is closed — an offer to
   // restore a draft on top of the form it belongs to would be nonsense.
@@ -792,6 +874,30 @@ export const CalendarClient = React.memo(function CalendarClient() {
   const [timelineInput, setTimelineInput] = useState<TimelineInput | null>(null);
   const { user } = useAuthStore();
   const selectedOrgId = useSelectedOrganization();
+  const calendarOrgId = (selectedOrgId ?? user?.organizationId) as Id<'organizations'> | undefined;
+  const calendarAccess = useQuery(
+    api.calendarEvents.getMyAccessState,
+    mounted && calendarOrgId ? { organizationId: calendarOrgId } : 'skip',
+  );
+  const pendingAccessRequests = useQuery(
+    api.calendarEvents.listPendingCalendarAccessRequests,
+    mounted && calendarOrgId ? { organizationId: calendarOrgId } : 'skip',
+  );
+  const requestCalendarAccess = useMutation(api.calendarEvents.requestCalendarAccess);
+  const respondToCalendarAccess = useMutation(api.calendarEvents.respondToCalendarAccess);
+  const calendarPeople = useQuery(
+    api.users.getUsersByOrganizationId,
+    mounted && calendarOrgId ? { organizationId: calendarOrgId } : 'skip',
+  ) as
+    | Array<{
+        _id: Id<'users'>;
+        name: string;
+        department?: string;
+        position?: string;
+      }>
+    | undefined;
+  const [selectedCalendarOwnerId, setSelectedCalendarOwnerId] = useState<string>('');
+  const organizationCalendarApproved = calendarAccess?.organization === 'approved';
   const lang = i18n.language || 'en';
   const dateFnsLocale = lang === 'ru' ? ru : lang === 'hy' ? hy : enUS;
 
@@ -802,19 +908,109 @@ export const CalendarClient = React.memo(function CalendarClient() {
   const scopeInitialized = useRef(false);
 
   useEffect(() => {
-    if (scopeInitialized.current || !user) return;
+    if (scopeInitialized.current || !user || (calendarOrgId && !calendarAccess)) return;
     scopeInitialized.current = true;
     // One-time initialization from localStorage. It cannot move into the
     // useState initializer: this component is server-rendered, and reading
     // localStorage during render would produce a hydration mismatch.
+    const preferred = readStoredScope() ?? defaultScopeForRole(user.role);
+    const permitted =
+      preferred === 'team' && calendarAccess?.organization !== 'approved' ? 'mine' : preferred;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- deliberate one-shot client-side init
-    setScope(readStoredScope() ?? defaultScopeForRole(user.role));
-  }, [user]);
+    setScope(permitted);
+  }, [calendarAccess, calendarOrgId, user]);
 
-  const changeScope = useCallback((next: CalendarScope) => {
-    setScope(next);
-    storeScope(next);
-  }, []);
+  const changeScope = useCallback(
+    async (next: CalendarScope) => {
+      if (next === 'team' && calendarAccess?.organization !== 'approved') {
+        if (calendarAccess?.organization === 'pending') {
+          toast.info(t('calendarAccess.pending', 'Your organization calendar request is pending'));
+          return;
+        }
+        if (!calendarOrgId) return;
+        try {
+          await requestCalendarAccess({ organizationId: calendarOrgId, scope: 'organization' });
+          toast.success(
+            t('calendarAccess.requested', 'Access request sent to the organization head'),
+          );
+        } catch (error) {
+          toast.error(error instanceof Error ? error.message : t('common.error', 'Error'));
+        }
+        return;
+      }
+      if (next === 'mine') setSelectedCalendarOwnerId('');
+      setScope(next);
+      storeScope(next);
+    },
+    [calendarAccess?.organization, calendarOrgId, requestCalendarAccess, t],
+  );
+
+  const requestOrganizationCalendar = useCallback(async () => {
+    if (!calendarOrgId || calendarAccess?.organization === 'pending') return;
+    try {
+      await requestCalendarAccess({ organizationId: calendarOrgId, scope: 'organization' });
+      toast.success(t('calendarAccess.requested', 'Access request sent to the organization head'));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t('common.error', 'Error'));
+    }
+  }, [calendarAccess?.organization, calendarOrgId, requestCalendarAccess, t]);
+
+  const handleAccessResponse = useCallback(
+    async (accessId: Id<'calendarAccess'>, approved: boolean) => {
+      try {
+        await respondToCalendarAccess({ accessId, approved });
+        toast.success(
+          approved
+            ? t('calendarAccess.approved', 'Calendar access approved')
+            : t('calendarAccess.rejected', 'Calendar access declined'),
+        );
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : t('common.error', 'Error'));
+      }
+    },
+    [respondToCalendarAccess, t],
+  );
+
+  const selectPersonCalendar = useCallback(
+    async (ownerId: string) => {
+      if (!ownerId || ownerId === user?.id) {
+        setSelectedCalendarOwnerId('');
+        setScope('mine');
+        storeScope('mine');
+        return;
+      }
+      const access = calendarAccess?.people.find((entry) => entry.userId === ownerId);
+      if (organizationCalendarApproved || access?.status === 'approved') {
+        setSelectedCalendarOwnerId(ownerId);
+        setScope('mine');
+        storeScope('mine');
+        return;
+      }
+      if (access?.status === 'pending') {
+        toast.info(t('calendarAccess.personPending', 'This employee has not responded yet'));
+        return;
+      }
+      if (!calendarOrgId) return;
+      try {
+        await requestCalendarAccess({
+          organizationId: calendarOrgId,
+          scope: 'person',
+          targetUserId: ownerId as Id<'users'>,
+        });
+        toast.success(t('calendarAccess.personRequested', 'Calendar access request sent'));
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : t('common.error', 'Error'));
+      }
+    },
+    [
+      calendarAccess?.people,
+      calendarOrgId,
+      organizationCalendarApproved,
+      requestCalendarAccess,
+      t,
+      user?.id,
+    ],
+  );
 
   /**
    * Deleting an event also frees the meeting room it held, so the confirmation
@@ -837,15 +1033,20 @@ export const CalendarClient = React.memo(function CalendarClient() {
     [deleteEventMutation, t],
   );
 
+  const selectedCalendarOwner = calendarPeople?.find(
+    (person) => person._id === selectedCalendarOwnerId,
+  );
   const viewer = useMemo(
     () => ({
-      id: user?.id ?? '',
-      name: user?.name,
+      id: selectedCalendarOwner?._id ?? user?.id ?? '',
+      name: selectedCalendarOwner?.name ?? user?.name,
       // Department decides whether a department-wide event belongs on the
       // personal calendar.
-      department: (user as { department?: string } | null | undefined)?.department,
+      department:
+        selectedCalendarOwner?.department ??
+        (user as { department?: string } | null | undefined)?.department,
     }),
-    [user],
+    [selectedCalendarOwner, user],
   );
   const isPersonalScope = scope === 'mine';
 
@@ -972,7 +1173,19 @@ export const CalendarClient = React.memo(function CalendarClient() {
   // Calendar events (custom user events)
   const calendarEventsData = useQuery(
     api.calendarEvents.getByOrganization,
-    mounted && selectedOrgId ? { organizationId: selectedOrgId as Id<'organizations'> } : 'skip',
+    mounted && calendarOrgId
+      ? {
+          organizationId: calendarOrgId,
+          view: selectedCalendarOwnerId
+            ? ('person' as const)
+            : scope === 'team'
+              ? ('organization' as const)
+              : ('personal' as const),
+          targetUserId: selectedCalendarOwnerId
+            ? (selectedCalendarOwnerId as Id<'users'>)
+            : undefined,
+        }
+      : 'skip',
   );
   const customEvents: CalendarEvent[] = useMemo(
     () =>
@@ -1068,6 +1281,37 @@ export const CalendarClient = React.memo(function CalendarClient() {
     () => filterForScope(roomBookings, scope, (booking) => isMyRoomBooking(booking, viewer)),
     [roomBookings, scope, viewer],
   );
+
+  // --- Overtime requests ---------------------------------------------------
+  const overtimeData = useQuery(
+    api.overtime.getOvertimeForDateRange,
+    mounted && calendarOrgId
+      ? {
+          startDate: format(startOfMonth(currentMonth), 'yyyy-MM-dd'),
+          endDate: format(endOfMonth(currentMonth), 'yyyy-MM-dd'),
+        }
+      : 'skip',
+  );
+  const overtimeRequests: OvertimeRequest[] = useMemo(() => overtimeData ?? [], [overtimeData]);
+
+  const scopedOvertime = useMemo(
+    () =>
+      filterForScope(overtimeRequests, scope, (req) => {
+        return req.userId === viewer.id;
+      }),
+    [overtimeRequests, scope, viewer],
+  );
+
+  const overtimeDateMap = useMemo(() => {
+    const map = new Map<string, OvertimeRequest[]>();
+    scopedOvertime
+      .filter((r) => r.status !== 'rejected')
+      .forEach((req) => {
+        if (!map.has(req.date)) map.set(req.date, []);
+        map.get(req.date)!.push(req);
+      });
+    return map;
+  }, [scopedOvertime]);
 
   const roomsData = useQuery(
     api.meetingRooms.listRooms,
@@ -1358,7 +1602,29 @@ export const CalendarClient = React.memo(function CalendarClient() {
 
   return (
     <TooltipProvider delayDuration={250}>
-      <div className="space-y-6">
+      {/* Fullscreen = accounting timesheet: every employee, every leave type,
+          statuses, overtime and the full filter set on one sheet. */}
+      {isFullscreen && (
+        <>
+          <TimeOffCalendar
+            embedded
+            onClose={() => setIsFullscreen(false)}
+            onLeaveClick={(leave) =>
+              setTimesheetLeave({
+                id: leave._id as Id<'leaveRequests'>,
+                requesterName: leave.userName ?? '',
+              })
+            }
+          />
+          <LeaveSheet
+            elevated
+            leaveId={timesheetLeave?.id ?? null}
+            requesterName={timesheetLeave?.requesterName}
+            onClose={() => setTimesheetLeave(null)}
+          />
+        </>
+      )}
+      <div ref={calendarContainerRef} className="space-y-6 transition-all duration-300 ease-in-out">
         {/* -- Sticky Header -- */}
         <div className="sticky top-0 z-10 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 mb-4 bg-(--background)/95 backdrop-blur supports-[backdrop-filter]:bg-(--background)/60 border-b border-(--border)">
           <div className="flex flex-col gap-4">
@@ -1393,12 +1659,93 @@ export const CalendarClient = React.memo(function CalendarClient() {
                   <Plus className="w-4 h-4" />
                   {t('createMeeting.title')}
                 </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={toggleFullscreen}
+                  className="gap-2 w-full sm:w-auto"
+                >
+                  {isFullscreen ? (
+                    <Minimize2 className="w-4 h-4" />
+                  ) : (
+                    <Maximize2 className="w-4 h-4" />
+                  )}
+                  {isFullscreen
+                    ? t('actions.exitFullscreen', 'Exit Fullscreen')
+                    : t('actions.fullscreen', 'Fullscreen')}
+                </Button>
               </div>
             </div>
 
             {/* Scope switcher — personal vs. shared calendar */}
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-              <CalendarScopeSwitcher value={scope} onChange={changeScope} counts={scopeCounts} />
+              {organizationCalendarApproved ? (
+                <>
+                  <CalendarScopeSwitcher
+                    value={scope}
+                    onChange={changeScope}
+                    counts={scopeCounts}
+                  />
+                  <Select
+                    value={scope === 'team' ? 'organization' : selectedCalendarOwnerId || 'mine'}
+                    onValueChange={(value) => {
+                      if (value === 'organization') {
+                        void changeScope('team');
+                      } else if (value === 'mine') {
+                        void selectPersonCalendar(user?.id ?? '');
+                      } else {
+                        void selectPersonCalendar(value);
+                      }
+                    }}
+                  >
+                    <SelectTrigger
+                      className="w-full sm:w-72"
+                      aria-label={t('calendarAccess.calendarView', 'Calendar view')}
+                    >
+                      <Eye className="h-4 w-4" />
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="organization">
+                        {t('calendarAccess.entireOrganization', 'Entire organization')}
+                      </SelectItem>
+                      <SelectItem value="mine">
+                        {t('calendarScope.mine.label', 'My calendar')}
+                      </SelectItem>
+                      {(calendarPeople ?? [])
+                        .filter((person) => person._id !== user?.id)
+                        .map((person) => (
+                          <SelectItem key={person._id} value={person._id}>
+                            {person.name}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </>
+              ) : (
+                <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
+                  <div className="flex min-h-10 flex-1 items-center gap-2 rounded-lg border border-(--border) bg-(--surface-1) px-3 text-sm font-semibold text-(--text-primary)">
+                    <Users className="h-4 w-4" />
+                    {t('calendarScope.mine.label', 'My calendar')}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={!calendarAccess || calendarAccess.organization === 'pending'}
+                    onClick={() => void requestOrganizationCalendar()}
+                    className="min-h-10 justify-center"
+                  >
+                    {calendarAccess?.organization === 'pending' ? (
+                      <Clock className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                    {calendarAccess?.organization === 'pending'
+                      ? t('calendarAccess.awaitingCeo', 'Awaiting CEO approval')
+                      : t('calendarAccess.requestOrganization', 'Request organization calendar')}
+                  </Button>
+                </div>
+              )}
               <p className="hidden lg:block text-xs text-(--text-muted)">
                 {t(`calendarScope.${scope}.hint`)}
               </p>
@@ -1407,6 +1754,47 @@ export const CalendarClient = React.memo(function CalendarClient() {
                 {t(`calendarScope.${scope}.announce`)}
               </span>
             </div>
+            {pendingAccessRequests && pendingAccessRequests.length > 0 && (
+              <div className="space-y-2" aria-label={t('calendarAccess.inbox', 'Access requests')}>
+                {pendingAccessRequests.map((request) => (
+                  <div
+                    key={request._id}
+                    className="flex flex-col gap-3 rounded-lg border border-(--border) bg-(--surface-1) p-3 sm:flex-row sm:items-center"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-(--text-primary)">
+                        {request.requesterName}
+                      </p>
+                      <p className="text-xs text-(--text-muted)">
+                        {request.scope === 'organization'
+                          ? t(
+                              'calendarAccess.organizationRequest',
+                              'Requests access to the organization calendar',
+                            )
+                          : t('calendarAccess.personRequest', 'Requests access to your calendar')}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => void handleAccessResponse(request._id, true)}
+                      >
+                        <CheckCircle className="h-4 w-4" />
+                        {t('common.approve', 'Approve')}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => void handleAccessResponse(request._id, false)}
+                      >
+                        <XCircle className="h-4 w-4" />
+                        {t('common.reject', 'Reject')}
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -1495,6 +1883,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
                       const cEvents = customEventsMap.get(key) ?? [];
                       const rBookings = roomDateMap.get(key) ?? [];
                       const orgEvents = companyEventsMap.get(key) ?? [];
+                      const otEvents = overtimeDateMap.get(key) ?? [];
                       return (
                         <ContextMenu key={i}>
                           <ContextMenuTrigger>
@@ -1508,6 +1897,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
                               customEvents={cEvents}
                               roomBookings={rBookings}
                               companyEvents={orgEvents}
+                              overtimeEvents={otEvents}
                               onClick={() => setSelectedDay(date)}
                               onDoubleClick={() => {
                                 setSelectedDay(date);
@@ -1533,7 +1923,8 @@ export const CalendarClient = React.memo(function CalendarClient() {
                                     dEvents.length +
                                     cEvents.length +
                                     rBookings.length +
-                                    orgEvents.length >
+                                    orgEvents.length +
+                                    otEvents.length >
                                   0
                                 ) {
                                   setShowDayDetails(true);
@@ -1657,6 +2048,15 @@ export const CalendarClient = React.memo(function CalendarClient() {
                 />
                 <span className="text-xs text-(--text-muted)">{t('rooms.calendar.legend')}</span>
               </div>
+              <div className="flex items-center gap-2">
+                <span
+                  className="w-3 h-3 rounded-full shrink-0"
+                  style={{ background: OVERTIME_COLOR }}
+                />
+                <span className="text-xs text-(--text-muted)">
+                  {t('overtime.title', 'Overtime')}
+                </span>
+              </div>
               {companyEvents.length > 0 && (
                 <div className="flex items-center gap-2">
                   <span
@@ -1707,7 +2107,9 @@ export const CalendarClient = React.memo(function CalendarClient() {
                   selectedDayDriverEvents.length === 0 &&
                   selectedDayCustomEvents.length === 0 &&
                   selectedDayRoomBookings.length === 0 &&
-                  selectedDayCompanyEvents.length === 0 ? (
+                  selectedDayCompanyEvents.length === 0 &&
+                  overtimeDateMap.get(format(selectedDay ?? new Date(), 'yyyy-MM-dd'))?.length ===
+                    0 ? (
                     <motion.div
                       key="empty"
                       initial={{ opacity: 0 }}
@@ -1785,6 +2187,53 @@ export const CalendarClient = React.memo(function CalendarClient() {
                           </motion.div>
                         );
                       })}
+
+                      {/* Overtime requests */}
+                      {(
+                        overtimeDateMap.get(format(selectedDay ?? new Date(), 'yyyy-MM-dd')) ?? []
+                      ).map((ot, i) => (
+                        <motion.div
+                          key={ot._id}
+                          initial={{ opacity: 0, y: 6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: i * 0.04 }}
+                          className="flex items-start gap-2.5 p-2.5 rounded-lg border cursor-pointer transition-colors"
+                          style={{
+                            borderColor: `${OVERTIME_COLOR}55`,
+                            background: `${OVERTIME_COLOR}0f`,
+                          }}
+                        >
+                          <div
+                            className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                            style={{ background: `${OVERTIME_COLOR}1f`, color: OVERTIME_COLOR }}
+                          >
+                            <Clock className="w-4 h-4" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-semibold text-(--text-primary) truncate">
+                              {ot.userName}
+                            </p>
+                            <p className="text-xs truncate" style={{ color: OVERTIME_COLOR }}>
+                              {ot.startTime} – {ot.endTime} ({ot.estimatedHours}h)
+                            </p>
+                            <p className="text-[11px] text-(--text-muted) mt-0.5 truncate">
+                              {ot.reason}
+                            </p>
+                          </div>
+                          <Badge
+                            variant={
+                              ot.status === 'approved'
+                                ? 'success'
+                                : ot.status === 'rejected'
+                                  ? 'destructive'
+                                  : 'warning'
+                            }
+                            className="text-[10px]"
+                          >
+                            {ot.status}
+                          </Badge>
+                        </motion.div>
+                      ))}
 
                       {/* Leave requests */}
                       {selectedDayLeaves.map((leave, i) => (

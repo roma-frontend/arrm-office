@@ -1,8 +1,31 @@
 ﻿// ── Leave Types ──────────────────────────────────────────────────────────────
-export type LeaveType = 'paid' | 'unpaid' | 'sick' | 'family' | 'doctor';
+// Mirrors the Convex schema union (convex/schema/leaves.ts) — every type that
+// can exist in the database must be representable in the UI.
+export type LeaveType =
+  | 'paid'
+  | 'unpaid'
+  | 'sick'
+  | 'family'
+  | 'doctor'
+  | 'day_off'
+  | 'maternity'
+  | 'paternity'
+  | 'study';
 export type LeaveStatus = 'pending' | 'approved' | 'rejected' | 'cancel_requested';
 export type EmployeeType = 'staff' | 'contractor';
 export type UserRole = 'admin' | 'manager' | 'employee';
+
+export const ALL_LEAVE_TYPES: readonly LeaveType[] = [
+  'paid',
+  'unpaid',
+  'sick',
+  'family',
+  'doctor',
+  'day_off',
+  'maternity',
+  'paternity',
+  'study',
+] as const;
 
 export const LEAVE_TYPE_LABELS: Record<LeaveType, string> = {
   paid: 'Paid Vacation',
@@ -10,6 +33,10 @@ export const LEAVE_TYPE_LABELS: Record<LeaveType, string> = {
   sick: 'Sick Leave',
   family: 'Family Leave',
   doctor: 'Doctor Visit',
+  day_off: 'Day Off',
+  maternity: 'Maternity Leave',
+  paternity: 'Paternity Leave',
+  study: 'Study Leave',
 };
 
 // Helper function to get translated leave type labels
@@ -20,6 +47,10 @@ export function getLeaveTypeLabel(type: LeaveType, t: (key: string) => string): 
     sick: 'leaveTypes.sick',
     family: 'leaveTypes.family',
     doctor: 'leaveTypes.doctor',
+    day_off: 'leaveTypes.day_off',
+    maternity: 'leaveTypes.maternity',
+    paternity: 'leaveTypes.paternity',
+    study: 'leaveTypes.study',
   };
   return t(labelKeys[type]);
 }
@@ -30,7 +61,17 @@ export const LEAVE_TYPE_COLORS: Record<LeaveType, string> = {
   sick: '#ef4444',
   family: '#10b981',
   doctor: '#06b6d4',
+  day_off: '#7c3aed',
+  maternity: '#ec4899',
+  paternity: '#6366f1',
+  study: '#64748b',
 };
+
+export const FALLBACK_LEAVE_TYPE_COLOR = '#94a3b8';
+
+export function getLeaveTypeColor(type: string): string {
+  return LEAVE_TYPE_COLORS[type as LeaveType] ?? FALLBACK_LEAVE_TYPE_COLOR;
+}
 
 export function getInitials(name: string): string {
   return name

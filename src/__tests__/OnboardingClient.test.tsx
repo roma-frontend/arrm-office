@@ -167,6 +167,7 @@ jest.mock('lucide-react', () => {
     'Users',
     'ClipboardList',
     'FileText',
+    'Pencil',
     'ChevronRight',
     'ChevronLeft',
   ];
@@ -342,6 +343,15 @@ describe('OnboardingClient', () => {
     expect(screen.getByText('Engineering Onboarding')).toBeInTheDocument();
     expect(screen.getByText('For new engineers')).toBeInTheDocument();
     expect(screen.getByText('2 tasks')).toBeInTheDocument();
+  });
+
+  it('opens an existing organization template for editing', () => {
+    render(<OnboardingClient />);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Templates' })[0]);
+    fireEvent.click(screen.getByRole('button', { name: 'Edit onboarding template' }));
+
+    expect(screen.getByText('Edit Template')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Engineering Onboarding')).toBeInTheDocument();
   });
 
   it('starts onboarding through the wizard', async () => {

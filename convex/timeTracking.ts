@@ -251,21 +251,49 @@ export const checkOut = mutation({
       endTime,
     );
 
+    // --- Overtime integration ---
+    // Check if there's an approved overtime request for today.
+    // If so, extend the scheduled end to the overtime end time.
+    // This means the employee is allowed to stay until the approved overtime end.
+    const approvedOvertime = await ctx.db
+      .query('overtimeRequests')
+      .withIndex('by_user_date', (q) => q.eq('userId', userId).eq('date', today))
+      .filter((q) => q.eq(q.field('status'), 'approved'))
+      .first();
+
+    let effectiveEnd = freshEnd;
+    let hasApprovedOvertime = false;
+    if (approvedOvertime) {
+      // Parse overtime end time and create a timestamp for it
+      const [otEndH, otEndM] = approvedOvertime.endTime.split(':').map(Number);
+      const armeniaDayStartUTC =
+        Date.UTC(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()) -
+        ARMENIA_OFFSET_MS;
+      const otEndTimestamp = armeniaDayStartUTC + ((otEndH ?? 0) * 60 + (otEndM ?? 0)) * 60 * 1000;
+      // Use the later of scheduled end and overtime end
+      effectiveEnd = Math.max(freshEnd, otEndTimestamp);
+      hasApprovedOvertime = true;
+    }
+
     // Patch the record with correct scheduled times (fixes old stale values)
     await ctx.db.patch(record._id, {
       scheduledStartTime: freshStart,
       scheduledEndTime: freshEnd,
+      // Store overtime info if applicable
+      ...(hasApprovedOvertime ? { overtimeMinutes: undefined } : {}),
     });
 
     // Calculate worked time
     const totalWorkedMinutes = Math.floor((now - record.checkInTime) / 1000 / 60);
 
-    // Calculate if early leave (compare against fresh correct scheduledEnd)
-    const isEarlyLeave = now < freshEnd;
-    const earlyLeaveMinutes = isEarlyLeave ? Math.floor((freshEnd - now) / 1000 / 60) : 0;
+    // Calculate if early leave (compare against effective end - including overtime)
+    const isEarlyLeave = now < effectiveEnd;
+    const earlyLeaveMinutes = isEarlyLeave ? Math.floor((effectiveEnd - now) / 1000 / 60) : 0;
 
-    // Calculate overtime
-    const overtimeMinutes = now > freshEnd ? Math.floor((now - freshEnd) / 1000 / 60) : 0;
+    // Calculate overtime: only counts if it exceeds the approved overtime end time
+    // If no overtime was approved, any time past scheduled end is overtime
+    // If overtime was approved, only time past the approved overtime end is extra overtime
+    const overtimeMinutes = now > effectiveEnd ? Math.floor((now - effectiveEnd) / 1000 / 60) : 0;
 
     // Update record
     await ctx.db.patch(record._id, {
@@ -278,6 +306,13 @@ export const checkOut = mutation({
       notes: args.notes,
       updatedAt: now,
     });
+
+    // If approved overtime was used, link it to the timeTracking record
+    if (hasApprovedOvertime && approvedOvertime) {
+      await ctx.db.patch(approvedOvertime._id, {
+        approvedTimeTrackingId: record._id,
+      });
+    }
 
     return record._id;
   },

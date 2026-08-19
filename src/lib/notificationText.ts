@@ -32,6 +32,8 @@ interface NotificationMeta {
   titleKey?: string;
   messageKey?: string;
   params?: Record<string, string | number>;
+  type?: string;
+  approved?: boolean;
 }
 
 /**
@@ -76,4 +78,14 @@ export function notificationTitle(t: TFunction, n: NotificationTextSource): stri
 export function notificationMessage(t: TFunction, n: NotificationTextSource): string {
   const { messageKey, params } = parseMeta(n.metadata);
   return translate(t, messageKey, params ?? {}) ?? n.message;
+}
+
+export function notificationSoundType(
+  notification: NotificationTextSource,
+): 'new_request' | 'approved' | 'rejected' {
+  const metadata = parseMeta(notification.metadata);
+  if (metadata.type === 'calendar_access_response') {
+    return metadata.approved ? 'approved' : 'rejected';
+  }
+  return 'new_request';
 }

@@ -2445,6 +2445,21 @@
       "emptyMonth": "Keine Urlaube in diesem Monat"
     }
   },
+  "calendarAccess": {
+    "calendarView": "Kalenderansicht",
+    "entireOrganization": "Gesamte Organisation",
+    "requestOrganization": "Organisationskalender anfragen",
+    "awaitingCeo": "Warten auf Genehmigung der Geschäftsleitung",
+    "pending": "Ihre Anfrage für den Organisationskalender wird bearbeitet",
+    "requested": "Zugriffsanfrage an die Organisationsleitung gesendet",
+    "approved": "Kalenderzugriff genehmigt",
+    "rejected": "Kalenderzugriff abgelehnt",
+    "personPending": "Dieser Mitarbeiter hat noch nicht geantwortet",
+    "personRequested": "Kalenderzugriffsanfrage gesendet",
+    "inbox": "Kalenderzugriffsanfragen",
+    "organizationRequest": "Fordert Zugriff auf den Organisationskalender an",
+    "personRequest": "Fordert Zugriff auf Ihren Kalender an"
+  },
   "rooms": {
     "title": "Besprechungsräume",
     "subtitle": "Belegung aller Büroräume in Echtzeit",

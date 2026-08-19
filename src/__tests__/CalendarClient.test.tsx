@@ -55,6 +55,10 @@ jest.mock('@/convex/_generated/api', () => ({
     },
     calendarEvents: {
       getByOrganization: { _name: 'getByOrganization' },
+      getMyAccessState: { _name: 'getMyAccessState' },
+      listPendingCalendarAccessRequests: { _name: 'listPendingCalendarAccessRequests' },
+      requestCalendarAccess: { _name: 'requestCalendarAccess' },
+      respondToCalendarAccess: { _name: 'respondToCalendarAccess' },
       remove: { _name: 'remove' },
     },
     events: {
@@ -63,6 +67,12 @@ jest.mock('@/convex/_generated/api', () => ({
     meetingRooms: {
       listBookings: { _name: 'listBookings' },
       listRooms: { _name: 'listRooms' },
+    },
+    users: {
+      getUsersByOrganizationId: { _name: 'getUsersByOrganizationId' },
+    },
+    overtime: {
+      getOvertimeForDateRange: { _name: 'getOvertimeForDateRange' },
     },
   },
 }));
@@ -107,7 +117,7 @@ jest.mock('@/lib/logger', () => ({
 }));
 
 jest.mock('sonner', () => ({
-  toast: { success: jest.fn(), error: jest.fn() },
+  toast: { success: jest.fn(), error: jest.fn(), info: jest.fn() },
 }));
 
 jest.mock('@/components/ui/button', () => ({
@@ -142,6 +152,22 @@ jest.mock('@/components/ui/badge', () => ({
       {children}
     </span>
   ),
+}));
+
+jest.mock('@/components/ui/select', () => ({
+  Select: ({ children, value, onValueChange }: any) => (
+    <select
+      aria-label="calendar-person-select"
+      value={value}
+      onChange={(event) => onValueChange(event.target.value)}
+    >
+      {children}
+    </select>
+  ),
+  SelectTrigger: ({ children }: any) => <>{children}</>,
+  SelectValue: () => null,
+  SelectContent: ({ children }: any) => <>{children}</>,
+  SelectItem: ({ children, value }: any) => <option value={value}>{children}</option>,
 }));
 
 jest.mock('@/components/ui/avatar', () => ({
@@ -307,6 +333,13 @@ const EMPTY_QUERIES = {
   getCompanyEvents: [],
   listBookings: [],
   listRooms: [],
+  getMyAccessState: { organization: 'approved', people: [] },
+  listPendingCalendarAccessRequests: [],
+  getOvertimeForDateRange: [],
+  getUsersByOrganizationId: [
+    { _id: 'user-1', name: 'Current User' },
+    { _id: 'user-2', name: 'Maya Chen', department: 'Finance' },
+  ],
 };
 
 const NO_GOOGLE_FETCH = () =>
@@ -424,6 +457,10 @@ describe('CalendarClient', () => {
       getCompanyEvents: [],
       listBookings: ROOM_BOOKINGS,
       listRooms: ROOMS,
+      getMyAccessState: { organization: 'approved', people: [] },
+      listPendingCalendarAccessRequests: [],
+      getOvertimeForDateRange: [],
+      getUsersByOrganizationId: EMPTY_QUERIES.getUsersByOrganizationId,
     };
     // The component fetches Google events on mount.
     (global as any).fetch = jest.fn().mockResolvedValue({
@@ -546,6 +583,59 @@ describe('CalendarClient', () => {
     expect(mineButton.getAttribute('data-active')).toBe('true');
     fireEvent.click(teamButton);
     expect(teamButton.getAttribute('data-active')).toBe('true');
+  });
+
+  it('requests approval instead of opening the organization calendar without access', async () => {
+    mockUser = { id: 'user-1', organizationId: 'org-1', role: 'employee' };
+    queryResults = {
+      ...queryResults,
+      getMyAccessState: { organization: 'none', people: [] },
+    };
+    render(<CalendarClient />);
+
+    expect(screen.queryByText(/^team \(/)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('calendar-person-select')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText('Request organization calendar'));
+
+    await waitFor(() => {
+      expect(mutationCalls).toEqual(
+        expect.arrayContaining([
+          {
+            name: 'requestCalendarAccess',
+            args: [{ organizationId: 'org-1', scope: 'organization' }],
+          },
+        ]),
+      );
+    });
+    expect(screen.getByText('My calendar')).toBeInTheDocument();
+  });
+
+  it('hides shared controls while the CEO request is pending', () => {
+    mockUser = { id: 'user-1', organizationId: 'org-1', role: 'employee' };
+    queryResults = {
+      ...queryResults,
+      getMyAccessState: { organization: 'pending', people: [] },
+    };
+    render(<CalendarClient />);
+
+    expect(screen.queryByText(/^team \(/)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('calendar-person-select')).not.toBeInTheDocument();
+    expect(screen.getByText('Awaiting CEO approval')).toBeDisabled();
+  });
+
+  it('filters the CEO-approved organization calendar by employee', async () => {
+    queryResults = {
+      ...queryResults,
+      getMyAccessState: { organization: 'approved', people: [] },
+    };
+    render(<CalendarClient />);
+
+    fireEvent.change(screen.getByLabelText('calendar-person-select'), {
+      target: { value: 'user-2' },
+    });
+
+    expect(screen.getByLabelText('calendar-person-select')).toHaveValue('user-2');
+    expect(mutationCalls.some((call) => call.name === 'requestCalendarAccess')).toBe(false);
   });
 
   it('shows the room availability strip and room legend', () => {
