@@ -30,6 +30,9 @@ import {
   Pencil,
   Trash2,
   Sparkles,
+  MessageCircle,
+  Send,
+  User,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQuery, useMutation, useAction } from '@/lib/convex-typed';
@@ -62,6 +65,7 @@ import { Label } from '@/components/ui/label';
 import { useAuthUser } from '@/store/useAuthStore';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { InterviewPrepDialog } from '@/components/recruitment/InterviewPrepDialog';
+import CandidateDatabase from '@/components/recruitment/CandidateDatabase';
 
 // ============ PIPELINE STAGES ============
 
@@ -678,6 +682,8 @@ function CandidateDetailDialog({
 }) {
   const { t } = useTranslation();
   const data = useQuery(api.recruitment.getCandidate, { applicationId });
+  const screeningResponses = useQuery(api.telegram.listScreeningResponses, { applicationId });
+  const sendHrReply = useAction(api.telegram.sendHrReply);
   const moveMutation = useMutation(api.recruitment.moveCandidate);
   const rejectMutation = useMutation(api.recruitment.rejectCandidate);
   const reviewCvMutation = useMutation(api.recruitment.reviewCv);
@@ -688,6 +694,22 @@ function CandidateDetailDialog({
     'phone' | 'video' | 'onsite' | 'technical' | 'hr' | undefined
   >(undefined);
   const [showPrep, setShowPrep] = useState(false);
+  const [replyText, setReplyText] = useState('');
+  const [sendingReply, setSendingReply] = useState(false);
+
+  const handleSendReply = async () => {
+    if (!replyText.trim()) return;
+    setSendingReply(true);
+    try {
+      await sendHrReply({ applicationId, message: replyText.trim() });
+      setReplyText('');
+      toast.success(t('recruitment.screening.replySent', 'Reply sent'));
+    } catch (e) {
+      toast.error(String(e));
+    } finally {
+      setSendingReply(false);
+    }
+  };
 
   const handleDelete = async () => {
     try {
@@ -789,6 +811,189 @@ function CandidateDetailDialog({
             {t('recruitment.candidate.appliedTo', 'Applied to')}:{''}
             <span className="font-medium">{vacancy.title}</span>
           </p>
+        )}
+
+        {/* Screening status */}
+        {data.stage === 'screening' && (
+          <div className="rounded-lg border border-(--warning-outline)/20 bg-(--warning-quiet)/30 p-3">
+            <p className="text-xs font-semibold mb-1 flex items-center gap-1.5">
+              <Clock className="h-3.5 w-3.5 text-(--warning-text)" />
+              {t('recruitment.screening.status', 'Screening Status')}
+            </p>
+            {data.screeningInstructions && (
+              <p className="text-xs text-muted-foreground mb-1">
+                {t('recruitment.screening.sent', 'Instructions sent via Telegram')}
+              </p>
+            )}
+            {data.screeningCompletedAt ? (
+              <Badge className="bg-(--success-quiet) text-(--success-text) text-[10px]">
+                ✅ {t('recruitment.screening.completed', 'Completed')} —{' '}
+                {new Date(data.screeningCompletedAt).toLocaleDateString()}
+              </Badge>
+            ) : data.screeningStartedAt ? (
+              <Badge className="bg-(--warning-quiet) text-(--warning-text) text-[10px]">
+                ⏳ {t('recruitment.screening.pending', 'Waiting for candidate...')}
+              </Badge>
+            ) : null}
+            {candidate?.telegramUsername && (
+              <p className="text-[10px] text-muted-foreground mt-1">
+                📱 @{candidate.telegramUsername}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Screening responses — conversation thread */}
+        {screeningResponses && screeningResponses.length > 0 && (
+          <div>
+            <p className="text-xs font-semibold mb-2 flex items-center gap-1.5">
+              <MessageCircle className="h-3.5 w-3.5" />
+              {t('recruitment.screening.responses', 'Screening Responses')} (
+              {screeningResponses.length})
+            </p>
+            <div className="space-y-2">
+              {screeningResponses.map((resp) => (
+                <div
+                  key={resp._id}
+                  className={`rounded-lg border p-2.5 ${
+                    resp.sender === 'hr'
+                      ? 'border-(--brand-outline)/20 bg-(--brand-quiet)/30'
+                      : 'border-[#0088cc]/20 bg-[#0088cc]/5'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5 mb-1">
+                    {resp.sender === 'hr' ? (
+                      <User className="h-3 w-3 text-(--brand-text)" />
+                    ) : (
+                      <Send className="h-3 w-3 text-[#0088cc]" />
+                    )}
+                    <span
+                      className={`text-[10px] font-medium ${
+                        resp.sender === 'hr' ? 'text-(--brand-text)' : 'text-[#0088cc]'
+                      }`}
+                    >
+                      {resp.sender === 'hr'
+                        ? t('recruitment.screening.hrReply', 'HR reply')
+                        : t('recruitment.screening.candidateReply', 'Candidate reply')}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground ml-auto">
+                      {new Date(resp.createdAt).toLocaleString()}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground whitespace-pre-wrap">
+                    {resp.message}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            {/* HR Reply Input */}
+            <div className="flex items-center gap-2 mt-2">
+              <Input
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendReply();
+                  }
+                }}
+                placeholder={t(
+                  'recruitment.screening.replyPlaceholder',
+                  'Type a reply to the candidate...',
+                )}
+                className="flex-1 text-xs"
+                disabled={sendingReply}
+              />
+              <Button
+                size="sm"
+                onClick={handleSendReply}
+                disabled={!replyText.trim() || sendingReply}
+                className="shrink-0"
+              >
+                {sendingReply ? (
+                  <ShieldLoader size="xs" variant="inline" />
+                ) : (
+                  <Send className="h-3 w-3" />
+                )}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* AI Screening Score */}
+        {screeningResponses && screeningResponses.length > 0 && screeningResponses[0]?.aiScore && (
+          <div
+            className={`rounded-lg border p-3 space-y-2 ${
+              screeningResponses[0].aiScore.verdict === 'pass'
+                ? 'border-(--success-outline)/20 bg-(--success-quiet)/30'
+                : screeningResponses[0].aiScore.verdict === 'fail'
+                  ? 'border-(--danger-outline)/20 bg-(--danger-quiet)/30'
+                  : 'border-(--warning-outline)/20 bg-(--warning-quiet)/30'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-3.5 w-3.5 text-(--brand-text)" />
+              <p className="text-xs font-semibold">
+                {t('recruitment.screening.aiScore', 'AI Screening Score')}
+              </p>
+              <Badge
+                className={`text-[10px] ml-auto ${
+                  screeningResponses[0].aiScore.verdict === 'pass'
+                    ? 'bg-(--success-quiet) text-(--success-text)'
+                    : screeningResponses[0].aiScore.verdict === 'fail'
+                      ? 'bg-(--danger-quiet) text-(--danger-text)'
+                      : 'bg-(--warning-quiet) text-(--warning-text)'
+                }`}
+              >
+                {screeningResponses[0].aiScore.verdict === 'pass'
+                  ? '✅ PASS'
+                  : screeningResponses[0].aiScore.verdict === 'fail'
+                    ? '❌ FAIL'
+                    : '⚠️ CONDITIONAL'}
+              </Badge>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="text-2xl font-bold">
+                {screeningResponses[0].aiScore.score}
+                <span className="text-xs text-muted-foreground">/10</span>
+              </div>
+              <p className="text-xs text-muted-foreground flex-1">
+                {screeningResponses[0].aiScore.reasoning}
+              </p>
+            </div>
+
+            {screeningResponses[0].aiScore.strengths.length > 0 && (
+              <div>
+                <p className="text-[10px] font-medium text-(--success-text) mb-0.5">
+                  {t('recruitment.screening.strengths', 'Strengths')}
+                </p>
+                <ul className="space-y-0.5">
+                  {screeningResponses[0].aiScore.strengths.map((s, i) => (
+                    <li key={i} className="text-[11px] text-muted-foreground flex gap-1.5">
+                      <span className="text-(--success-text)">+</span> {s}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {screeningResponses[0].aiScore.concerns.length > 0 && (
+              <div>
+                <p className="text-[10px] font-medium text-(--warning-text) mb-0.5">
+                  {t('recruitment.screening.concerns', 'Concerns')}
+                </p>
+                <ul className="space-y-0.5">
+                  {screeningResponses[0].aiScore.concerns.map((c, i) => (
+                    <li key={i} className="text-[11px] text-muted-foreground flex gap-1.5">
+                      <span className="text-(--warning-text)">!</span> {c}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
         )}
 
         {/* Resume */}
@@ -905,6 +1110,11 @@ function CandidateDetailDialog({
             <div key={iv._id} className="flex items-center gap-2 text-xs p-2 border rounded mb-1">
               <Calendar className="h-3 w-3 text-muted-foreground" />
               <span>{new Date(iv.scheduledAt).toLocaleString()}</span>
+              {iv.round && (
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                  R{iv.round}
+                </Badge>
+              )}
               <Badge variant="outline" className="text-xs">
                 {String(t(`recruitment.interviewType.${iv.type}`, iv.type))}
               </Badge>
@@ -1262,6 +1472,12 @@ export default function RecruitmentClient() {
           </TabsTrigger>
           <TabsTrigger
             className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] transition-all duration-200 shadow-sm font-medium flex items-center justify-center"
+            value="candidates"
+          >
+            {t('recruitment.tabs.candidates', 'Candidates')}
+          </TabsTrigger>
+          <TabsTrigger
+            className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] transition-all duration-200 shadow-sm font-medium flex items-center justify-center"
             value="pipeline"
           >
             {t('recruitment.tabs.pipeline', 'Pipeline')}
@@ -1281,6 +1497,11 @@ export default function RecruitmentClient() {
             )}
           </TabsTrigger>
         </TabsList>
+
+        {/* Candidates Database Tab */}
+        <TabsContent value="candidates" className="mt-4">
+          <CandidateDatabase organizationId={organizationId} />
+        </TabsContent>
 
         {/* Vacancies Tab */}
         <TabsContent value="vacancies" className="mt-4">
@@ -1692,7 +1913,12 @@ function EditVacancyDialog({
 
   if (!vacancy)
     return (
-      <SheetContent side="right" size="md" closeLabel={t('common.close', 'Close')}>
+      <SheetContent
+        side="right"
+        size="md"
+        label={t('recruitment.editVacancy', 'Edit Vacancy')}
+        closeLabel={t('common.close', 'Close')}
+      >
         <div className="flex justify-center p-8">
           <ShieldLoader />
         </div>

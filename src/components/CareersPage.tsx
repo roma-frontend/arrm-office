@@ -7,6 +7,7 @@ import { api } from '../../convex/_generated/api';
 import { Id } from '../../convex/_generated/dataModel';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
+import { toast } from 'sonner';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import '@/i18n/config';
@@ -660,6 +661,7 @@ function VacancyModal({
   const apply = useMutation(api.careers.applyToVacancy);
   const [showForm, setShowForm] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [portalToken, setPortalToken] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
@@ -690,7 +692,7 @@ function VacancyModal({
     setError('');
     setLoading(true);
     try {
-      await apply({
+      const res = await apply({
         vacancyId,
         name: form.name.trim(),
         email: form.email.trim(),
@@ -698,6 +700,7 @@ function VacancyModal({
         resumeText: form.resumeText.trim() || undefined,
         consentGiven: form.consent,
       });
+      setPortalToken(res?.candidateToken ?? null);
       setSubmitted(true);
       fetch('/api/telegram/notify', {
         method: 'POST',
@@ -713,9 +716,17 @@ function VacancyModal({
         }),
       }).catch(() => {});
     } catch (e: unknown) {
-      setError(
-        e instanceof Error ? e.message : t('common.somethingWentWrong', 'Something went wrong'),
-      );
+      const msg = e instanceof Error ? e.message : '';
+      if (/already applied/i.test(msg)) {
+        toast.warning(t('careers.alreadyApplied', 'You have already applied to this position'), {
+          description: t(
+            'careers.alreadyAppliedDesc',
+            'We already received your application — our team will review it soon.',
+          ),
+        });
+      } else {
+        setError(msg || t('common.somethingWentWrong', 'Something went wrong'));
+      }
     } finally {
       setLoading(false);
     }
@@ -772,6 +783,50 @@ function VacancyModal({
                 "Thank you for your interest. We'll review your application and get back to you soon.",
               )}
             </p>
+            {portalToken && (
+              <div
+                className="mx-auto mt-6 max-w-md rounded-xl border p-4 space-y-3 text-left"
+                style={{ borderColor: 'var(--brand-outline)', background: 'var(--brand-quiet)' }}
+              >
+                <p className="text-xs font-semibold" style={{ color: 'var(--brand-text)' }}>
+                  🔗 {t('careers.portalTitle', 'Your Personal Dashboard')}
+                </p>
+                <div className="flex items-center gap-2">
+                  <input
+                    readOnly
+                    value={`${window.location.origin}/candidate/${portalToken}`}
+                    className="flex-1 text-xs font-mono px-3 py-2 rounded-lg border bg-background text-foreground"
+                    style={{ borderColor: 'var(--brand-outline)' }}
+                  />
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(
+                        `${window.location.origin}/candidate/${portalToken}`,
+                      );
+                    }}
+                    className="px-3 py-2 rounded-lg text-xs font-medium shrink-0"
+                    style={{ background: 'var(--brand)', color: 'var(--brand-contrast)' }}
+                  >
+                    {t('careers.copy', 'Copy')}
+                  </button>
+                </div>
+                <a
+                  href={`https://t.me/${
+                    process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'hremailbot'
+                  }?start=cand_${portalToken}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-xs font-semibold text-white transition-transform hover:scale-[1.02]"
+                  style={{ background: 'linear-gradient(135deg, #229ED9, #2AABEE)' }}
+                >
+                  ✈️{' '}
+                  {t(
+                    'careers.connectTelegram',
+                    'Connect Telegram — screening, interview links & updates',
+                  )}
+                </a>
+              </div>
+            )}
             <button
               onClick={onClose}
               className="mt-6 px-6 py-2.5 rounded-xl font-medium text-sm transition-all hover:scale-105"

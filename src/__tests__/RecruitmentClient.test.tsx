@@ -58,6 +58,10 @@ jest.mock('@/convex/_generated/api', () => ({
     },
     recruitmentAI: { generateVacancyDescription: { _name: 'generateVacancyDescription' } },
     emailValidation: { validateEmail: { _name: 'validateEmail' } },
+    telegram: {
+      listScreeningResponses: { _name: 'listScreeningResponses' },
+      sendHrReply: { _name: 'sendHrReply' },
+    },
   },
 }));
 

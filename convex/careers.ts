@@ -2,6 +2,7 @@ import { query, mutation } from './_generated/server';
 import { v } from 'convex/values';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { notify } from './lib/notify';
+import { generateCandidateToken } from './candidatePortal';
 
 /** Ceiling for an attached CV — matches the document upload limit. */
 const MAX_CV_BYTES = 10 * 1024 * 1024;
@@ -230,6 +231,7 @@ export const applyToVacancy = mutation({
           }
         : {}),
       createdBy: vacancy.createdBy, // system attribution
+      candidateToken: generateCandidateToken(),
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
@@ -271,6 +273,30 @@ export const applyToVacancy = mutation({
       });
     }
 
-    return { success: true, applicationId };
+    // Read back the application to get the candidate token
+    const createdApp = await ctx.db.get(applicationId);
+    const candidateToken = createdApp?.candidateToken;
+
+    // 🤖 Send portal link via Telegram if candidate has a linked account
+    if (candidateToken && candidate.telegramChatId) {
+      const botToken = process.env.TELEGRAM_BOT_TOKEN;
+      if (botToken) {
+        const portalUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/candidate/${candidateToken}`;
+        await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: candidate.telegramChatId,
+            text: `📋 Заявка принята! / Application received!\n\nВакансия: ${vacancy.title}\nСтатус: Ожидание\n\nОткройте ваш кабинет, чтобы следить за процессом:\nOpen your dashboard to track progress:`,
+            parse_mode: 'HTML',
+            reply_markup: {
+              inline_keyboard: [[{ text: '🚀 Открыть кабинет / Open Dashboard', url: portalUrl }]],
+            },
+          }),
+        }).catch(() => {}); // Non-critical
+      }
+    }
+
+    return { success: true, applicationId, candidateToken };
   },
 });

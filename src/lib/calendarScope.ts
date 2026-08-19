@@ -18,9 +18,6 @@ export type CalendarScope = (typeof CALENDAR_SCOPES)[number];
 /** Persisted so the choice survives navigation and reloads. */
 export const CALENDAR_SCOPE_STORAGE_KEY = 'strata:calendar-scope';
 
-/** Roles that manage other people default to the shared view. */
-const TEAM_FIRST_ROLES = new Set(['admin', 'supervisor', 'superadmin']);
-
 export interface ScopeViewer {
   id: string;
   name?: string;
@@ -149,8 +146,13 @@ export function isCalendarScope(value: unknown): value is CalendarScope {
   return typeof value === 'string' && (CALENDAR_SCOPES as readonly string[]).includes(value);
 }
 
-export function defaultScopeForRole(role?: string): CalendarScope {
-  return role && TEAM_FIRST_ROLES.has(role) ? 'team' : 'mine';
+/**
+ * Everyone starts on their own calendar, including admins. The shared view is
+ * opt-in: it appears once an employee is picked in the shared-calendar dialog
+ * or, for the organization head, through the "entire organization" option.
+ */
+export function defaultScopeForRole(_role?: string): CalendarScope {
+  return 'mine';
 }
 
 /** Reads the persisted scope; returns `null` when absent or unusable. */

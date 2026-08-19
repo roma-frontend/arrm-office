@@ -46,6 +46,8 @@ export interface PayrollInput {
    * 1974). Skips contributions marked `pensionExemptible` in the rule.
    */
   pensionExempt?: boolean;
+  /** Overtime pay multiplier from overtimeSettings (default 1.5; 0 = comp leave). */
+  overtimeMultiplier?: number;
 }
 
 function round2(n: number): number {
@@ -160,11 +162,14 @@ export function calculatePayroll(input: PayrollInput): PayrollCalculation {
     hourlyRate = 0,
     taxOverride = null,
     pensionExempt = false,
+    overtimeMultiplier = 1.5,
   } = input;
   const rule = applyTaxRuleOverride(getTaxRule(country), taxOverride);
 
   const overtimePay =
-    overtimeHours > 0 && hourlyRate > 0 ? calculateOvertimePay(overtimeHours, hourlyRate) : 0;
+    overtimeHours > 0 && hourlyRate > 0
+      ? calculateOvertimePay(overtimeHours, hourlyRate, overtimeMultiplier)
+      : 0;
 
   const grossSalary = baseSalary + bonuses + overtimePay;
 
@@ -194,6 +199,7 @@ export interface GrossFromNetInput {
   hourlyRate?: number;
   taxOverride?: TaxRuleOverride | null;
   pensionExempt?: boolean;
+  overtimeMultiplier?: number;
 }
 
 /**
@@ -212,10 +218,13 @@ export function computeGrossFromNet(input: GrossFromNetInput): PayrollCalculatio
     hourlyRate = 0,
     taxOverride = null,
     pensionExempt = false,
+    overtimeMultiplier = 1.5,
   } = input;
 
   const overtimePay =
-    overtimeHours > 0 && hourlyRate > 0 ? calculateOvertimePay(overtimeHours, hourlyRate) : 0;
+    overtimeHours > 0 && hourlyRate > 0
+      ? calculateOvertimePay(overtimeHours, hourlyRate, overtimeMultiplier)
+      : 0;
   const fixedAddon = bonuses + overtimePay;
 
   // netForBase(base) using the same forward engine.
@@ -228,6 +237,7 @@ export function computeGrossFromNet(input: GrossFromNetInput): PayrollCalculatio
       hourlyRate,
       taxOverride,
       pensionExempt,
+      overtimeMultiplier,
     }).netSalary;
 
   if (net <= 0) {
@@ -239,6 +249,7 @@ export function computeGrossFromNet(input: GrossFromNetInput): PayrollCalculatio
       hourlyRate,
       taxOverride,
       pensionExempt,
+      overtimeMultiplier,
     });
   }
 
@@ -271,6 +282,7 @@ export function computeGrossFromNet(input: GrossFromNetInput): PayrollCalculatio
     hourlyRate,
     taxOverride,
     pensionExempt,
+    overtimeMultiplier,
   });
 }
 

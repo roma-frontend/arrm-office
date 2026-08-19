@@ -98,7 +98,7 @@ export const getPendingReviewCount = query({
     }
 
     // Supervisor: review tasks created inside their reporting subtree.
-    const subordinates = await getSubordinateIds(ctx, caller._id);
+    const subordinates = await getSubordinateIds(ctx, caller._id, org);
     const people = [caller._id, ...subordinates];
     let count = 0;
     for (const person of people) {

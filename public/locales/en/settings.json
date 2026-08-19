@@ -344,6 +344,10 @@
     "subscriptionExpiring": "Subscription expiring",
     "newMessage": "New message",
     "mention": "You were mentioned",
+    "screeningComplete": "Screening completed",
+    "candidateAdded": "New candidate added",
+    "applicationReceived": "New application received",
+    "screeningResponse": "New screening response",
     "markAllAsRead": "Mark all as read"
   },
   "navbar": {
@@ -429,6 +433,8 @@
     "leaveSettings": "Leave Settings",
     "holidays": "Holidays",
     "leaveBalances": "Leave Balances",
+    "overtimeSettings": "Overtime Settings",
+    "recruitment": "Recruitment",
     "integrations": "Integrations"
   },
   "admin": {
@@ -472,6 +478,35 @@
       "saved": "Balances updated successfully",
       "editTitle": "Edit Balances",
       "noEmployees": "No employees found"
+    },
+    "overtimeSettings": {
+      "title": "Overtime Settings",
+      "subtitle": "Configure overtime limits, payment and approvals — synced with requests and payroll",
+      "general": "General",
+      "enabled": "Overtime enabled",
+      "enabledDesc": "When off, employees cannot submit overtime requests",
+      "requireApproval": "Require approval",
+      "requireApprovalDesc": "When off, requests are approved automatically",
+      "notifySupervisor": "Notify supervisor",
+      "notifySupervisorDesc": "Send a notification to the supervisor on new requests",
+      "notifyHR": "Notify HR",
+      "notifyHRDesc": "Copy HR on new overtime requests",
+      "limits": "Hour limits",
+      "limitsDesc": "Empty = unlimited",
+      "perDay": "Per day",
+      "perWeek": "Per week",
+      "perMonth": "Per month",
+      "payment": "Payment",
+      "paymentType": "Payment type",
+      "payDoubleRate": "Paid at overtime rate",
+      "payCompLeave": "Compensatory leave (unpaid)",
+      "payPolicy": "According to company policy",
+      "overtimeRate": "Overtime rate (×)",
+      "rateHint": "Multiplier applied to the hourly rate in payroll (empty = organization default)",
+      "compLeaveHint": "Overtime is compensated with time off — payroll adds no overtime pay.",
+      "saved": "Overtime settings saved",
+      "invalidRate": "Rate must be between 1 and 10",
+      "invalidLimit": "Limits must be positive numbers"
     },
     "integrations": {
       "title": "Integrations",

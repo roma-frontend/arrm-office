@@ -174,7 +174,7 @@ export const createTask = mutation({
 
     // Supervisors may only assign within their own reporting subtree.
     if (caller.role === 'supervisor') {
-      const subordinates = await getSubordinateIds(ctx, caller._id);
+      const subordinates = await getSubordinateIds(ctx, caller._id, organizationId);
       if (args.assignedTo !== caller._id && !subordinates.includes(args.assignedTo)) {
         throw new Error('You can only assign tasks to people in your team');
       }
@@ -326,6 +326,17 @@ export const updateTaskStatus = mutation({
     // out of their column.
     const caller = await getAuthCaller(ctx);
     if (caller) {
+      // Org boundary first: a caller from another organization must not move
+      // this task, whatever their role or place in the reporting line. Legacy
+      // tasks without an organizationId stay reachable to any org.
+      if (
+        !isSuperadmin(caller) &&
+        caller.organizationId &&
+        task.organizationId &&
+        task.organizationId !== caller.organizationId
+      ) {
+        throw new Error('Task belongs to another organization');
+      }
       const isStaff =
         caller.role === 'admin' || caller.role === 'supervisor' || isSuperadmin(caller);
       const isAssignee = caller._id === task.assignedTo;
@@ -334,7 +345,7 @@ export const updateTaskStatus = mutation({
       // did not assign it (e.g. a task the report created for themselves).
       let isSupervisorOfAssignee = false;
       if (caller.role === 'supervisor' && !isAssignee && !isAssigner) {
-        const subordinates = await getSubordinateIds(ctx, caller._id);
+        const subordinates = await getSubordinateIds(ctx, caller._id, caller.organizationId);
         isSupervisorOfAssignee = subordinates.includes(task.assignedTo);
       }
       if (!isStaff && !isAssignee && !isAssigner && !isSupervisorOfAssignee) {
@@ -608,7 +619,11 @@ export const getTasksAssignedBy = query({
     // manager sees everything their branch produced.
     let subtreeTasks: Doc<'tasks'>[] = [];
     if (!userIsSuperadmin) {
-      const subordinates = await getSubordinateIds(ctx, args.supervisorId);
+      const subordinates = await getSubordinateIds(
+        ctx,
+        args.supervisorId,
+        supervisor.organizationId,
+      );
       if (subordinates.length > 0) {
         const perPerson = await Promise.all(
           subordinates.map((id) =>
@@ -741,14 +756,21 @@ export const getUsersForAssignment = query({
     // unscoped `query('users')` that leaked every user of every tenant.
     if (!requester) return [];
 
-    // Org-scoped roster; cross-tenant superadmins (no organizationId) fall
-    // back to every user, matching how they operate across tenants.
-    const roster = requester.organizationId
-      ? await ctx.db
-          .query('users')
-          .withIndex('by_org', (q) => q.eq('organizationId', requester.organizationId))
-          .take(DEFAULT_LIST_CAP)
-      : await ctx.db.query('users').take(DEFAULT_LIST_CAP);
+    // Org-scoped roster. Cross-tenant superadmins (no organizationId) fall
+    // back to every user, matching how they operate across tenants. Anyone
+    // else without an organization is a data hole — they get an empty roster
+    // rather than every tenant's user list.
+    let roster: Doc<'users'>[];
+    if (requester.organizationId) {
+      roster = await ctx.db
+        .query('users')
+        .withIndex('by_org', (q) => q.eq('organizationId', requester.organizationId))
+        .take(DEFAULT_LIST_CAP);
+    } else if (isSuperadmin(requester)) {
+      roster = await ctx.db.query('users').take(DEFAULT_LIST_CAP);
+    } else {
+      return [];
+    }
 
     // Return all active users (employees, supervisors, admins, AND drivers)
     // Anyone in the organization can be assigned a task
@@ -774,7 +796,7 @@ export const getUsersForAssignment = query({
     // reporting lines are not filled in (no direct reports), fall back to
     // people in the same department — never the whole organization.
     if (requester.role === 'supervisor') {
-      const subordinates = await getSubordinateIds(ctx, requester._id);
+      const subordinates = await getSubordinateIds(ctx, requester._id, requester.organizationId);
       if (subordinates.length > 0) {
         const subtree = new Set<string>(subordinates);
         candidates = candidates.filter((u) => subtree.has(u._id));

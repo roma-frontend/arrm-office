@@ -48,7 +48,10 @@
       "lastWebhook": "Letzte Zustellung",
       "copy": "Kopieren",
       "copied": "Kopiert",
-      "copyFailed": "Kopieren fehlgeschlagen — Text markieren und manuell kopieren"
+      "copyFailed": "Kopieren fehlgeschlagen — Text markieren und manuell kopieren",
+      "telegramBotToken": "Bot-Token",
+      "telegramBotTokenHint": "Holen Sie sich Ihr Token von @BotFather bei Telegram",
+      "telegramWebhookHint": "Speichern Sie zuerst, dann richten Sie die Webhook-URL in BotFather ein"
     },
     "billing": "Abrechnung",
     "usage": "Nutzung",
@@ -111,6 +114,35 @@
       "balanceEditable": "Guthaben bearbeitbar",
       "daysPerYear": "Tage pro Jahr"
     },
+    "overtimeSettings": {
+      "title": "Überstunden-Einstellungen",
+      "subtitle": "Limits, Vergütung und Genehmigungen — synchron mit Anträgen und Lohnabrechnung",
+      "general": "Allgemein",
+      "enabled": "Überstunden aktiviert",
+      "enabledDesc": "Wenn deaktiviert, können Mitarbeiter keine Überstundenanträge stellen",
+      "requireApproval": "Genehmigung erforderlich",
+      "requireApprovalDesc": "Wenn deaktiviert, werden Anträge automatisch genehmigt",
+      "notifySupervisor": "Vorgesetzten benachrichtigen",
+      "notifySupervisorDesc": "Vorgesetzten bei neuen Anträgen benachrichtigen",
+      "notifyHR": "HR benachrichtigen",
+      "notifyHRDesc": "HR bei neuen Überstundenanträgen in Kopie setzen",
+      "limits": "Stundenlimits",
+      "limitsDesc": "Leer = unbegrenzt",
+      "perDay": "Pro Tag",
+      "perWeek": "Pro Woche",
+      "perMonth": "Pro Monat",
+      "payment": "Vergütung",
+      "paymentType": "Vergütungsart",
+      "payDoubleRate": "Bezahlung mit Überstundensatz",
+      "payCompLeave": "Freizeitausgleich (unbezahlt)",
+      "payPolicy": "Nach Unternehmensrichtlinie",
+      "overtimeRate": "Überstundensatz (×)",
+      "rateHint": "Multiplikator auf den Stundensatz in der Lohnabrechnung (leer = Standard der Organisation)",
+      "compLeaveHint": "Überstunden werden per Freizeitausgleich vergütet — keine Überstundenzahlung.",
+      "saved": "Überstunden-Einstellungen gespeichert",
+      "invalidRate": "Satz muss zwischen 1 und 10 liegen",
+      "invalidLimit": "Limits müssen positive Zahlen sein"
+    },
     "leaveBalances": {
       "title": "Urlaubsguthaben",
       "subtitle": "Urlaubsguthaben der Mitarbeiter anzeigen und bearbeiten",
@@ -122,6 +154,39 @@
       "editTitle": "Guthaben bearbeiten",
       "reason": "Grund für die Anpassung *",
       "reasonPlaceholder": "z.B. Jährliche Gutschrift, Korrektur"
+    },
+    "recruitment": {
+      "tabs": {
+        "candidates": "Kandidaten"
+      },
+      "candidates": {
+        "search": "Suche nach Name, E-Mail oder Telefon...",
+        "filters": "Filter",
+        "empty": "Noch keine Kandidaten",
+        "noResults": "Keine Kandidaten gefunden",
+        "hint": "Kandidaten erscheinen hier, wenn sie sich bewerben",
+        "block": "Kandidat blockieren",
+        "unblock": "Entblockieren",
+        "blocked": "Blockiert",
+        "applications": "Bewerbungen",
+        "application": "Bewerbung",
+        "exportCsv": "CSV exportieren",
+        "exported": "CSV exportiert"
+      },
+      "screening": {
+        "status": "Screening-Status",
+        "sent": "Anweisungen per Telegram gesendet",
+        "completed": "Abgeschlossen",
+        "pending": "Warte auf Kandidaten...",
+        "responses": "Screening-Antworten",
+        "candidateReply": "Kandidat-Antwort",
+        "aiScore": "KI-Screening-Bewertung",
+        "strengths": "Stärken",
+        "concerns": "Bedenken",
+        "hrReply": "HR-Antwort",
+        "replyPlaceholder": "Antwort an den Kandidaten schreiben...",
+        "replySent": "Antwort via Telegram gesendet"
+      }
     },
     "integrationProviders": {
       "lucky_carrot": {

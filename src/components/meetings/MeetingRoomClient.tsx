@@ -16,18 +16,14 @@
  * room's organization (Phase 1; guest-by-link lands with the lobby in Phase 2).
  */
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { useAction, useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Room, type LocalVideoTrack } from 'livekit-client';
-import {
-  LiveKitRoom,
-  VideoConference,
-  RoomAudioRenderer,
-  usePreviewTracks,
-} from '@livekit/components-react';
+import { LiveKitRoom, RoomAudioRenderer, usePreviewTracks } from '@livekit/components-react';
+import { CustomConference } from './CustomConference';
 import type { LocalUserChoices } from '@livekit/components-core';
 import {
   Loader2,
@@ -75,8 +71,8 @@ function CameraPreview({
     <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-black">
       <video ref={ref} muted playsInline className="h-full w-full object-cover" />
       {muted && (
-        <div className="absolute inset-0 flex items-center justify-center bg-(--surface-1)/60 backdrop-blur-sm">
-          <VideoOff className="h-8 w-8 text-(--text-muted)" />
+        <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <VideoOff className="h-8 w-8 text-white/50" />
         </div>
       )}
     </div>
@@ -119,9 +115,19 @@ export function MeetingRoomClient() {
     ensureAppNamespaces();
   }, []);
 
-  const previewTracks = usePreviewTracks({ audio: true, video: true }, () => {
+  // usePreviewTracks re-runs its acquire effect whenever the identity of its
+  // onError callback changes. An inline arrow therefore caused an infinite
+  // stop→getUserMedia→setState→render loop — the camera LED flickering non-stop.
+  // Keep the callback (and options) stable, and drop the preview devices while
+  // in the call so the Room never fights the preview for the camera.
+  const handlePreviewError = useCallback(() => {
     /* device error — the join buttons still work; audio/video just stay off */
-  });
+  }, []);
+  const previewOptions = useMemo(
+    () => (joined ? { audio: false, video: false } : { audio: true, video: true }),
+    [joined],
+  );
+  const previewTracks = usePreviewTracks(previewOptions, handlePreviewError);
   const previewVideo = previewTracks?.find((track) => track.kind === 'video') as
     | LocalVideoTrack
     | undefined;
@@ -152,6 +158,10 @@ export function MeetingRoomClient() {
           videoDeviceId: '',
           audioDeviceId: '',
         };
+        // Hand the devices over to the Room: stop the pre-join preview first so
+        // the camera is never double-held (LED flicker / NotReadableError).
+        (previewTracks ?? []).forEach((tr) => tr.stop());
+
         // The official LiveKit pattern: prepare the Room with the pre-join
         // choices, then hand the instance to <LiveKitRoom connect>.
         const newRoom = new Room({ adaptiveStream: true, dynacast: true });
@@ -170,18 +180,14 @@ export function MeetingRoomClient() {
         setJoining(false);
       }
     },
-    [roomName, getJoinToken, displayName, user?.name, micOn, camOn],
+    [roomName, getJoinToken, displayName, user?.name, micOn, camOn, previewTracks],
   );
 
   const handleDisconnect = useCallback(() => {
     roomRef.current?.disconnect();
-    setJoined(false);
-    setToken(undefined);
-    setServerUrl(undefined);
-    setRoom(undefined);
     roomRef.current = null;
-    setElapsed(0);
-  }, []);
+    router.push('/calendar');
+  }, [router]);
 
   // The kit's `onConnected` fires with no args — read the role from our own
   // room instance (the token's metadata is parsed server-side on the local
@@ -256,7 +262,7 @@ export function MeetingRoomClient() {
   // ── Loading / missing states ──────────────────────────────────────────────
   if (meeting === undefined) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-(--canvas)">
+      <div className="flex min-h-screen items-center justify-center bg-[#0a0c12]">
         <Skeleton className="h-64 w-[min(92vw,720px)] rounded-3xl" />
       </div>
     );
@@ -264,15 +270,13 @@ export function MeetingRoomClient() {
 
   if (meeting === null) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-(--canvas) p-6">
-        <div className="w-full max-w-md rounded-3xl border border-(--border-default) bg-(--surface-1) p-8 text-center shadow-xl">
-          <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl bg-(--danger-quiet)">
-            <ShieldCheck className="h-7 w-7 text-(--danger-text)" />
+      <div className="flex min-h-screen items-center justify-center bg-[#0a0c12] p-6">
+        <div className="w-full max-w-md rounded-3xl border border-white/10 bg-white/[0.04] p-8 text-center shadow-2xl shadow-black/50">
+          <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl bg-red-500/15">
+            <ShieldCheck className="h-7 w-7 text-red-300" />
           </div>
-          <h1 className="text-lg font-semibold text-(--text-primary)">
-            {t('meetings.notFoundTitle')}
-          </h1>
-          <p className="mt-2 text-sm text-(--text-muted)">{t('meetings.notFoundDesc')}</p>
+          <h1 className="text-lg font-semibold text-white">{t('meetings.notFoundTitle')}</h1>
+          <p className="mt-2 text-sm text-white/60">{t('meetings.notFoundDesc')}</p>
           <Button className="mt-6 w-full" onClick={() => router.push('/dashboard')}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             {t('meetings.backToDashboard')}
@@ -287,23 +291,19 @@ export function MeetingRoomClient() {
   // ── In-call ───────────────────────────────────────────────────────────────
   if (joined && token && serverUrl && room) {
     return (
-      <div className="lk-room flex min-h-screen flex-col bg-(--canvas)">
+      <div className="flex h-dvh flex-col overflow-hidden bg-[#0a0c12] text-white">
         {/* Header */}
-        <header className="flex flex-wrap items-center gap-3 border-b border-(--border-default) bg-(--surface-1)/80 px-4 py-3 backdrop-blur">
+        <header className="flex flex-wrap items-center gap-3 border-b border-white/10 bg-white/[0.04] px-4 py-3 backdrop-blur">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-(--brand-quiet)">
-              <Video className="h-5 w-5 text-(--brand)" />
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-(--brand)/20">
+              <Video className="h-5 w-5 text-[#608ffa]" />
             </div>
             <div className="min-w-0">
-              <h1 className="truncate text-sm font-semibold text-(--text-primary)">
-                {meetingTitle}
-              </h1>
-              <div className="flex items-center gap-2 text-xs text-(--text-muted)">
+              <h1 className="truncate text-sm font-semibold text-white">{meetingTitle}</h1>
+              <div className="flex items-center gap-2 text-xs text-white/60">
                 <span className="inline-flex items-center gap-1">
                   <Radio
-                    className={`h-3 w-3 ${
-                      statusKey === 'live' ? 'text-(--success-text) animate-pulse' : ''
-                    }`}
+                    className={`h-3 w-3 ${statusKey === 'live' ? 'text-emerald-400 animate-pulse' : ''}`}
                   />
                   {t(`meetings.status.${statusKey}`)}
                 </span>
@@ -318,9 +318,14 @@ export function MeetingRoomClient() {
             </div>
           </div>
           <div className="ml-auto flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={copyLink} className="gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={copyLink}
+              className="gap-2 border-white/15 bg-white/5 text-white/80 hover:bg-white/10"
+            >
               {linkCopied ? (
-                <Check className="h-4 w-4 text-(--success-text)" />
+                <Check className="h-4 w-4 text-emerald-400" />
               ) : (
                 <Link2 className="h-4 w-4" />
               )}
@@ -328,7 +333,12 @@ export function MeetingRoomClient() {
                 {linkCopied ? t('meetings.copied') : t('meetings.copyLink')}
               </span>
             </Button>
-            <Button variant="destructive" size="sm" onClick={handleDisconnect} className="gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDisconnect}
+              className="gap-2 border-red-500/30 bg-red-500/15 text-red-300 hover:bg-red-500/25"
+            >
               <PhoneOff className="h-4 w-4" />
               {t('meetings.leave')}
             </Button>
@@ -336,7 +346,7 @@ export function MeetingRoomClient() {
         </header>
 
         {/* Room */}
-        <main className="flex-1 overflow-hidden">
+        <main className="min-h-0 flex-1 overflow-hidden">
           <LiveKitRoom
             room={room}
             token={token}
@@ -344,10 +354,11 @@ export function MeetingRoomClient() {
             connect
             onConnected={onConnected}
             onDisconnected={onDisconnected}
+            onError={(error) => toast.error(`${t('meetings.joinError')} — ${String(error)}`)}
             className="h-full"
             data-lk-theme="default"
           >
-            <VideoConference />
+            <CustomConference onLeave={handleDisconnect} />
             <RoomAudioRenderer />
           </LiveKitRoom>
         </main>
@@ -357,7 +368,7 @@ export function MeetingRoomClient() {
 
   // ── Pre-join ──────────────────────────────────────────────────────────────
   return (
-    <div className="flex min-h-screen items-center justify-center bg-(--canvas) p-4 sm:p-6">
+    <div className="flex min-h-screen items-center justify-center bg-[#0a0c12] p-4 sm:p-6">
       <div className="grid w-full max-w-4xl gap-6 lg:grid-cols-[1.2fr_1fr]">
         {/* Preview */}
         <div className="order-2 lg:order-1">
@@ -366,7 +377,7 @@ export function MeetingRoomClient() {
             <Button
               variant="outline"
               size="lg"
-              className="justify-center gap-2"
+              className="justify-center gap-2 border-white/15 bg-white/5 text-white/80 hover:bg-white/10"
               onClick={() => setMicOn((v) => !v)}
             >
               {micOn ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
@@ -375,7 +386,7 @@ export function MeetingRoomClient() {
             <Button
               variant="outline"
               size="lg"
-              className="justify-center gap-2"
+              className="justify-center gap-2 border-white/15 bg-white/5 text-white/80 hover:bg-white/10"
               onClick={() => setCamOn((v) => !v)}
             >
               {camOn ? <Video className="h-4 w-4" /> : <VideoOff className="h-4 w-4" />}
@@ -386,30 +397,30 @@ export function MeetingRoomClient() {
 
         {/* Join card */}
         <div className="order-1 flex flex-col justify-center lg:order-2">
-          <div className="rounded-3xl border border-(--border-default) bg-(--surface-1) p-6 shadow-xl sm:p-8">
-            <div className="mb-5 flex size-12 items-center justify-center rounded-2xl bg-(--brand-quiet)">
-              <Video className="h-6 w-6 text-(--brand)" />
+          <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-2xl shadow-black/50 sm:p-8">
+            <div className="mb-5 flex size-12 items-center justify-center rounded-2xl bg-(--brand)/20">
+              <Video className="h-6 w-6 text-[#608ffa]" />
             </div>
-            <h1 className="text-xl font-semibold text-(--text-primary)">{meetingTitle}</h1>
-            <p className="mt-1 text-sm text-(--text-muted)">
+            <h1 className="text-xl font-semibold text-white">{meetingTitle}</h1>
+            <p className="mt-1 text-sm text-white/60">
               {meeting.event?.description || t('meetings.joinHint')}
             </p>
 
-            <div className="mt-5 flex items-center gap-2 rounded-xl bg-(--surface-2) px-3 py-2.5">
-              <span className="shrink-0 text-xs font-medium uppercase tracking-wider text-(--text-muted)">
+            <div className="mt-5 flex items-center gap-2 rounded-xl bg-white/[0.06] px-3 py-2.5">
+              <span className="shrink-0 text-xs font-medium uppercase tracking-wider text-white/50">
                 {t('meetings.name')}
               </span>
               <input
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 maxLength={60}
-                className="w-full bg-transparent text-sm text-(--text-primary) outline-none placeholder:text-(--text-muted)/60"
+                className="w-full bg-transparent text-sm text-white outline-none placeholder:text-white/40"
                 placeholder={t('meetings.namePlaceholder')}
               />
             </div>
 
             {joinError && (
-              <div className="mt-4 rounded-xl border border-(--danger-outline) bg-(--danger-quiet) px-3 py-2.5 text-sm text-(--danger-text)">
+              <div className="mt-4 rounded-xl border border-red-500/30 bg-red-500/15 px-3 py-2.5 text-sm text-red-300">
                 {t('meetings.joinError')} — {joinError}
               </div>
             )}
@@ -431,7 +442,7 @@ export function MeetingRoomClient() {
               <Button
                 variant="outline"
                 size="lg"
-                className="justify-center gap-2"
+                className="justify-center gap-2 border-white/15 bg-white/5 text-white/80 hover:bg-white/10"
                 disabled={joining}
                 onClick={() => handleJoin(false)}
               >
@@ -440,7 +451,7 @@ export function MeetingRoomClient() {
               </Button>
             </div>
 
-            <p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-(--text-muted)">
+            <p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-white/40">
               <ShieldCheck className="h-3.5 w-3.5" />
               {t('meetings.secureNote')}
             </p>

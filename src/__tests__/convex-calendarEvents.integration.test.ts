@@ -587,7 +587,7 @@ describe('calendarEvents.getByOrganization', () => {
     );
     await asEmployee(c).mutation(api.calendarEvents.create, eventArgs(c, { title: 'No room' }));
 
-    const res = await asAdmin(c).query(api.calendarEvents.getByOrganization, {
+    const res = await asEmployee(c).query(api.calendarEvents.getByOrganization, {
       organizationId: c.organizationId,
     });
     expect(res).toHaveLength(2);

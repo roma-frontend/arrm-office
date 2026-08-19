@@ -412,6 +412,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  jest.useRealTimers();
   jest.restoreAllMocks();
 });
 
@@ -624,6 +625,7 @@ describe('CreateEventModal — meeting rooms', () => {
   });
 
   it('blocks a busy room with busy-until and next-free-slot hints', async () => {
+    jest.useFakeTimers().setSystemTime(new Date(2026, 7, 4, 9, 0));
     const t0 = new Date(2026, 7, 4, 9, 0).getTime();
     mockRooms = [roomAt(t0)];
     renderModal({ selectedDate: new Date(2026, 7, 4) });
@@ -692,6 +694,7 @@ describe('CreateEventModal — meeting rooms', () => {
   });
 
   it('blocks the save when a picked room turns busy in the meantime', async () => {
+    jest.useFakeTimers().setSystemTime(new Date(2026, 7, 4, 9, 0));
     const t0 = new Date(2026, 7, 4, 9, 0).getTime();
     mockRooms = [makeRoom()];
     renderModal({ selectedDate: new Date(2026, 7, 4) });
@@ -780,6 +783,7 @@ describe('CreateEventModal — save flows', () => {
   });
 
   it('creates an event with attendees and a reserved room', async () => {
+    jest.useFakeTimers().setSystemTime(new Date(2026, 7, 4, 9, 0));
     mockOrgUsers = makeUsers();
     mockRooms = [makeRoom()];
     const onSave = jest.fn();

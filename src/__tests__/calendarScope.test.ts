@@ -126,11 +126,7 @@ describe('filterForScope', () => {
 });
 
 describe('defaultScopeForRole', () => {
-  it.each(['admin', 'supervisor', 'superadmin'])('starts %s on the shared calendar', (role) => {
-    expect(defaultScopeForRole(role)).toBe('team');
-  });
-
-  it.each(['employee', 'driver', undefined, 'unknown'])(
+  it.each(['admin', 'supervisor', 'superadmin', 'employee', 'driver', undefined, 'unknown'])(
     'starts %s on the personal calendar',
     (role) => {
       expect(defaultScopeForRole(role)).toBe('mine');

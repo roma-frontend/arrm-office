@@ -236,6 +236,17 @@ export const calculatePayrollRun = mutation({
     const minWage = settings?.minimumWage ?? 0;
     const maxOvertime = settings?.maximumOvertime ?? 0;
 
+    // Overtime cost stays in sync with the org's overtime settings: compensatory
+    // leave pays nothing, otherwise the configured rate (fallback: org default).
+    const overtimeSettings = await ctx.db
+      .query('overtimeSettings')
+      .withIndex('by_org', (q) => q.eq('organizationId', run.organizationId!))
+      .first();
+    const overtimeMultiplier =
+      overtimeSettings?.paymentType === 'compensatory_leave'
+        ? 0
+        : (overtimeSettings?.overtimeRate ?? org?.overtimeMultiplier ?? 1.5);
+
     let totalGross = 0;
     let totalNet = 0;
     let totalDeductions = 0;
@@ -286,6 +297,7 @@ export const calculatePayrollRun = mutation({
         bonuses,
         overtimeHours,
         hourlyRate,
+        overtimeMultiplier,
         taxOverride: settings?.taxRuleOverride ?? null,
         // Armenia: employees born before 1974 are exempt from the funded pension.
         pensionExempt: resolvePensionExemption({
@@ -643,6 +655,16 @@ export const updatePayrollRecord = mutation({
     const minWage = settings?.minimumWage ?? 0;
     const maxOvertime = settings?.maximumOvertime ?? 0;
 
+    const org = await ctx.db.get(record.organizationId);
+    const overtimeSettings = await ctx.db
+      .query('overtimeSettings')
+      .withIndex('by_org', (q) => q.eq('organizationId', record.organizationId!))
+      .first();
+    const overtimeMultiplier =
+      overtimeSettings?.paymentType === 'compensatory_leave'
+        ? 0
+        : (overtimeSettings?.overtimeRate ?? org?.overtimeMultiplier ?? 1.5);
+
     const newBase = args.baseSalary ?? record.baseSalary;
     if (minWage > 0 && newBase < minWage) {
       throw new Error(`Base salary is below the configured minimum wage (${minWage})`);
@@ -679,6 +701,7 @@ export const updatePayrollRecord = mutation({
         bonuses: args.bonuses ?? record.bonuses ?? 0,
         overtimeHours: newOvertime,
         hourlyRate: newBase / 160,
+        overtimeMultiplier,
         taxOverride: settings?.taxRuleOverride ?? null,
         pensionExempt: resolvePensionExemption({
           pensionExempt: empProfile?.pensionExempt ?? empUser?.pensionExempt,

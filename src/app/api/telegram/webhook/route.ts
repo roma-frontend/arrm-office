@@ -16,7 +16,7 @@ interface TelegramUpdate {
   message?: {
     text?: string;
     chat?: { id: number | string };
-    from?: { first_name?: string; language_code?: string };
+    from?: { first_name?: string; username?: string; language_code?: string };
   };
 }
 
@@ -91,6 +91,25 @@ export async function POST(req: Request) {
       const cb = body.callback_query;
       const chatId = String(cb.message?.chat?.id || '');
       const data = cb.data || '';
+
+      // Recruitment: "I completed screening" button from the screening message.
+      const doneMatch = data.match(/^screening_done:(.+)$/);
+      if (doneMatch && chatId) {
+        try {
+          await convex.action(api.telegram.completeScreening, {
+            applicationId: doneMatch[1] as Id<'applications'>,
+          });
+        } catch {
+          /* already completed or application gone — nothing to do */
+        }
+        await fetch(`https://api.telegram.org/bot${token}/answerCallbackQuery`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ callback_query_id: cb.id, text: '✅' }),
+        });
+        return NextResponse.json({ ok: true });
+      }
+
       const match = data.match(/^poll_(.+)_(\d+)$/);
       if (match && chatId) {
         const result = await convex.mutation(api.newsletter.votePoll, {
@@ -128,6 +147,23 @@ export async function POST(req: Request) {
 
     switch (cmd) {
       case '/start': {
+        // Recruitment deep link: t.me/<bot>?start=cand_<portalToken>
+        const candMatch = arg.match(/^cand_(.+)$/);
+        if (candMatch) {
+          const res = await convex.action(api.telegram.linkCandidateTelegram, {
+            token: candMatch[1]!,
+            chatId,
+            username: message.from?.username,
+          });
+          reply = res.success
+            ? language === 'ru'
+              ? `🔗 Telegram привязан к вашему отклику${res.name ? `, ${res.name}` : ''}!\nЗдесь вы будете получать скрининг-вопросы, ссылки на интервью и обновления статуса.`
+              : `🔗 Telegram linked to your application${res.name ? `, ${res.name}` : ''}!\nYou will receive screening questions, interview links and status updates here.`
+            : language === 'ru'
+              ? '⚠️ Ссылка не распознана. Откройте кабинет кандидата и нажмите «Подключить Telegram» ещё раз.'
+              : '⚠️ Link not recognized. Open your candidate dashboard and tap "Connect Telegram" again.';
+          break;
+        }
         // Check if referral
         const refMatch = arg.match(/^ref_(.+)$/);
         if (refMatch) {
@@ -220,9 +256,26 @@ export async function POST(req: Request) {
       case '/help':
         reply = r.help!;
         break;
-      default:
-        // AI assistant handles all non-command messages
+      default: {
+        // A candidate mid-screening sends answers as plain text — store them
+        // before the newsletter AI assistant gets a word in.
+        try {
+          const saved = await convex.action(api.telegram.submitScreeningResponse, {
+            chatId,
+            text,
+          });
+          if (saved.saved) {
+            reply =
+              language === 'ru'
+                ? '✅ Получили ваш ответ! Отвечайте на следующие вопросы — или нажмите кнопку, когда завершите.'
+                : '✅ Got your answer! Continue with the next questions — or press the button when done.';
+            break;
+          }
+        } catch {
+          /* not a screening candidate — fall through to the AI assistant */
+        }
         reply = await getAIResponse(text, language, firstName);
+      }
     }
 
     await sendReply(token, chatId, reply);

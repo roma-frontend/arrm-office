@@ -60,7 +60,17 @@ import {
   Plane,
   Hourglass,
   Rows3,
+  Clock,
+  Thermometer,
+  Home,
+  Stethoscope,
+  Sun,
+  Baby,
+  Heart,
+  GraduationCap,
+  Check,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { getInitials, ALL_LEAVE_TYPES, getLeaveTypeColor } from '@/lib/types';
 
@@ -83,6 +93,19 @@ const TYPE_LABEL_KEY: Record<string, string> = {
   study: 'leaveTypes.study',
 };
 
+/** A glyph per leave type — the sheet reads at a glance, day by day. */
+const TYPE_ICON: Record<string, LucideIcon> = {
+  paid: Plane,
+  unpaid: Clock,
+  sick: Thermometer,
+  family: Home,
+  doctor: Stethoscope,
+  day_off: Sun,
+  maternity: Baby,
+  paternity: Heart,
+  study: GraduationCap,
+};
+
 const STATUS_BADGE: Record<
   string,
   { variant: 'success' | 'warning' | 'destructive' | 'secondary'; labelKey: string; dot: string }
@@ -97,13 +120,15 @@ const STATUS_BADGE: Record<
   },
 };
 
-const LEFT_W = 224;
-const LEFT_W_COMPACT = 196;
+const LEFT_W = 240;
+const LEFT_W_COMPACT = 204;
 const RIGHT_W = 88;
-const CELL_W = 30;
-const CELL_W_COMPACT = 24;
-const LANE_H = 18;
-const LANE_H_COMPACT = 14;
+const CELL_W_MIN = 34;
+const CELL_W_MIN_COMPACT = 24;
+const CELL_W_MAX = 72;
+const CELL_W_MAX_COMPACT = 48;
+const LANE_H = 22;
+const LANE_H_COMPACT = 16;
 const LANE_GAP = 3;
 const MAX_RANGE_DAYS = 92;
 
@@ -113,28 +138,29 @@ function prettifyType(type: string) {
   return type.replace(/_/g, ' ').replace(/\b\w/g, (m) => m.toUpperCase());
 }
 
-/** Solid / striped / hatched backgrounds — the status language of the sheet. */
+/** Soft tinted bands — the status language of the sheet. Icons carry the type. */
 function barVisuals(status: string, color: string): React.CSSProperties {
   switch (status) {
     case 'approved':
       return {
-        background: `linear-gradient(135deg, ${color}, ${color}b8)`,
-        boxShadow: `0 1px 2px ${color}59`,
+        background: `linear-gradient(180deg, ${color}38, ${color}24)`,
+        boxShadow: `inset 0 0 0 1px ${color}40, inset 0 2px 0 ${color}59`,
       };
     case 'pending':
       return {
-        background: `repeating-linear-gradient(45deg, ${color}38 0 5px, ${color}14 5px 10px)`,
-        border: `1.5px dashed ${color}aa`,
+        background: `repeating-linear-gradient(45deg, ${color}24 0 5px, ${color}0d 5px 10px)`,
+        boxShadow: `inset 0 0 0 1px ${color}33`,
+        border: `1.5px dashed ${color}99`,
       };
     case 'rejected':
       return {
-        background: `repeating-linear-gradient(45deg, #94a3b82e 0 4px, transparent 4px 8px)`,
-        border: '1px solid #94a3b855',
+        background: `repeating-linear-gradient(45deg, #94a3b824 0 4px, transparent 4px 8px)`,
+        border: '1px solid #94a3b84d',
       };
     default:
       // cancel_requested — still approved, but a cancellation is on the table
       return {
-        background: `linear-gradient(135deg, ${color}cc, ${color}96)`,
+        background: `linear-gradient(180deg, ${color}30, ${color}1c)`,
         border: '1.5px dashed #f59e0b',
       };
   }
@@ -274,16 +300,14 @@ export function TimeOffCalendar({
     limit: 100,
     ...(selectedOrgId ? { organizationId: selectedOrgId as Id<'organizations'> } : {}),
   });
-  const departments =
-    useQuery(
-      api.departments.list,
-      selectedOrgId ? { organizationId: selectedOrgId as Id<'organizations'> } : 'skip',
-    ) ?? [];
-  const positions =
-    useQuery(
-      api.positions.list,
-      selectedOrgId ? { organizationId: selectedOrgId as Id<'organizations'> } : 'skip',
-    ) ?? [];
+  const departmentsRaw = useQuery(
+    api.departments.list,
+    selectedOrgId ? { organizationId: selectedOrgId as Id<'organizations'> } : 'skip',
+  );
+  const positionsRaw = useQuery(
+    api.positions.list,
+    selectedOrgId ? { organizationId: selectedOrgId as Id<'organizations'> } : 'skip',
+  );
   const holidaysData = useQuery(
     api.leaveSettings.getHolidays,
     selectedOrgId ? { organizationId: selectedOrgId as Id<'organizations'> } : 'skip',
@@ -293,10 +317,12 @@ export function TimeOffCalendar({
     endDate: viewEnd,
   });
 
-  const leaves = (leavesData ?? []) as LeaveRecord[];
-  const allUsers = (usersData ?? []) as EmployeeRecord[];
-  const holidays = (holidaysData ?? []) as HolidayRecord[];
-  const overtimes = (overtimeData ?? []) as OvertimeRecord[];
+  const departments = useMemo(() => departmentsRaw ?? [], [departmentsRaw]);
+  const positions = useMemo(() => positionsRaw ?? [], [positionsRaw]);
+  const leaves = useMemo(() => (leavesData ?? []) as LeaveRecord[], [leavesData]);
+  const allUsers = useMemo(() => (usersData ?? []) as EmployeeRecord[], [usersData]);
+  const holidays = useMemo(() => (holidaysData ?? []) as HolidayRecord[], [holidaysData]);
+  const overtimes = useMemo(() => (overtimeData ?? []) as OvertimeRecord[], [overtimeData]);
 
   const typeLabel = useCallback(
     (type: string) =>
@@ -312,26 +338,46 @@ export function TimeOffCalendar({
   // chrome: the sheet always fills the viewport and the toggle exits via
   // onClose.
   const [cssFs, setCssFs] = useState(false);
+  // fsClosing: the exit animation is playing while the overlay is still up;
+  // fsSettling: right after the overlay unmounts, fade the inline sheet in so
+  // the portal↔inline hand-off never reads as a hard pop.
+  const [fsClosing, setFsClosing] = useState(false);
+  const [fsSettling, setFsSettling] = useState(false);
   const isFs = embedded || cssFs;
+
+  const closeFs = useCallback(() => {
+    setFsClosing(true);
+    window.setTimeout(() => {
+      setFsClosing(false);
+      setCssFs(false);
+      setFsSettling(true);
+      window.setTimeout(() => setFsSettling(false), 260);
+    }, 180);
+  }, []);
 
   useEffect(() => {
     if (!isFs) return;
     const handler = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
       if (embedded) onClose?.();
-      else setCssFs(false);
+      else closeFs();
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [isFs, embedded, onClose]);
+  }, [isFs, embedded, onClose, closeFs]);
 
-  // Lock the page scroll while the sheet covers the viewport
+  // Lock the page scroll while the sheet covers the viewport. Compensate the
+  // disappearing scrollbar so the page behind never jumps sideways.
   useEffect(() => {
     if (!isFs) return;
-    const prev = document.body.style.overflow;
+    const prevOverflow = document.body.style.overflow;
+    const prevPad = document.body.style.paddingRight;
+    const scrollbar = window.innerWidth - document.documentElement.clientWidth;
     document.body.style.overflow = 'hidden';
+    if (scrollbar > 0) document.body.style.paddingRight = `${scrollbar}px`;
     return () => {
-      document.body.style.overflow = prev;
+      document.body.style.overflow = prevOverflow;
+      document.body.style.paddingRight = prevPad;
     };
   }, [isFs]);
 
@@ -340,8 +386,9 @@ export function TimeOffCalendar({
       onClose?.();
       return;
     }
-    setCssFs((v) => !v);
-  }, [embedded, onClose]);
+    if (cssFs) closeFs();
+    else setCssFs(true);
+  }, [embedded, onClose, cssFs, closeFs]);
 
   // ── Period helpers ───────────────────────────────────────────────────────
   const isFullMonth =
@@ -427,9 +474,32 @@ export function TimeOffCalendar({
     return m;
   }, [visibleDays]);
 
-  const cellW = compact ? CELL_W_COMPACT : CELL_W;
   const laneH = compact ? LANE_H_COMPACT : LANE_H;
   const leftW = compact ? LEFT_W_COMPACT : LEFT_W;
+
+  // Stretch the day columns to fill the viewport width (like a true timesheet
+  // wall) instead of leaving dead space after the last day; scroll only when
+  // the period cannot fit at the minimum cell width.
+  const [availW, setAvailW] = useState(0);
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      for (const en of entries) setAvailW(en.contentRect.width);
+    });
+    ro.observe(el);
+    setAvailW(el.clientWidth);
+    return () => ro.disconnect();
+  }, [isFs]);
+
+  const minCellW = compact ? CELL_W_MIN_COMPACT : CELL_W_MIN;
+  const maxCellW = compact ? CELL_W_MAX_COMPACT : CELL_W_MAX;
+  const cellW = useMemo(() => {
+    if (!availW || visibleDays.length === 0) return minCellW;
+    const fit = Math.floor((availW - leftW - RIGHT_W - 6) / visibleDays.length);
+    return Math.max(minCellW, Math.min(maxCellW, fit));
+  }, [availW, leftW, visibleDays.length, minCellW, maxCellW]);
+
   const trackW = visibleDays.length * cellW;
   const totalW = leftW + trackW + RIGHT_W;
 
@@ -639,7 +709,7 @@ export function TimeOffCalendar({
     const target = leftW + i * cellW - 240;
     if (target > 0) scrollRef.current.scrollTo({ left: target });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- layout inputs only
-  }, [viewStart, viewEnd, showWeekends, compact]);
+  }, [viewStart, viewEnd, showWeekends, compact, cellW]);
 
   // ── Filter actions ───────────────────────────────────────────────────────
   const toggleSetValue = (setter: React.Dispatch<React.SetStateAction<Set<string>>>, v: string) =>
@@ -725,7 +795,7 @@ export function TimeOffCalendar({
 
   // ── Render helpers ───────────────────────────────────────────────────────
   const rowHeight = (laneCount: number) =>
-    Math.max(compact ? 38 : 48, (compact ? 8 : 12) + laneCount * (laneH + LANE_GAP));
+    Math.max(compact ? 40 : 58, (compact ? 8 : 14) + laneCount * (laneH + LANE_GAP));
 
   const statusChip = (status: string, label: string, swatch: React.ReactNode) => (
     <button
@@ -741,6 +811,31 @@ export function TimeOffCalendar({
       )}
     >
       {swatch}
+      {label}
+    </button>
+  );
+
+  const quickToggle = (checked: boolean, onClick: () => void, label: string) => (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-all',
+        checked
+          ? 'border-(--brand)/30 bg-(--brand)/10 text-(--brand-text)'
+          : 'border-(--border-subtle) text-(--text-muted) hover:bg-(--surface-2)/60',
+      )}
+    >
+      <span
+        className={cn(
+          'flex h-3.5 w-3.5 items-center justify-center rounded-[4px] border transition-colors',
+          checked
+            ? 'border-transparent bg-(--brand) text-white'
+            : 'border-(--border) bg-(--background)',
+        )}
+      >
+        {checked && <Check className="h-2.5 w-2.5" strokeWidth={3.5} />}
+      </span>
       {label}
     </button>
   );
@@ -778,8 +873,9 @@ export function TimeOffCalendar({
     const isPending = leave.status === 'pending';
     const isRejected = leave.status === 'rejected';
     const meta = STATUS_BADGE[leave.status];
-    const radius = clippedStart || clippedEnd ? 0 : 5;
-    const showCount = span >= (compact ? 3 : 2);
+    const Icon = TYPE_ICON[leave.type] ?? CalendarDays;
+    const radius = clippedStart || clippedEnd ? 0 : 7;
+    const iconSize = compact ? 10 : cellW >= 48 ? 15 : 12;
 
     return (
       <Tooltip key={leave._id}>
@@ -790,7 +886,7 @@ export function TimeOffCalendar({
             aria-label={`${typeLabel(leave.type)} · ${leave.userName ?? ''}`}
             className={cn(
               'absolute z-[5] flex items-center overflow-hidden text-left',
-              'cursor-pointer transition-transform hover:z-10 hover:scale-[1.015]',
+              'cursor-pointer transition-all hover:z-10 hover:scale-y-110 hover:brightness-105',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--ring) focus-visible:ring-offset-1',
             )}
             style={{
@@ -799,28 +895,53 @@ export function TimeOffCalendar({
               top: laneTop + lane * (laneH + LANE_GAP),
               height: laneH,
               borderRadius: radius,
-              opacity: isRejected ? 0.55 : 1,
+              opacity: isRejected ? 0.5 : 1,
               ...barVisuals(leave.status, c),
             }}
           >
-            {showCount && !isRejected && (
-              <span
-                className="pl-1.5 pr-1 text-[9px] font-bold leading-none whitespace-nowrap"
-                style={{
-                  color: isPending ? c : '#fff',
-                  textShadow: isPending ? 'none' : '0 1px 1px rgba(0,0,0,0.25)',
-                }}
-              >
-                {leave.days}
-                {t('leave.daysSuffix', { defaultValue: 'd' })}
-                {(clippedStart || clippedEnd) && '↔'}
+            {!isRejected && (
+              <span className="flex h-full w-full" aria-hidden>
+                {Array.from({ length: span }, (_, i) => (
+                  <span
+                    key={i}
+                    className="flex h-full shrink-0 items-center justify-center"
+                    style={{ width: cellW }}
+                  >
+                    <Icon
+                      style={{ color: c, opacity: isPending ? 0.55 : 0.9 }}
+                      size={iconSize}
+                      strokeWidth={2.4}
+                    />
+                  </span>
+                ))}
               </span>
+            )}
+            {clippedStart && (
+              <ChevronLeft
+                aria-hidden
+                className="absolute left-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2"
+                style={{ color: c }}
+                strokeWidth={3}
+              />
+            )}
+            {clippedEnd && (
+              <ChevronRight
+                aria-hidden
+                className="absolute right-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2"
+                style={{ color: c }}
+                strokeWidth={3}
+              />
             )}
           </button>
         </TooltipTrigger>
         <TooltipContent side="top" align="center" className="w-64 p-0 overflow-hidden">
           <div className="flex items-center gap-2 px-3 py-2" style={{ background: `${c}1f` }}>
-            <span className="h-2.5 w-2.5 shrink-0 rounded-[4px]" style={{ background: c }} />
+            <span
+              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md shadow-sm"
+              style={{ background: `linear-gradient(135deg, ${c}, ${c}c0)` }}
+            >
+              <Icon className="h-3.5 w-3.5 text-white" strokeWidth={2.4} />
+            </span>
             <span className="truncate text-xs font-semibold text-(--text-primary)">
               {typeLabel(leave.type)}
             </span>
@@ -901,6 +1022,8 @@ export function TimeOffCalendar({
           // tooltips (z-90) and dialogs. Record sheets opened from a bar are
           // elevated to z-75 by the host so they stay on top.
           isFs && 'fixed inset-0 z-[70] overflow-hidden bg-(--background) p-4 sm:p-6',
+          isFs && (fsClosing ? 'tc-fs-exit' : 'tc-fs-enter'),
+          !isFs && fsSettling && 'tc-fs-enter',
         )}
       >
         {/* ── Title row ── */}
@@ -1032,6 +1155,17 @@ export function TimeOffCalendar({
                 {t('timesheet.today')}
               </Button>
 
+              {quickToggle(
+                showWeekends,
+                () => setShowWeekends((v) => !v),
+                t('timesheet.showWeekends', { defaultValue: 'Weekends' }),
+              )}
+              {quickToggle(
+                markHolidays,
+                () => setMarkHolidays((v) => !v),
+                t('timesheet.markHolidays', { defaultValue: 'Holidays' }),
+              )}
+
               <div className="mx-1 hidden h-6 w-px bg-(--border-subtle) sm:block" />
 
               <Button size="sm" variant="outline" onClick={exportCsv} className="gap-1.5">
@@ -1060,6 +1194,7 @@ export function TimeOffCalendar({
                       {ALL_LEAVE_TYPES.map((ty) => {
                         const c = typeColor(ty);
                         const active = typeSet.size === 0 || typeSet.has(ty);
+                        const FIcon = TYPE_ICON[ty] ?? CalendarDays;
                         return (
                           <button
                             key={ty}
@@ -1075,9 +1210,11 @@ export function TimeOffCalendar({
                             style={active ? { background: `${c}1f`, color: c } : undefined}
                           >
                             <span
-                              className="h-2 w-2 shrink-0 rounded-[3px]"
+                              className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[4px]"
                               style={{ background: c }}
-                            />
+                            >
+                              <FIcon className="h-2.5 w-2.5 text-white" strokeWidth={2.6} />
+                            </span>
                             {typeLabel(ty)}
                           </button>
                         );
@@ -1280,15 +1417,15 @@ export function TimeOffCalendar({
           className={cn(
             'relative min-h-0 flex-1 overflow-auto rounded-xl border border-(--border-subtle)',
             'bg-(--background) shadow-sm',
-            !isFs && 'max-h-[68vh]',
+            !isFs && 'min-h-[560px]',
           )}
         >
-          <div style={{ minWidth: totalW }} className="relative">
+          <div style={{ minWidth: totalW }} className="relative flex min-h-full flex-col">
             {emptyState}
             {noLeaves}
 
             {/* Header */}
-            <div className="sticky top-0 z-30 flex border-b border-(--border) bg-(--background)/95 backdrop-blur">
+            <div className="sticky top-0 z-30 flex shrink-0 border-b border-(--border) bg-(--background)/95 backdrop-blur">
               <div
                 className="sticky left-0 z-40 flex shrink-0 items-end border-r border-(--border-subtle) bg-(--background) px-3 pb-2"
                 style={{ width: leftW }}
@@ -1314,7 +1451,13 @@ export function TimeOffCalendar({
                         cell.isWeekend ? 'text-(--text-muted)/55' : 'text-(--text-muted)',
                       )}
                     >
-                      {format(cell.date, compact ? 'EEEEE' : 'EEE', { locale: dateFnsLocale })}
+                      {format(
+                        cell.date,
+                        compact || cellW < 30 ? 'EEEEE' : cellW < 42 ? 'EE' : 'EEE',
+                        {
+                          locale: dateFnsLocale,
+                        },
+                      )}
                     </span>
                     <span
                       className={cn(
@@ -1372,226 +1515,236 @@ export function TimeOffCalendar({
             </div>
 
             {/* Body */}
-            {groups.map((group) => (
-              <div key={group.key}>
-                {groupByDept && (
-                  <div className="flex h-9 border-b border-(--border-subtle) bg-(--surface-2)/45">
-                    <div
-                      className="sticky left-0 z-20 flex shrink-0 items-center gap-2 border-r border-(--border-subtle) bg-(--surface-2)/45 px-3"
-                      style={{ width: leftW }}
-                    >
-                      <span className="flex h-5 w-5 items-center justify-center rounded-md bg-(--brand)/15 text-[9px] font-bold text-(--brand-text)">
-                        {getInitials(group.label).charAt(0)}
-                      </span>
-                      <span className="truncate text-[11px] font-semibold text-(--text-primary)">
-                        {group.label}
-                      </span>
-                    </div>
-                    <div
-                      className="flex shrink-0 items-center gap-2 px-3"
-                      style={{ width: trackW }}
-                    >
-                      <span className="text-[10px] uppercase tracking-wider text-(--text-muted)">
-                        {t('timesheet.employeesInGroup', { count: group.rows.length })}
-                      </span>
-                    </div>
-                    <div
-                      className="sticky right-0 z-20 flex shrink-0 items-center justify-center border-l border-(--border-subtle) bg-(--surface-2)/45 px-2 text-xs font-bold text-(--text-secondary)"
-                      style={{ width: RIGHT_W }}
-                    >
-                      {group.rows.reduce((acc, r) => acc + r.approvedDays + r.pendingDays, 0)}
-                      {t('leave.daysSuffix', { defaultValue: 'd' })}
-                    </div>
-                  </div>
-                )}
-
-                {group.rows.map((row) => {
-                  const h = rowHeight(row.laneCount);
-                  const laneTop = (h - row.laneCount * laneH - (row.laneCount - 1) * LANE_GAP) / 2;
-                  return (
-                    <div
-                      key={row.emp._id}
-                      className="group/row flex border-b border-(--border-subtle)/60 transition-colors hover:bg-(--surface-2)/25"
-                      style={{ height: h }}
-                    >
-                      {/* Identity (sticky left) */}
+            <div className="flex-1">
+              {groups.map((group) => (
+                <div key={group.key}>
+                  {groupByDept && (
+                    <div className="flex h-9 border-b border-(--border-subtle) bg-(--surface-2)/45">
                       <div
-                        className="sticky left-0 z-20 flex shrink-0 items-center gap-2.5 border-r border-(--border-subtle) bg-(--background) px-3"
+                        className="sticky left-0 z-20 flex shrink-0 items-center gap-2 border-r border-(--border-subtle) bg-(--surface-2)/45 px-3"
                         style={{ width: leftW }}
                       >
-                        <div className="pointer-events-none absolute inset-0 hidden bg-(--surface-2)/25 group-hover/row:block" />
-                        {row.emp.avatarUrl ? (
-                          <img
-                            src={row.emp.avatarUrl}
-                            alt=""
-                            className="relative h-8 w-8 shrink-0 rounded-full object-cover"
-                          />
-                        ) : (
-                          <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-(--brand)/15">
-                            <span className="text-[11px] font-bold text-(--brand-text)">
-                              {getInitials(row.emp.name)}
-                            </span>
-                          </div>
-                        )}
-                        <div className="relative min-w-0">
-                          <p className="truncate text-[13px] font-medium leading-tight text-(--text-primary)">
-                            {row.emp.name}
-                          </p>
-                          <p className="truncate text-[10px] leading-tight text-(--text-muted)">
-                            {row.emp.position ?? row.emp.department ?? ''}
-                          </p>
-                        </div>
+                        <span className="flex h-5 w-5 items-center justify-center rounded-md bg-(--brand)/15 text-[9px] font-bold text-(--brand-text)">
+                          {getInitials(group.label).charAt(0)}
+                        </span>
+                        <span className="truncate text-[11px] font-semibold text-(--text-primary)">
+                          {group.label}
+                        </span>
                       </div>
-
-                      {/* Track: day cells + leave bars */}
-                      <div className="relative shrink-0" style={{ width: trackW }}>
-                        <div className="flex h-full">
-                          {visibleDays.map((cell) => (
-                            <div
-                              key={cell.ds}
-                              className={cn(
-                                'h-full shrink-0 border-r border-(--border-subtle)/25',
-                                cell.isToday && 'bg-(--brand)/[0.06]',
-                                cell.isWeekend && !cell.isToday && 'bg-(--surface-2)/40',
-                                markHolidays &&
-                                  cell.holiday &&
-                                  !cell.isToday &&
-                                  'bg-rose-500/[0.05]',
-                              )}
-                              style={{ width: cellW }}
-                            />
-                          ))}
-                        </div>
-                        {row.bars.map((bar) => renderBar(bar, laneTop))}
-                        {/* Overtime ticks: a corner flag + hour count per day */}
-                        {showOvertime &&
-                          [...(overtimeByUser.get(row.emp._id)?.entries() ?? [])].map(
-                            ([ds, list]) => {
-                              const idx = dayIndex.get(ds);
-                              if (idx === undefined) return null;
-                              const hours = list.reduce((a, o) => a + o.estimatedHours, 0);
-                              const pending = list.some((o) => o.status === 'pending');
-                              return (
-                                <Tooltip key={`ot-${row.emp._id}-${ds}`}>
-                                  <TooltipTrigger asChild>
-                                    <span
-                                      className="absolute top-0 z-[6] flex cursor-default items-center justify-center rounded-b-[4px] px-0.5 text-[8px] font-bold leading-none text-white"
-                                      style={{
-                                        left: idx * cellW + 2,
-                                        width: cellW - 4,
-                                        height: compact ? 9 : 11,
-                                        background: pending
-                                          ? `repeating-linear-gradient(45deg, ${OVERTIME_COLOR}cc 0 3px, ${OVERTIME_COLOR}77 3px 6px)`
-                                          : OVERTIME_COLOR,
-                                      }}
-                                    >
-                                      {!compact && `+${hours}`}
-                                    </span>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="top" className="max-w-60 text-xs">
-                                    <p className="font-semibold" style={{ color: OVERTIME_COLOR }}>
-                                      {t('timesheet.overtime', { defaultValue: 'Overtime' })} · +
-                                      {hours}
-                                      {t('timesheet.hoursSuffix', { defaultValue: 'h' })}
-                                    </p>
-                                    {list.map((o) => (
-                                      <p key={o._id} className="text-(--text-secondary)">
-                                        {o.startTime}–{o.endTime} · {o.estimatedHours}
-                                        {t('timesheet.hoursSuffix', { defaultValue: 'h' })}
-                                        {o.status === 'pending' &&
-                                          ` · ${t('leave.pending', { defaultValue: 'Pending' })}`}
-                                      </p>
-                                    ))}
-                                  </TooltipContent>
-                                </Tooltip>
-                              );
-                            },
-                          )}
-                      </div>
-
-                      {/* Totals (sticky right) */}
                       <div
-                        className="sticky right-0 z-20 flex shrink-0 items-center justify-center border-l border-(--border-subtle) bg-(--background) px-2"
+                        className="flex shrink-0 items-center gap-2 px-3"
+                        style={{ width: trackW }}
+                      >
+                        <span className="text-[10px] uppercase tracking-wider text-(--text-muted)">
+                          {t('timesheet.employeesInGroup', { count: group.rows.length })}
+                        </span>
+                      </div>
+                      <div
+                        className="sticky right-0 z-20 flex shrink-0 items-center justify-center border-l border-(--border-subtle) bg-(--surface-2)/45 px-2 text-xs font-bold text-(--text-secondary)"
                         style={{ width: RIGHT_W }}
                       >
-                        <div className="pointer-events-none absolute inset-0 hidden bg-(--surface-2)/25 group-hover/row:block" />
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button
-                              type="button"
-                              className="relative flex items-baseline gap-1 rounded-md px-1.5 py-0.5 text-sm font-bold text-(--text-primary) transition-colors hover:bg-(--surface-2)/60"
-                            >
-                              {row.approvedDays}
-                              {row.pendingDays > 0 && (
-                                <span
-                                  className="text-[10px] font-semibold text-(--warning-text)"
-                                  title={t('timesheet.legendPending')}
-                                >
-                                  +{row.pendingDays}
-                                </span>
-                              )}
-                              {showOvertime && overtimeHoursForUser(row.emp._id) > 0 && (
-                                <span
-                                  className="text-[10px] font-semibold"
-                                  style={{ color: OVERTIME_COLOR }}
-                                  title={t('timesheet.overtime', { defaultValue: 'Overtime' })}
-                                >
-                                  {overtimeHoursForUser(row.emp._id)}
-                                  {t('timesheet.hoursSuffix', { defaultValue: 'h' })}
-                                </span>
-                              )}
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent side="left" className="w-56 p-3">
-                            <div className="mb-2 flex items-center justify-between gap-2">
-                              <span className="truncate text-xs font-semibold text-(--text-primary)">
-                                {row.emp.name}
-                              </span>
-                              <span className="shrink-0 text-xs font-bold text-(--text-primary)">
-                                {row.approvedDays + row.pendingDays}
-                                {t('leave.daysSuffix', { defaultValue: 'd' })}
-                              </span>
-                            </div>
-                            <div className="space-y-1">
-                              {[...row.byType.entries()]
-                                .sort((a, b) => b[1] - a[1])
-                                .map(([ty, days]) => (
-                                  <div key={ty} className="flex items-center gap-2 text-xs">
-                                    <span
-                                      className="h-2 w-2 shrink-0 rounded-[3px]"
-                                      style={{ background: typeColor(ty) }}
-                                    />
-                                    <span className="flex-1 truncate text-(--text-secondary)">
-                                      {typeLabel(ty)}
-                                    </span>
-                                    <span className="font-semibold text-(--text-primary)">
-                                      {days}
-                                      {t('leave.daysSuffix', { defaultValue: 'd' })}
-                                    </span>
-                                  </div>
-                                ))}
-                              {row.pendingDays > 0 && (
-                                <p className="pt-1 text-[10px] text-(--warning-text)">
-                                  +{row.pendingDays}
-                                  {t('leave.daysSuffix', { defaultValue: 'd' })} ·{' '}
-                                  {t('timesheet.legendPending')}
-                                </p>
-                              )}
-                              {row.byType.size === 0 && (
-                                <p className="text-xs text-(--text-muted)">—</p>
-                              )}
-                            </div>
-                          </TooltipContent>
-                        </Tooltip>
+                        {group.rows.reduce((acc, r) => acc + r.approvedDays + r.pendingDays, 0)}
+                        {t('leave.daysSuffix', { defaultValue: 'd' })}
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            ))}
+                  )}
+
+                  {group.rows.map((row) => {
+                    const h = rowHeight(row.laneCount);
+                    const laneTop =
+                      (h - row.laneCount * laneH - (row.laneCount - 1) * LANE_GAP) / 2;
+                    return (
+                      <div
+                        key={row.emp._id}
+                        className="group/row flex border-b border-(--border-subtle)/60 transition-colors hover:bg-(--surface-2)/25"
+                        style={{ height: h }}
+                      >
+                        {/* Identity (sticky left) */}
+                        <div
+                          className="sticky left-0 z-20 flex shrink-0 items-center gap-2.5 border-r border-(--border-subtle) bg-(--background) px-3"
+                          style={{ width: leftW }}
+                        >
+                          <div className="pointer-events-none absolute inset-0 hidden bg-(--surface-2)/25 group-hover/row:block" />
+                          {row.emp.avatarUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element -- dynamic user avatar URL from backend
+                            <img
+                              src={row.emp.avatarUrl}
+                              alt=""
+                              className="relative h-9 w-9 shrink-0 rounded-full object-cover ring-2 ring-(--brand)/20"
+                            />
+                          ) : (
+                            <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-(--brand)/25 to-(--brand)/10 ring-2 ring-(--brand)/20">
+                              <span className="text-[11px] font-bold text-(--brand-text)">
+                                {getInitials(row.emp.name)}
+                              </span>
+                            </div>
+                          )}
+                          <div className="relative min-w-0">
+                            <p className="truncate text-[13px] font-semibold leading-tight text-(--brand-text)">
+                              {row.emp.name}
+                            </p>
+                            <p className="truncate text-[10px] leading-tight text-(--text-muted)">
+                              {row.emp.position ?? ''}
+                            </p>
+                            <p className="truncate text-[10px] leading-tight text-(--text-muted)/70">
+                              {row.emp.department ?? ''}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Track: day cells + leave bars */}
+                        <div className="relative shrink-0" style={{ width: trackW }}>
+                          <div className="flex h-full">
+                            {visibleDays.map((cell) => (
+                              <div
+                                key={cell.ds}
+                                className={cn(
+                                  'h-full shrink-0 border-r border-(--border-subtle)/25',
+                                  cell.isToday && 'bg-(--brand)/[0.06]',
+                                  cell.isWeekend && !cell.isToday && 'bg-(--surface-2)/40',
+                                  markHolidays &&
+                                    cell.holiday &&
+                                    !cell.isToday &&
+                                    'bg-rose-500/[0.05]',
+                                )}
+                                style={{ width: cellW }}
+                              />
+                            ))}
+                          </div>
+                          {row.bars.map((bar) => renderBar(bar, laneTop))}
+                          {/* Overtime ticks: a corner flag + hour count per day */}
+                          {showOvertime &&
+                            [...(overtimeByUser.get(row.emp._id)?.entries() ?? [])].map(
+                              ([ds, list]) => {
+                                const idx = dayIndex.get(ds);
+                                if (idx === undefined) return null;
+                                const hours = list.reduce((a, o) => a + o.estimatedHours, 0);
+                                const pending = list.some((o) => o.status === 'pending');
+                                return (
+                                  <Tooltip key={`ot-${row.emp._id}-${ds}`}>
+                                    <TooltipTrigger asChild>
+                                      <span
+                                        className="absolute top-0 z-[6] flex cursor-default items-center justify-center rounded-b-[4px] px-0.5 text-[8px] font-bold leading-none text-white"
+                                        style={{
+                                          left: idx * cellW + 2,
+                                          width: cellW - 4,
+                                          height: compact ? 9 : 11,
+                                          background: pending
+                                            ? `repeating-linear-gradient(45deg, ${OVERTIME_COLOR}cc 0 3px, ${OVERTIME_COLOR}77 3px 6px)`
+                                            : OVERTIME_COLOR,
+                                        }}
+                                      >
+                                        {!compact && `+${hours}`}
+                                      </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="max-w-60 text-xs">
+                                      <p
+                                        className="font-semibold"
+                                        style={{ color: OVERTIME_COLOR }}
+                                      >
+                                        {t('timesheet.overtime', { defaultValue: 'Overtime' })} · +
+                                        {hours}
+                                        {t('timesheet.hoursSuffix', { defaultValue: 'h' })}
+                                      </p>
+                                      {list.map((o) => (
+                                        <p key={o._id} className="text-(--text-secondary)">
+                                          {o.startTime}–{o.endTime} · {o.estimatedHours}
+                                          {t('timesheet.hoursSuffix', { defaultValue: 'h' })}
+                                          {o.status === 'pending' &&
+                                            ` · ${t('leave.pending', { defaultValue: 'Pending' })}`}
+                                        </p>
+                                      ))}
+                                    </TooltipContent>
+                                  </Tooltip>
+                                );
+                              },
+                            )}
+                        </div>
+
+                        {/* Totals (sticky right) */}
+                        <div
+                          className="sticky right-0 z-20 flex shrink-0 items-center justify-center border-l border-(--border-subtle) bg-(--background) px-2"
+                          style={{ width: RIGHT_W }}
+                        >
+                          <div className="pointer-events-none absolute inset-0 hidden bg-(--surface-2)/25 group-hover/row:block" />
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                type="button"
+                                className="relative flex items-baseline gap-1 rounded-md px-1.5 py-0.5 text-sm font-bold text-(--text-primary) transition-colors hover:bg-(--surface-2)/60"
+                              >
+                                {row.approvedDays}
+                                {row.pendingDays > 0 && (
+                                  <span
+                                    className="text-[10px] font-semibold text-(--warning-text)"
+                                    title={t('timesheet.legendPending')}
+                                  >
+                                    +{row.pendingDays}
+                                  </span>
+                                )}
+                                {showOvertime && overtimeHoursForUser(row.emp._id) > 0 && (
+                                  <span
+                                    className="text-[10px] font-semibold"
+                                    style={{ color: OVERTIME_COLOR }}
+                                    title={t('timesheet.overtime', { defaultValue: 'Overtime' })}
+                                  >
+                                    {overtimeHoursForUser(row.emp._id)}
+                                    {t('timesheet.hoursSuffix', { defaultValue: 'h' })}
+                                  </span>
+                                )}
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="left" className="w-56 p-3">
+                              <div className="mb-2 flex items-center justify-between gap-2">
+                                <span className="truncate text-xs font-semibold text-(--text-primary)">
+                                  {row.emp.name}
+                                </span>
+                                <span className="shrink-0 text-xs font-bold text-(--text-primary)">
+                                  {row.approvedDays + row.pendingDays}
+                                  {t('leave.daysSuffix', { defaultValue: 'd' })}
+                                </span>
+                              </div>
+                              <div className="space-y-1">
+                                {[...row.byType.entries()]
+                                  .sort((a, b) => b[1] - a[1])
+                                  .map(([ty, days]) => (
+                                    <div key={ty} className="flex items-center gap-2 text-xs">
+                                      <span
+                                        className="h-2 w-2 shrink-0 rounded-[3px]"
+                                        style={{ background: typeColor(ty) }}
+                                      />
+                                      <span className="flex-1 truncate text-(--text-secondary)">
+                                        {typeLabel(ty)}
+                                      </span>
+                                      <span className="font-semibold text-(--text-primary)">
+                                        {days}
+                                        {t('leave.daysSuffix', { defaultValue: 'd' })}
+                                      </span>
+                                    </div>
+                                  ))}
+                                {row.pendingDays > 0 && (
+                                  <p className="pt-1 text-[10px] text-(--warning-text)">
+                                    +{row.pendingDays}
+                                    {t('leave.daysSuffix', { defaultValue: 'd' })} ·{' '}
+                                    {t('timesheet.legendPending')}
+                                  </p>
+                                )}
+                                {row.byType.size === 0 && (
+                                  <p className="text-xs text-(--text-muted)">—</p>
+                                )}
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
 
             {/* Footer: absence count per day */}
-            <div className="sticky bottom-0 z-30 flex border-t border-(--border) bg-(--background)/95 backdrop-blur">
+            <div className="sticky bottom-0 z-30 flex shrink-0 border-t border-(--border) bg-(--background)/95 backdrop-blur">
               <div
                 className="sticky left-0 z-40 flex shrink-0 items-center border-r border-(--border-subtle) bg-(--background) px-3"
                 style={{ width: leftW }}
@@ -1635,6 +1788,7 @@ export function TimeOffCalendar({
           {ALL_LEAVE_TYPES.map((ty) => {
             const c = typeColor(ty);
             const active = typeSet.size === 0 || typeSet.has(ty);
+            const LIcon = TYPE_ICON[ty] ?? CalendarDays;
             return (
               <button
                 key={ty}
@@ -1646,9 +1800,11 @@ export function TimeOffCalendar({
                 )}
               >
                 <span
-                  className="h-2.5 w-3.5 shrink-0 rounded-sm"
-                  style={{ background: `linear-gradient(135deg, ${c}, ${c}b8)` }}
-                />
+                  className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-[5px] shadow-sm"
+                  style={{ background: `linear-gradient(135deg, ${c}, ${c}c0)` }}
+                >
+                  <LIcon className="h-3 w-3 text-white" strokeWidth={2.4} />
+                </span>
                 <span className="text-[10.5px] text-(--text-muted)">{typeLabel(ty)}</span>
               </button>
             );

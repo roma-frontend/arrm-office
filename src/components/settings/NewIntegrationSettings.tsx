@@ -190,6 +190,25 @@ const PROVIDERS = [
       ...MAPPING_FIELDS,
     ],
   },
+  {
+    id: 'telegram' as const,
+    name: 'Telegram Bot',
+    icon: '🤖',
+    desc: 'Recruitment screening bot — sends instructions to candidates via Telegram',
+    color: '#0088cc',
+    docUrl: 'https://core.telegram.org/bots',
+    imports: false,
+    fields: [
+      {
+        key: 'botToken',
+        label: 'Bot Token',
+        type: 'password',
+        placeholder: '123456789:ABCdefGHIjklMNOpqrsTUVwxyz',
+      },
+    ],
+    toggles: [],
+    extraFields: [],
+  },
 ];
 
 type ProviderId = (typeof PROVIDERS)[number]['id'];
@@ -806,6 +825,41 @@ export default function NewIntegrationSettings() {
                     <ExternalLink className="w-3 h-3" />{' '}
                     {t('admin.integrations.viewDocs', 'View documentation')}
                   </a>
+
+                  {/* Telegram-specific: webhook setup instructions */}
+                  {provider.id === 'telegram' && (
+                    <div className="w-full p-3 rounded-lg border border-[#0088cc]/20 bg-[#0088cc]/5 space-y-2">
+                      <p className="text-xs font-semibold text-[#0088cc]">🔧 Webhook Setup</p>
+                      <p className="text-[11px] text-muted-foreground">
+                        After saving your bot token, set the webhook in Telegram BotFather:
+                      </p>
+                      <div className="flex items-center gap-1">
+                        <Input
+                          readOnly
+                          value={`https://api.telegram.org/bot<TOKEN>/setWebhook?url=${webhookEndpoint}/api/telegram&secret_token=<SECRET>`}
+                          className="font-mono text-[10px] h-7"
+                        />
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="shrink-0 h-7 w-7"
+                          onClick={() =>
+                            handleCopy(
+                              `https://api.telegram.org/bot<TOKEN>/setWebhook?url=${webhookEndpoint}/api/telegram&secret_token=<SECRET>`,
+                            )
+                          }
+                        >
+                          <Copy className="w-3 h-3" />
+                        </Button>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">
+                        Replace &lt;TOKEN&gt; with your bot token and &lt;SECRET&gt; with your
+                        webhook secret.
+                      </p>
+                    </div>
+                  )}
+
                   <div className="flex gap-2">
                     <Button
                       variant="outline"

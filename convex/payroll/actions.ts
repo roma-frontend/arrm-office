@@ -19,6 +19,7 @@ interface PayrollEmployee {
 /** Settings returned by `settings.getOrganizationSettings`. */
 interface PayrollOrgSettings {
   taxCountry?: CountryCode;
+  overtimeMultiplier?: number;
 }
 
 export const processScheduledPayroll = action({
@@ -66,6 +67,7 @@ export const processScheduledPayroll = action({
           bonuses,
           overtimeHours,
           hourlyRate,
+          overtimeMultiplier: settings?.overtimeMultiplier,
           // Armenia: employees born before 1974 are exempt from the funded pension.
           pensionExempt: resolvePensionExemption({
             pensionExempt: emp.pensionExempt,

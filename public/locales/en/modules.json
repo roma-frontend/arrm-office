@@ -2460,6 +2460,24 @@
     "organizationRequest": "Requests access to the organization calendar",
     "personRequest": "Requests access to your calendar"
   },
+  "calendarShared": {
+    "title": "Shared calendar",
+    "subtitle": "Pick a colleague to see their calendar. Without access, send the request right here.",
+    "searchPlaceholder": "Search by name, department, or position…",
+    "searchAriaLabel": "Search colleagues",
+    "myCalendar": "My calendar",
+    "open": "Shared calendar",
+    "viewing": "Viewing",
+    "view": "View",
+    "requestSent": "Request sent",
+    "requestAccess": "Request access",
+    "noDepartment": "No department",
+    "noEmployees": "No employees found",
+    "backToMine": "Back to my calendar",
+    "viewingPerson": "{{name}}'s calendar · {{department}}",
+    "viewingPersonAnnounce": "Showing {{name}}'s calendar",
+    "entireOrganizationDesc": "Leaves, bookings and events across the whole organization"
+  },
   "rooms": {
     "title": "Meeting Rooms",
     "subtitle": "Real-time availability of every room in the office",

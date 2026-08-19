@@ -48,7 +48,10 @@
       "lastWebhook": "Last delivery",
       "copy": "Copy",
       "copied": "Copied",
-      "copyFailed": "Could not copy — select the text and copy manually"
+      "copyFailed": "Could not copy — select the text and copy manually",
+      "telegramBotToken": "Bot Token",
+      "telegramBotTokenHint": "Get your token from @BotFather on Telegram",
+      "telegramWebhookHint": "After saving, set the webhook URL in BotFather to enable the bot"
     },
     "billing": "Billing",
     "usage": "Usage",
@@ -111,6 +114,35 @@
       "balanceEditable": "Balance Editable",
       "daysPerYear": "Days Per Year"
     },
+    "overtimeSettings": {
+      "title": "Overtime Settings",
+      "subtitle": "Configure overtime limits, payment and approvals — synced with requests and payroll",
+      "general": "General",
+      "enabled": "Overtime enabled",
+      "enabledDesc": "When off, employees cannot submit overtime requests",
+      "requireApproval": "Require approval",
+      "requireApprovalDesc": "When off, requests are approved automatically",
+      "notifySupervisor": "Notify supervisor",
+      "notifySupervisorDesc": "Send a notification to the supervisor on new requests",
+      "notifyHR": "Notify HR",
+      "notifyHRDesc": "Copy HR on new overtime requests",
+      "limits": "Hour limits",
+      "limitsDesc": "Empty = unlimited",
+      "perDay": "Per day",
+      "perWeek": "Per week",
+      "perMonth": "Per month",
+      "payment": "Payment",
+      "paymentType": "Payment type",
+      "payDoubleRate": "Paid at overtime rate",
+      "payCompLeave": "Compensatory leave (unpaid)",
+      "payPolicy": "According to company policy",
+      "overtimeRate": "Overtime rate (×)",
+      "rateHint": "Multiplier applied to the hourly rate in payroll (empty = organization default)",
+      "compLeaveHint": "Overtime is compensated with time off — payroll adds no overtime pay.",
+      "saved": "Overtime settings saved",
+      "invalidRate": "Rate must be between 1 and 10",
+      "invalidLimit": "Limits must be positive numbers"
+    },
     "leaveBalances": {
       "title": "Leave Balances",
       "subtitle": "View and edit employee leave balances",
@@ -122,6 +154,39 @@
       "editTitle": "Edit Balances",
       "reason": "Reason for adjustment *",
       "reasonPlaceholder": "e.g. Annual balance accrual, correction"
+    },
+    "recruitment": {
+      "tabs": {
+        "candidates": "Candidates"
+      },
+      "candidates": {
+        "search": "Search by name, email, or phone...",
+        "filters": "Filters",
+        "empty": "No candidates yet",
+        "noResults": "No candidates match your search",
+        "hint": "Candidates will appear here as they apply to your vacancies",
+        "block": "Block Candidate",
+        "unblock": "Unblock",
+        "blocked": "Blocked",
+        "applications": "applications",
+        "application": "application",
+        "exportCsv": "Export CSV",
+        "exported": "CSV exported"
+      },
+      "screening": {
+        "status": "Screening Status",
+        "sent": "Instructions sent via Telegram",
+        "completed": "Completed",
+        "pending": "Waiting for candidate...",
+        "responses": "Screening Responses",
+        "candidateReply": "Candidate reply",
+        "aiScore": "AI Screening Score",
+        "strengths": "Strengths",
+        "concerns": "Concerns",
+        "hrReply": "HR reply",
+        "replyPlaceholder": "Type a reply to the candidate...",
+        "replySent": "Reply sent via Telegram"
+      }
     },
     "integrationProviders": {
       "lucky_carrot": {

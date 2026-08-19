@@ -154,22 +154,6 @@ jest.mock('@/components/ui/badge', () => ({
   ),
 }));
 
-jest.mock('@/components/ui/select', () => ({
-  Select: ({ children, value, onValueChange }: any) => (
-    <select
-      aria-label="calendar-person-select"
-      value={value}
-      onChange={(event) => onValueChange(event.target.value)}
-    >
-      {children}
-    </select>
-  ),
-  SelectTrigger: ({ children }: any) => <>{children}</>,
-  SelectValue: () => null,
-  SelectContent: ({ children }: any) => <>{children}</>,
-  SelectItem: ({ children, value }: any) => <option value={value}>{children}</option>,
-}));
-
 jest.mock('@/components/ui/avatar', () => ({
   Avatar: ({ children }: any) => <span>{children}</span>,
   AvatarFallback: ({ children, style }: any) => <span style={style}>{children}</span>,
@@ -237,17 +221,44 @@ jest.mock('@/components/calendar/EventTimelineModal', () => ({
       </div>
     ) : null,
 }));
-jest.mock('@/components/calendar/CalendarScopeSwitcher', () => ({
-  CalendarScopeSwitcher: ({ value, onChange, counts }: any) => (
-    <div data-testid="scope-switcher">
-      <button onClick={() => onChange('mine')} data-active={value === 'mine'}>
-        mine ({counts?.mine})
-      </button>
-      <button onClick={() => onChange('team')} data-active={value === 'team'}>
-        team ({counts?.team})
-      </button>
-    </div>
-  ),
+jest.mock('@/components/calendar/SharedCalendarDialog', () => ({
+  SharedCalendarDialog: ({
+    open,
+    people,
+    organizationAccess,
+    onSelectMine,
+    onSelectPerson,
+    onRequestPerson,
+    onSelectOrganization,
+  }: any) =>
+    open ? (
+      <div data-testid="shared-calendar-dialog">
+        <button data-testid="shared-dialog-mine" onClick={() => onSelectMine()}>
+          mine option
+        </button>
+        {organizationAccess === 'approved' && (
+          <button data-testid="shared-dialog-organization" onClick={() => onSelectOrganization()}>
+            organization option
+          </button>
+        )}
+        {(people ?? []).map((p: any) => (
+          <div key={p._id}>
+            <button
+              data-testid={`shared-dialog-person-${p._id}`}
+              onClick={() => onSelectPerson(p._id)}
+            >
+              {p.name}
+            </button>
+            <button
+              data-testid={`shared-dialog-request-${p._id}`}
+              onClick={() => onRequestPerson(p._id)}
+            >
+              request {p.name}
+            </button>
+          </div>
+        ))}
+      </div>
+    ) : null,
 }));
 jest.mock('@/components/rooms/RoomAvailabilityStrip', () => ({
   RoomAvailabilityStrip: () => <div data-testid="room-strip" />,
@@ -295,6 +306,8 @@ jest.mock('lucide-react', () => {
     Video: mkIcon('Video'),
     Maximize2: mkIcon('Maximize2'),
     Minimize2: mkIcon('Minimize2'),
+    User: mkIcon('User'),
+    X: mkIcon('X'),
   };
 });
 
@@ -448,8 +461,8 @@ describe('CalendarClient', () => {
     jest.clearAllMocks();
     mutationCalls.length = 0;
     mutationImpl = null;
-    // Scope choices persist to localStorage; reset so every test starts on the
-    // admin default ('team') instead of inheriting a previous test's scope.
+    // Scope is no longer persisted; every test starts on the personal calendar
+    // regardless of role or any earlier session.
     window.localStorage.clear();
     mockUser = { id: 'user-1', organizationId: 'org-1', role: 'admin' };
     mockSelectedOrg = 'org-1';
@@ -476,12 +489,14 @@ describe('CalendarClient', () => {
     delete (global as any).fetch;
   });
 
-  it('renders the header, month navigation and day grid', () => {
+  it('renders the header with the personal calendar as the default view', () => {
     render(<CalendarClient />);
     expect(screen.getByText('buttons.today')).toBeInTheDocument();
     expect(screen.getByText('calendar.newLeave')).toBeInTheDocument();
     expect(screen.getByText('createMeeting.title')).toBeInTheDocument();
-    expect(screen.getByTestId('scope-switcher')).toBeInTheDocument();
+    // Personal calendar is the default; the shared view is opt-in via a button.
+    expect(screen.getByText('My calendar')).toBeInTheDocument();
+    expect(screen.getByText('Shared calendar')).toBeInTheDocument();
     // 6 weeks × 7 days grid
     expect(document.querySelectorAll('button').length).toBeGreaterThan(20);
   });
@@ -541,7 +556,7 @@ describe('CalendarClient', () => {
       getUsersByOrganizationId: [],
     };
     render(<CalendarClient />);
-    expect(screen.getByText('calendarScope.team.emptyDay')).toBeInTheDocument();
+    expect(screen.getByText('calendarScope.mine.emptyDay')).toBeInTheDocument();
   });
 
   it('opens the leave request modal from the header button', () => {
@@ -580,19 +595,21 @@ describe('CalendarClient', () => {
     expect(toast.success).toHaveBeenCalledWith('createMeeting.deleted');
   });
 
-  it('switches between personal and team scope', () => {
+  it('offers the organization calendar inside the shared dialog for approved viewers', () => {
     render(<CalendarClient />);
-    // Admin defaults to 'team'; the switcher carries live scope counts.
-    const mineButton = screen.getByText(/^mine \(/);
-    const teamButton = screen.getByText(/^team \(/);
-    expect(teamButton.getAttribute('data-active')).toBe('true');
-    fireEvent.click(mineButton);
-    expect(mineButton.getAttribute('data-active')).toBe('true');
-    fireEvent.click(teamButton);
-    expect(teamButton.getAttribute('data-active')).toBe('true');
+    // Admins start on their own calendar too — nothing shared is active yet.
+    expect(screen.queryByText('Entire organization')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Shared calendar'));
+    expect(screen.getByTestId('shared-calendar-dialog')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('shared-dialog-organization'));
+
+    // The shared view now shows the organization-wide chip with a way back.
+    expect(screen.getByText('Entire organization')).toBeInTheDocument();
+    expect(mutateCall('requestCalendarAccess') === undefined).toBeTruthy();
   });
 
-  it('requests approval instead of opening the organization calendar without access', async () => {
+  it('offers a person access request from the shared dialog without access', async () => {
     mockUser = { id: 'user-1', organizationId: 'org-1', role: 'employee' };
     queryResults = {
       ...queryResults,
@@ -600,16 +617,17 @@ describe('CalendarClient', () => {
     };
     render(<CalendarClient />);
 
-    expect(screen.queryByText(/^team \(/)).not.toBeInTheDocument();
-    expect(screen.queryByLabelText('calendar-person-select')).not.toBeInTheDocument();
-    fireEvent.click(screen.getByText('Request organization calendar'));
+    fireEvent.click(screen.getByText('Shared calendar'));
+    // No org-wide option without an approved grant.
+    expect(screen.queryByTestId('shared-dialog-organization')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('shared-dialog-request-user-2'));
 
     await waitFor(() => {
       expect(mutationCalls).toEqual(
         expect.arrayContaining([
           {
             name: 'requestCalendarAccess',
-            args: [{ organizationId: 'org-1', scope: 'organization' }],
+            args: [{ organizationId: 'org-1', scope: 'person', targetUserId: 'user-2' }],
           },
         ]),
       );
@@ -617,7 +635,7 @@ describe('CalendarClient', () => {
     expect(screen.getByText('My calendar')).toBeInTheDocument();
   });
 
-  it('hides shared controls while the CEO request is pending', () => {
+  it('hides the organization option while the CEO request is pending', () => {
     mockUser = { id: 'user-1', organizationId: 'org-1', role: 'employee' };
     queryResults = {
       ...queryResults,
@@ -625,25 +643,34 @@ describe('CalendarClient', () => {
     };
     render(<CalendarClient />);
 
-    expect(screen.queryByText(/^team \(/)).not.toBeInTheDocument();
-    expect(screen.queryByLabelText('calendar-person-select')).not.toBeInTheDocument();
-    expect(screen.getByText('Awaiting CEO approval')).toBeDisabled();
+    fireEvent.click(screen.getByText('Shared calendar'));
+    expect(screen.queryByTestId('shared-dialog-organization')).not.toBeInTheDocument();
+    // Colleague rows are still there for per-person requests.
+    expect(screen.getByTestId('shared-dialog-person-user-2')).toBeInTheDocument();
   });
 
-  it('filters the CEO-approved organization calendar by employee', async () => {
+  it('opens a colleague calendar picked in the shared dialog', () => {
     queryResults = {
       ...queryResults,
       getMyAccessState: { organization: 'approved', people: [] },
     };
     render(<CalendarClient />);
 
-    fireEvent.change(screen.getByLabelText('calendar-person-select'), {
-      target: { value: 'user-2' },
-    });
+    fireEvent.click(screen.getByText('Shared calendar'));
+    fireEvent.click(screen.getByTestId('shared-dialog-person-user-2'));
 
-    expect(screen.getByLabelText('calendar-person-select')).toHaveValue('user-2');
-    expect(mutationCalls.some((call) => call.name === 'requestCalendarAccess')).toBe(false);
+    // The person's name becomes the header title and the shared chip.
+    expect(screen.getAllByText('Maya Chen').length).toBeGreaterThan(0);
+    expect(mutateCall('requestCalendarAccess') === undefined).toBeTruthy();
+
+    // The X on the shared chip returns to the personal calendar.
+    fireEvent.click(screen.getByLabelText('Back to my calendar'));
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
+
+  function mutateCall(name: string) {
+    return mutationCalls.find((call) => call.name === name);
+  }
 
   it('shows the room availability strip and room legend', () => {
     render(<CalendarClient />);
@@ -764,7 +791,7 @@ describe('CalendarClient', () => {
     });
   });
 
-  it('reveals hidden shared events from the personal view', () => {
+  it('reveals hidden shared events from the personal view via the dialog', () => {
     queryResults = {
       ...queryResults,
       getLeavesForOrganization: [
@@ -773,10 +800,11 @@ describe('CalendarClient', () => {
       ],
     };
     render(<CalendarClient />);
-    fireEvent.click(screen.getByText(/^mine \(/));
+    // Personal view is the default now, so the hidden-count reveal is there.
     expect(screen.getByText('calendarScope.hiddenOnDay')).toBeInTheDocument();
     fireEvent.click(screen.getByText('calendarScope.showShared'));
-    expect(screen.getByText(/^team \(/).getAttribute('data-active')).toBe('true');
+    // The button opens the shared-calendar picker instead of jumping scopes.
+    expect(screen.getByTestId('shared-calendar-dialog')).toBeInTheDocument();
   });
 
   it('opens the create-event modal when double-clicking an empty future day', async () => {
@@ -1009,6 +1037,10 @@ describe('CalendarClient', () => {
       ],
     };
     render(<CalendarClient />);
+    // Bob's pending leave belongs to the shared view — the admin opts into it
+    // through the dialog, exactly like a real user would.
+    fireEvent.click(screen.getByText('Shared calendar'));
+    fireEvent.click(screen.getByTestId('shared-dialog-organization'));
     // Pending rows render the amber clock icon in their status badge.
     expect(screen.getAllByTestId('icon-Clock').length).toBeGreaterThan(0);
     const rows = Array.from(document.querySelectorAll('[title="eventTimeline.hints.doubleClick"]'));

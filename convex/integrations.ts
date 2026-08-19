@@ -27,9 +27,10 @@ const providerValidator = v.union(
   v.literal('lucky_carrot'),
   v.literal('imid'),
   v.literal('armsoft'),
+  v.literal('telegram'),
 );
 
-type Provider = 'lucky_carrot' | 'imid' | 'armsoft';
+type Provider = 'lucky_carrot' | 'imid' | 'armsoft' | 'telegram';
 
 /** Credential fields that must never reach the client. */
 const SECRET_FIELDS = ['apiKey', 'clientSecret', 'apiPassword'] as const;
@@ -1143,6 +1144,16 @@ async function performSync(
       return syncImid(ctx, organizationId, config);
     case 'armsoft':
       return syncArmsoft(ctx, organizationId, config);
+    case 'telegram':
+      // Telegram is a config-only integration — no employee sync needed.
+      return {
+        message: 'Telegram: configuration saved',
+        created: 0,
+        updated: 0,
+        deactivated: 0,
+        skipped: 0,
+        skippedSync: true,
+      };
     default:
       throw new Error(`Unknown provider: ${provider}`);
   }

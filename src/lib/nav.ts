@@ -354,6 +354,12 @@ export const navItems: NavEntry[] = [
         roles: ['superadmin', 'admin'],
       },
       {
+        href: '/admin/overtime-settings',
+        labelKey: 'nav.overtimeSettings',
+        icon: Clock,
+        roles: ['superadmin', 'admin'],
+      },
+      {
         href: '/admin/integrations',
         labelKey: 'nav.integrations',
         icon: Globe,

@@ -136,6 +136,7 @@ export async function isAncestorOf(
 export async function getSubordinateIds(
   ctx: Pick<QueryCtx, 'db'>,
   managerId: Id<'users'>,
+  organizationId?: Id<'organizations'>,
   maxDepth: number = MAX_LINE_HOPS,
 ): Promise<Id<'users'>[]> {
   const collected: Id<'users'>[] = [];
@@ -151,6 +152,10 @@ export async function getSubordinateIds(
         .take(DEFAULT_LIST_CAP);
       for (const r of reports) {
         if (seen.has(r._id)) continue;
+        // The reporting line must never cross a tenant boundary: when an org
+        // is given, reports outside it are skipped instead of grafted onto
+        // this manager's subtree. No org (cross-tenant superadmin) walks all.
+        if (organizationId && r.organizationId !== organizationId) continue;
         seen.add(r._id);
         collected.push(r._id);
         next.push(r._id);

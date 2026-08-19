@@ -2460,6 +2460,24 @@
     "organizationRequest": "Fordert Zugriff auf den Organisationskalender an",
     "personRequest": "Fordert Zugriff auf Ihren Kalender an"
   },
+  "calendarShared": {
+    "title": "Gemeinsamer Kalender",
+    "subtitle": "Wählen Sie einen Kollegen, um dessen Kalender zu sehen. Ohne Zugriff senden Sie die Anfrage direkt von hier.",
+    "searchPlaceholder": "Nach Name, Abteilung oder Position suchen…",
+    "searchAriaLabel": "Kollegen suchen",
+    "myCalendar": "Mein Kalender",
+    "open": "Gemeinsamer Kalender",
+    "viewing": "Geöffnet",
+    "view": "Öffnen",
+    "requestSent": "Anfrage gesendet",
+    "requestAccess": "Zugriff anfragen",
+    "noDepartment": "Ohne Abteilung",
+    "noEmployees": "Keine Kollegen gefunden",
+    "backToMine": "Zurück zu meinem Kalender",
+    "viewingPerson": "Kalender von {{name}} · {{department}}",
+    "viewingPersonAnnounce": "Kalender von {{name}} wird angezeigt",
+    "entireOrganizationDesc": "Urlaub, Buchungen und Ereignisse der gesamten Organisation"
+  },
   "rooms": {
     "title": "Besprechungsräume",
     "subtitle": "Belegung aller Büroräume in Echtzeit",

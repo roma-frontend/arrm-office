@@ -30,10 +30,16 @@ jest.mock('../../convex/_generated/api', () => ({
     onboarding: {
       startOnboarding: { _name: 'startOnboarding' },
     },
+    telegram: {
+      sendScreeningInstructions: { _name: 'sendScreeningInstructions' },
+    },
   },
   internal: {
     probation: {
       autoStartProbation: { _name: 'autoStartProbation' },
+    },
+    telegram: {
+      sendInterviewInvite: { _name: 'sendInterviewInvite' },
     },
   },
 }));
@@ -393,7 +399,11 @@ describe('listVacancies', () => {
   it('returns vacancies enriched with manager name and stage counts', async () => {
     const { ctx, chains } = makeCtx();
     ctx.get.mockImplementation((id: string) =>
-      id === 'user_mgr' ? Promise.resolve(userDoc()) : Promise.resolve(null),
+      id === 'user_mgr'
+        ? Promise.resolve(userDoc())
+        : id === CAND_ID
+          ? Promise.resolve(candidateDoc())
+          : Promise.resolve(null),
     );
     const vacCh = chain(chains, 'vacancies');
     vacCh.take.mockResolvedValue([vacancyDoc()]);
@@ -725,6 +735,10 @@ describe('getPipelineStats', () => {
 
   it('aggregates the pipeline across the organization', async () => {
     const { ctx, chains } = makeCtx();
+    // Orphan applications (missing profile) must not feed the counters.
+    ctx.get.mockImplementation((id: string) =>
+      id === CAND_ID ? Promise.resolve(candidateDoc()) : Promise.resolve(null),
+    );
     const vacCh = chain(chains, 'vacancies');
     vacCh.take.mockResolvedValue([vacancyDoc(), vacancyDoc({ _id: VAC_2, status: 'paused' })]);
     const appCh = chain(chains, 'applications');
@@ -756,6 +770,31 @@ describe('getPipelineStats', () => {
       offer: 1,
       hired: 1,
       rejected: 1,
+    });
+  });
+
+  it('ignores orphan applications whose candidate profile was removed', async () => {
+    const { ctx, chains } = makeCtx();
+    // Only CAND_ID resolves to a profile; the ghost candidate is gone.
+    ctx.get.mockImplementation((id: string) =>
+      id === CAND_ID ? Promise.resolve(candidateDoc()) : Promise.resolve(null),
+    );
+    const appCh = chain(chains, 'applications');
+    appCh.take.mockResolvedValue([
+      applicationDoc({ stage: 'applied' }),
+      applicationDoc({ _id: APP_2, candidateId: 'cand_ghost', stage: 'interview' }),
+    ]);
+
+    const res = (await handlers.getPipelineStats(ctx, { organizationId: ORG_A })) as any;
+
+    expect(res.totalCandidates).toBe(1);
+    expect(res.pipeline).toEqual({
+      applied: 1,
+      screening: 0,
+      interview: 0,
+      offer: 0,
+      hired: 0,
+      rejected: 0,
     });
   });
 });
@@ -1335,7 +1374,17 @@ describe('moveCandidate', () => {
 
     await handlers.moveCandidate(ctx, { applicationId: APP_ID, newStage: 'screening' });
 
-    expect(runAfter).not.toHaveBeenCalled();
+    // Screening legitimately schedules the Telegram instructions — but no
+    // email action may go out for a neutral move.
+    const emailFns = [
+      'sendApplicationConfirmation',
+      'sendOfferLetter',
+      'sendRejectionNotice',
+      'sendInterviewInvitation',
+    ];
+    for (const call of runAfter.mock.calls) {
+      expect(emailFns).not.toContain((call[1] as { _name?: string })._name);
+    }
   });
 });
 

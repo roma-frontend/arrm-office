@@ -18,6 +18,7 @@ import {
   type OrgScope,
 } from './lib/orgAccess';
 import { assertModuleAccess } from './lib/entitlements';
+import { generateCandidateToken } from './candidatePortal';
 
 /**
  * Candidate records are personal data: a name, an email, a phone number, a CV and
@@ -72,6 +73,21 @@ async function ownedApplication(
   return app;
 }
 
+/**
+ * Drop applications whose candidate profile no longer exists.
+ *
+ * The app's own deletes cascade (see `purgeApplication`), but a profile removed
+ * straight from the database leaves orphan applications behind, and those must
+ * not keep feeding counters, pipelines and stage chips with ghost candidates.
+ */
+async function liveApplications<T extends { candidateId: Id<'candidateProfiles'> }>(
+  ctx: QueryCtx | MutationCtx,
+  apps: T[],
+): Promise<T[]> {
+  const profiles = await Promise.all(apps.map((app) => ctx.db.get(app.candidateId)));
+  return apps.filter((_, index) => profiles[index] !== null);
+}
+
 // ============ QUERIES ============
 
 export const listVacancies = query({
@@ -106,10 +122,13 @@ export const listVacancies = query({
 
     const enriched = await Promise.all(
       vacancies.map(async (vac) => {
-        const apps = await ctx.db
-          .query('applications')
-          .withIndex('by_vacancy', (q) => q.eq('vacancyId', vac._id))
-          .take(DEFAULT_LIST_CAP);
+        const apps = await liveApplications(
+          ctx,
+          await ctx.db
+            .query('applications')
+            .withIndex('by_vacancy', (q) => q.eq('vacancyId', vac._id))
+            .take(DEFAULT_LIST_CAP),
+        );
         const manager = await ctx.db.get(vac.hiringManagerId);
         return {
           ...vac,
@@ -175,6 +194,7 @@ export const listCandidatesByVacancy = query({
         .withIndex('by_vacancy', (q) => q.eq('vacancyId', vacancyId))
         .take(DEFAULT_LIST_CAP);
     }
+    apps = await liveApplications(ctx, apps);
 
     const enriched = await Promise.all(
       apps.map(async (app) => {
@@ -223,7 +243,7 @@ export const listApplicationsPaginated = query({
       }),
     );
 
-    return { ...result, page: enriched };
+    return { ...result, page: enriched.filter((app) => app.candidate !== null) };
   },
 });
 
@@ -353,10 +373,13 @@ export const getPipelineStats = query({
       )
       .take(DEFAULT_LIST_CAP);
 
-    const allApps = await ctx.db
-      .query('applications')
-      .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
-      .take(DEFAULT_LIST_CAP);
+    const allApps = await liveApplications(
+      ctx,
+      await ctx.db
+        .query('applications')
+        .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
+        .take(DEFAULT_LIST_CAP),
+    );
 
     return {
       openVacancies: openVacancies.length,
@@ -667,6 +690,7 @@ export const addCandidate = mutation({
           }
         : {}),
       createdBy,
+      candidateToken: generateCandidateToken(),
       createdAt: now,
       updatedAt: now,
     });
@@ -787,9 +811,44 @@ export const moveCandidate = mutation({
       createdAt: now,
     });
 
-    // 📧 Send email notifications for stage changes
+    // 📋 When entering screening, schedule the Telegram screening instructions
+    if (newStage === 'screening') {
+      await ctx.db.patch(applicationId, {
+        screeningStartedAt: now,
+      });
+      // Fire-and-forget: the action will generate AI instructions and send
+      // them via Telegram. We don't block the mutation on this — if the
+      // candidate hasn't linked Telegram yet, HR sees a warning in the UI.
+      await ctx.scheduler.runAfter(0, api.telegram.sendScreeningInstructions, {
+        applicationId,
+      });
+    }
+
+    // 🤖 Send portal link via Telegram on stage change
     const candidate = await ctx.db.get(app.candidateId);
     const vacancy = await ctx.db.get(app.vacancyId);
+
+    if (app.candidateToken && candidate?.telegramChatId) {
+      const botToken = process.env.TELEGRAM_BOT_TOKEN;
+      if (botToken) {
+        const portalUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/candidate/${app.candidateToken}`;
+        const stageLabel = newStage.charAt(0).toUpperCase() + newStage.slice(1);
+        await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: candidate.telegramChatId,
+            text: `🔔 Обновление статуса / Status Update\n\nСтадия: ${stageLabel}\nВакансия: ${vacancy?.title ?? ''}\n\nОткройте кабинет:\nOpen your dashboard:`,
+            parse_mode: 'HTML',
+            reply_markup: {
+              inline_keyboard: [[{ text: '🚀 Открыть кабинет / Open Dashboard', url: portalUrl }]],
+            },
+          }),
+        }).catch(() => {}); // Non-critical
+      }
+    }
+
+    // 📧 Send email notifications for stage changes
 
     if (candidate?.email && vacancy) {
       if (newStage === 'offer') {
@@ -897,6 +956,35 @@ export const rejectCandidate = mutation({
   },
 });
 
+/**
+ * Persist the AI interview prep pack on the application so the interviewer
+ * can reopen it during the interview. Staff-only: the candidate portal never
+ * reads this field.
+ */
+export const saveInterviewPrep = mutation({
+  args: {
+    applicationId: v.id('applications'),
+    prep: v.object({
+      questions: v.array(
+        v.object({ category: v.string(), question: v.string(), whatToLookFor: v.string() }),
+      ),
+      criteria: v.array(v.object({ criterion: v.string(), description: v.string() })),
+      redFlags: v.array(v.string()),
+      openingTips: v.string(),
+    }),
+  },
+  handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'recruitment');
+    await assertFeatureEnabled(ctx, 'recruitment.module');
+    const scope = await assertOrgStaff(ctx, undefined);
+    await ownedApplication(ctx, scope, args.applicationId);
+    await ctx.db.patch(args.applicationId, {
+      interviewPrep: { ...args.prep, updatedAt: Date.now() },
+      updatedAt: Date.now(),
+    });
+  },
+});
+
 export const scheduleInterview = mutation({
   args: {
     applicationId: v.id('applications'),
@@ -935,9 +1023,17 @@ export const scheduleInterview = mutation({
       throw new Error('Interviews cannot be scheduled in the past');
     if (args.duration <= 0) throw new Error('Interview duration must be positive');
 
+    // Determine the round number (1, 2, 3…)
+    const existingInterviews = await ctx.db
+      .query('interviews')
+      .withIndex('by_application', (q) => q.eq('applicationId', args.applicationId))
+      .take(DEFAULT_LIST_CAP);
+    const maxRound = existingInterviews.reduce((max, iv) => Math.max(max, iv.round ?? 0), 0);
+
     const interviewId = await ctx.db.insert('interviews', {
       ...args,
       organizationId: app.organizationId,
+      round: maxRound + 1,
       status: 'scheduled',
       createdAt: Date.now(),
     });
@@ -971,6 +1067,29 @@ export const scheduleInterview = mutation({
           location: args.location,
           meetingLink: args.meetingLink,
           additionalNotes: args.additionalNotes,
+        });
+      }
+
+      // 📨 Telegram: the candidate gets the room link here too — the portal
+      // alone is easy to miss, and screening already lives in Telegram.
+      if (candidate?.telegramChatId && vacancy) {
+        await ctx.scheduler.runAfter(0, internal.telegram.sendInterviewInvite, {
+          chatId: candidate.telegramChatId,
+          candidateName: candidate.name,
+          vacancyTitle: vacancy.title,
+          interviewDate: new Date(args.scheduledAt).toLocaleDateString('ru-RU', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          }),
+          interviewTime: new Date(args.scheduledAt).toLocaleTimeString('ru-RU', {
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
+          interviewType: args.type,
+          interviewerName: interviewer?.name ?? 'HR Team',
+          meetingLink: args.meetingLink,
+          location: args.location,
         });
       }
     }
@@ -1394,5 +1513,221 @@ export const secureDeleteCandidate = mutation({
     // The profile is shared between applications; dropping it unconditionally
     // took the other vacancies' candidates with it.
     await purgeOrphanCandidate(ctx, app.candidateId);
+  },
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CANDIDATE DATABASE — org-wide deduplicated view
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * All candidate profiles for the organization, enriched with their application
+ * history. Deduplication is enforced at the profile level (one profile per
+ * email per org), so each row here is a unique person.
+ */
+export const listAllCandidates = query({
+  args: {
+    organizationId: v.id('organizations'),
+    search: v.optional(v.string()),
+    source: v.optional(v.string()),
+    stage: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const scope = await resolveOrgStaff(ctx, args.organizationId);
+    if (!scope) return [];
+
+    let profiles = await ctx.db
+      .query('candidateProfiles')
+      .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
+      .take(DEFAULT_LIST_CAP);
+
+    // Client-side search by name/email
+    if (args.search) {
+      const q = args.search.toLowerCase();
+      profiles = profiles.filter(
+        (p) =>
+          p.name.toLowerCase().includes(q) ||
+          p.email.toLowerCase().includes(q) ||
+          (p.phone && p.phone.includes(q)),
+      );
+    }
+
+    // Filter by source
+    if (args.source) {
+      profiles = profiles.filter((p) => p.source === args.source);
+    }
+
+    const enriched = await Promise.all(
+      profiles.map(async (profile) => {
+        // All applications for this candidate
+        let apps = await ctx.db
+          .query('applications')
+          .withIndex('by_candidate', (q) => q.eq('candidateId', profile._id))
+          .take(DEFAULT_LIST_CAP);
+
+        // Filter by stage if provided
+        if (args.stage) {
+          apps = apps.filter((a) => a.stage === args.stage);
+        }
+
+        const vacancyTitles: Record<string, string> = {};
+        for (const app of apps) {
+          if (!vacancyTitles[app.vacancyId as string]) {
+            const vac = await ctx.db.get(app.vacancyId);
+            vacancyTitles[app.vacancyId as string] = vac?.title ?? 'Unknown';
+          }
+        }
+
+        const applications = apps.map((a) => ({
+          _id: a._id,
+          vacancyId: a.vacancyId,
+          vacancyTitle: vacancyTitles[a.vacancyId as string] ?? 'Unknown',
+          stage: a.stage,
+          createdAt: a.createdAt,
+          screeningCompletedAt: a.screeningCompletedAt,
+        }));
+
+        // Compute average score across all scorecards
+        let totalScore = 0;
+        let scoreCount = 0;
+        for (const app of apps) {
+          const scorecards = await ctx.db
+            .query('interviewScorecards')
+            .withIndex('by_application', (q) => q.eq('applicationId', app._id))
+            .take(DEFAULT_LIST_CAP);
+          for (const sc of scorecards) {
+            totalScore += sc.overallScore;
+            scoreCount++;
+          }
+        }
+
+        const currentStage =
+          apps.length > 0
+            ? apps.reduce((latest, a) => {
+                const stageOrder = [
+                  'applied',
+                  'screening',
+                  'interview',
+                  'offer',
+                  'hired',
+                  'rejected',
+                ];
+                return stageOrder.indexOf(a.stage) > stageOrder.indexOf(latest) ? a.stage : latest;
+              }, apps[0]!.stage)
+            : null;
+
+        return {
+          _id: profile._id,
+          name: profile.name,
+          email: profile.email,
+          phone: profile.phone,
+          source: profile.source,
+          isBlocked: profile.isBlocked,
+          telegramUsername: profile.telegramUsername,
+          createdAt: profile.createdAt,
+          applicationCount: apps.length,
+          currentStage,
+          avgScore: scoreCount > 0 ? Math.round((totalScore / scoreCount) * 10) / 10 : null,
+          applications,
+          lastActivity:
+            apps.length > 0
+              ? Math.max(...apps.map((a) => a.updatedAt ?? a.createdAt))
+              : profile.createdAt,
+        };
+      }),
+    );
+
+    // Sort by last activity descending
+    return enriched.sort((a, b) => b.lastActivity - a.lastActivity);
+  },
+});
+
+/** Block a candidate from applying again. */
+export const blockCandidate = mutation({
+  args: {
+    candidateId: v.id('candidateProfiles'),
+    reason: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'recruitment.module');
+    const scope = await assertOrgStaff(ctx, undefined, { adminOnly: true });
+    const profile = await ctx.db.get(args.candidateId);
+    if (!profile) throw new Error('Candidate not found');
+    if (!scopeOwnsRecord(scope, profile)) throw new Error('Not authorized');
+
+    await ctx.db.patch(args.candidateId, {
+      isBlocked: true,
+      blockedAt: Date.now(),
+      blockedReason: args.reason,
+    });
+  },
+});
+
+/** Unblock a candidate. */
+export const unblockCandidate = mutation({
+  args: { candidateId: v.id('candidateProfiles') },
+  handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'recruitment.module');
+    const scope = await assertOrgStaff(ctx, undefined, { adminOnly: true });
+    const profile = await ctx.db.get(args.candidateId);
+    if (!profile) throw new Error('Candidate not found');
+    if (!scopeOwnsRecord(scope, profile)) throw new Error('Not authorized');
+
+    await ctx.db.patch(args.candidateId, {
+      isBlocked: false,
+      blockedAt: undefined,
+      blockedReason: undefined,
+    });
+  },
+});
+
+/** Get full candidate history across all vacancies. */
+export const getCandidateHistory = query({
+  args: { candidateId: v.id('candidateProfiles') },
+  handler: async (ctx, args) => {
+    const profile = await ctx.db.get(args.candidateId);
+    if (!profile) return null;
+    const scope = await resolveOrgStaff(ctx, profile.organizationId);
+    if (!scope) return null;
+
+    const apps = await ctx.db
+      .query('applications')
+      .withIndex('by_candidate', (q) => q.eq('candidateId', args.candidateId))
+      .take(DEFAULT_LIST_CAP);
+
+    const enriched = await Promise.all(
+      apps.map(async (app) => {
+        const vacancy = await ctx.db.get(app.vacancyId);
+        const interviews = await ctx.db
+          .query('interviews')
+          .withIndex('by_application', (q) => q.eq('applicationId', app._id))
+          .take(DEFAULT_LIST_CAP);
+        const scorecards = await ctx.db
+          .query('interviewScorecards')
+          .withIndex('by_application', (q) => q.eq('applicationId', app._id))
+          .take(DEFAULT_LIST_CAP);
+        return {
+          _id: app._id,
+          vacancyTitle: vacancy?.title ?? 'Unknown',
+          stage: app.stage,
+          createdAt: app.createdAt,
+          updatedAt: app.updatedAt,
+          screeningCompletedAt: app.screeningCompletedAt,
+          interviewsCount: interviews.length,
+          scorecardsCount: scorecards.length,
+          avgScore:
+            scorecards.length > 0
+              ? Math.round(
+                  (scorecards.reduce((s, sc) => s + sc.overallScore, 0) / scorecards.length) * 10,
+                ) / 10
+              : null,
+        };
+      }),
+    );
+
+    return {
+      ...profile,
+      applications: enriched.sort((a, b) => b.createdAt - a.createdAt),
+    };
   },
 });

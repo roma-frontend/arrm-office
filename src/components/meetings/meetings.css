@@ -111,6 +111,25 @@
   --lk-box-shadow: 0 8px 30px rgb(0 0 0 / 0.45);
 }
 
+/* Floating emoji reactions rise from the control dock and fade out. */
+.meeting-reaction {
+  animation: meeting-reaction-rise 2.6s ease-out forwards;
+}
+
+@keyframes meeting-reaction-rise {
+  0% {
+    transform: translateY(40px) scale(0.6);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-220px) scale(1.25);
+    opacity: 0;
+  }
+}
+
 /* Buttons inside the kit inherit the app's press feedback. */
 .lk-room .lk-button {
   transition:

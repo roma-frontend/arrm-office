@@ -5,7 +5,12 @@ export const integrations = {
   // ── Integration Configurations per Organization ──────────────────────────
   integrationConfigs: defineTable({
     organizationId: v.id('organizations'),
-    provider: v.union(v.literal('lucky_carrot'), v.literal('imid'), v.literal('armsoft')),
+    provider: v.union(
+      v.literal('lucky_carrot'),
+      v.literal('imid'),
+      v.literal('armsoft'),
+      v.literal('telegram'),
+    ),
     // Provider-specific settings stored as JSON
     config: v.object({
       // Common
@@ -72,6 +77,10 @@ export const integrations = {
       // ── OAuth session state ──────────────────────────────────
       /** Pending OAuth authorization state (anti-CSRF). */
       oauthState: v.optional(v.string()),
+
+      // ── Telegram ──────────────────────────────────────────────
+      botToken: v.optional(v.string()),
+      botUsername: v.optional(v.string()),
     }),
     createdBy: v.id('users'),
     createdAt: v.number(),
@@ -85,7 +94,12 @@ export const integrations = {
   // ── Integration Sync Logs ────────────────────────────────────────────────
   integrationSyncLogs: defineTable({
     organizationId: v.id('organizations'),
-    provider: v.union(v.literal('lucky_carrot'), v.literal('imid'), v.literal('armsoft')),
+    provider: v.union(
+      v.literal('lucky_carrot'),
+      v.literal('imid'),
+      v.literal('armsoft'),
+      v.literal('telegram'),
+    ),
     action: v.string(),
     status: v.union(v.literal('success'), v.literal('error'), v.literal('skipped')),
     message: v.string(),

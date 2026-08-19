@@ -344,6 +344,10 @@
     "subscriptionExpiring": "Abonnement läuft ab",
     "newMessage": "Neue Nachricht",
     "mention": "Erwähnt",
+    "screeningComplete": "Screening abgeschlossen",
+    "candidateAdded": "Neuer Kandidat hinzugefügt",
+    "applicationReceived": "Neuer Antrag eingegangen",
+    "screeningResponse": "Neue Screening-Antwort",
     "markAllAsRead": "Alle als gelesen markieren"
   },
   "navbar": {
@@ -429,6 +433,8 @@
     "leaveSettings": "Urlaubseinstellungen",
     "holidays": "Feiertage",
     "leaveBalances": "Urlaubsguthaben",
+    "overtimeSettings": "Überstunden",
+    "recruitment": "Rekrutierung",
     "integrations": "Integrationen"
   },
   "admin": {
@@ -472,6 +478,35 @@
       "saved": "Guthaben erfolgreich aktualisiert",
       "editTitle": "Guthaben bearbeiten",
       "noEmployees": "Keine Mitarbeiter gefunden"
+    },
+    "overtimeSettings": {
+      "title": "Überstunden-Einstellungen",
+      "subtitle": "Limits, Vergütung und Genehmigungen — synchron mit Anträgen und Lohnabrechnung",
+      "general": "Allgemein",
+      "enabled": "Überstunden aktiviert",
+      "enabledDesc": "Wenn deaktiviert, können Mitarbeiter keine Überstundenanträge stellen",
+      "requireApproval": "Genehmigung erforderlich",
+      "requireApprovalDesc": "Wenn deaktiviert, werden Anträge automatisch genehmigt",
+      "notifySupervisor": "Vorgesetzten benachrichtigen",
+      "notifySupervisorDesc": "Vorgesetzten bei neuen Anträgen benachrichtigen",
+      "notifyHR": "HR benachrichtigen",
+      "notifyHRDesc": "HR bei neuen Überstundenanträgen in Kopie setzen",
+      "limits": "Stundenlimits",
+      "limitsDesc": "Leer = unbegrenzt",
+      "perDay": "Pro Tag",
+      "perWeek": "Pro Woche",
+      "perMonth": "Pro Monat",
+      "payment": "Vergütung",
+      "paymentType": "Vergütungsart",
+      "payDoubleRate": "Bezahlung mit Überstundensatz",
+      "payCompLeave": "Freizeitausgleich (unbezahlt)",
+      "payPolicy": "Nach Unternehmensrichtlinie",
+      "overtimeRate": "Überstundensatz (×)",
+      "rateHint": "Multiplikator auf den Stundensatz in der Lohnabrechnung (leer = Standard der Organisation)",
+      "compLeaveHint": "Überstunden werden per Freizeitausgleich vergütet — keine Überstundenzahlung.",
+      "saved": "Überstunden-Einstellungen gespeichert",
+      "invalidRate": "Satz muss zwischen 1 und 10 liegen",
+      "invalidLimit": "Limits müssen positive Zahlen sein"
     },
     "integrations": {
       "title": "Integrationen",

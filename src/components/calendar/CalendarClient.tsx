@@ -27,6 +27,8 @@ import {
   Video,
   Maximize2,
   Minimize2,
+  User,
+  X,
 } from 'lucide-react';
 import {
   format,
@@ -47,13 +49,6 @@ import { enUS, ru, hy } from 'date-fns/locale';
 import i18n from 'i18next';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -90,21 +85,23 @@ import { DayDetailsModal } from './DayDetailsModal';
 import { EventTimelineModal } from './EventTimelineModal';
 import { DraftResumeBar } from '@/components/ui/DraftResumeBar';
 import { useDraftResume } from '@/hooks/useDraftResume';
-import { CalendarScopeSwitcher } from './CalendarScopeSwitcher';
+import {
+  SharedCalendarDialog,
+  type PersonAccessStatus,
+  type OrganizationAccessStatus,
+  type ActiveView,
+} from './SharedCalendarDialog';
 import { RoomAvailabilityStrip } from '@/components/rooms/RoomAvailabilityStrip';
 import { RoomBookingModal } from '@/components/rooms/RoomBookingModal';
 import { RoomDetailsModal } from '@/components/rooms/RoomDetailsModal';
 import type { RoomBookingDoc, RoomDoc } from '@/components/rooms/types';
 import {
-  defaultScopeForRole,
   filterForScope,
   isMyCompanyEvent,
   isMyCustomEvent,
   isMyDriverEvent,
   isMyLeave,
   isMyRoomBooking,
-  readStoredScope,
-  storeScope,
   type CalendarScope,
 } from '@/lib/calendarScope';
 import {
@@ -265,14 +262,6 @@ function getDateRange(start: string, end: string): Date[] {
     cur.setDate(cur.getDate() + 1);
   }
   return dates;
-}
-
-/** Does a date range touch the visible month at all? */
-function overlapsMonth(start: string, end: string, month: Date): boolean {
-  const s = safeDate(start);
-  const e = safeDate(end);
-  if (!s || !e) return false;
-  return s <= endOfMonth(month) && e >= startOfMonth(month);
 }
 
 /**
@@ -907,58 +896,19 @@ export const CalendarClient = React.memo(function CalendarClient() {
   const dateFnsLocale = lang === 'ru' ? ru : lang === 'hy' ? hy : enUS;
 
   // --- Calendar scope: personal vs. shared ------------------------------------
-  // People who manage others land on the shared calendar, everyone else on
-  // their own. An explicit choice is remembered and always beats the default.
+  // Shared is opt-in: every role lands on its own calendar and the shared view
+  // is only entered through the SharedCalendarDialog — either by opening a
+  // colleague's calendar or, for an org-approved viewer, picking the whole
+  // organization. Nothing restores a stored scope, so nobody re-enters the
+  // shared calendar without asking for it again.
   const [scope, setScope] = useState<CalendarScope>('mine');
-  const scopeInitialized = useRef(false);
+  const [showSharedDialog, setShowSharedDialog] = useState(false);
 
-  useEffect(() => {
-    if (scopeInitialized.current || !user || (calendarOrgId && !calendarAccess)) return;
-    scopeInitialized.current = true;
-    // One-time initialization from localStorage. It cannot move into the
-    // useState initializer: this component is server-rendered, and reading
-    // localStorage during render would produce a hydration mismatch.
-    const preferred = readStoredScope() ?? defaultScopeForRole(user.role);
-    const permitted =
-      preferred === 'team' && calendarAccess?.organization !== 'approved' ? 'mine' : preferred;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- deliberate one-shot client-side init
-    setScope(permitted);
-  }, [calendarAccess, calendarOrgId, user]);
-
-  const changeScope = useCallback(
-    async (next: CalendarScope) => {
-      if (next === 'team' && calendarAccess?.organization !== 'approved') {
-        if (calendarAccess?.organization === 'pending') {
-          toast.info(t('calendarAccess.pending', 'Your organization calendar request is pending'));
-          return;
-        }
-        if (!calendarOrgId) return;
-        try {
-          await requestCalendarAccess({ organizationId: calendarOrgId, scope: 'organization' });
-          toast.success(
-            t('calendarAccess.requested', 'Access request sent to the organization head'),
-          );
-        } catch (error) {
-          toast.error(error instanceof Error ? error.message : t('common.error', 'Error'));
-        }
-        return;
-      }
-      if (next === 'mine') setSelectedCalendarOwnerId('');
-      setScope(next);
-      storeScope(next);
-    },
-    [calendarAccess?.organization, calendarOrgId, requestCalendarAccess, t],
-  );
-
-  const requestOrganizationCalendar = useCallback(async () => {
-    if (!calendarOrgId || calendarAccess?.organization === 'pending') return;
-    try {
-      await requestCalendarAccess({ organizationId: calendarOrgId, scope: 'organization' });
-      toast.success(t('calendarAccess.requested', 'Access request sent to the organization head'));
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('common.error', 'Error'));
-    }
-  }, [calendarAccess?.organization, calendarOrgId, requestCalendarAccess, t]);
+  const selectOrganizationCalendar = useCallback(() => {
+    if (calendarAccess?.organization !== 'approved') return;
+    setSelectedCalendarOwnerId('');
+    setScope('team');
+  }, [calendarAccess?.organization]);
 
   const handleAccessResponse = useCallback(
     async (accessId: Id<'calendarAccess'>, approved: boolean) => {
@@ -977,24 +927,21 @@ export const CalendarClient = React.memo(function CalendarClient() {
   );
 
   const selectPersonCalendar = useCallback(
-    async (ownerId: string) => {
+    (ownerId: string) => {
       if (!ownerId || ownerId === user?.id) {
         setSelectedCalendarOwnerId('');
         setScope('mine');
-        storeScope('mine');
         return;
       }
-      const access = calendarAccess?.people.find((entry) => entry.userId === ownerId);
-      if (organizationCalendarApproved || access?.status === 'approved') {
-        setSelectedCalendarOwnerId(ownerId);
-        setScope('mine');
-        storeScope('mine');
-        return;
-      }
-      if (access?.status === 'pending') {
-        toast.info(t('calendarAccess.personPending', 'This employee has not responded yet'));
-        return;
-      }
+      setSelectedCalendarOwnerId(ownerId);
+      setScope('mine');
+    },
+    [user?.id],
+  );
+
+  /** Sends a person-scope access request to the colleague picked in the dialog. */
+  const requestPersonCalendar = useCallback(
+    async (ownerId: string) => {
       if (!calendarOrgId) return;
       try {
         await requestCalendarAccess({
@@ -1007,14 +954,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
         toast.error(error instanceof Error ? error.message : t('common.error', 'Error'));
       }
     },
-    [
-      calendarAccess?.people,
-      calendarOrgId,
-      organizationCalendarApproved,
-      requestCalendarAccess,
-      t,
-      user?.id,
-    ],
+    [calendarOrgId, requestCalendarAccess, t],
   );
 
   /**
@@ -1054,6 +994,29 @@ export const CalendarClient = React.memo(function CalendarClient() {
     [selectedCalendarOwner, user],
   );
   const isPersonalScope = scope === 'mine';
+
+  // --- Shared-calendar dialog feed -------------------------------------------
+  const activeView: ActiveView = selectedCalendarOwner
+    ? { type: 'person', userId: selectedCalendarOwner._id }
+    : scope === 'team'
+      ? { type: 'organization' }
+      : { type: 'mine' };
+  const organizationAccessStatus: OrganizationAccessStatus = (
+    calendarAccess?.organization === 'approved' || calendarAccess?.organization === 'pending'
+      ? calendarAccess.organization
+      : 'none'
+  ) as OrganizationAccessStatus;
+  const personAccessStatus = useMemo(() => {
+    const map: Record<string, PersonAccessStatus> = {};
+    for (const entry of calendarAccess?.people ?? []) {
+      // A declined request is a closed door, not a waiting one — the viewer
+      // may ask again, so it renders exactly like "no request yet".
+      map[entry.userId] =
+        entry.status === 'approved' || entry.status === 'pending' ? entry.status : 'none';
+    }
+    return map;
+  }, [calendarAccess?.people]);
+  const sharedPeople = calendarPeople?.filter((person) => person._id !== user?.id) ?? [];
 
   const DAYS_OF_WEEK = [
     t('weekdays.sun'),
@@ -1108,6 +1071,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
     showCreateEvent ||
     showDayDetails ||
     showRoomBooking ||
+    showSharedDialog ||
     detailsRoom ||
     timelineInput,
   );
@@ -1339,37 +1303,6 @@ export const CalendarClient = React.memo(function CalendarClient() {
     });
     return map;
   }, [scopedRoomBookings]);
-
-  // Badge counts for the switcher — how much each scope holds in the visible
-  // month, so switching is an informed choice instead of a guess.
-  const scopeCounts = useMemo(() => {
-    const monthLeaves = leaves.filter(
-      (l) => l.status !== 'rejected' && overlapsMonth(l.startDate, l.endDate, currentMonth),
-    );
-    // Driver bookings are already queried for the visible month only.
-    const monthDrivers = driverSchedules ?? [];
-    const monthCustom = customEvents.filter((e) => {
-      const d = safeDate(e.date);
-      return d ? isSameMonth(d, currentMonth) : false;
-    });
-    // Google entries come from the viewer's own account — personal in both scopes.
-    const googleCount = googleEvents.length;
-    const monthRooms = roomBookings;
-    return {
-      mine:
-        monthLeaves.filter((l) => isMyLeave(l, viewer)).length +
-        monthDrivers.filter((d) => isMyDriverEvent(d, viewer)).length +
-        monthCustom.filter((e) => isMyCustomEvent(e, viewer)).length +
-        monthRooms.filter((b) => isMyRoomBooking(b, viewer)).length +
-        googleCount,
-      team:
-        monthLeaves.length +
-        monthDrivers.length +
-        monthCustom.length +
-        monthRooms.length +
-        googleCount,
-    };
-  }, [leaves, driverSchedules, customEvents, googleEvents, roomBookings, currentMonth, viewer]);
 
   // Build driver schedule map
   const driverDateMap = useMemo(() => {
@@ -1636,10 +1569,17 @@ export const CalendarClient = React.memo(function CalendarClient() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
                 <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-(--text-primary)">
-                  {t(`calendarScope.${scope}.title`)}
+                  {activeView.type === 'person' && selectedCalendarOwner
+                    ? selectedCalendarOwner.name
+                    : t(`calendarScope.${scope}.title`)}
                 </h2>
                 <p className="text-(--text-muted) text-sm mt-1">
-                  {t(`calendarScope.${scope}.subtitle`)}
+                  {activeView.type === 'person' && selectedCalendarOwner
+                    ? t('calendarShared.viewingPerson', {
+                        name: selectedCalendarOwner.name,
+                        department: selectedCalendarOwner.department,
+                      })
+                    : t(`calendarScope.${scope}.subtitle`)}
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row items-center gap-2">
@@ -1682,81 +1622,91 @@ export const CalendarClient = React.memo(function CalendarClient() {
               </div>
             </div>
 
-            {/* Scope switcher — personal vs. shared calendar */}
+            {/* Calendar view controls. The personal calendar is the default; the
+                shared one appears only after someone picks it in the dialog. */}
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-              {organizationCalendarApproved ? (
-                <>
-                  <CalendarScopeSwitcher
-                    value={scope}
-                    onChange={changeScope}
-                    counts={scopeCounts}
-                  />
-                  <Select
-                    value={scope === 'team' ? 'organization' : selectedCalendarOwnerId || 'mine'}
-                    onValueChange={(value) => {
-                      if (value === 'organization') {
-                        void changeScope('team');
-                      } else if (value === 'mine') {
-                        void selectPersonCalendar(user?.id ?? '');
-                      } else {
-                        void selectPersonCalendar(value);
-                      }
-                    }}
+              <div className="flex flex-1 flex-wrap items-center gap-2">
+                {/* My calendar — always one click away. */}
+                <button
+                  type="button"
+                  onClick={() => selectPersonCalendar(user?.id ?? '')}
+                  className={`flex min-h-10 items-center gap-2 rounded-lg border px-3 text-sm font-semibold transition-colors cursor-pointer ${
+                    activeView.type === 'mine'
+                      ? 'border-(--primary) bg-(--primary)/10 text-(--text-primary)'
+                      : 'border-(--border) bg-(--surface-1) text-(--text-secondary) hover:border-(--primary)/50 hover:text-(--text-primary)'
+                  }`}
+                >
+                  <User className="h-4 w-4" />
+                  {t('calendarShared.myCalendar', 'My calendar')}
+                </button>
+
+                {/* The active shared view — a colleague's calendar once the
+                    access request is granted, or the whole organization for an
+                    approved viewer. Arrives only after a pick in the dialog. */}
+                {activeView.type === 'person' && selectedCalendarOwner && (
+                  <span
+                    className="flex min-h-10 items-center gap-2 rounded-lg border border-(--brand-outline) bg-(--brand-quiet) px-3 text-sm font-semibold text-(--text-primary)"
+                    role="status"
                   >
-                    <SelectTrigger
-                      className="w-full sm:w-72"
-                      aria-label={t('calendarAccess.calendarView', 'Calendar view')}
+                    <span
+                      className="flex size-5 items-center justify-center rounded-full bg-(--brand) text-[9px] font-bold text-white"
+                      aria-hidden
                     >
-                      <Eye className="h-4 w-4" />
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="organization">
-                        {t('calendarAccess.entireOrganization', 'Entire organization')}
-                      </SelectItem>
-                      <SelectItem value="mine">
-                        {t('calendarScope.mine.label', 'My calendar')}
-                      </SelectItem>
-                      {(calendarPeople ?? [])
-                        .filter((person) => person._id !== user?.id)
-                        .map((person) => (
-                          <SelectItem key={person._id} value={person._id}>
-                            {person.name}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </>
-              ) : (
-                <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
-                  <div className="flex min-h-10 flex-1 items-center gap-2 rounded-lg border border-(--border) bg-(--surface-1) px-3 text-sm font-semibold text-(--text-primary)">
-                    <Users className="h-4 w-4" />
-                    {t('calendarScope.mine.label', 'My calendar')}
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    disabled={!calendarAccess || calendarAccess.organization === 'pending'}
-                    onClick={() => void requestOrganizationCalendar()}
-                    className="min-h-10 justify-center"
+                      {getInitials(selectedCalendarOwner.name).slice(0, 2)}
+                    </span>
+                    <span className="max-w-44 truncate">{selectedCalendarOwner.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => selectPersonCalendar(user?.id ?? '')}
+                      aria-label={t('calendarShared.backToMine', 'Back to my calendar')}
+                      className="ml-0.5 flex size-5 items-center justify-center rounded-full text-(--text-muted) transition-colors hover:bg-(--brand-outline) hover:text-(--text-primary) cursor-pointer"
+                    >
+                      <X className="size-3.5" />
+                    </button>
+                  </span>
+                )}
+                {activeView.type === 'organization' && (
+                  <span
+                    className="flex min-h-10 items-center gap-2 rounded-lg border border-(--brand-outline) bg-(--brand-quiet) px-3 text-sm font-semibold text-(--text-primary)"
+                    role="status"
                   >
-                    {calendarAccess?.organization === 'pending' ? (
-                      <Clock className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                    {calendarAccess?.organization === 'pending'
-                      ? t('calendarAccess.awaitingCeo', 'Awaiting CEO approval')
-                      : t('calendarAccess.requestOrganization', 'Request organization calendar')}
-                  </Button>
-                </div>
-              )}
-              <p className="hidden lg:block text-xs text-(--text-muted)">
-                {t(`calendarScope.${scope}.hint`)}
-              </p>
+                    <Building2 className="size-4 text-(--brand-text)" />
+                    <span className="max-w-44 truncate">
+                      {t('calendarAccess.entireOrganization', 'Entire organization')}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => selectPersonCalendar(user?.id ?? '')}
+                      aria-label={t('calendarShared.backToMine', 'Back to my calendar')}
+                      className="ml-0.5 flex size-5 items-center justify-center rounded-full text-(--text-muted) transition-colors hover:bg-(--brand-outline) hover:text-(--text-primary) cursor-pointer"
+                    >
+                      <X className="size-3.5" />
+                    </button>
+                  </span>
+                )}
+
+                {/* The one door into the shared view — opens the colleague
+                    picker grouped by department. */}
+                <button
+                  type="button"
+                  onClick={() => setShowSharedDialog(true)}
+                  className={`flex min-h-10 items-center gap-2 rounded-lg border px-3 text-sm font-semibold transition-colors cursor-pointer ${
+                    activeView.type !== 'mine'
+                      ? 'border-(--primary) bg-(--primary)/10 text-(--text-primary)'
+                      : 'border-(--border) bg-(--surface-1) text-(--text-secondary) hover:border-(--primary)/50 hover:text-(--text-primary)'
+                  }`}
+                >
+                  <Users className="h-4 w-4" />
+                  {t('calendarShared.open', 'Shared calendar')}
+                </button>
+              </div>
               {/* Politely announced so the change is not silent for screen readers. */}
               <span aria-live="polite" className="sr-only">
-                {t(`calendarScope.${scope}.announce`)}
+                {activeView.type === 'person' && selectedCalendarOwner
+                  ? t('calendarShared.viewingPersonAnnounce', { name: selectedCalendarOwner.name })
+                  : activeView.type === 'organization'
+                    ? t(`calendarScope.team.announce`)
+                    : t(`calendarScope.mine.announce`)}
               </span>
             </div>
             {pendingAccessRequests && pendingAccessRequests.length > 0 && (
@@ -1803,12 +1753,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
           </div>
         </div>
 
-        <div
-          id="calendar-scope-panel"
-          role="tabpanel"
-          aria-labelledby={`calendar-scope-${scope}`}
-          className="grid grid-cols-1 xl:grid-cols-4 gap-6"
-        >
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
           {/* -- Calendar Panel -- */}
           <div className="xl:col-span-3 space-y-4">
             <Card className="overflow-hidden">
@@ -2611,11 +2556,12 @@ export const CalendarClient = React.memo(function CalendarClient() {
                   )}
                 </AnimatePresence>
 
-                {/* Personal view: reveal what the shared calendar still holds. */}
+                {/* Personal view: reveal what the shared calendar still holds —
+                    the dialog is the door, since the shared view needs a pick. */}
                 {hiddenOnSelectedDay > 0 && (
                   <button
                     type="button"
-                    onClick={() => changeScope('team')}
+                    onClick={() => setShowSharedDialog(true)}
                     className="mt-3 flex w-full items-center gap-2 rounded-xl border border-dashed border-(--border) bg-(--background-subtle) px-3 py-2.5 text-left transition-colors hover:border-(--primary)/50 hover:bg-(--background) cursor-pointer"
                   >
                     <Eye className="h-4 w-4 shrink-0 text-(--primary)" />
@@ -2731,6 +2677,22 @@ export const CalendarClient = React.memo(function CalendarClient() {
             </Card>
           </motion.div>
         </div>
+
+        {/* Shared calendar colleague picker — the opt-in door to other people's
+            calendars, grouped by department with per-person access states. */}
+        <SharedCalendarDialog
+          open={showSharedDialog}
+          onClose={() => setShowSharedDialog(false)}
+          people={sharedPeople}
+          organizationAccess={organizationAccessStatus}
+          personAccess={personAccessStatus}
+          orgGrantsPeople={organizationCalendarApproved}
+          activeView={activeView}
+          onSelectMine={() => selectPersonCalendar(user?.id ?? '')}
+          onSelectPerson={(ownerId) => selectPersonCalendar(ownerId)}
+          onRequestPerson={(ownerId) => void requestPersonCalendar(ownerId)}
+          onSelectOrganization={selectOrganizationCalendar}
+        />
 
         {/* Leave Request Modal */}
         <LeaveRequestModal

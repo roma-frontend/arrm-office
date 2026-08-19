@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Sparkles,
@@ -12,7 +12,7 @@ import {
   MessageSquare,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useQuery, useAction } from '@/lib/convex-typed';
+import { useQuery, useAction, useMutation } from '@/lib/convex-typed';
 import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
 import { Button } from '@/components/ui/button';
@@ -45,10 +45,34 @@ export function InterviewPrepDialog({
   const { t, i18n } = useTranslation();
   const candidate = useQuery(api.recruitment.getCandidate, { applicationId });
   const generatePrep = useAction(api.recruitmentAI.generateInterviewPrep);
+  const savePrep = useMutation(api.recruitment.saveInterviewPrep);
 
   const [prep, setPrep] = useState<InterviewPrep | null>(null);
+  const [hydrated, setHydrated] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  // Reopen the last saved pack so the prep survives closing the dialog.
+  useEffect(() => {
+    if (hydrated || !candidate) return;
+    const saved = candidate.interviewPrep;
+    if (saved) {
+      const cats = ['general', 'technical', 'behavioral', 'culture'] as const;
+      setPrep({
+        questions: saved.questions.map((q) => ({
+          question: q.question,
+          whatToLookFor: q.whatToLookFor,
+          category: (cats as readonly string[]).includes(q.category)
+            ? (q.category as (typeof cats)[number])
+            : 'general',
+        })),
+        criteria: saved.criteria,
+        redFlags: saved.redFlags,
+        openingTips: saved.openingTips,
+      });
+    }
+    setHydrated(true);
+  }, [candidate, hydrated]);
 
   const handleGenerate = async () => {
     if (!candidate?.vacancy) return;
@@ -69,6 +93,9 @@ export function InterviewPrepDialog({
           | 'de',
       });
       setPrep(result);
+      savePrep({ applicationId, prep: result }).catch((e) =>
+        toast.error(t('interviewPrep.saveError', 'Could not save the prep pack') + `: ${e}`),
+      );
       toast.success(t('interviewPrep.generated', 'Interview prep generated'));
     } catch (error) {
       toast.error(

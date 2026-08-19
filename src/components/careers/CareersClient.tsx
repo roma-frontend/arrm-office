@@ -456,6 +456,7 @@ function VacancyDetailModal({
   const [consent, setConsent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [portalToken, setPortalToken] = useState<string | null>(null);
   const [emailError, setEmailError] = useState('');
 
   // Block background scroll when modal is open
@@ -506,7 +507,7 @@ function VacancyDetailModal({
         cv = (await res.json()) as { url: string; name: string; size: number; type: string };
       }
 
-      await applyMutation({
+      const result = (await applyMutation({
         vacancyId: vacancy._id,
         name,
         email,
@@ -521,7 +522,8 @@ function VacancyDetailModal({
             }
           : {}),
         consentGiven: consent,
-      });
+      })) as { candidateToken?: string } | undefined;
+      setPortalToken(result?.candidateToken ?? null);
       setSubmitted(true);
       fetch('/api/telegram/notify', {
         method: 'POST',
@@ -531,9 +533,18 @@ function VacancyDetailModal({
           data: { name, email, phone, vacancy: vacancy.title },
         }),
       }).catch(() => {});
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (_e: any) {
-      toast.error(t('careers.submitError', 'Error submitting application'));
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (/already applied/i.test(msg)) {
+        toast.warning(t('careers.alreadyApplied', 'You have already applied to this position'), {
+          description: t(
+            'careers.alreadyAppliedDesc',
+            'We already received your application — our team will review it soon.',
+          ),
+        });
+      } else {
+        toast.error(t('careers.submitError', 'Error submitting application'));
+      }
     } finally {
       setSubmitting(false);
     }
@@ -646,12 +657,77 @@ function VacancyDetailModal({
               >
                 {t('careers.applied', 'Application Submitted!')}
               </h3>
-              <p className="text-sm" style={{ color: 'var(--landing-text-muted)' }}>
+              <p className="text-sm mb-6" style={{ color: 'var(--landing-text-muted)' }}>
                 {t(
                   'careers.appliedDesc',
                   'Thank you for your interest. The hiring team will review your application.',
                 )}
               </p>
+
+              {/* Portal link — save this to track your progress */}
+              {portalToken && (
+                <div
+                  className="mx-auto max-w-md rounded-xl border p-4 space-y-3"
+                  style={{
+                    borderColor: 'var(--brand-outline)',
+                    background: 'var(--brand-quiet)',
+                  }}
+                >
+                  <p className="text-xs font-semibold" style={{ color: 'var(--brand-text)' }}>
+                    🔗 {t('careers.portalTitle', 'Your Personal Dashboard')}
+                  </p>
+                  <p className="text-xs" style={{ color: 'var(--landing-text-muted)' }}>
+                    {t(
+                      'careers.portalDesc',
+                      'Save this link to track your application progress, view AI scores, and chat with HR.',
+                    )}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <input
+                      readOnly
+                      value={`${window.location.origin}/candidate/${portalToken}`}
+                      className="flex-1 text-xs font-mono px-3 py-2 rounded-lg border bg-background text-foreground"
+                      style={{ borderColor: 'var(--brand-outline)' }}
+                    />
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(
+                          `${window.location.origin}/candidate/${portalToken}`,
+                        );
+                        toast.success(t('careers.linkCopied', 'Link copied!'));
+                      }}
+                      className="px-3 py-2 rounded-lg text-xs font-medium shrink-0"
+                      style={{
+                        background: 'var(--brand)',
+                        color: 'var(--brand-contrast)',
+                      }}
+                    >
+                      {t('careers.copy', 'Copy')}
+                    </button>
+                  </div>
+                  <a
+                    href={`https://t.me/${
+                      process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || 'hremailbot'
+                    }?start=cand_${portalToken}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-xs font-semibold text-white transition-transform hover:scale-[1.02]"
+                    style={{ background: 'linear-gradient(135deg, #229ED9, #2AABEE)' }}
+                  >
+                    <Send className="h-3.5 w-3.5" />
+                    {t(
+                      'careers.connectTelegram',
+                      'Connect Telegram — screening, interview links & updates',
+                    )}
+                  </a>
+                  <p className="text-[10px]" style={{ color: 'var(--landing-text-muted)' }}>
+                    {t(
+                      'careers.portalHint',
+                      'Tap the button, press Start in the bot — and every update reaches you here and in Telegram.',
+                    )}
+                  </p>
+                </div>
+              )}
             </div>
           ) : showApply ? (
             /* Application Form */

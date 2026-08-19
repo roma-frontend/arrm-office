@@ -185,10 +185,10 @@ describe('NewIntegrationSettings', () => {
     expect(screen.getByText('Integrations')).toBeInTheDocument();
   });
 
-  it('renders all three provider cards', () => {
+  it('renders all provider cards', () => {
     const { container } = render(<NewIntegrationSettings />);
     const cards = container.querySelectorAll('[data-testid="card"]');
-    expect(cards.length).toBe(3);
+    expect(cards.length).toBe(4);
   });
 
   it('shows Lucky Carrot as a provider', () => {

@@ -100,6 +100,100 @@ async function callOpenRouter(args: {
 }
 
 /**
+ * Cut the top-level JSON object out of raw model output by walking braces
+ * outside of string literals. If the completion was truncated by the token
+ * limit the braces never balance — return the remainder anyway so repairJson
+ * can close the open structures.
+ */
+function extractJsonObject(content: string): string | null {
+  const start = content.indexOf('{');
+  if (start === -1) return null;
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let i = start; i < content.length; i++) {
+    const ch = content[i];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (ch === '\\') escaped = true;
+      else if (ch === '"') inString = false;
+      continue;
+    }
+    if (ch === '"') inString = true;
+    else if (ch === '{') depth++;
+    else if (ch === '}') {
+      depth--;
+      if (depth === 0) return content.slice(start, i + 1);
+    }
+  }
+  return content.slice(start);
+}
+
+/** Escape raw control characters inside string literals (newlines, tabs…). */
+function escapeControlChars(s: string): string {
+  let out = '';
+  let inString = false;
+  let escaped = false;
+  for (const ch of s) {
+    if (inString) {
+      if (escaped) {
+        out += ch;
+        escaped = false;
+        continue;
+      }
+      if (ch === '\\') {
+        escaped = true;
+        out += ch;
+        continue;
+      }
+      if (ch === '"') {
+        inString = false;
+        out += ch;
+        continue;
+      }
+      if (ch === '\n') out += '\\n';
+      else if (ch === '\r') out += '\\r';
+      else if (ch === '\t') out += '\\t';
+      else out += ch;
+      continue;
+    }
+    if (ch === '"') inString = true;
+    out += ch;
+  }
+  return out;
+}
+
+/** Repair the usual LLM JSON damage: trailing commas, dangling keys, truncation. */
+function repairJson(raw: string): string {
+  let s = raw.replace(/```(?:json)?/gi, '');
+  s = s.replace(/,(\s*[}\]])/g, '$1');
+
+  let inString = false;
+  let escaped = false;
+  const stack: string[] = [];
+  for (const ch of s) {
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (ch === '\\') escaped = true;
+      else if (ch === '"') inString = false;
+      continue;
+    }
+    if (ch === '"') inString = true;
+    else if (ch === '{' || ch === '[') stack.push(ch);
+    else if (ch === '}' || ch === ']') stack.pop();
+  }
+  if (inString) s += '"';
+  // Drop a dangling tail: trailing comma, or a key left without a value.
+  s = s.replace(/,\s*$/, '');
+  s = s.replace(/,?\s*"[^"]*"?\s*:\s*$/, '');
+  s = escapeControlChars(s);
+  for (let i = stack.length - 1; i >= 0; i--) {
+    s += stack[i] === '{' ? '}' : ']';
+  }
+  return s;
+}
+
+/**
  * Generate a JSON completion: Gemini first (annual subscription), OpenRouter
  * when Gemini is unconfigured or fails. Returns the parsed object.
  */
@@ -128,10 +222,42 @@ async function generateJson<T>(args: {
     content = await callOpenRouter(call);
   }
 
-  // Extract JSON from response (handles cases where LLM wraps in markdown)
-  const jsonMatch = content.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error('Failed to parse AI response as JSON');
-  return JSON.parse(jsonMatch[0]) as T;
+  // Extract the balanced top-level object (handles markdown fences), then
+  // repair typical model damage: trailing commas, dangling keys, truncation.
+  const attemptParse = (raw: string): T | null => {
+    const candidate = extractJsonObject(raw);
+    if (!candidate) return null;
+    try {
+      return JSON.parse(candidate) as T;
+    } catch {
+      try {
+        return JSON.parse(repairJson(candidate)) as T;
+      } catch {
+        return null;
+      }
+    }
+  };
+
+  let result = attemptParse(content);
+  if (!result) {
+    // Last resort: ask the model to repair its own output (deterministic).
+    try {
+      const repairCall = {
+        system: 'You repair malformed JSON. Return only the corrected valid JSON, no prose.',
+        prompt: `Fix this JSON:\n${content.slice(0, 8000)}`,
+        temperature: 0,
+        maxTokens: args.maxTokens ?? 1500,
+      };
+      const fixed = process.env.GOOGLE_GENERATIVE_AI_API_KEY
+        ? await callGemini(repairCall)
+        : await callOpenRouter(repairCall);
+      result = attemptParse(fixed);
+    } catch {
+      /* provider unavailable — keep the failure */
+    }
+  }
+  if (!result) throw new Error('Failed to parse AI response as JSON');
+  return result;
 }
 
 // ── AI-Powered Vacancy Description Generator ───────────────────────────────
@@ -331,6 +457,89 @@ Rules:
       criteria,
       redFlags,
       openingTips: String(parsed.openingTips || ''),
+    };
+  },
+});
+
+// ── AI Screening Response Scorer ───────────────────────────────────────────
+
+export interface ScreeningScore {
+  score: number; // 1-10
+  verdict: 'pass' | 'conditional' | 'fail';
+  reasoning: string;
+  strengths: string[];
+  concerns: string[];
+}
+
+/**
+ * Score a candidate's screening responses against the job requirements.
+ * Called after the candidate completes screening via Telegram.
+ */
+export const scoreScreeningResponses = action({
+  args: {
+    applicationId: v.id('applications'),
+    vacancyTitle: v.string(),
+    vacancyDescription: v.optional(v.string()),
+    requirements: v.optional(v.string()),
+    screeningInstructions: v.optional(v.string()),
+    responses: v.array(v.object({ message: v.string(), createdAt: v.number() })),
+    language: v.optional(
+      v.union(v.literal('en'), v.literal('ru'), v.literal('hy'), v.literal('de')),
+    ),
+  },
+  handler: async (_, args): Promise<ScreeningScore> => {
+    const lang = args.language || 'en';
+    const langInstruction =
+      lang === 'en'
+        ? ''
+        : ` Respond in ${lang === 'ru' ? 'Russian' : lang === 'hy' ? 'Armenian' : 'German'}.`;
+
+    const responseText = args.responses
+      .map((r, i) => `[Response ${i + 1}]: ${r.message}`)
+      .join('\n\n');
+
+    const prompt = `Score this candidate's screening responses for a ${args.vacancyTitle} position.${langInstruction}
+
+Job: ${args.vacancyTitle}
+${args.vacancyDescription ? `Description: ${args.vacancyDescription.slice(0, 1000)}` : ''}
+${args.requirements ? `Requirements: ${args.requirements.slice(0, 800)}` : ''}
+${args.screeningInstructions ? `\nScreening instructions given to candidate:\n${args.screeningInstructions.slice(0, 800)}` : ''}
+
+Candidate responses:\n${responseText}
+
+Return ONLY valid JSON:
+{
+  "score": <number 1-10>,
+  "verdict": "pass" | "conditional" | "fail",
+  "reasoning": "2-3 sentence explanation of the verdict",
+  "strengths": ["strength 1", "strength 2"],
+  "concerns": ["concern 1", "concern 2"]
+}
+
+Scoring guidelines:
+- 8-10: Strong match — clearly relevant experience, specific answers, good communication
+- 5-7: Conditional — some relevant experience but gaps or vague answers
+- 1-4: Weak match — little relevant experience, poor communication, or red flags
+- "pass" = score >= 7, "conditional" = 5-6, "fail" = <= 4
+- Be objective and specific in reasoning
+- List 2-3 strengths and 2-3 concerns, even for strong candidates`;
+
+    const parsed = await generateJson<Partial<ScreeningScore>>({
+      system: 'You are an expert recruiter evaluating screening responses. Return only valid JSON.',
+      prompt,
+      temperature: 0.3,
+      maxTokens: 1500,
+    });
+
+    const score = Math.max(1, Math.min(10, Math.round(parsed.score ?? 5)));
+    const verdict = score >= 7 ? 'pass' : score >= 5 ? 'conditional' : 'fail';
+
+    return {
+      score,
+      verdict: parsed.verdict || verdict,
+      reasoning: String(parsed.reasoning || 'No reasoning provided'),
+      strengths: (parsed.strengths || []).map(String).slice(0, 5),
+      concerns: (parsed.concerns || []).map(String).slice(0, 5),
     };
   },
 });

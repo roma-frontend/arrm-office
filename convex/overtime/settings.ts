@@ -42,13 +42,14 @@ export const updateOvertimeSettings = mutation({
   args: {
     enabled: v.optional(v.boolean()),
     requireApproval: v.optional(v.boolean()),
-    maxHoursPerWeek: v.optional(v.number()),
-    maxHoursPerMonth: v.optional(v.number()),
-    maxHoursPerDay: v.optional(v.number()),
+    // `null` clears the limit (back to unlimited); undefined leaves it untouched.
+    maxHoursPerWeek: v.optional(v.union(v.number(), v.null())),
+    maxHoursPerMonth: v.optional(v.union(v.number(), v.null())),
+    maxHoursPerDay: v.optional(v.union(v.number(), v.null())),
     paymentType: v.optional(
       v.union(v.literal('double_rate'), v.literal('compensatory_leave'), v.literal('policy')),
     ),
-    overtimeRate: v.optional(v.number()),
+    overtimeRate: v.optional(v.union(v.number(), v.null())),
     notifySupervisor: v.optional(v.boolean()),
     notifyHR: v.optional(v.boolean()),
   },
@@ -75,11 +76,14 @@ export const updateOvertimeSettings = mutation({
       const updates: Record<string, unknown> = { updatedAt: now };
       if (args.enabled !== undefined) updates.enabled = args.enabled;
       if (args.requireApproval !== undefined) updates.requireApproval = args.requireApproval;
-      if (args.maxHoursPerWeek !== undefined) updates.maxHoursPerWeek = args.maxHoursPerWeek;
-      if (args.maxHoursPerMonth !== undefined) updates.maxHoursPerMonth = args.maxHoursPerMonth;
-      if (args.maxHoursPerDay !== undefined) updates.maxHoursPerDay = args.maxHoursPerDay;
+      if (args.maxHoursPerWeek !== undefined)
+        updates.maxHoursPerWeek = args.maxHoursPerWeek ?? undefined;
+      if (args.maxHoursPerMonth !== undefined)
+        updates.maxHoursPerMonth = args.maxHoursPerMonth ?? undefined;
+      if (args.maxHoursPerDay !== undefined)
+        updates.maxHoursPerDay = args.maxHoursPerDay ?? undefined;
       if (args.paymentType !== undefined) updates.paymentType = args.paymentType;
-      if (args.overtimeRate !== undefined) updates.overtimeRate = args.overtimeRate;
+      if (args.overtimeRate !== undefined) updates.overtimeRate = args.overtimeRate ?? undefined;
       if (args.notifySupervisor !== undefined) updates.notifySupervisor = args.notifySupervisor;
       if (args.notifyHR !== undefined) updates.notifyHR = args.notifyHR;
 
@@ -102,11 +106,11 @@ export const updateOvertimeSettings = mutation({
         organizationId: caller.organizationId,
         enabled: args.enabled ?? true,
         requireApproval: args.requireApproval ?? true,
-        maxHoursPerWeek: args.maxHoursPerWeek,
-        maxHoursPerMonth: args.maxHoursPerMonth,
-        maxHoursPerDay: args.maxHoursPerDay,
+        maxHoursPerWeek: args.maxHoursPerWeek ?? undefined,
+        maxHoursPerMonth: args.maxHoursPerMonth ?? undefined,
+        maxHoursPerDay: args.maxHoursPerDay ?? undefined,
         paymentType: args.paymentType ?? 'policy',
-        overtimeRate: args.overtimeRate,
+        overtimeRate: args.overtimeRate ?? undefined,
         notifySupervisor: args.notifySupervisor ?? true,
         notifyHR: args.notifyHR ?? false,
         createdAt: now,

@@ -113,6 +113,35 @@ jest.mock('@/components/layout/NavBadgesProvider', () => ({
   useNavBadges: () => mockBadges,
 }));
 
+// Feature flags — treat every module as enabled by default.
+jest.mock('@/hooks/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({
+    flags: new Map(),
+    isEnabled: () => true,
+    filterByHref: (items: any[]) => items,
+  }),
+  MODULE_TOGGLE_BY_HREF: {},
+}));
+
+// Plan gating — read entitlements from the mock Convex query so tests
+// that set mockQueries.getMyEntitlements get real gating logic.
+jest.mock('@/lib/planGating', () => {
+  const actual = jest.requireActual('@/lib/planGating');
+  return {
+    ...actual,
+    // Override usePlanGatedNav to feed entitlements from the mock query store
+    usePlanGatedNav: () => {
+      const data = mockQueries.getMyEntitlements ?? null;
+      const entitlements = data ? data : null;
+      const isNavAllowed = (href: string) => {
+        if (!entitlements) return true;
+        return actual.isHrefAllowed(entitlements, href);
+      };
+      return { isNavAllowed, entitlements };
+    },
+  };
+});
+
 // ── Sub-components / icons ───────────────────────────────────────────────────
 jest.mock('@/components/layout/OrganizationSelector', () => ({
   OrganizationSelector: () => <div data-testid="org-selector" />,
@@ -121,65 +150,20 @@ jest.mock('@/components/layout/OrganizationSelector', () => ({
 jest.mock('@/components/superadmin/QuickActionsPalette', () => ({
   QuickActionsPalette: () => <div data-testid="quick-actions" />,
 }));
-
 jest.mock('lucide-react', () => {
-  const names = [
-    'LayoutDashboard',
-    'CalendarDays',
-    'DoorOpen',
-    'Calendar',
-    'Users',
-    'Settings',
-    'ChevronLeft',
-    'ChevronRight',
-    'Building2',
-    'UserCheck',
-    'BarChart3',
-    'Clock',
-    'CheckSquare',
-    'User',
-    'Sparkles',
-    'X',
-    'CreditCard',
-    'ShieldCheck',
-    'MessageCircle',
-    'Car',
-    'Ticket',
-    'AlertTriangle',
-    'HelpCircle',
-    'Cpu',
-    'Wallet',
-    'DollarSign',
-    'Heart',
-    'ClipboardList',
-    'Target',
-    'PenTool',
-    'Crosshair',
-    'Briefcase',
-    'Rocket',
-    'UserMinus',
-    'Network',
-    'GraduationCap',
-    'FileText',
-    'Library',
-    'Database',
-    'ClipboardCheck',
-    'Receipt',
-    'Key',
-    'Layers',
-    'Megaphone',
-    'Package',
-    'FolderKanban',
-    'CalendarCheck',
-    'Sun',
-    'Globe',
-    'Lock',
-  ];
-  const mocks: Record<string, any> = {};
-  for (const name of names) {
-    mocks[name] = (props: any) => <span data-testid={`icon-${name}`} {...props} />;
-  }
-  return mocks;
+  // Use a Proxy so any lucide icon name resolves to a stub component.
+  return new Proxy(
+    {},
+    {
+      get(_target, name: string) {
+        if (name === '__esModule') return true;
+        if (name === 'default') return undefined;
+        const MockIcon = (props: any) => <span data-testid={`icon-${name}`} {...props} />;
+        MockIcon.displayName = name;
+        return MockIcon;
+      },
+    },
+  );
 });
 
 import { Sidebar, MobileSidebar } from '@/components/layout/Sidebar';

@@ -143,7 +143,7 @@ describe('Locale parity', () => {
               `Extra keys (${extra.length}):\n${extra.map((k) => `  - ${k}`).join('\n')}`,
             );
           }
-          fail(`Locale drift in ${lang}/${ns}.json:\n\n${messages.join('\n\n')}`);
+          throw new Error(`Locale drift in ${lang}/${ns}.json:\n\n${messages.join('\n\n')}`);
         });
       } else {
         it(`${lang}/${ns}.json has zero drift`, () => {

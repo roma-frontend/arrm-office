@@ -4,7 +4,8 @@
 
 import { httpRouter } from 'convex/server';
 import { httpAction } from './_generated/server';
-import { internal } from './_generated/api';
+import { api, internal } from './_generated/api';
+import type { Id } from './_generated/dataModel';
 import {
   WEBHOOK_SIGNATURE_HEADER,
   WEBHOOK_TIMESTAMP_HEADER,
@@ -12,6 +13,187 @@ import {
 } from './integrations';
 
 const http = httpRouter();
+
+/** Minimal shape of the Telegram update this router consumes. */
+interface TelegramUpdate {
+  callback_query?: {
+    data?: string;
+    message?: { chat?: { id?: number | string } };
+  };
+  message?: {
+    text?: string;
+    chat?: { id?: number | string };
+    message_id?: number;
+  };
+  secret_token?: string;
+}
+
+// ── Telegram Bot Webhook ────────────────────────────────────────────────────
+/**
+ * Receives updates from the Telegram bot: inline keyboard callbacks
+ * ("I completed screening") and text messages for screening responses.
+ *
+ * Set the webhook URL in Telegram BotFather:
+ *   https://api.telegram.org/bot<TOKEN>/setWebhook?url=<CONVEX_SITE>/api/telegram
+ */
+http.route({
+  path: '/api/telegram',
+  method: 'POST',
+  handler: httpAction(async (ctx, request) => {
+    const body = (await request.json()) as TelegramUpdate;
+
+    // Handle inline keyboard callbacks (button presses)
+    if (body.callback_query) {
+      const cb = body.callback_query;
+      const data: string = cb.data ?? '';
+
+      // Validate the webhook secret
+      const secret = process.env.TELEGRAM_WEBHOOK_SECRET;
+      if (secret && body.secret_token !== secret) {
+        return new Response('Unauthorized', { status: 401 });
+      }
+
+      // Handle screening completion callback: screening_done:<applicationId>
+      if (data.startsWith('screening_done:')) {
+        const applicationId = data.replace('screening_done:', '') as Id<'applications'>;
+        try {
+          // Look up the application to get organizationId for the mutation
+          const app = await ctx.runQuery(internal.telegram.getAppForScreening, {
+            applicationId,
+          });
+          if (app) {
+            await ctx.runMutation(internal.telegram.markScreeningComplete, {
+              applicationId,
+              organizationId: app.organizationId,
+            });
+
+            // Fetch all screening responses for AI scoring
+            const responses: { message: string; createdAt: number }[] = [];
+            for (const resp of app.screeningResponses ?? []) {
+              responses.push({ message: resp.message, createdAt: resp.createdAt });
+            }
+
+            // Run AI scoring (non-blocking — don't fail the webhook if scoring fails)
+            if (responses.length > 0) {
+              try {
+                const scoreResult = await ctx.runAction(api.recruitmentAI.scoreScreeningResponses, {
+                  applicationId,
+                  vacancyTitle: app.vacancy?.title ?? 'Position',
+                  vacancyDescription: app.vacancy?.description,
+                  requirements: app.vacancy?.requirements,
+                  screeningInstructions: app.screeningInstructions,
+                  responses,
+                });
+                await ctx.runMutation(internal.telegram.saveScreeningScore, {
+                  applicationId,
+                  score: scoreResult.score,
+                  verdict: scoreResult.verdict,
+                  reasoning: scoreResult.reasoning,
+                  strengths: scoreResult.strengths,
+                  concerns: scoreResult.concerns,
+                });
+              } catch (scoringErr) {
+                console.error('AI scoring failed:', scoringErr);
+              }
+            }
+
+            // Send confirmation to candidate via Telegram
+            if (app.candidate?.telegramChatId) {
+              const botToken = process.env.TELEGRAM_BOT_TOKEN;
+              if (botToken) {
+                await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    chat_id: app.candidate.telegramChatId,
+                    text: '✅ Скрининг завершен! / Screening completed!\n\nСпасибо за ответы. HR уведомлен и свяжется с вами.\nThank you for your answers. HR has been notified and will contact you.',
+                    parse_mode: 'HTML',
+                  }),
+                }).catch(() => {}); // Non-critical
+              }
+            }
+          }
+          return new Response(JSON.stringify({ ok: true }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        } catch (e) {
+          console.error('Screening completion error:', e);
+          return new Response(JSON.stringify({ ok: false, error: String(e) }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
+      // Handle Telegram account linking: link:<email>
+      if (data.startsWith('link:')) {
+        // Email extracted but not used yet — the linking flow is handled by the bot command.
+        void data.replace('link:', '');
+        // TODO: find candidate profile by email and link Telegram chat
+        return new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      return new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Handle text messages (for screening responses)
+    if (body.message) {
+      const msg = body.message;
+      const chatId = String(msg.chat?.id ?? '');
+      const text = msg.text ?? '';
+
+      // Ignore commands and non-text messages
+      if (text.startsWith('/')) {
+        return new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Find candidate by Telegram chat ID and store their screening response
+      if (chatId) {
+        try {
+          // Find the active screening application for this Telegram user
+          const screeningApp = (await ctx.runQuery(internal.telegram.findActiveScreeningApp, {
+            telegramChatId: chatId,
+          })) as {
+            _id: Id<'applications'>;
+            organizationId: Id<'organizations'>;
+          } | null;
+          if (screeningApp) {
+            // Save the response to the screeningResponses table
+            await ctx.runMutation(internal.telegram.saveScreeningResponse, {
+              applicationId: screeningApp._id,
+              organizationId: screeningApp.organizationId,
+              message: text,
+              telegramChatId: chatId,
+              telegramMessageId: msg.message_id,
+            });
+          }
+        } catch {
+          // Non-critical — candidate may not be linked or in screening
+        }
+      }
+
+      return new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }),
+});
 
 // ── OIDC Discovery (required for Convex auth) ────────────────────────────────
 http.route({
