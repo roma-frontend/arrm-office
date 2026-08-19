@@ -1195,6 +1195,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
               className="min-h-0 flex-1 px-5 pt-4"
               currentUserId={convexId}
               userRole={userRole as 'admin' | 'supervisor' | 'employee'}
+              selectedOrgId={effectiveOrgId as Id<'organizations'> | undefined}
               // Employees can only assign to themselves; default the picker so
               // the wizard opens ready to go.
               assigneeId={userRole === 'employee' ? convexId : undefined}

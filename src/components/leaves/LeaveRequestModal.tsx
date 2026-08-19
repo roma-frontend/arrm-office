@@ -44,8 +44,6 @@ export function LeaveRequestModal({
   const userId = user?.id as Id<'users'> | undefined;
   const orgId = user?.organizationId as Id<'organizations'> | undefined;
 
-  if (!userId) return null;
-
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
       <SheetContent side="right" size="md" closeLabel={t('common.close', 'Close')}>
@@ -62,16 +60,18 @@ export function LeaveRequestModal({
               : t('leaveRequest.selfDesc', 'Submit a leave request for yourself')}
           </SheetDescription>
         </SheetHeader>
-        <LeaveRequestWizard
-          userId={userId}
-          orgId={orgId}
-          isSuperadmin={isSuperadmin || false}
-          selectedOrgId={selectedOrgId as Id<'organizations'> | undefined}
-          onComplete={onClose}
-          onCancel={onClose}
-          preselectedStartDate={preselectedStartDate}
-          preselectedEndDate={preselectedEndDate}
-        />
+        {userId && (
+          <LeaveRequestWizard
+            userId={userId}
+            orgId={orgId}
+            isSuperadmin={isSuperadmin || false}
+            selectedOrgId={selectedOrgId as Id<'organizations'> | undefined}
+            onComplete={onClose}
+            onCancel={onClose}
+            preselectedStartDate={preselectedStartDate}
+            preselectedEndDate={preselectedEndDate}
+          />
+        )}
       </SheetContent>
     </Sheet>
   );

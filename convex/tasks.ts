@@ -749,22 +749,24 @@ export const getMyEmployees = query({
 
 // ── Get all users for assignment (admin/supervisor) ────────────────────────
 export const getUsersForAssignment = query({
-  args: {},
-  handler: async (ctx, _args) => {
+  args: {
+    /** When a superadmin has no org, pass the selected org to scope the roster. */
+    organizationId: v.optional(v.id('organizations')),
+  },
+  handler: async (ctx, args) => {
     const requester = await getAuthCaller(ctx);
     // Unauthenticated callers get nothing — this used to fall through to an
     // unscoped `query('users')` that leaked every user of every tenant.
     if (!requester) return [];
 
-    // Org-scoped roster. Cross-tenant superadmins (no organizationId) fall
-    // back to every user, matching how they operate across tenants. Anyone
-    // else without an organization is a data hole — they get an empty roster
-    // rather than every tenant's user list.
+    // Org-scoped roster. Cross-tenant superadmins (no organizationId) use
+    // the explicit filter when provided, otherwise fall back to all tenants.
     let roster: Doc<'users'>[];
-    if (requester.organizationId) {
+    const orgId = args.organizationId ?? requester.organizationId;
+    if (orgId) {
       roster = await ctx.db
         .query('users')
-        .withIndex('by_org', (q) => q.eq('organizationId', requester.organizationId))
+        .withIndex('by_org', (q) => q.eq('organizationId', orgId))
         .take(DEFAULT_LIST_CAP);
     } else if (isSuperadmin(requester)) {
       roster = await ctx.db.query('users').take(DEFAULT_LIST_CAP);

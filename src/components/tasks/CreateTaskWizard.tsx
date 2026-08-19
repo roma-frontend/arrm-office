@@ -55,6 +55,8 @@ interface EditingSeries {
 interface CreateTaskWizardProps {
   currentUserId: Id<'users'>;
   userRole: 'admin' | 'supervisor' | 'employee' | 'superadmin';
+  /** For superadmins: pass the selected org so the roster is scoped. */
+  selectedOrgId?: Id<'organizations'> | null;
   assigneeId?: Id<'users'>;
   /** Pre-links the task to an objective (used by /tasks/new?objectiveId=…). */
   objectiveId?: Id<'objectives'>;
@@ -224,6 +226,7 @@ export function CreateTaskWizard({
   editingSeries,
   draftKey = 'create-task',
   className,
+  selectedOrgId,
   onComplete,
   onCancel,
 }: CreateTaskWizardProps) {
@@ -236,7 +239,11 @@ export function CreateTaskWizard({
 
   const safeUserId = currentUserId && currentUserId !== '' ? currentUserId : null;
 
-  const employees = useQuery(api.tasks.getUsersForAssignment, safeUserId ? {} : 'skip');
+  // Pass selectedOrgId so superadmins see the selected org's roster, not all tenants.
+  const employees = useQuery(
+    api.tasks.getUsersForAssignment,
+    safeUserId ? { organizationId: selectedOrgId ?? undefined } : 'skip',
+  );
 
   // The assignee list is exactly what the server query returns: it already
   // scopes per caller (whole org for admins, own reporting branch for
