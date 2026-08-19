@@ -1,7 +1,7 @@
 import { v } from 'convex/values';
 import { getAuthCaller } from '../lib/getAuthCaller';
 import { query, type QueryCtx } from '../_generated/server';
-import type { Doc, Id } from '../_generated/dataModel';
+import type { Doc } from '../_generated/dataModel';
 import { isSuperadmin } from '../lib/auth';
 import { getProfile } from '../lib/userProfile';
 

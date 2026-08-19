@@ -225,9 +225,7 @@ export const requestCalendarAccess = mutation({
 
     const existing = await ctx.db
       .query('calendarAccess')
-      .withIndex('by_owner_viewer', (q) =>
-        q.eq('ownerId', approverId).eq('viewerId', caller._id),
-      )
+      .withIndex('by_owner_viewer', (q) => q.eq('ownerId', approverId).eq('viewerId', caller._id))
       .filter((q) => q.eq(q.field('scope'), args.scope))
       .first();
     if (existing?.isActive) return { status: 'approved' as const };
@@ -553,8 +551,7 @@ export const getByOrganization = query({
       .take(200);
 
     let visible = events.filter(
-      (event) =>
-        event.createdBy === caller._id || (event.attendeeIds ?? []).includes(caller._id),
+      (event) => event.createdBy === caller._id || (event.attendeeIds ?? []).includes(caller._id),
     );
     if (isSuperadmin(caller)) {
       visible = events;

@@ -44,7 +44,10 @@ export async function enrichLeavesWithUserData(
       userName: user?.name ?? 'Unknown',
       userEmail: user?.email ?? '',
       userDepartment: profile?.department ?? user?.department ?? '',
-      userPosition: profile?.position ?? (user as any)?.position ?? '',
+      userPosition:
+        profile?.position ??
+        (user && 'position' in user ? (user as { position?: string }).position : undefined) ??
+        '',
       userEmployeeType: profile?.employeeType ?? user?.employeeType ?? 'staff',
       userAvatarUrl: profile?.avatarUrl ?? user?.avatarUrl,
       reviewerName: reviewer?.name,

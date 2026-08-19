@@ -292,6 +292,9 @@ jest.mock('lucide-react', () => {
     Eye: mkIcon('Eye'),
     DoorOpen: mkIcon('DoorOpen'),
     Building2: mkIcon('Building2'),
+    Video: mkIcon('Video'),
+    Maximize2: mkIcon('Maximize2'),
+    Minimize2: mkIcon('Minimize2'),
   };
 });
 
@@ -532,6 +535,10 @@ describe('CalendarClient', () => {
       getCompanyEvents: [],
       listBookings: [],
       listRooms: [],
+      getMyAccessState: { organization: 'approved', people: [] },
+      listPendingCalendarAccessRequests: [],
+      getOvertimeForDateRange: [],
+      getUsersByOrganizationId: [],
     };
     render(<CalendarClient />);
     expect(screen.getByText('calendarScope.team.emptyDay')).toBeInTheDocument();

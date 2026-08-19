@@ -492,45 +492,45 @@ function TypeStep({
         {types
           .filter((type) => activeTypes?.includes(type.value))
           .map((type) => {
-          const isSelected = value === type.value;
-          return (
-            <button
-              key={type.value}
-              type="button"
-              role="radio"
-              aria-checked={isSelected}
-              onClick={() => onChange(type.value)}
-              className={cn(
-                'press-subtle relative flex flex-col items-start gap-2.5 rounded-card border p-3.5 text-left',
-                'transition-colors duration-140 ease-spark',
-                isSelected
-                  ? 'border-(--brand) bg-(--brand-quiet)'
-                  : 'border-(--border-default) bg-(--surface-1) hover:bg-(--surface-2)',
-              )}
-            >
-              <span
+            const isSelected = value === type.value;
+            return (
+              <button
+                key={type.value}
+                type="button"
+                role="radio"
+                aria-checked={isSelected}
+                onClick={() => onChange(type.value)}
                 className={cn(
-                  'flex size-9 items-center justify-center rounded-field transition-colors duration-140 ease-spark',
-                  isSelected ? 'btn-gradient' : type.chip,
+                  'press-subtle relative flex flex-col items-start gap-2.5 rounded-card border p-3.5 text-left',
+                  'transition-colors duration-140 ease-spark',
+                  isSelected
+                    ? 'border-(--brand) bg-(--brand-quiet)'
+                    : 'border-(--border-default) bg-(--surface-1) hover:bg-(--surface-2)',
                 )}
               >
-                {type.icon}
-              </span>
-              <span className="min-w-0">
-                <span className="block text-label font-semibold text-(--text-primary)">
-                  {type.title}
+                <span
+                  className={cn(
+                    'flex size-9 items-center justify-center rounded-field transition-colors duration-140 ease-spark',
+                    isSelected ? 'btn-gradient' : type.chip,
+                  )}
+                >
+                  {type.icon}
                 </span>
-                <span className="mt-0.5 block text-caption text-(--text-muted)">{type.desc}</span>
-              </span>
-              {isSelected && (
-                <CheckCircle
-                  className="absolute right-2.5 top-2.5 size-4 text-(--brand)"
-                  aria-hidden="true"
-                />
-              )}
-            </button>
-          );
-        })}
+                <span className="min-w-0">
+                  <span className="block text-label font-semibold text-(--text-primary)">
+                    {type.title}
+                  </span>
+                  <span className="mt-0.5 block text-caption text-(--text-muted)">{type.desc}</span>
+                </span>
+                {isSelected && (
+                  <CheckCircle
+                    className="absolute right-2.5 top-2.5 size-4 text-(--brand)"
+                    aria-hidden="true"
+                  />
+                )}
+              </button>
+            );
+          })}
       </div>
     </div>
   );

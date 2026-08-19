@@ -90,7 +90,7 @@ export function NotificationBanner() {
       const hasPlayed = sessionStorage.getItem(`notif_sound_${currentCount}`);
       if (!hasPlayed) {
         sessionStorage.setItem(`notif_sound_${currentCount}`, '1');
-          if (latest) playNotificationSound(notificationSoundType(latest));
+        if (latest) playNotificationSound(notificationSoundType(latest));
       }
 
       if (latest) {

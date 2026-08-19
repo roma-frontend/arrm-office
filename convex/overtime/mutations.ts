@@ -1,11 +1,11 @@
 import { v } from 'convex/values';
 import { getAuthCaller } from '../lib/getAuthCaller';
 import { mutation, type MutationCtx } from '../_generated/server';
-import type { Doc, Id } from '../_generated/dataModel';
+import type { Id } from '../_generated/dataModel';
 import { isSuperadmin } from '../lib/auth';
 import { hasCapability } from '../lib/capabilities';
 import { assertModuleAccess } from '../lib/entitlements';
-import { resolveSupervisorId, getAncestorIds, isAncestorOf } from '../lib/reportingLine';
+import { resolveSupervisorId, isAncestorOf } from '../lib/reportingLine';
 import { notify } from '../lib/notify';
 
 // ─────────────────────────────────────────────────────────────────────────────

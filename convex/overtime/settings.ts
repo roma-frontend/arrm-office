@@ -1,7 +1,6 @@
 import { v } from 'convex/values';
 import { getAuthCaller } from '../lib/getAuthCaller';
 import { query, mutation } from '../_generated/server';
-import { isSuperadmin } from '../lib/auth';
 import { assertModuleAccess } from '../lib/entitlements';
 
 // ─────────────────────────────────────────────────────────────────────────────

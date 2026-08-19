@@ -118,7 +118,7 @@ export default defineSchema({
   ...operatorTools,
   ...meetings,
   ...billing,
-...overtime,
+  ...overtime,
 });
 
 export {

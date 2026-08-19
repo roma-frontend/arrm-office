@@ -156,6 +156,10 @@ jest.mock('@/components/leaves/LeaveSheet', () => ({
     leaveId ? <div data-testid="leave-sheet" data-leave-id={leaveId} /> : null,
 }));
 
+jest.mock('@/components/leaves/TimeOffCalendar', () => ({
+  TimeOffCalendar: () => <div data-testid="time-off-calendar" />,
+}));
+
 jest.mock('@/components/leaves/LeaveRequestModal', () => ({
   LeaveRequestModal: ({ open, onClose }: any) =>
     open ? (
@@ -242,7 +246,17 @@ jest.mock('@/components/ui/skeleton', () => ({
 }));
 
 jest.mock('lucide-react', () => {
-  const names = ['Plus', 'Search', 'CheckCircle', 'XCircle', 'Trash2', 'Eye', 'CalendarDays'];
+  const names = [
+    'Plus',
+    'Search',
+    'CheckCircle',
+    'XCircle',
+    'Trash2',
+    'Eye',
+    'CalendarDays',
+    'List',
+    'LayoutGrid',
+  ];
   const mocks: Record<string, any> = {};
   for (const n of names) mocks[n] = (props: any) => <span data-testid={`icon-${n}`} {...props} />;
   return mocks;

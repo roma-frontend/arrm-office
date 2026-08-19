@@ -6,7 +6,6 @@ import { useMainRef } from '@/hooks/useMainRef';
 import { useHydrated } from '@/hooks/useHydrated';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import { motion, AnimatePresence } from '@/lib/cssMotion';
-import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 import {
   ChevronLeft,
@@ -535,7 +534,13 @@ function DayCell({
       </span>
 
       {/* Event pills */}
-      {(hasLeaves || hasGoogle || hasDriver || hasCustom || hasRooms || hasCompany) && (
+      {(hasLeaves ||
+        hasGoogle ||
+        hasDriver ||
+        hasCustom ||
+        hasRooms ||
+        hasCompany ||
+        hasOvertime) && (
         <div className="flex flex-col gap-0.5 mt-0.5">
           {/* Company event pills — first, because they concern everyone */}
           {companyEvents.slice(0, 1).map((evt, i) => {
@@ -2108,8 +2113,8 @@ export const CalendarClient = React.memo(function CalendarClient() {
                   selectedDayCustomEvents.length === 0 &&
                   selectedDayRoomBookings.length === 0 &&
                   selectedDayCompanyEvents.length === 0 &&
-                  overtimeDateMap.get(format(selectedDay ?? new Date(), 'yyyy-MM-dd'))?.length ===
-                    0 ? (
+                  (overtimeDateMap.get(format(selectedDay ?? new Date(), 'yyyy-MM-dd'))?.length ??
+                    0) === 0 ? (
                     <motion.div
                       key="empty"
                       initial={{ opacity: 0 }}

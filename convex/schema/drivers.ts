@@ -227,9 +227,7 @@ export const drivers = {
     viewerId: v.id('users'),
     accessLevel: v.union(v.literal('full'), v.literal('busy_only'), v.literal('none')),
     scope: v.optional(v.union(v.literal('person'), v.literal('organization'))),
-    status: v.optional(
-      v.union(v.literal('pending'), v.literal('approved'), v.literal('rejected')),
-    ),
+    status: v.optional(v.union(v.literal('pending'), v.literal('approved'), v.literal('rejected'))),
     requestedAt: v.optional(v.number()),
     respondedAt: v.optional(v.number()),
     grantedAt: v.number(),

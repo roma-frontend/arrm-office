@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetBody } from '@/components/ui/sheet';
-import { Users, Plus, Calendar, Shield, X, CheckCircle, ShieldAlert, Sparkles } from 'lucide-react';
+import { Users, Plus, Calendar, X, CheckCircle, ShieldAlert, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import type { Id } from '@/convex/_generated/dataModel';
