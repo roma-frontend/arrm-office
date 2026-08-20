@@ -49,9 +49,7 @@ jest.mock('next/navigation', () => ({
 jest.mock('@/components/ui/hover-card', () => ({
   HoverCard: ({ children }: any) => <>{children}</>,
   HoverCardTrigger: ({ children }: any) => <>{children}</>,
-  HoverCardContent: ({ children }: any) => (
-    <div data-testid="hover-card-content">{children}</div>
-  ),
+  HoverCardContent: ({ children }: any) => <div data-testid="hover-card-content">{children}</div>,
 }));
 
 // ── Avatar mock ──────────────────────────────────────────────────────────────
