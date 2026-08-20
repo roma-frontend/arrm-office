@@ -181,3 +181,40 @@ export const getJoinToken = action({
     };
   },
 });
+
+/**
+ * Host-only removal of a participant from a live LiveKit room.
+ *
+ * Uses the server SDK (authoritative — the ejected client is disconnected by
+ * the LiveKit server, it cannot opt out). The host check mirrors
+ * `getJoinToken`: the room's `hostUserId`, or an admin/superadmin.
+ */
+export const removeParticipant = action({
+  args: {
+    roomName: v.string(),
+    identity: v.string(),
+  },
+  handler: async (ctx, { roomName, identity }) => {
+    const caller = await getActionCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+
+    if (!livekitConfigured()) {
+      throw new Error('Video calls are not configured yet');
+    }
+
+    const meeting = (await ctx.runQuery(api.meetings.getByRoomName, {
+      roomName,
+    })) as ActionMeeting | null;
+    if (!meeting) throw new Error('Meeting not found');
+
+    const isHost =
+      meeting.hostUserId === caller._id || caller.role === 'admin' || isSuperadmin(caller);
+    if (!isHost) throw new Error('Only the host can remove participants');
+
+    const { RoomServiceClient } = await import('livekit-server-sdk');
+    const roomService = new RoomServiceClient(LIVEKIT_URL!, LIVEKIT_API_KEY!, LIVEKIT_API_SECRET!);
+    await roomService.removeParticipant(roomName, identity);
+
+    return { removed: true as const };
+  },
+});

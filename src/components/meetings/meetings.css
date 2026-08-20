@@ -111,6 +111,103 @@
   --lk-box-shadow: 0 8px 30px rgb(0 0 0 / 0.45);
 }
 
+/* ── Kill stray white bars from LiveKit default styles ─────────────────── */
+/* The imported @livekit/components-styles sets .lk-video-conference to a
+   flex row with background inheritance, and .lk-focus-layout-wrapper /
+   .lk-grid-layout-wrapper inherit a light control-bar border.  Override
+   every possible source so no white strip leaks onto our dark stage. */
+.lk-room .lk-video-conference,
+.lk-room .lk-video-conference-inner,
+.lk-room .lk-focus-layout-wrapper,
+.lk-room .lk-grid-layout-wrapper {
+  background: transparent !important;
+}
+
+.lk-room .lk-control-bar {
+  border-top: none !important;
+}
+
+/* Pre-join screen: zero out any LiveKit kit defaults that could produce a
+   white strip when the custom pre-join (not LiveKit's) is shown. */
+[data-lk-theme] .lk-prejoin {
+  background: transparent !important;
+}
+
+/* Pre-join screen: kill every possible source of a stray white strip.
+   The @livekit/components-styles import is loaded globally and can leak
+   borders / backgrounds onto elements that have no .lk-* class. */
+.prejoin-screen {
+  border-color: transparent !important;
+}
+.prejoin-screen video {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+.prejoin-screen .prejoin-preview-card,
+.prejoin-screen .prejoin-preview-card * {
+  border-color: transparent !important;
+}
+/* Restore only the borders we intentionally use inside the pre-join. */
+.prejoin-screen .prejoin-preview-card {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+.prejoin-screen .border-t {
+  border-top-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Global LiveKit resets — during the pre-join phase there is no .lk-room
+   wrapper, so overrides scoped under .lk-room do not apply.  These catch
+   stray borders, backgrounds, and separators that leak from the imported
+   @livekit/components-styles onto any element inside [data-lk-theme]. */
+[data-lk-theme] .lk-video-conference,
+[data-lk-theme] .lk-focus-layout,
+[data-lk-theme] .lk-focus-layout-wrapper,
+[data-lk-theme] .lk-grid-layout,
+[data-lk-theme] .lk-grid-layout-wrapper,
+[data-lk-theme] .lk-video-conference-inner {
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Kill horizontal dividers that LiveKit injects into layout wrappers. */
+[data-lk-theme] .lk-focus-layout-wrapper::before,
+[data-lk-theme] .lk-focus-layout-wrapper::after,
+[data-lk-theme] .lk-grid-layout-wrapper::before,
+[data-lk-theme] .lk-grid-layout-wrapper::after,
+[data-lk-theme] .lk-video-conference::before,
+[data-lk-theme] .lk-video-conference::after {
+  display: none !important;
+  content: none !important;
+}
+
+/* LiveKit control-bar border that leaks even outside .lk-room. */
+[data-lk-theme] .lk-control-bar,
+[data-lk-theme] .lk-agent-control-bar {
+  border-top: none !important;
+  background: transparent !important;
+}
+
+/* Separator between tiles / layout sections. */
+[data-lk-theme] hr,
+[data-lk-theme] .lk-divider {
+  display: none !important;
+}
+
+/* The .lk-room-container wrapper that LiveKitRoom renders inherits a
+   background from [data-lk-theme=default].  Make it transparent so our
+   theme-aware canvas (bg-(--canvas)) shows through. */
+[data-lk-theme] .lk-room-container {
+  background: transparent !important;
+}
+
+/* Audio conference stage — inherits grid/flex that can expose a light bg. */
+[data-lk-theme] .lk-audio-conference {
+  background: transparent !important;
+}
+
 /* Floating emoji reactions rise from the control dock and fade out. */
 .meeting-reaction {
   animation: meeting-reaction-rise 2.6s ease-out forwards;
@@ -128,6 +225,75 @@
     transform: translateY(-220px) scale(1.25);
     opacity: 0;
   }
+}
+
+/* Raised-hand badge gently bobs so nobody misses it. */
+.meeting-hand-badge {
+  animation: meeting-hand-bounce 1.6s ease-in-out infinite;
+}
+
+@keyframes meeting-hand-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+/* Live "speaking" equalizer bars next to the active speaker's name. */
+.meeting-speaking-bar {
+  height: 100%;
+  animation: meeting-bar 1s ease-in-out infinite;
+  transform-origin: bottom;
+}
+
+@keyframes meeting-bar {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+/* Right-hand panels (chat / participants) slide in from the edge. */
+.meeting-panel-in {
+  animation: meeting-panel-in 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes meeting-panel-in {
+  from {
+    transform: translateX(16px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* Slim scrollbar for chat / participants panels. */
+.chat-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
+.chat-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-scroll::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.chat-scroll::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 /* Buttons inside the kit inherit the app's press feedback. */
