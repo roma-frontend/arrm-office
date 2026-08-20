@@ -32,6 +32,7 @@
     },
     "filter": {
       "allDepartments": "Alle Abteilungen",
+      "allPositions": "Alle Positionen",
       "allRoles": "Alle Rollen"
     },
     "empty": {
@@ -69,6 +70,7 @@
     "deactivateDesc": "Dies wird ihren Zugriff deaktivieren. Sie können sie später über das Bearbeitungsfeld reaktivieren.",
     "allRoles": "Alle Rollen",
     "allDepartments": "Alle Abteilungen",
+    "allPositions": "Alle Positionen",
     "allTypes": "Alle Typen",
     "allStatuses": "Alle Status",
     "backToEmployees": "Zurück zu den Mitarbeitern",

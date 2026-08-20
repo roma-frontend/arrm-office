@@ -96,6 +96,8 @@ export function EmployeesClient() {
   const [filterStatus, setFilterStatus] = useState<string>(
     user?.role === 'employee' ? 'active' : 'active',
   );
+  const [filterDepartment, setFilterDepartment] = useState<string>('all');
+  const [filterPosition, setFilterPosition] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showAddModal, setShowAddModal] = useState(false);
   const addEmployeeDraft = useDraftResume('add-employee', !showAddModal);
@@ -154,6 +156,24 @@ export function EmployeesClient() {
   const isSupervisor = user?.role === 'supervisor';
   const canManage = isAdmin || isSupervisor || isSuperadmin;
 
+  // Distinct departments / positions from everything loaded so far. These drive
+  // the dropdown options, so filtering is by exact value instead of scrolling
+  // the directory looking for a department or role line.
+  const departmentOptions = useMemo(() => {
+    const set = new Set<string>();
+    (accumulatedUsers || []).forEach((u) => {
+      if (u.department) set.add(u.department);
+    });
+    return ['all', ...Array.from(set).sort()];
+  }, [accumulatedUsers]);
+  const positionOptions = useMemo(() => {
+    const set = new Set<string>();
+    (accumulatedUsers || []).forEach((u) => {
+      if (u.position) set.add(u.position);
+    });
+    return ['all', ...Array.from(set).sort()];
+  }, [accumulatedUsers]);
+
   const filtered = useMemo(() => {
     const usersToFilter = accumulatedUsers || [];
     if (usersToFilter.length === 0) return [];
@@ -175,9 +195,22 @@ export function EmployeesClient() {
         filterStatus === 'all' ||
         (filterStatus === 'active' && u.isActive) ||
         (filterStatus === 'inactive' && !u.isActive);
-      return matchSearch && matchRole && matchType && matchStatus;
+      const matchDepartment =
+        filterDepartment === 'all' || (u.department ?? '') === filterDepartment;
+      const matchPosition = filterPosition === 'all' || (u.position ?? '') === filterPosition;
+      return (
+        matchSearch && matchRole && matchType && matchStatus && matchDepartment && matchPosition
+      );
     });
-  }, [accumulatedUsers, debouncedSearch, filterRole, filterType, filterStatus]);
+  }, [
+    accumulatedUsers,
+    debouncedSearch,
+    filterRole,
+    filterType,
+    filterStatus,
+    filterDepartment,
+    filterPosition,
+  ]);
 
   const stats = useMemo(() => {
     if (!accumulatedUsers || accumulatedUsers.length === 0)
@@ -368,6 +401,18 @@ export function EmployeesClient() {
                     },
                   ]
                 : []),
+              {
+                value: filterDepartment,
+                setter: setFilterDepartment,
+                options: departmentOptions,
+                label: 'Department',
+              },
+              {
+                value: filterPosition,
+                setter: setFilterPosition,
+                options: positionOptions,
+                label: 'Position',
+              },
             ].map(({ value, setter, options, label }) => {
               return (
                 <CustomSelect
@@ -381,6 +426,14 @@ export function EmployeesClient() {
                         return t('employees.allTypes', { defaultValue: 'All Types' });
                       if (label === 'Status')
                         return t('employees.allStatuses', { defaultValue: 'All Statuses' });
+                      if (label === 'Department')
+                        return o === 'all'
+                          ? t('employees.allDepartments', { defaultValue: 'All Departments' })
+                          : o;
+                      if (label === 'Position')
+                        return o === 'all'
+                          ? t('employees.allPositions', { defaultValue: 'All Positions' })
+                          : o;
                       return t(`employees.filter_${o}`, { defaultValue: o });
                     })(),
                   }))}

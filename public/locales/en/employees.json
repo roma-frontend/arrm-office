@@ -31,7 +31,8 @@
       "list": "List"
     },
     "filter": {
-      "allDepartments": "All departments",
+      "allDepartments": "All Departments",
+      "allPositions": "All Positions",
       "allRoles": "All roles"
     },
     "empty": {
@@ -69,6 +70,7 @@
     "deactivateDesc": "This will disable their access. You can reactivate them later from the edit panel.",
     "allRoles": "All Roles",
     "allDepartments": "All Departments",
+    "allPositions": "All Positions",
     "allTypes": "All Types",
     "allStatuses": "All Statuses",
     "filter_all": "All",

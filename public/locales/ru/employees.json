@@ -32,6 +32,7 @@
     },
     "filter": {
       "allDepartments": "Все отделы",
+      "allPositions": "Все должности",
       "allRoles": "Все роли"
     },
     "empty": {
@@ -69,6 +70,7 @@
     "deactivateDesc": "Это отключит их доступ. Вы можете реактивировать их позже из панели редактирования.",
     "allRoles": "Все роли",
     "allDepartments": "Все отделы",
+    "allPositions": "Все должности",
     "allTypes": "Все типы",
     "allStatuses": "Все статусы",
     "backToEmployees": "Назад к сотрудникам",

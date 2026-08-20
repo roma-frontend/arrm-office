@@ -461,8 +461,52 @@ describe('search and filters', () => {
     mockUser = { id: 'u_emp', role: 'employee', email: 'e@x.com' };
     paginatedResults = [empDoc()];
     renderClient();
-    // Role + Type selects only.
-    expect(screen.getAllByTestId('custom-select')).toHaveLength(2);
+    // Role, Type, Department, Position selects — Status is manager-only.
+    expect(screen.getAllByTestId('custom-select')).toHaveLength(4);
+  });
+
+  it('filters by department through the CustomSelect', () => {
+    paginatedResults = [
+      empDoc(),
+      empDoc({ _id: 'u2', name: 'Boris', department: 'Sales' }),
+      empDoc({ _id: 'u3', name: 'Vahagn', department: 'Logistics', position: undefined }),
+    ];
+    renderClient();
+    const deptSelect = screen.getAllByTestId('custom-select')[3];
+    fireEvent.change(deptSelect, { target: { value: 'Sales' } });
+    expect(screen.getByText('Boris')).toBeTruthy();
+    expect(screen.queryByText('Anna Petrova')).toBeNull();
+    expect(screen.queryByText('Vahagn')).toBeNull();
+  });
+
+  it('filters by position through the CustomSelect', () => {
+    paginatedResults = [
+      empDoc(),
+      empDoc({ _id: 'u2', name: 'Boris', role: 'supervisor', position: 'Team Lead' }),
+    ];
+    renderClient();
+    const positionSelect = screen.getAllByTestId('custom-select')[4];
+    fireEvent.change(positionSelect, { target: { value: 'Team Lead' } });
+    expect(screen.getByText('Boris')).toBeTruthy();
+    expect(screen.queryByText('Anna Petrova')).toBeNull();
+  });
+
+  it('combines department and position filters with the search', () => {
+    paginatedResults = [
+      empDoc(),
+      empDoc({ _id: 'u2', name: 'Boris', department: 'Sales', position: 'Sales Manager' }),
+      empDoc({ _id: 'u3', name: 'Vahagn', department: 'Sales', position: 'Driver' }),
+    ];
+    renderClient();
+    fireEvent.change(screen.getAllByTestId('custom-select')[3], {
+      target: { value: 'Sales' },
+    });
+    fireEvent.change(screen.getAllByTestId('custom-select')[4], {
+      target: { value: 'Driver' },
+    });
+    expect(screen.getByText('Vahagn')).toBeTruthy();
+    expect(screen.queryByText('Anna Petrova')).toBeNull();
+    expect(screen.queryByText('Boris')).toBeNull();
   });
 });
 
