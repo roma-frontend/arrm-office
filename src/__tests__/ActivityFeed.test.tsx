@@ -182,7 +182,7 @@ describe('ActivityFeed', () => {
 
   // ── Rendering activities ────────────────────────────────────────────────
 
-  it('renders the activity title, user name and a readable description', () => {
+  it('renders the activity title and a readable description', () => {
     queryResults.getAuditLogs = [
       log({
         action: 'task_created',
@@ -192,16 +192,18 @@ describe('ActivityFeed', () => {
     render(<ActivityFeed />);
     expect(screen.getByText('Recent Activity')).toBeInTheDocument();
     expect(screen.getByText('Write docs')).toBeInTheDocument();
-    expect(screen.getByText('John Doe')).toBeInTheDocument();
     // Ids are skipped — no raw JSON in the widget
     expect(screen.queryByText(/\{"/)).not.toBeInTheDocument();
   });
 
-  it('falls back to the unknown-user label when the actor has no name', () => {
-    // ?? only kicks in for null/undefined — an empty string is kept as-is.
+  it('keeps the compact item free of actor labels', () => {
+    // The redesigned item shows title + description + timestamp only; actor
+    // names (and any unknown-actor fallback) no longer appear in the feed.
     queryResults.getAuditLogs = [log({ user: {} })];
     render(<ActivityFeed />);
-    expect(screen.getByText('Unknown')).toBeInTheDocument();
+    expect(screen.getByText('Write docs')).toBeInTheDocument();
+    expect(screen.queryByText('John Doe')).not.toBeInTheDocument();
+    expect(screen.queryByText('Unknown')).not.toBeInTheDocument();
   });
 
   it('omits the user name when the actor is null', () => {
@@ -360,12 +362,12 @@ describe('ActivityFeed', () => {
     expect(screen.getByText('2m ago')).toBeInTheDocument();
   });
 
-  it('shows a Critical badge for rejected leaves', () => {
+  it('does not surface a severity badge on items (redesigned compact feed)', () => {
+    // Severity badges were dropped from the item in the redesign; rejected
+    // leaves no longer render a Critical chip.
     queryResults.getAuditLogs = [log({ _id: 'r', action: 'leave_rejected', details: '{}' })];
     render(<ActivityFeed />);
-    expect(screen.getByText('Critical')).toBeInTheDocument();
-    const badge = screen.getByTestId('badge');
-    expect(badge.getAttribute('data-variant')).toBe('destructive');
+    expect(screen.queryByText('Critical')).not.toBeInTheDocument();
   });
 
   it('does not show the Critical badge for non-error activities', () => {
@@ -420,8 +422,9 @@ describe('ActivityFeed', () => {
       log({ _id: 'new', details: JSON.stringify({ title: 'New' }), _creationTime: Date.now() }),
     ];
     const { container } = render(<ActivityFeed />);
-    // span.line-clamp-1 selects the title spans only (descriptions are <p>)
-    const titles = Array.from(container.querySelectorAll('span.line-clamp-1')).map(
+    // p.line-clamp-1 selects the title paragraphs only (descriptions are <p>
+    // too, but the fixtures below carry no description)
+    const titles = Array.from(container.querySelectorAll('p.line-clamp-1')).map(
       (el) => el.textContent,
     );
     expect(titles[0]).toBe('New');
