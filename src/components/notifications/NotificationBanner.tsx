@@ -11,7 +11,12 @@ import {
   notificationMessage,
   notificationSoundType,
   notificationTitle,
+  parseNotificationMeta,
 } from '@/lib/notificationText';
+import { useMutation } from 'convex/react';
+import { api } from '../../../convex/_generated/api';
+import type { Id } from '../../../convex/_generated/dataModel';
+import { EventInviteButtons } from '@/components/calendar/EventInviteActions';
 import { useTranslation } from 'react-i18next';
 
 const getRouteForType = (type: string): string => {
@@ -54,6 +59,7 @@ export function NotificationBanner() {
   const { t } = useTranslation();
   const { user } = useAuthStore();
   const router = useRouter();
+  const markRead = useMutation(api.notifications.markAsRead);
   const _isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
 
   // Shared subscription from NavBadgesProvider — the banner used to hold a
@@ -62,6 +68,7 @@ export function NotificationBanner() {
 
   const [lastSeenCount, setLastSeenCount] = useState<number | null>(null);
   const [newNotification, setNewNotification] = useState<{
+    id: string;
     title: string;
     message: string;
     type: string;
@@ -95,6 +102,7 @@ export function NotificationBanner() {
 
       if (latest) {
         setNewNotification({
+          id: latest._id,
           title: latest.title,
           message: latest.message,
           type: latest.type,
@@ -123,6 +131,9 @@ export function NotificationBanner() {
           ? ('warning' as const)
           : ('purple' as const);
 
+  const meta = parseNotificationMeta(newNotification.metadata);
+  const isInvite = meta.type === 'calendar_invite';
+
   return (
     <div className="w-full">
       <SmartBanner
@@ -132,6 +143,19 @@ export function NotificationBanner() {
         icon={<MessageSquare className="w-5 h-5" />}
         onDismiss={handleDismiss}
         className="rounded-none border-x-0 border-t-0"
+        actions={
+          isInvite && meta.eventId ? (
+            <EventInviteButtons
+              eventId={meta.eventId}
+              onResponded={() => {
+                void markRead({
+                  notificationId: newNotification.id as Id<'notifications'>,
+                });
+                handleDismiss();
+              }}
+            />
+          ) : undefined
+        }
         action={{
           label: t('banners.view', 'View'),
           onClick: () => {

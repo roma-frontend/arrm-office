@@ -46,6 +46,7 @@ import {
 } from '@/lib/types';
 import { getInitials } from '@/lib/stringUtils';
 import type { CalendarEvent } from './CreateEventModal';
+import { EventInviteActions } from './EventInviteActions';
 import {
   COMPANY_EVENT_ACCENTS,
   type CompanyTimelineData,
@@ -177,6 +178,8 @@ interface DayDetailsModalProps {
   onOpenTimeline?: (input: TimelineInput) => void;
   /** Clicking a room booking opens that room's details. */
   onOpenRoom?: (roomId: string) => void;
+  /** Current user id — matched against `createdBy` to pick the RSVP view. */
+  viewerId?: string;
 }
 
 export function DayDetailsModal({
@@ -191,6 +194,7 @@ export function DayDetailsModal({
   onClose,
   onOpenTimeline,
   onOpenRoom,
+  viewerId,
 }: DayDetailsModalProps) {
   const { t } = useTranslation();
   const lang = i18n.language || 'en';
@@ -492,6 +496,16 @@ export function DayDetailsModal({
                             </button>
                           </div>
                         )}
+                        {viewerId &&
+                          (evt.createdBy === viewerId ||
+                            (evt.attendeeIds ?? []).includes(viewerId)) && (
+                            <EventInviteActions
+                              eventId={evt.id}
+                              isOrganizer={evt.createdBy === viewerId}
+                              myResponse={evt.myResponse}
+                              responseCounts={evt.responseCounts}
+                            />
+                          )}
                       </div>
                     </motion.div>
                   ))}

@@ -1455,7 +1455,8 @@
       "leaveCancelRequested": "{{userName}} hat die Stornierung von $t(leaveTypes.{{type}}) beantragt ({{start}} → {{end}})",
       "leaveCancellationApproved": "Ihre Stornierung von $t(leaveTypes.{{type}}) ({{start}} → {{end}}) wurde genehmigt.",
       "leaveCancellationRejected": "{{reviewerName}} hat Ihre Stornierung von $t(leaveTypes.{{type}}) ({{start}} → {{end}}) abgelehnt.",
-      "leaveCancellationRejectedWithReason": "{{reviewerName}} hat Ihre Stornierung von $t(leaveTypes.{{type}}) ({{start}} → {{end}}) abgelehnt. Grund: {{comment}}"
+      "leaveCancellationRejectedWithReason": "{{reviewerName}} hat Ihre Stornierung von $t(leaveTypes.{{type}}) ({{start}} → {{end}}) abgelehnt. Grund: {{comment}}",
+      "roomMeetingReminder": "Startet um {{startTime}} in {{roomName}}{{platform ? \". Plattform: \" + platform : \"\"}} {{videoUrl}}"
     },
     "titles": {
       "movementFormReady": "📄 Übergabeprotokoll zur Unterschrift bereit",
@@ -1539,6 +1540,7 @@
       "meetingUpdated": "📅 Termin aktualisiert: „{{eventTitle}}“",
       "meetingCancelled": "📅 Termin abgesagt: „{{eventTitle}}“",
       "meetingUninvited": "📅 Einladung zurückgezogen: „{{eventTitle}}“",
+      "eventInviteResponse": "{{eventTitle}}",
       "taskComment": "💬 Kommentar zur Aufgabe",
       "taskCompleted": "Aufgabe abgeschlossen",
       "taskReadyForReview": "Aufgabe zur Prüfung bereit",
@@ -1567,7 +1569,8 @@
       "probationFailed": "⛔ Probezeit nicht bestanden",
       "leaveCancelRequested": "Urlaubsstornierung angefordert",
       "leaveCancellationApproved": "Stornierung genehmigt",
-      "leaveCancellationRejected": "Stornierung abgelehnt"
+      "leaveCancellationRejected": "Stornierung abgelehnt",
+      "roomMeetingReminder": "Bald: {{bookingTitle}}"
     }
   },
   "aiChat": {
@@ -2183,6 +2186,17 @@
     "declined": "abgelehnt",
     "tentative": "vorläufig angenommen",
     "needs_action": "noch nicht reagiert auf"
+  },
+  "rsvp": {
+    "accept": "Zusagen",
+    "tentative": "Vielleicht",
+    "decline": "Absagen",
+    "acceptedCount": "kommen",
+    "tentativeCount": "vielleicht",
+    "declinedCount": "abgesagt",
+    "organizerSummary": "{{answered}} von {{total}} bestätigt",
+    "responseSaved": "Antwort gespeichert",
+    "responseFailed": "Antwort konnte nicht gespeichert werden"
   },
   "ticket": {
     "chatCreated": "Für Ticket {{ticketNumber}} wurde ein Support-Chat eröffnet. Sie sehen ihn, sobald der Support-Assistent die erste Nachricht schreibt.",

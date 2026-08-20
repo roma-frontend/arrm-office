@@ -34,6 +34,8 @@ interface NotificationMeta {
   params?: Record<string, string | number>;
   type?: string;
   approved?: boolean;
+  /** Calendar event id for `calendar_invite` / `calendar_invite_response` rows. */
+  eventId?: string;
 }
 
 /**
@@ -51,6 +53,11 @@ function parseMeta(metadata?: string): NotificationMeta {
   } catch {
     return {};
   }
+}
+
+/** Public alias so components can peek at a row's metadata without re-parsing it. */
+export function parseNotificationMeta(metadata?: string): NotificationMeta {
+  return parseMeta(metadata);
 }
 
 /**

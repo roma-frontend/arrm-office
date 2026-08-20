@@ -1455,7 +1455,8 @@
       "leaveCancelRequested": "{{userName}} requested to cancel their $t(leaveTypes.{{type}}) ({{start}} → {{end}})",
       "leaveCancellationApproved": "Your $t(leaveTypes.{{type}}) ({{start}} → {{end}}) cancellation has been approved.",
       "leaveCancellationRejected": "Your $t(leaveTypes.{{type}}) ({{start}} → {{end}}) cancellation was rejected by {{reviewerName}}.",
-      "leaveCancellationRejectedWithReason": "Your $t(leaveTypes.{{type}}) ({{start}} → {{end}}) cancellation was rejected by {{reviewerName}}. Reason: {{comment}}"
+      "leaveCancellationRejectedWithReason": "Your $t(leaveTypes.{{type}}) ({{start}} → {{end}}) cancellation was rejected by {{reviewerName}}. Reason: {{comment}}",
+      "roomMeetingReminder": "Starts at {{startTime}} in {{roomName}}.{{platform ? \" Platform: \" + platform : \"\"}} {{videoUrl}}"
     },
     "titles": {
       "movementFormReady": "📄 Movement Form Ready for Signing",
@@ -1539,6 +1540,7 @@
       "meetingUpdated": "📅 Meeting updated: \"{{eventTitle}}\"",
       "meetingCancelled": "📅 Meeting cancelled: \"{{eventTitle}}\"",
       "meetingUninvited": "📅 Invitation withdrawn: \"{{eventTitle}}\"",
+      "eventInviteResponse": "{{eventTitle}}",
       "taskComment": "💬 Comment on task",
       "taskCompleted": "Task Completed",
       "taskReadyForReview": "Task Ready for Review",
@@ -1567,7 +1569,8 @@
       "probationFailed": "⛔ Probation not passed",
       "leaveCancelRequested": "Leave Cancellation Requested",
       "leaveCancellationApproved": "Cancellation Approved",
-      "leaveCancellationRejected": "Cancellation Rejected"
+      "leaveCancellationRejected": "Cancellation Rejected",
+      "roomMeetingReminder": "Upcoming: {{bookingTitle}}"
     }
   },
   "aiChat": {
@@ -2183,6 +2186,17 @@
     "declined": "declined",
     "tentative": "tentatively accepted",
     "needs_action": "has not yet responded to"
+  },
+  "rsvp": {
+    "accept": "Accept",
+    "tentative": "Maybe",
+    "decline": "Decline",
+    "acceptedCount": "going",
+    "tentativeCount": "maybe",
+    "declinedCount": "declined",
+    "organizerSummary": "{{answered}} of {{total}} confirmed",
+    "responseSaved": "Answer saved",
+    "responseFailed": "Could not save your answer"
   },
   "ticket": {
     "chatCreated": "A support chat has been opened for ticket {{ticketNumber}}. It becomes visible to you as soon as the support assistant writes the first message.",

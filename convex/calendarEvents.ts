@@ -133,10 +133,177 @@ async function notifyAttendees(
       fallbackMessage: fallbacks[1]!,
       relatedId: event.id,
       route: '/calendar',
+      extra: { type: 'calendar_invite', eventId: event.id },
       createdAt: now,
     });
   }
 }
+
+/** Answers a guest can give to an invite, in the order the UI offers them. */
+export const RSVP_RESPONSES = [
+  'needs_action',
+  'accepted',
+  'tentative',
+  'declined',
+] as const;
+export type RsvpResponse = (typeof RSVP_RESPONSES)[number];
+
+/** The row written when somebody is invited — they have not answered yet. */
+function eventAttendeeRow(
+  organizationId: Id<'organizations'>,
+  eventId: Id<'calendarEvents'>,
+  userId: Id<'users'>,
+  invitedBy: Id<'users'>,
+  invitedAt: number,
+) {
+  return {
+    organizationId,
+    eventId,
+    userId,
+    response: 'needs_action' as const,
+    invitedAt,
+    invitedBy,
+  };
+}
+
+/**
+ * Keeps the RSVP rows in step with the roster after a create/update.
+ *
+ * Rows are the durable record of who was invited and how they answered. When
+ * the roster changes this rewrites only the difference: new guests get a fresh
+ * `needs_action` row, dropped guests are soft-deleted (`removedAt`) rather than
+ * erased so their answer is never silently lost, and a guest who is removed and
+ * re-added gets their row resurrected with a clean response.
+ */
+async function syncEventAttendeeRows(
+  ctx: MutationCtx,
+  organizationId: Id<'organizations'>,
+  eventId: Id<'calendarEvents'>,
+  roster: Id<'users'>[],
+  invitedBy: Id<'users'>,
+  invitedAt: number,
+): Promise<void> {
+  const rows = await ctx.db
+    .query('calendarEventAttendees')
+    .withIndex('by_event', (q) => q.eq('eventId', eventId))
+    .collect();
+  const rosterLeft = new Set(roster);
+
+  for (const row of rows) {
+    if (rosterLeft.has(row.userId)) {
+      rosterLeft.delete(row.userId);
+      if (row.removedAt !== undefined) {
+        // Re-invited — the old answer is void, they decide afresh.
+        await ctx.db.patch(row._id, {
+          removedAt: undefined,
+          removedBy: undefined,
+          response: 'needs_action',
+          respondedAt: undefined,
+          invitedAt,
+          invitedBy,
+        });
+      }
+    } else if (row.removedAt === undefined) {
+      await ctx.db.patch(row._id, { removedAt: invitedAt, removedBy: invitedBy });
+    }
+  }
+
+  for (const userId of rosterLeft) {
+    await ctx.db.insert(
+      'calendarEventAttendees',
+      eventAttendeeRow(organizationId, eventId, userId, invitedBy, invitedAt),
+    );
+  }
+}
+
+/**
+ * Meeting moved → yesterday's answers no longer stand. Every non-blank
+ * response drops back to `needs_action` so the guests confirm the new slot.
+ */
+async function resetEventResponses(
+  ctx: MutationCtx,
+  eventId: Id<'calendarEvents'>,
+): Promise<void> {
+  const rows = await ctx.db
+    .query('calendarEventAttendees')
+    .withIndex('by_event', (q) => q.eq('eventId', eventId))
+    .collect();
+  for (const row of rows) {
+    if (row.removedAt === undefined && row.response !== 'needs_action') {
+      await ctx.db.patch(row._id, { response: 'needs_action', respondedAt: undefined });
+    }
+  }
+}
+
+/**
+ * Records a guest's answer to an invite and pings the organizer with the
+ * outcome. Guests answer from the notification banner, the bell dropdown or
+ * the day card; the organizer watches the same rows fill in.
+ */
+export const respondToEventInvite = mutation({
+  args: {
+    eventId: v.id('calendarEvents'),
+    response: v.union(v.literal('accepted'), v.literal('tentative'), v.literal('declined')),
+  },
+  handler: async (ctx, { eventId, response }) => {
+    await assertModuleAccess(ctx, 'calendar');
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const event = await ctx.db.get(eventId);
+    if (!event) throw new Error('Event not found');
+    if (!isSuperadmin(caller) && caller.organizationId !== event.organizationId) {
+      throw new Error('Access denied: different organization');
+    }
+    if (event.createdBy === caller._id) {
+      throw new Error('The organizer does not need to respond');
+    }
+
+    // Events created before the RSVP rows existed have no row yet — materialize
+    // one so the first answer has somewhere to land.
+    let row = await ctx.db
+      .query('calendarEventAttendees')
+      .withIndex('by_event_user', (q) => q.eq('eventId', eventId).eq('userId', caller._id))
+      .unique();
+    if (!row) {
+      // Only the guest list may answer. A dropped guest still has their old row
+      // (soft-deleted), so the withdrawal check below speaks to them first.
+      if (!(event.attendeeIds ?? []).includes(caller._id)) {
+        throw new Error('Only invited participants can respond');
+      }
+      const rowId = await ctx.db.insert(
+        'calendarEventAttendees',
+        eventAttendeeRow(event.organizationId, eventId, caller._id, event.createdBy, Date.now()),
+      );
+      row = await ctx.db.get(rowId);
+    }
+    if (!row) throw new Error('Event not found');
+    if (row.removedAt !== undefined) {
+      throw new Error('Your invitation to this event was withdrawn');
+    }
+
+    const now = Date.now();
+    await ctx.db.patch(row._id, { response, respondedAt: now });
+
+    await notify(ctx, {
+      organizationId: event.organizationId,
+      userId: event.createdBy,
+      type: 'system',
+      titleKey: 'notifications.titles.eventInviteResponse',
+      messageKey: 'notifications.messages.attendeeResponded',
+      params: { eventTitle: event.title, name: caller.name ?? 'Someone', response },
+      fallbackTitle: `RSVP: ${event.title}`,
+      fallbackMessage: `${
+        caller.name ?? 'Someone'
+      } ${response} your invite to "${event.title}"`,
+      relatedId: eventId,
+      route: '/calendar',
+      extra: { type: 'calendar_invite_response', eventId },
+      createdAt: now,
+    });
+
+    return { success: true };
+  },
+});
 
 export const getMyAccessState = query({
   args: { organizationId: v.id('organizations') },
@@ -388,7 +555,16 @@ export const create = mutation({
     });
 
     // Everyone on the guest list is "mentioned" by the invite — they get the
-    // sound + bell + calendar badge like any other notification.
+    // sound + bell + calendar badge like any other notification, and an RSVP
+    // row to answer against.
+    await syncEventAttendeeRows(
+      ctx,
+      args.organizationId,
+      eventId,
+      attendees.ids ?? [],
+      caller._id,
+      now,
+    );
     await notifyAttendees(
       ctx,
       args.organizationId,
@@ -499,6 +675,13 @@ export const update = mutation({
     const now = Date.now();
     const newIds = attendees.ids ?? [];
     const removedIds = (event.attendeeIds ?? []).filter((id) => !newIds.includes(id));
+    await syncEventAttendeeRows(ctx, event.organizationId, args.id, newIds, caller._id, now);
+    // Moved slot → yesterday's answers no longer stand; guests re-confirm.
+    const rescheduled =
+      args.date !== event.date ||
+      args.startTime !== event.startTime ||
+      args.endTime !== event.endTime;
+    if (rescheduled) await resetEventResponses(ctx, args.id);
     await notifyAttendees(
       ctx,
       event.organizationId,
@@ -525,7 +708,7 @@ export const update = mutation({
 });
 
 /** Adds the room name/colour so the calendar can label events without extra queries. */
-async function withRoom(ctx: QueryCtx, event: Doc<'calendarEvents'>) {
+async function withRoom<T extends Doc<'calendarEvents'>>(ctx: QueryCtx, event: T) {
   if (!event.roomId) return { ...event, roomName: undefined, roomColor: undefined };
   const room = await ctx.db.get(event.roomId);
   return { ...event, roomName: room?.name, roomColor: room?.color };
@@ -614,7 +797,39 @@ export const getByOrganization = query({
       }
     }
 
-    return await Promise.all(visible.map((event) => withRoom(ctx, event)));
+    // RSVP rows for the whole org, fetched once and grouped so the calendar can
+    // label every visible event with the caller's own answer and a summary.
+    const attendeeRows = await ctx.db
+      .query('calendarEventAttendees')
+      .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
+      .collect();
+    const rowsByEvent = new Map<Id<'calendarEvents'>, Doc<'calendarEventAttendees'>[]>();
+    for (const row of attendeeRows) {
+      const list = rowsByEvent.get(row.eventId) ?? [];
+      list.push(row);
+      rowsByEvent.set(row.eventId, list);
+    }
+
+    const enriched = visible.map((event) => {
+      const rows = (rowsByEvent.get(event._id) ?? []).filter((row) => row.removedAt === undefined);
+      const mine = rows.find((row) => row.userId === caller._id);
+      const count = (value: RsvpResponse) => rows.filter((row) => row.response === value).length;
+      return {
+        ...event,
+        myResponse: mine?.response ?? ('needs_action' as const),
+        /** Answers aligned with the roster order so the client can pair a name with its dot. */
+        responses: rows.map((row) => row.response),
+        responseCounts: {
+          total: rows.length,
+          accepted: count('accepted'),
+          tentative: count('tentative'),
+          declined: count('declined'),
+          needsAction: count('needs_action'),
+        },
+      };
+    });
+
+    return await Promise.all(enriched.map((event) => withRoom(ctx, event)));
   },
 });
 
@@ -652,6 +867,13 @@ export const remove = mutation({
       'cancelled',
       Date.now(),
     );
+
+    // Drop the RSVP rows with the event — a deleted meeting keeps no answers.
+    const attendeeRows = await ctx.db
+      .query('calendarEventAttendees')
+      .withIndex('by_event', (q) => q.eq('eventId', args.id))
+      .collect();
+    for (const row of attendeeRows) await ctx.db.delete(row._id);
 
     await ctx.db.delete(args.id);
     return { success: true, releasedRoom };

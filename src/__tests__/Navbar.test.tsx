@@ -145,6 +145,13 @@ jest.mock('@/lib/logger', () => ({
 jest.mock('@/lib/notificationText', () => ({
   notificationTitle: (_t: any, n: any) => `T:${n.title}`,
   notificationMessage: (_t: any, n: any) => `M:${n.message}`,
+  parseNotificationMeta: (metadata?: string) => {
+    try {
+      return metadata ? (JSON.parse(metadata) as Record<string, unknown>) : {};
+    } catch {
+      return {};
+    }
+  },
 }));
 
 let sidebarSetMobileOpen: jest.Mock = jest.fn();

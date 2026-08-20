@@ -1455,7 +1455,8 @@
       "leaveCancelRequested": "{{userName}}-ը պահանջել է չեղարկել $t(leaveTypes.{{type}}) ({{start}} → {{end}})",
       "leaveCancellationApproved": "Ձեր $t(leaveTypes.{{type}}) ({{start}} → {{end}}) չեղարկումը հաստատվել է։",
       "leaveCancellationRejected": "{{reviewerName}}-ը մերժել է ձեր $t(leaveTypes.{{type}}) ({{start}} → {{end}}) չեղարկումը։",
-      "leaveCancellationRejectedWithReason": "{{reviewerName}}-ը մերժել է ձեր $t(leaveTypes.{{type}}) ({{start}} → {{end}}) չեղարկումը։ Պատճառը՝ {{comment}}"
+      "leaveCancellationRejectedWithReason": "{{reviewerName}}-ը մերժել է ձեր $t(leaveTypes.{{type}}) ({{start}} → {{end}}) չեղարկումը։ Պատճառը՝ {{comment}}",
+      "roomMeetingReminder": "Ստաղումա {{startTime}}, {{roomName}}"
     },
     "titles": {
       "movementFormReady": "📄 Տեղափոխման ակտը պատրաստ է ստորագրման",
@@ -1539,6 +1540,7 @@
       "meetingUpdated": "📅 Հանդիպումը թարմացվեց՝ «{{eventTitle}}»",
       "meetingCancelled": "📅 Հանդիպումը չեղարկվեց՝ «{{eventTitle}}»",
       "meetingUninvited": "📅 Հրավերը հանվեց՝ «{{eventTitle}}»",
+      "eventInviteResponse": "{{eventTitle}}",
       "taskComment": "💬 Մեկնաբանություն առաջադրանքին",
       "taskCompleted": "Առաջադրանքը կատարվեց",
       "taskReadyForReview": "Առաջադրանքը պատրաստ է ստուգման",
@@ -1567,7 +1569,8 @@
       "probationFailed": "⛔ Փորձաշրջանը չի անցել",
       "leaveCancelRequested": "Արձակուրդի չեղարկում է պահանջվել",
       "leaveCancellationApproved": "Չեղարկումը հաստատված է",
-      "leaveCancellationRejected": "Չեղարկումը մերժված է"
+      "leaveCancellationRejected": "Չեղարկումը մերժված է",
+      "roomMeetingReminder": "Շորտ {{bookingTitle}}"
     }
   },
   "aiChat": {
@@ -2183,6 +2186,17 @@
     "declined": "մերժեց",
     "tentative": "պայմանականորեն ընդունեց",
     "needs_action": "դեռ չի պատասխանել"
+  },
+  "rsvp": {
+    "accept": "Ընդունել",
+    "tentative": "Հնարավոր է",
+    "decline": "Մերժել",
+    "acceptedCount": "կգան",
+    "tentativeCount": "հնարավոր է",
+    "declinedCount": "մերժեցին",
+    "organizerSummary": "Հաստատել են {{answered}}-ը {{total}}-ից",
+    "responseSaved": "Պատասխանը պահպանված է",
+    "responseFailed": "Չհաջողվեց պահպանել պատասխանը"
   },
   "ticket": {
     "chatCreated": "{{ticketNumber}} տոմսի համար բացվել է աջակցման զրույց։ Այն կհայտնվի ձեզ մոտ հենց աջակցման օգնականը գրի առաջին հաղորդագրությունը։",

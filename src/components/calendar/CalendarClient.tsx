@@ -416,6 +416,14 @@ const DRIVER_EVENT_COLOR = 'var(--warning-solid)'; // orange for driver bookings
 const ROOM_EVENT_COLOR = 'var(--cyan)'; // sky blue fallback when a room has no colour
 const COMPANY_EVENT_COLOR = 'var(--chart-2)'; // teal for organization-wide events
 
+// Guest answer → dot colour on the attendee list, so "who's coming" reads at a glance.
+const RSVP_DOT_COLORS: Record<string, string> = {
+  accepted: 'var(--success-solid)',
+  tentative: 'var(--warning-solid)',
+  declined: 'var(--danger-solid)',
+  needs_action: 'var(--text-muted)',
+};
+
 // A date is "past" if it is strictly before the start of today.
 // Past days can be viewed but not booked.
 function isPastDate(date: Date): boolean {
@@ -702,6 +710,13 @@ function DayCell({
                           <span className="truncate text-caption text-(--text-secondary)">
                             {name}
                           </span>
+                          {evt.responses && (
+                            <span
+                              className="ml-auto size-1.5 shrink-0 rounded-full"
+                              title={evt.responses[ai]}
+                              style={{ background: RSVP_DOT_COLORS[evt.responses[ai] ?? 'needs_action'] }}
+                            />
+                          )}
                         </li>
                       ))}
                     </ul>
@@ -1180,6 +1195,9 @@ export const CalendarClient = React.memo(function CalendarClient() {
         roomColor: e.roomColor,
         videoUrl: e.videoUrl,
         videoProvider: e.videoProvider,
+        myResponse: e.myResponse,
+        responses: e.responses,
+        responseCounts: e.responseCounts,
       })),
     [calendarEventsData],
   );
@@ -2761,6 +2779,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
             customEvents={selectedDayCustomEvents}
             roomBookings={selectedDayRoomBookings}
             companyEvents={selectedDayCompanyEvents}
+            viewerId={user?.id}
             onClose={() => setShowDayDetails(false)}
             onOpenTimeline={setTimelineInput}
             onOpenRoom={(roomId) => {

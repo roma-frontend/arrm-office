@@ -98,6 +98,13 @@ async function seed() {
       email: 'colleague@acme.test',
       role: 'employee',
     });
+    const strangerId = await ctx.db.insert('users', {
+      ...baseUser,
+      organizationId,
+      name: 'Stranger',
+      email: 'stranger@acme.test',
+      role: 'employee',
+    });
     const otherAdminId = await ctx.db.insert('users', {
       ...baseUser,
       organizationId: otherOrgId,
@@ -106,13 +113,15 @@ async function seed() {
       role: 'admin',
     });
 
-    return { organizationId, otherOrgId, adminId, employeeId, colleagueId, otherAdminId };
+    return { organizationId, otherOrgId, adminId, employeeId, colleagueId, strangerId, otherAdminId };
   });
   return { t, ...ids };
 }
 
 const asAdmin = (c: Ctx) => c.t.withIdentity({ email: 'admin@acme.test' });
 const asEmployee = (c: Ctx) => c.t.withIdentity({ email: 'employee@acme.test' });
+const asColleague = (c: Ctx) => c.t.withIdentity({ email: 'colleague@acme.test' });
+const asStranger = (c: Ctx) => c.t.withIdentity({ email: 'stranger@acme.test' });
 const asOther = (c: Ctx) => c.t.withIdentity({ email: 'other@acme.test' });
 
 function eventArgs(c: Ctx, overrides: Record<string, unknown> = {}) {
@@ -615,6 +624,246 @@ describe('calendarEvents.getByOrganization', () => {
       organizationId: c.organizationId,
     });
     expect(res.find((e) => e._id === id)?.roomName).toBeUndefined();
+  });
+});
+
+// ── respondToEventInvite (RSVP) ─────────────────────────────────────────────
+describe('calendarEvents.respondToEventInvite', () => {
+  async function createEvent(
+    c: Ctx,
+    overrides: Record<string, unknown> = {},
+  ): Promise<Id<'calendarEvents'>> {
+    return (await asAdmin(c).mutation(
+      api.calendarEvents.create,
+      eventArgs(c, overrides),
+    )) as Id<'calendarEvents'>;
+  }
+
+  it('creates a needs_action attendee row for every invited guest', async () => {
+    const c = await seed();
+    await createEvent(c, { attendeeIds: [c.employeeId, c.colleagueId] });
+
+    const rows = await c.t.run((ctx) => ctx.db.query('calendarEventAttendees').collect());
+    expect(rows).toHaveLength(2);
+    expect(rows.every((r) => r.response === 'needs_action')).toBe(true);
+    expect(rows.every((r) => r.invitedBy === c.adminId)).toBe(true);
+  });
+
+  it('records the answer and notifies the organizer', async () => {
+    const c = await seed();
+    const id = await createEvent(c, { attendeeIds: [c.employeeId] });
+
+    const res = await asEmployee(c).mutation(
+      api.calendarEvents.respondToEventInvite,
+      { eventId: id, response: 'accepted' },
+    );
+    expect(res).toEqual({ success: true });
+
+    await c.t.run(async (ctx) => {
+      const row = await ctx.db
+        .query('calendarEventAttendees')
+        .withIndex('by_event_user', (q) => q.eq('eventId', id).eq('userId', c.employeeId))
+        .unique();
+      expect(row?.response).toBe('accepted');
+      expect(row?.respondedAt).toEqual(expect.any(Number));
+
+      const notif = await ctx.db.query('notifications').collect();
+      const organizerNotif = notif.find((n) => n.userId === c.adminId);
+      expect(organizerNotif).toBeDefined();
+      expect(organizerNotif?.relatedId).toBe(id);
+      const meta = JSON.parse(organizerNotif?.metadata ?? '{}') as { type?: string; eventId?: string };
+      expect(meta.type).toBe('calendar_invite_response');
+      expect(meta.eventId).toBe(id);
+    });
+  });
+
+  it('lets the attendee change their answer', async () => {
+    const c = await seed();
+    const id = await createEvent(c, { attendeeIds: [c.employeeId] });
+
+    await asEmployee(c).mutation(api.calendarEvents.respondToEventInvite, {
+      eventId: id,
+      response: 'accepted',
+    });
+    await asEmployee(c).mutation(api.calendarEvents.respondToEventInvite, {
+      eventId: id,
+      response: 'declined',
+    });
+
+    await c.t.run(async (ctx) => {
+      const row = await ctx.db
+        .query('calendarEventAttendees')
+        .withIndex('by_event_user', (q) => q.eq('eventId', id).eq('userId', c.employeeId))
+        .unique();
+      expect(row?.response).toBe('declined');
+    });
+  });
+
+  it('rejects the organizer', async () => {
+    const c = await seed();
+    const id = await createEvent(c, { attendeeIds: [c.employeeId] });
+    await expect(
+      asAdmin(c).mutation(api.calendarEvents.respondToEventInvite, {
+        eventId: id,
+        response: 'accepted',
+      }),
+    ).rejects.toThrow('The organizer does not need to respond');
+  });
+
+  it('rejects somebody who is not invited', async () => {
+    const c = await seed();
+    const id = await createEvent(c, { attendeeIds: [c.employeeId] });
+    await expect(
+      asStranger(c).mutation(api.calendarEvents.respondToEventInvite, {
+        eventId: id,
+        response: 'accepted',
+      }),
+    ).rejects.toThrow('Only invited participants can respond');
+  });
+
+  it('rejects an answer from someone whose invitation was withdrawn', async () => {
+    const c = await seed();
+    const id = await createEvent(c, { attendeeIds: [c.employeeId, c.colleagueId] });
+
+    // Remove the colleague from the roster.
+    await asAdmin(c).mutation(api.calendarEvents.update, {
+      id,
+      title: 'Team sync',
+      date: '2026-09-01',
+      startTime: '10:00',
+      endTime: '11:00',
+      allDay: false,
+      category: 'meeting',
+      reminder: '30m',
+      attendeeIds: [c.employeeId],
+    });
+
+    await expect(
+      asColleague(c).mutation(api.calendarEvents.respondToEventInvite, {
+        eventId: id,
+        response: 'accepted',
+      }),
+    ).rejects.toThrow('Your invitation to this event was withdrawn');
+  });
+
+  it('resets responses when the event is rescheduled', async () => {
+    const c = await seed();
+    const id = await createEvent(c, { attendeeIds: [c.employeeId] });
+
+    await asEmployee(c).mutation(api.calendarEvents.respondToEventInvite, {
+      eventId: id,
+      response: 'accepted',
+    });
+
+    await asAdmin(c).mutation(api.calendarEvents.update, {
+      id,
+      title: 'Moved',
+      date: '2026-09-02',
+      startTime: '11:00',
+      endTime: '12:00',
+      allDay: false,
+      category: 'meeting',
+      reminder: '30m',
+      attendeeIds: [c.employeeId],
+    });
+
+    await c.t.run(async (ctx) => {
+      const row = await ctx.db
+        .query('calendarEventAttendees')
+        .withIndex('by_event_user', (q) => q.eq('eventId', id).eq('userId', c.employeeId))
+        .unique();
+      expect(row?.response).toBe('needs_action');
+      expect(row?.respondedAt).toBeUndefined();
+    });
+  });
+
+  it('revives a previously removed attendee with a fresh needs_action row', async () => {
+    const c = await seed();
+    const id = await createEvent(c, { attendeeIds: [c.employeeId, c.colleagueId] });
+
+    await asAdmin(c).mutation(api.calendarEvents.update, {
+      id,
+      title: 'Team sync',
+      date: '2026-09-01',
+      startTime: '10:00',
+      endTime: '11:00',
+      allDay: false,
+      category: 'meeting',
+      reminder: '30m',
+      attendeeIds: [c.employeeId],
+    });
+
+    await asAdmin(c).mutation(api.calendarEvents.update, {
+      id,
+      title: 'Team sync',
+      date: '2026-09-01',
+      startTime: '10:00',
+      endTime: '11:00',
+      allDay: false,
+      category: 'meeting',
+      reminder: '30m',
+      attendeeIds: [c.employeeId, c.colleagueId],
+    });
+
+    await c.t.run(async (ctx) => {
+      const rows = await ctx.db
+        .query('calendarEventAttendees')
+        .withIndex('by_event', (q) => q.eq('eventId', id))
+        .collect();
+      expect(rows).toHaveLength(2);
+      expect(rows.every((r) => r.response === 'needs_action')).toBe(true);
+      expect(rows.every((r) => !r.removedAt)).toBe(true);
+    });
+  });
+
+  it('removes the RSVP rows when the event is deleted', async () => {
+    const c = await seed();
+    const id = await createEvent(c, { attendeeIds: [c.employeeId] });
+    await asEmployee(c).mutation(api.calendarEvents.respondToEventInvite, {
+      eventId: id,
+      response: 'accepted',
+    });
+    await asAdmin(c).mutation(api.calendarEvents.remove, { id });
+    const rows = await c.t.run((ctx) => ctx.db.query('calendarEventAttendees').collect());
+    expect(rows).toHaveLength(0);
+  });
+
+  it('enriches getByOrganization with the caller response and counts', async () => {
+    const c = await seed();
+    const id = await createEvent(c, {
+      attendeeIds: [c.employeeId, c.colleagueId],
+    });
+
+    // Employee accepts, colleague answers maybe.
+    await asEmployee(c).mutation(api.calendarEvents.respondToEventInvite, {
+      eventId: id,
+      response: 'accepted',
+    });
+    await asColleague(c).mutation(api.calendarEvents.respondToEventInvite, {
+      eventId: id,
+      response: 'tentative',
+    });
+
+    const asEmployeeView = await asEmployee(c).query(api.calendarEvents.getByOrganization, {
+      organizationId: c.organizationId,
+    });
+    const employeeEvent = asEmployeeView.find((e) => e._id === id);
+    expect(employeeEvent?.myResponse).toBe('accepted');
+    expect(employeeEvent?.responses).toEqual(['accepted', 'tentative']);
+
+    const asAdminView = await asAdmin(c).query(api.calendarEvents.getByOrganization, {
+      organizationId: c.organizationId,
+    });
+    const adminEvent = asAdminView.find((e) => e._id === id);
+    expect(adminEvent?.responseCounts).toEqual({
+      total: 2,
+      accepted: 1,
+      tentative: 1,
+      declined: 0,
+      needsAction: 0,
+    });
+    // The organizer is not on the guest list, so they have no personal answer.
+    expect(adminEvent?.myResponse).toBe('needs_action');
   });
 });
 

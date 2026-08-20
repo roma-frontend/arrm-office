@@ -134,7 +134,25 @@ export interface CalendarEvent {
   /** LiveKit video conference link (`/meetings/{roomName}`), when enabled. */
   videoUrl?: string;
   videoProvider?: 'livekit' | 'teams' | 'zoom' | 'meet';
+  /** The viewer's own RSVP answer, filled by the backend. */
+  myResponse?: EventRsvpResponse;
+  /** Answers aligned with the roster order — a name pairs with its dot by index. */
+  responses?: EventRsvpResponse[];
+  /** Answer summary for the organizer, filled by the backend. */
+  responseCounts?: {
+    total: number;
+    accepted: number;
+    tentative: number;
+    declined: number;
+    needsAction: number;
+  };
 }
+
+export type EventRsvpResponse =
+  | 'needs_action'
+  | 'accepted'
+  | 'tentative'
+  | 'declined';
 
 interface OrgUser {
   _id: Id<'users'>;

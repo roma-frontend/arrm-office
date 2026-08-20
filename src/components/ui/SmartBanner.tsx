@@ -23,6 +23,11 @@ export interface SmartBannerProps {
     label: string;
     onClick: () => void;
   };
+  /**
+   * Inline controls for the banner body (e.g. RSVP buttons on an invite).
+   * Rendered instead of the label/arrow `action` when present.
+   */
+  actions?: React.ReactNode;
   dismissable?: boolean;
   autoDismiss?: number; // ms — auto-hide after this duration
   onDismiss?: () => void;
@@ -83,6 +88,7 @@ export function SmartBanner({
   message,
   suggestion,
   action,
+  actions,
   dismissable = true,
   autoDismiss,
   onDismiss,
@@ -181,17 +187,27 @@ export function SmartBanner({
               )}
 
               {/* Action button */}
-              {action && (
-                <motion.button
+              {actions ? (
+                <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
-                  onClick={action.onClick}
-                  className={`flex items-center gap-1.5 text-xs font-semibold underline underline-offset-2 hover:no-underline transition-all group ${actionColors[type]}`}
                 >
-                  {action.label}
-                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                </motion.button>
+                  {actions}
+                </motion.div>
+              ) : (
+                action && (
+                  <motion.button
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    onClick={action.onClick}
+                    className={`flex items-center gap-1.5 text-xs font-semibold underline underline-offset-2 hover:no-underline transition-all group ${actionColors[type]}`}
+                  >
+                    {action.label}
+                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                  </motion.button>
+                )
               )}
             </div>
           </div>

@@ -1473,7 +1473,8 @@
       "leaveCancelRequested": "{{userName}} запросил отмену $t(leaveTypes.{{type}}) ({{start}} → {{end}})",
       "leaveCancellationApproved": "Ваша отмена $t(leaveTypes.{{type}}) ({{start}} → {{end}}) одобрена.",
       "leaveCancellationRejected": "{{reviewerName}} отклонил вашу отмену $t(leaveTypes.{{type}}) ({{start}} → {{end}}).",
-      "leaveCancellationRejectedWithReason": "{{reviewerName}} отклонил вашу отмену $t(leaveTypes.{{type}}) ({{start}} → {{end}}). Причина: {{comment}}"
+      "leaveCancellationRejectedWithReason": "{{reviewerName}} отклонил вашу отмену $t(leaveTypes.{{type}}) ({{start}} → {{end}}). Причина: {{comment}}",
+      "roomMeetingReminder": "Начало в {{startTime}}, {{roomName}}{{platform ? \". Платформа: \" + platform : \"\"}} {{videoUrl}}"
     },
     "titles": {
       "movementFormReady": "📄 Акт перемещения готов к подписанию",
@@ -1557,6 +1558,7 @@
       "meetingUpdated": "📅 Встреча обновлена: «{{eventTitle}}»",
       "meetingCancelled": "📅 Встреча отменена: «{{eventTitle}}»",
       "meetingUninvited": "📅 Приглашение снято: «{{eventTitle}}»",
+      "eventInviteResponse": "{{eventTitle}}",
       "taskComment": "💬 Комментарий к задаче",
       "taskCompleted": "Задача выполнена",
       "taskReadyForReview": "Задача готова к проверке",
@@ -1585,7 +1587,8 @@
       "probationFailed": "⛔ Испытательный срок не пройден",
       "leaveCancelRequested": "Запрошена отмена отпуска",
       "leaveCancellationApproved": "Отмена одобрена",
-      "leaveCancellationRejected": "Отмена отклонена"
+      "leaveCancellationRejected": "Отмена отклонена",
+      "roomMeetingReminder": "Скоро: {{bookingTitle}}"
     }
   },
   "aiChat": {
@@ -2203,6 +2206,17 @@
     "declined": "отклонил",
     "tentative": "принял под вопросом",
     "needs_action": "ещё не ответил на"
+  },
+  "rsvp": {
+    "accept": "Принять",
+    "tentative": "Возможно",
+    "decline": "Отклонить",
+    "acceptedCount": "пойдут",
+    "tentativeCount": "возможно",
+    "declinedCount": "отклонили",
+    "organizerSummary": "{{answered}} из {{total}} подтвердили",
+    "responseSaved": "Ответ сохранён",
+    "responseFailed": "Не удалось сохранить ответ"
   },
   "ticket": {
     "chatCreated": "По тикету {{ticketNumber}} открыт чат поддержки. Он появится у вас, как только помощник поддержки напишет первое сообщение.",
