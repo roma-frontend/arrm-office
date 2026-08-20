@@ -19,47 +19,47 @@ const statusConfig: Record<
 > = {
   available: {
     icon: CheckCircle2,
-    bg: 'bg-(--surface-2) dark:bg-(--success-solid) dark:bg-(--success-solid)',
-    border: 'border-(--success-outline) dark:border-(--success-outline)',
-    title: 'text-primary-text',
-    subtitle: 'text-primary-text/80',
-    iconColor: 'text-(--success-text) dark:text-(--success-text)',
+    bg: 'var(--success-quiet)',
+    border: 'border-(--success-outline)',
+    title: 'text-(--success-text)',
+    subtitle: 'text-(--success-text)',
+    iconColor: 'text-(--success-text)',
     type: 'success',
   },
   in_meeting: {
     icon: Clock,
-    bg: 'bg-(--surface-2) dark:bg-(--warning-solid) dark:bg-(--warning-solid)',
-    border: 'border-(--warning-outline) dark:border-(--warning-outline)',
-    title: 'text-primary-text',
-    subtitle: 'text-primary-text/80',
-    iconColor: 'text-(--warning-text) dark:text-(--warning-text)',
+    bg: 'var(--warning-quiet)',
+    border: 'border-(--warning-outline)',
+    title: 'text-(--warning-text)',
+    subtitle: 'text-(--warning-text)',
+    iconColor: 'text-(--warning-text)',
     type: 'warning',
   },
   in_call: {
     icon: Phone,
-    bg: 'bg-(--surface-2) dark:bg-(--brand) dark:bg-(--brand)',
-    border: 'border-(--brand-outline) dark:border-(--brand-outline)',
-    title: 'text-primary-text',
-    subtitle: 'text-primary-text/80',
-    iconColor: 'text-(--brand-text) dark:text-(--brand-text)',
+    bg: 'var(--brand-quiet)',
+    border: 'border-(--brand-outline)',
+    title: 'text-(--brand-text)',
+    subtitle: 'text-(--brand-text)',
+    iconColor: 'text-(--brand-text)',
     type: 'info',
   },
   out_of_office: {
     icon: AlertTriangle,
-    bg: 'bg-(--surface-2) dark:bg-(--warning-solid) dark:bg-(--warning-solid)',
-    border: 'border-(--warning-outline) dark:border-(--warning-outline)',
-    title: 'text-primary-text',
-    subtitle: 'text-primary-text/80',
-    iconColor: 'text-(--warning-text) dark:text-(--warning-text)',
+    bg: 'var(--warning-quiet)',
+    border: 'border-(--warning-outline)',
+    title: 'text-(--warning-text)',
+    subtitle: 'text-(--warning-text)',
+    iconColor: 'text-(--warning-text)',
     type: 'warning',
   },
   busy: {
     icon: Zap,
-    bg: 'bg-(--surface-2) dark:bg-(--danger-solid) dark:bg-(--danger-solid)',
-    border: 'border-(--danger-outline) dark:border-(--danger-outline)',
-    title: 'text-primary-text',
-    subtitle: 'text-primary-text/80',
-    iconColor: 'text-(--danger-text) dark:text-(--danger-text)',
+    bg: 'var(--danger-quiet)',
+    border: 'border-(--danger-outline)',
+    title: 'text-(--danger-text)',
+    subtitle: 'text-(--danger-text)',
+    iconColor: 'text-(--danger-text)',
     type: 'error',
   },
 };
@@ -78,7 +78,7 @@ export function StatusUpdateBanner() {
   const hint = t(`status.${notification.statusKey}.notification`, '');
 
   return (
-    <div className={`w-full ${config.bg} border-b ${config.border} shadow-sm dark:bg-linear-to-r`}>
+    <div className={`w-full ${config.border} border-b`} style={{ background: config.bg }}>
       <div className="max-w-full mx-auto px-4 py-3 flex items-start justify-between gap-3">
         {/* Left: Icon and Message */}
         <div className="flex items-start gap-3 min-w-0 flex-1">

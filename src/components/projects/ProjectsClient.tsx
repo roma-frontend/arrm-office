@@ -15,6 +15,7 @@ import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { Input } from '@/components/ui/input';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { toast } from 'sonner';
+import { NewTaskSheet } from '@/components/tasks/NewTaskSheet';
 import {
   Sheet,
   SheetContent,
@@ -61,7 +62,7 @@ const STATUS_CONFIG: Record<string, StatusStyle> = {
   cancelled: { label: 'Cancelled', color: 'text-(--danger-text)', bg: 'bg-(--danger-quiet)' },
 };
 
-export default function ProjectsClient({ userRole }: { userId: string; userRole: string }) {
+export default function ProjectsClient({ userId, userRole }: { userId: string; userRole: string }) {
   const { t } = useTranslation();
   const router = useRouter();
   const user = useAuthUser();
@@ -77,6 +78,8 @@ export default function ProjectsClient({ userRole }: { userId: string; userRole:
     deadline: '',
   });
   const [creating, setCreating] = useState(false);
+  // Freshly-created project, waiting for its first task in the wizard sheet.
+  const [newTaskProjectId, setNewTaskProjectId] = useState<Id<'projects'> | null>(null);
 
   const projects = useQuery(
     api.projects.listProjects,
@@ -119,9 +122,10 @@ export default function ProjectsClient({ userRole }: { userId: string; userRole:
       });
       setShowCreate(false);
       setCreateForm({ name: '', description: '', priority: 'medium', deadline: '' });
-      // Straight into the task wizard pre-linked to the fresh project; the
-      // wizard's back button lands on the project page.
-      router.push(`/tasks/new?projectId=${projectId}`);
+      // Straight into the task wizard pre-linked to the fresh project — as a
+      // slide-over, so the grid stays put and the toast's action can open the
+      // project whenever the user is ready.
+      setNewTaskProjectId(projectId as Id<'projects'>);
     } catch (e) {
       toast.error(String(e));
     } finally {
@@ -398,6 +402,14 @@ export default function ProjectsClient({ userRole }: { userId: string; userRole:
           </SheetFooter>
         </SheetContent>
       </Sheet>
+
+      <NewTaskSheet
+        open={newTaskProjectId !== null}
+        onClose={() => setNewTaskProjectId(null)}
+        currentUserId={userId}
+        userRole={userRole as 'superadmin' | 'admin' | 'supervisor' | 'employee' | 'driver'}
+        projectId={newTaskProjectId ?? undefined}
+      />
     </div>
   );
 }

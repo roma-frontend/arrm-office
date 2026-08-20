@@ -36,6 +36,7 @@ import {
 import { format } from 'date-fns';
 import { enUS, ru, hy } from 'date-fns/locale';
 import { Progress } from '@/components/ui/progress';
+import { NewTaskSheet } from '@/components/tasks/NewTaskSheet';
 
 const StatusBadge = ({ status }: { status: string }) => {
   const { t } = useTranslation();
@@ -89,6 +90,7 @@ export default function GoalDetailClient() {
 
   const [isCompleting, setIsCompleting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [newTaskOpen, setNewTaskOpen] = useState(false);
 
   const goal = useQuery(api.goals.getObjective, { objectiveId: goalId });
   const currentUser = useQuery(
@@ -395,7 +397,7 @@ export default function GoalDetailClient() {
                 variant="outline"
                 size="sm"
                 className="gap-1.5 shrink-0"
-                onClick={() => router.push(`/tasks/new?objectiveId=${goalId}`)}
+                onClick={() => setNewTaskOpen(true)}
               >
                 <Plus className="w-3.5 h-3.5" />
                 {t('goals.addTask', 'Add Task')}
@@ -425,7 +427,7 @@ export default function GoalDetailClient() {
                 variant="default"
                 size="sm"
                 className="gap-1.5"
-                onClick={() => router.push(`/tasks/new?objectiveId=${goalId}`)}
+                onClick={() => setNewTaskOpen(true)}
               >
                 <Plus className="w-3.5 h-3.5" />
                 {t('goals.createLinkedTask', 'Create a task')}
@@ -579,6 +581,15 @@ export default function GoalDetailClient() {
           )}
         </CardContent>
       </Card>
+
+      {/* Add task in a slide-over, not a full page: the goal stays put. */}
+      <NewTaskSheet
+        open={newTaskOpen}
+        onClose={() => setNewTaskOpen(false)}
+        currentUserId={user?.id ?? ''}
+        userRole={user?.role ?? 'employee'}
+        objectiveId={goalId}
+      />
     </div>
   );
 }

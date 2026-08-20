@@ -13,6 +13,8 @@ import { Badge } from '@/components/ui/badge';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
+import { NewTaskSheet } from '@/components/tasks/NewTaskSheet';
+import { ProjectEditSheet } from '@/components/projects/ProjectEditSheet';
 import {
   ArrowLeft,
   Calendar,
@@ -44,16 +46,23 @@ const PRIORITY_CONFIG: Record<string, LabelStyle> = {
 const STATUS_FALLBACK: LabelStyle = { label: 'Planning', color: 'text-(--brand-text)' };
 const PRIORITY_FALLBACK: LabelStyle = { label: 'Medium', color: 'text-(--brand-text)' };
 
-export default function ProjectDetailClient({ projectId }: { projectId: string }) {
+export default function ProjectDetailClient({
+  projectId,
+  userId,
+  userRole,
+}: {
+  projectId: string;
+  userId: string;
+  userRole: 'superadmin' | 'admin' | 'supervisor' | 'employee' | 'driver';
+}) {
   const { t } = useTranslation();
   const router = useRouter();
 
   const project = useQuery(api.projects.getProject, { projectId: projectId as Id<'projects'> });
-  const updateProject = useMutation(api.projects.updateProject);
   const deleteProject = useMutation(api.projects.deleteProject);
 
-  const [isEditing, setIsEditing] = useState(false);
-  const [_editStatus, _setEditStatus] = useState('');
+  const [editOpen, setEditOpen] = useState(false);
+  const [newTaskOpen, setNewTaskOpen] = useState(false);
 
   if (!project) return <ShieldLoader />;
 
@@ -66,19 +75,6 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
     deadlineDate < new Date() &&
     project.status !== 'completed' &&
     project.status !== 'cancelled';
-
-  const handleStatusChange = async (newStatus: string) => {
-    try {
-      await updateProject({
-        projectId: project._id,
-        status: newStatus as 'planning' | 'active' | 'on_hold' | 'completed' | 'cancelled',
-      });
-      toast.success(t('projects.statusUpdated', 'Status updated'));
-      setIsEditing(false);
-    } catch (e) {
-      toast.error(String(e));
-    }
-  };
 
   const handleDelete = async () => {
     if (
@@ -97,11 +93,11 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
   };
 
   return (
-    <div className="space-y-6">
+    <div className="my-6">
       {/* Navigation */}
       <button
         onClick={() => router.push('/projects')}
-        className="flex items-center gap-1 text-sm text-(--text-muted) hover:text-(--text-primary) transition-colors"
+        className="flex items-center gap-1 text-sm text-(--text-muted) hover:text-(--text-primary) transition-colors my-6"
       >
         <ArrowLeft className="w-4 h-4" /> {t('common.back', 'Back to Projects')}
       </button>
@@ -123,7 +119,7 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
           )}
         </div>
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" onClick={() => setIsEditing(!isEditing)}>
+          <Button size="sm" variant="outline" onClick={() => setEditOpen(true)}>
             <Pencil className="w-4 h-4 mr-1" /> {t('common.edit', 'Edit')}
           </Button>
           <Button size="sm" variant="destructive" onClick={handleDelete}>
@@ -131,24 +127,6 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
           </Button>
         </div>
       </div>
-
-      {/* Status Edit */}
-      {isEditing && (
-        <Card>
-          <CardContent className="p-4 flex flex-wrap gap-2">
-            {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
-              <Button
-                key={key}
-                size="sm"
-                variant={project.status === key ? 'default' : 'outline'}
-                onClick={() => handleStatusChange(key)}
-              >
-                {t(`projects.status.${key}`, cfg.label)}
-              </Button>
-            ))}
-          </CardContent>
-        </Card>
-      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -192,9 +170,9 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
 
       {/* Tasks Section */}
       <div>
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between my-3">
           <h2 className="text-lg font-semibold">{t('projects.tasks', 'Tasks')}</h2>
-          <Button size="sm" onClick={() => router.push(`/tasks/new?projectId=${project._id}`)}>
+          <Button size="sm" onClick={() => setNewTaskOpen(true)}>
             <Plus className="w-4 h-4 mr-1" /> {t('projects.addTask', 'Add Task')}
           </Button>
         </div>
@@ -235,11 +213,7 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
           <div className="text-center py-12 text-(--text-muted)">
             <Clock className="w-12 h-12 mx-auto mb-3" />
             <p>{t('projects.noTasks', 'No tasks yet')}</p>
-            <Button
-              size="sm"
-              className="mt-3"
-              onClick={() => router.push(`/tasks/new?projectId=${project._id}`)}
-            >
+            <Button size="sm" className="mt-3" onClick={() => setNewTaskOpen(true)}>
               {t('projects.addTask', 'Add Task')}
             </Button>
           </div>
@@ -259,6 +233,19 @@ export default function ProjectDetailClient({ projectId }: { projectId: string }
           </div>
         </div>
       )}
+
+      {/* Add task in a slide-over, not a full page: the project stays put. */}
+      <NewTaskSheet
+        open={newTaskOpen}
+        onClose={() => setNewTaskOpen(false)}
+        currentUserId={userId}
+        userRole={userRole}
+        projectId={project._id}
+      />
+
+      {/* Edit in a slide-over too — the form ships straight from the project
+          page, so re-orientation after saving is zero. */}
+      <ProjectEditSheet open={editOpen} onClose={() => setEditOpen(false)} project={project} />
     </div>
   );
 }

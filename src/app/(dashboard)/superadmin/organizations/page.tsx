@@ -35,6 +35,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { OrganizationEditSheet } from '@/components/superadmin/OrganizationEditSheet';
 
 interface Organization {
   _id: Id<'organizations'>;
@@ -60,6 +61,8 @@ export default function OrganizationsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [planFilter, setPlanFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  // Org whose edit form is open in the slide-over; null keeps the sheet closed.
+  const [editOrgId, setEditOrgId] = useState<Id<'organizations'> | null>(null);
 
   const organizations = useQuery(
     api.organizations.getAllOrganizations,
@@ -413,7 +416,7 @@ export default function OrganizationsPage() {
                         <Shield className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => router.push(`/superadmin/organizations/${org._id}/edit`)}
+                        onClick={() => setEditOrgId(org._id)}
                         className="p-2 rounded transition-colors"
                         style={{ color: 'var(--text-primary)' }}
                         onMouseEnter={(e) =>
@@ -472,6 +475,13 @@ export default function OrganizationsPage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Edit org in a slide-over: the list keeps its tabs and filter state. */}
+      <OrganizationEditSheet
+        open={editOrgId !== null}
+        onClose={() => setEditOrgId(null)}
+        orgId={editOrgId ?? ''}
+      />
     </div>
   );
 }

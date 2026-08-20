@@ -21,5 +21,5 @@ export default async function ProjectDetailPage(props: { params: Promise<{ id: s
   if (!user) redirect('/login');
   const { id } = await props.params;
 
-  return <ProjectDetailClient projectId={id} />;
+  return <ProjectDetailClient projectId={id} userId={user.userId} userRole={user.role} />;
 }
