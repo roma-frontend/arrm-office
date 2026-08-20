@@ -38,6 +38,7 @@ import {
 } from '@/lib/meetingRooms';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useNow } from '@/hooks/useNow';
+import { EmployeeHoverCard } from '@/components/employees/EmployeeHoverCard';
 import { RoomDayTimeline } from './RoomDayTimeline';
 import { RoomModalShell } from './RoomModalShell';
 import { BookingTrackingPanel, ResponseSummaryChips } from './BookingTrackingPanel';
@@ -60,12 +61,16 @@ export function RoomDetailsModal({
   room,
   canManage,
   onBook,
+  initialDate,
 }: {
   open: boolean;
   onClose: () => void;
   room: RoomDoc | null;
   canManage: boolean;
   onBook: (room: RoomDoc, day: Date) => void;
+  /** A `yyyy-MM-dd` the viewer asked for (e.g. a booking's own day) — the
+   *  modal opens there instead of today. */
+  initialDate?: string;
 }) {
   const { t } = useTranslation();
   const router = useRouter();
@@ -76,6 +81,17 @@ export function RoomDetailsModal({
   const checkIn = useMutation(api.meetingRooms.checkInBooking);
 
   const [dayOffset, setDayOffset] = useState(0);
+
+  // Land on the requested day (booking date from the calendar) rather than
+  // today every time the room view opens.
+  useEffect(() => {
+    if (!open || !initialDate) return;
+    const parsed = new Date(`${initialDate}T00:00:00`);
+    if (isNaN(parsed.getTime())) return;
+    const target = startOfDay(parsed).getTime();
+    const base = startOfDay(new Date()).getTime();
+    setDayOffset(Math.round((target - base) / (24 * 60 * 60 * 1000)));
+  }, [open, initialDate]);
   const [busyBookingId, setBusyBookingId] = useState<string | null>(null);
   /** Only one tracking panel is expanded at a time — it is a tall block. */
   const [expandedBookingId, setExpandedBookingId] = useState<string | null>(null);
@@ -368,7 +384,22 @@ export function RoomDetailsModal({
                         </div>
                         <p className="mt-0.5 text-xs text-(--text-muted)">
                           {formatTime(booking.startTime)} – {formatTime(booking.endTime)}
-                          {booking.organizerName ? ` · ${booking.organizerName}` : ''}
+                          {booking.organizerName ? (
+                            <>
+                              {' '}
+                              ·{' '}
+                              <EmployeeHoverCard
+                                userId={booking.organizerId}
+                                name={booking.organizerName}
+                              >
+                                <span className="cursor-pointer hover:underline hover:underline-offset-2">
+                                  {booking.organizerName}
+                                </span>
+                              </EmployeeHoverCard>
+                            </>
+                          ) : (
+                            ''
+                          )}
                         </p>
                         {booking.attendeeNames.length > 0 && (
                           <p className="mt-1 truncate text-xs text-(--text-secondary)">

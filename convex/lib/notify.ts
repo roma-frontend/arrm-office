@@ -61,6 +61,7 @@ export const NOTIFICATION_TYPES = [
   'asset_assigned',
   'room_booked',
   'room_booking_cancelled',
+  'room_meeting_reminder',
   'announcement_published',
   'probation_started',
   'probation_ending_soon',

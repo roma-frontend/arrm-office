@@ -1882,6 +1882,12 @@
     "attendance": "Участие: {{audience}}",
     "openEvent": "Открыть мероприятие"
   },
+  "calendar": {
+    "invitations": {
+      "title": "Приглашения",
+      "openDay": "Открыть день"
+    }
+  },
   "chatWidget": {
     "viewFullScreen": "Показать полный ответ"
   },
@@ -2707,5 +2713,8 @@
       "increase": "Увеличить",
       "contactUs": "Свяжитесь с нами"
     }
+  },
+  "employeeHover": {
+    "viewProfile": "Смотреть профиль"
   }
 }

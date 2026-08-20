@@ -35,6 +35,7 @@ export const notifications = {
       v.literal('asset_assigned'),
       v.literal('room_booked'),
       v.literal('room_booking_cancelled'),
+      v.literal('room_meeting_reminder'),
       v.literal('announcement_published'),
       v.literal('probation_started'),
       v.literal('probation_ending_soon'),

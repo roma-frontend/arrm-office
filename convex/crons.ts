@@ -123,6 +123,13 @@ crons.daily('asset-maintenance-reminders', { hourUTC: 8, minuteUTC: 30 }, dispat
   jobKey: 'asset-maintenance-reminders',
 });
 
+// Room booking meeting reminders — every 10 minutes, check for bookings
+// starting in the next 15 min and notify organizers + attendees with the
+// video conference platform link when available.
+crons.interval('room-meeting-reminders', { minutes: 10 }, dispatch, {
+  jobKey: 'room-meeting-reminders',
+});
+
 // Maintenance windows open on their `startsAt`, close past `endsAt`, and fire
 // the pre-window broadcast once. Was every 5 minutes (288 function calls/day);
 // while the project is pre-revenue a ±30 min activation window is acceptable —

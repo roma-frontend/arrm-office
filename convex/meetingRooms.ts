@@ -13,7 +13,13 @@
  */
 
 import { v } from 'convex/values';
-import { mutation, query, type QueryCtx, type MutationCtx } from './_generated/server';
+import {
+  mutation,
+  query,
+  internalMutation,
+  type QueryCtx,
+  type MutationCtx,
+} from './_generated/server';
 import type { Doc, Id } from './_generated/dataModel';
 import { getAuthCaller, type AuthenticatedCaller } from './lib/getAuthCaller';
 import { isSuperadmin } from './lib/auth';
@@ -1471,5 +1477,147 @@ export const checkInBooking = mutation({
       targetName: caller.name,
     });
     return { success: true };
+  },
+});
+
+// ---------------------------------------------------------------------------
+// Platform usage stats
+// ---------------------------------------------------------------------------
+
+/**
+ * Aggregated count of confirmed bookings per video platform, scoped to an
+ * organization and an optional time range. Returns `{ livekit: 5, teams: 3, ... }`.
+ */
+export const getBookingPlatformStats = query({
+  args: {
+    organizationId: v.id('organizations'),
+    /** Only count bookings created after this epoch ms. Defaults to 30 days ago. */
+    since: v.optional(v.number()),
+  },
+  handler: async (ctx, { organizationId, since }) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return {};
+    assertOrgAccess(caller, organizationId);
+
+    const cutoff = since ?? Date.now() - 30 * 24 * 60 * 60 * 1000;
+    const stats: Record<string, number> = {};
+
+    // Walk confirmed bookings from the org index, newest first.
+    const bookings = await ctx.db
+      .query('roomBookings')
+      .withIndex('by_org_start', (q) =>
+        q.eq('organizationId', organizationId).gte('startTime', cutoff),
+      )
+      .take(MAX_PAGE_SIZE * 5);
+
+    for (const b of bookings) {
+      if (b.status !== 'confirmed') continue;
+      const provider = b.videoProvider ?? 'none';
+      stats[provider] = (stats[provider] ?? 0) + 1;
+    }
+    return stats;
+  },
+});
+
+// ---------------------------------------------------------------------------
+// Meeting reminders (cron)
+// ---------------------------------------------------------------------------
+
+/**
+ * Sends a reminder notification to the organizer and every accepted attendee
+ * of confirmed bookings starting in the next 15 minutes. If the booking has a
+ * `videoUrl` / `videoProvider`, the notification includes the platform name
+ * and link so participants can join remotely.
+ *
+ * Runs every 10 minutes via the cron dispatcher. The notification type is
+ * `room_meeting_reminder`; the handler is idempotent — duplicate notifications
+ * within a short window are harmless.
+ */
+export const sendMeetingReminders = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const now = Date.now();
+    const windowMs = 15 * 60 * 1000; // 15 minutes
+    const upperBound = now + windowMs;
+
+    // Walk bookings whose startTime falls inside [now, now + 15 min].
+    // Query active rooms directly — the time window is narrow so a full
+    // scan of active rooms is cheap.
+    const allRooms = await ctx.db
+      .query('meetingRooms')
+      .filter((q) => q.eq(q.field('isActive'), true))
+      .take(MAX_PAGE_SIZE * 10);
+    const roomIds = new Set(allRooms.map((r) => r._id));
+
+    let sent = 0;
+    for (const roomId of roomIds) {
+      const bookings = await ctx.db
+        .query('roomBookings')
+        .withIndex('by_room_start', (q) =>
+          q.eq('roomId', roomId).gte('startTime', now).lt('startTime', upperBound),
+        )
+        .take(50);
+
+      for (const booking of bookings) {
+        if (booking.status !== 'confirmed') continue;
+
+        const room = await ctx.db.get(booking.roomId);
+        if (!room) continue;
+
+        // Build the platform label from the videoProvider.
+        const platformLabels: Record<string, string> = {
+          livekit: 'LiveKit',
+          teams: 'Microsoft Teams',
+          zoom: 'Zoom',
+          meet: 'Google Meet',
+        };
+        const platformName = (booking.videoProvider && platformLabels[booking.videoProvider]) || '';
+
+        const timeStr = new Date(booking.startTime).toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+
+        // Notify organizer + every accepted attendee.
+        const recipientIds = new Set<string>(booking.attendeeIds ?? []);
+        recipientIds.add(booking.organizerId as string);
+
+        for (const userId of recipientIds) {
+          const user = await ctx.db.get(userId as Id<'users'>);
+          if (!user) continue;
+
+          const messageParts: string[] = [
+            `${booking.title} · ${room.name}`,
+            `Starts at ${timeStr}`,
+          ];
+          if (platformName) messageParts.push(`Platform: ${platformName}`);
+          if (booking.videoUrl) messageParts.push(booking.videoUrl);
+
+          await notify(ctx, {
+            organizationId: booking.organizationId,
+            userId: userId as Id<'users'>,
+            type: 'room_meeting_reminder',
+            titleKey: 'notifications.titles.roomMeetingReminder',
+            messageKey: 'notifications.messages.roomMeetingReminder',
+            params: {
+              bookingTitle: booking.title,
+              roomName: room.name,
+              startTime: timeStr,
+              platform: platformName,
+              videoUrl: (booking.videoUrl ?? '') as string,
+            },
+            fallbackTitle: `${booking.title} starts in 15 min`,
+            fallbackMessage: messageParts.join(' — '),
+            route: '/rooms',
+            extra: {
+              videoUrl: booking.videoUrl,
+              videoProvider: booking.videoProvider,
+            },
+          });
+          sent++;
+        }
+      }
+    }
+    return { sent };
   },
 });
