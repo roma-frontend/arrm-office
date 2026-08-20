@@ -63,21 +63,35 @@ function getInitials(name: string): string {
 }
 
 // ── Circular Progress ──
+type CircularProgressVariant = 'default' | 'light';
+
 function CircularProgress({
   value = 0,
   label,
   color = 'var(--brand)',
+  variant = 'default',
 }: {
   value?: number;
   label: string;
   color?: string;
+  variant?: CircularProgressVariant;
 }) {
   const safeValue = typeof value === 'number' && !isNaN(value) ? value : 0;
   const circumference = 2 * Math.PI * 28;
   const offset = circumference * (1 - Math.min(safeValue, 100) / 100);
+
+  // `light` variant is used on the blue gradient hero where white rings and
+  // white text are needed.  `default` is for cards on a light background.
+  const trackClass = variant === 'light' ? 'text-white/15' : 'text-(--border)';
+  const textClass = variant === 'light' ? 'text-white' : 'text-(--text-primary)';
+  const labelClass = variant === 'light' ? 'text-white/60' : 'text-(--text-muted)';
+  // Scale up slightly inside the hero for visual prominence
+  const sizeClass = variant === 'light' ? 'w-16 h-16 sm:w-[4.5rem] sm:h-[4.5rem]' : 'w-16 h-16';
+  const progressStroke = variant === 'light' ? 'rgba(255,255,255,0.85)' : color;
+
   return (
     <div className="flex flex-col items-center">
-      <div className="relative w-16 h-16 mb-2">
+      <div className={`relative ${sizeClass} mb-2`}>
         <svg className="w-full h-full -rotate-90" viewBox="0 0 64 64">
           <circle
             cx="32"
@@ -86,14 +100,14 @@ function CircularProgress({
             fill="none"
             stroke="currentColor"
             strokeWidth="3"
-            className="text-(--border)"
+            className={trackClass}
           />
           <circle
             cx="32"
             cy="32"
             r="28"
             fill="none"
-            stroke={color}
+            stroke={progressStroke}
             strokeWidth="3"
             strokeDasharray={circumference}
             strokeDashoffset={offset}
@@ -102,10 +116,10 @@ function CircularProgress({
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-sm font-bold text-(--text-primary)">{Math.round(safeValue)}%</span>
+          <span className={`text-sm font-bold ${textClass}`}>{Math.round(safeValue)}%</span>
         </div>
       </div>
-      <span className="text-[11px] text-(--text-muted) text-center">{label}</span>
+      <span className={`text-[11px] text-center ${labelClass}`}>{label}</span>
     </div>
   );
 }
@@ -353,14 +367,17 @@ export default function ProfilePage() {
               <CircularProgress
                 value={userStats?.taskCompletionRate ?? 0}
                 label={t('profile.tasksCompleted', 'Tasks')}
+                variant="light"
               />
               <CircularProgress
                 value={userStats?.punctualityRate ?? 0}
                 label={t('profile.punctuality', 'Punctuality')}
+                variant="light"
               />
               <CircularProgress
                 value={userStats?.daysActive ?? 0}
                 label={t('profile.daysActive', 'Days Active')}
+                variant="light"
               />
             </motion.div>
           </div>
