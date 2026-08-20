@@ -113,7 +113,15 @@ async function seed() {
       role: 'admin',
     });
 
-    return { organizationId, otherOrgId, adminId, employeeId, colleagueId, strangerId, otherAdminId };
+    return {
+      organizationId,
+      otherOrgId,
+      adminId,
+      employeeId,
+      colleagueId,
+      strangerId,
+      otherAdminId,
+    };
   });
   return { t, ...ids };
 }
@@ -653,10 +661,10 @@ describe('calendarEvents.respondToEventInvite', () => {
     const c = await seed();
     const id = await createEvent(c, { attendeeIds: [c.employeeId] });
 
-    const res = await asEmployee(c).mutation(
-      api.calendarEvents.respondToEventInvite,
-      { eventId: id, response: 'accepted' },
-    );
+    const res = await asEmployee(c).mutation(api.calendarEvents.respondToEventInvite, {
+      eventId: id,
+      response: 'accepted',
+    });
     expect(res).toEqual({ success: true });
 
     await c.t.run(async (ctx) => {
@@ -671,9 +679,18 @@ describe('calendarEvents.respondToEventInvite', () => {
       const organizerNotif = notif.find((n) => n.userId === c.adminId);
       expect(organizerNotif).toBeDefined();
       expect(organizerNotif?.relatedId).toBe(id);
-      const meta = JSON.parse(organizerNotif?.metadata ?? '{}') as { type?: string; eventId?: string };
+      const meta = JSON.parse(organizerNotif?.metadata ?? '{}') as {
+        type?: string;
+        eventId?: string;
+      };
       expect(meta.type).toBe('calendar_invite_response');
       expect(meta.eventId).toBe(id);
+
+      // The guest's invite notification carries the event day so the calendar
+      // can deep-link to it from the bell.
+      const inviteNotif = notif.find((n) => n.userId === c.employeeId);
+      const inviteMeta = JSON.parse(inviteNotif?.metadata ?? '{}') as { date?: string };
+      expect(inviteMeta.date).toBe('2026-09-01');
     });
   });
 

@@ -36,22 +36,6 @@ import type { RoomWithBookings } from './types';
 
 const CAPACITY_STEPS = [0, 2, 4, 6, 10, 20];
 
-/** Human labels and brand colors for each video conference provider. */
-const PLATFORM_LABELS: Record<string, string> = {
-  livekit: 'LiveKit',
-  teams: 'Teams',
-  zoom: 'Zoom',
-  meet: 'Meet',
-  none: 'No Link',
-};
-const PLATFORM_COLORS: Record<string, string> = {
-  livekit: '#0a0c12',
-  teams: '#6264A7',
-  zoom: '#2D8CFF',
-  meet: '#00897B',
-  none: 'var(--text-muted)',
-};
-
 /**
  * The meeting-room board.
  *
@@ -95,11 +79,6 @@ export function RoomsBoard() {
         }
       : 'skip',
   ) as RoomWithBookings[] | undefined;
-
-  const platformStats = useQuery(
-    api.meetingRooms.getBookingPlatformStats,
-    organizationId ? { organizationId: organizationId as Id<'organizations'> } : 'skip',
-  );
 
   const formatTime = useCallback((ms: number) => format(new Date(ms), 'HH:mm'), []);
 
@@ -222,32 +201,6 @@ export function RoomsBoard() {
         <SummaryTile label={t('rooms.board.busyNow')} value={stats.busy} dot="#ef4444" />
         <SummaryTile label={t('rooms.board.total')} value={stats.total} dot="var(--primary)" />
       </div>
-
-      {/* Video platform usage (last 30 days) */}
-      {platformStats && Object.keys(platformStats).length > 0 && (
-        <div className="rounded-xl border border-(--border) bg-(--background-subtle) p-3">
-          <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-(--text-muted)">
-            {t('rooms.board.platformUsage', 'Platform Usage (30 days)')}
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {Object.entries(platformStats)
-              .sort(([, a], [, b]) => b - a)
-              .map(([provider, count]) => (
-                <span
-                  key={provider}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-(--border) bg-(--card) px-2.5 py-1 text-xs font-medium text-(--text-primary)"
-                >
-                  <span
-                    className="h-1.5 w-1.5 rounded-full"
-                    style={{ background: PLATFORM_COLORS[provider] ?? 'var(--text-muted)' }}
-                  />
-                  {PLATFORM_LABELS[provider] ?? provider}
-                  <span className="text-(--text-muted)">· {count}</span>
-                </span>
-              ))}
-          </div>
-        </div>
-      )}
 
       {/* Filters */}
       <div className="space-y-3">

@@ -424,9 +424,6 @@ export const dispatchCron = internalAction({
         case 'asset-maintenance-reminders':
           await ctx.runMutation(internal.assets.checkMaintenanceReminders, {});
           break;
-        case 'room-meeting-reminders':
-          await ctx.runMutation(internal.meetingRooms.sendMeetingReminders, {});
-          break;
         default:
           throw new Error(`Unknown cron job key: ${args.jobKey}`);
       }

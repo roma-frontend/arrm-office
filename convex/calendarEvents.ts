@@ -133,19 +133,14 @@ async function notifyAttendees(
       fallbackMessage: fallbacks[1]!,
       relatedId: event.id,
       route: '/calendar',
-      extra: { type: 'calendar_invite', eventId: event.id },
+      extra: { type: 'calendar_invite', eventId: event.id, date: event.date },
       createdAt: now,
     });
   }
 }
 
 /** Answers a guest can give to an invite, in the order the UI offers them. */
-export const RSVP_RESPONSES = [
-  'needs_action',
-  'accepted',
-  'tentative',
-  'declined',
-] as const;
+export const RSVP_RESPONSES = ['needs_action', 'accepted', 'tentative', 'declined'] as const;
 export type RsvpResponse = (typeof RSVP_RESPONSES)[number];
 
 /** The row written when somebody is invited — they have not answered yet. */
@@ -220,10 +215,7 @@ async function syncEventAttendeeRows(
  * Meeting moved → yesterday's answers no longer stand. Every non-blank
  * response drops back to `needs_action` so the guests confirm the new slot.
  */
-async function resetEventResponses(
-  ctx: MutationCtx,
-  eventId: Id<'calendarEvents'>,
-): Promise<void> {
+async function resetEventResponses(ctx: MutationCtx, eventId: Id<'calendarEvents'>): Promise<void> {
   const rows = await ctx.db
     .query('calendarEventAttendees')
     .withIndex('by_event', (q) => q.eq('eventId', eventId))
@@ -292,9 +284,7 @@ export const respondToEventInvite = mutation({
       messageKey: 'notifications.messages.attendeeResponded',
       params: { eventTitle: event.title, name: caller.name ?? 'Someone', response },
       fallbackTitle: `RSVP: ${event.title}`,
-      fallbackMessage: `${
-        caller.name ?? 'Someone'
-      } ${response} your invite to "${event.title}"`,
+      fallbackMessage: `${caller.name ?? 'Someone'} ${response} your invite to "${event.title}"`,
       relatedId: eventId,
       route: '/calendar',
       extra: { type: 'calendar_invite_response', eventId },

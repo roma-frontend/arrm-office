@@ -132,7 +132,11 @@ import { ThemeSwitcher } from '@/components/ThemeSwitcher';
 import { useStatusUpdate } from '@/context/StatusUpdateContext';
 import { useScrollDirection } from '@/hooks/useScrollDirection';
 import { logger } from '@/lib/logger';
-import { notificationMessage, notificationTitle, parseNotificationMeta } from '@/lib/notificationText';
+import {
+  notificationMessage,
+  notificationTitle,
+  parseNotificationMeta,
+} from '@/lib/notificationText';
 import { EventInviteButtons } from '@/components/calendar/EventInviteActions';
 import Link from 'next/link';
 
@@ -333,7 +337,11 @@ export function Navbar() {
                   key={n._id}
                   onClick={async () => {
                     await handleMarkRead(n._id);
-                    const target = notificationTarget(n, user?.role);
+                    const meta = parseNotificationMeta(n.metadata);
+                    const target =
+                      meta.type === 'calendar_invite' && meta.date
+                        ? `/calendar?date=${meta.date}`
+                        : notificationTarget(n, user?.role);
                     if (target) router.push(target);
                     setShowNotifications(false);
                   }}
@@ -345,15 +353,14 @@ export function Navbar() {
                     {notificationTitle(t, n)}
                   </p>
                   <p className="text-xs text-(--text-muted) mt-1">{notificationMessage(t, n)}</p>
-                  {parseNotificationMeta(n.metadata).type === 'calendar_invite' &&
-                    n.relatedId && (
-                      <div className="mt-1.5" onClick={(e) => e.stopPropagation()}>
-                        <EventInviteButtons
-                          eventId={n.relatedId}
-                          onResponded={() => void handleMarkRead(n._id)}
-                        />
-                      </div>
-                    )}
+                  {parseNotificationMeta(n.metadata).type === 'calendar_invite' && n.relatedId && (
+                    <div className="mt-1.5" onClick={(e) => e.stopPropagation()}>
+                      <EventInviteButtons
+                        eventId={n.relatedId}
+                        onResponded={() => void handleMarkRead(n._id)}
+                      />
+                    </div>
+                  )}
                   <p className="text-xs text-(--text-muted) mt-1">{timeAgo(n._creationTime)}</p>
                 </div>
               ))

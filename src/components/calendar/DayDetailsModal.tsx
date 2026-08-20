@@ -176,8 +176,9 @@ interface DayDetailsModalProps {
   onClose: () => void;
   /** Double-clicking a row hands the entry up to the timeline modal. */
   onOpenTimeline?: (input: TimelineInput) => void;
-  /** Clicking a room booking opens that room's details. */
-  onOpenRoom?: (roomId: string) => void;
+  /** Clicking a room booking opens that room's details. The booking's
+   *  `yyyy-MM-dd` is passed too so the room view can land on that day. */
+  onOpenRoom?: (roomId: string, bookingDate?: string) => void;
   /** Current user id — matched against `createdBy` to pick the RSVP view. */
   viewerId?: string;
 }
@@ -616,11 +617,19 @@ export function DayDetailsModal({
                         transition={{ delay: i * 0.05 }}
                         role="button"
                         tabIndex={0}
-                        onClick={() => onOpenRoom?.(booking.roomId)}
+                        onClick={() =>
+                          onOpenRoom?.(
+                            booking.roomId,
+                            format(new Date(booking.startTime), 'yyyy-MM-dd'),
+                          )
+                        }
                         onKeyDown={(event) => {
                           if (event.key === 'Enter' || event.key === ' ') {
                             event.preventDefault();
-                            onOpenRoom?.(booking.roomId);
+                            onOpenRoom?.(
+                              booking.roomId,
+                              format(new Date(booking.startTime), 'yyyy-MM-dd'),
+                            );
                           }
                         }}
                         className="flex cursor-pointer items-start gap-3 rounded-xl border border-(--border) bg-(--background-subtle) p-3 transition-colors hover:border-(--primary)/40"

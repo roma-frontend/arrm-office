@@ -36,6 +36,8 @@ interface NotificationMeta {
   approved?: boolean;
   /** Calendar event id for `calendar_invite` / `calendar_invite_response` rows. */
   eventId?: string;
+  /** The event's `yyyy-MM-dd` — lets the calendar deep-link to the right day. */
+  date?: string;
 }
 
 /**

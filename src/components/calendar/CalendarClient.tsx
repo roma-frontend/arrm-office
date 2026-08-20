@@ -29,6 +29,7 @@ import {
   Minimize2,
   User,
   X,
+  Mail,
 } from 'lucide-react';
 import {
   format,
@@ -44,6 +45,7 @@ import {
   isToday,
   isBefore,
   startOfDay,
+  parseISO,
 } from 'date-fns';
 import { enUS, ru, hy } from 'date-fns/locale';
 import i18n from 'i18next';
@@ -82,6 +84,7 @@ import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { DriverRequestModal } from './DriverRequestModal';
 import { CreateEventModal, type CalendarEvent } from './CreateEventModal';
 import { DayDetailsModal } from './DayDetailsModal';
+import { EventInviteButtons } from './EventInviteActions';
 import { EventTimelineModal } from './EventTimelineModal';
 import { DraftResumeBar } from '@/components/ui/DraftResumeBar';
 import { useDraftResume } from '@/hooks/useDraftResume';
@@ -714,7 +717,9 @@ function DayCell({
                             <span
                               className="ml-auto size-1.5 shrink-0 rounded-full"
                               title={evt.responses[ai]}
-                              style={{ background: RSVP_DOT_COLORS[evt.responses[ai] ?? 'needs_action'] }}
+                              style={{
+                                background: RSVP_DOT_COLORS[evt.responses[ai] ?? 'needs_action'],
+                              }}
                             />
                           )}
                         </li>
@@ -797,6 +802,8 @@ export const CalendarClient = React.memo(function CalendarClient() {
   const [roomBookingDate, setRoomBookingDate] = useState<Date | null>(null);
   const [roomBookingRoomId, setRoomBookingRoomId] = useState<string | null>(null);
   const [detailsRoom, setDetailsRoom] = useState<RoomDoc | null>(null);
+  /** The booking day (`yyyy-MM-dd`) the room view should open on, if any. */
+  const [detailsRoomDate, setDetailsRoomDate] = useState<string | null>(null);
   const [editEvent, setEditEvent] = useState<CalendarEvent | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const calendarContainerRef = useRef<HTMLDivElement>(null);
@@ -825,6 +832,23 @@ export const CalendarClient = React.memo(function CalendarClient() {
   // restore a draft on top of the form it belongs to would be nonsense.
   const eventDraft = useDraftResume('create-event:new', !showCreateEvent);
   const leaveDraft = useDraftResume('leave-request', !showLeaveModal);
+
+  // Deep link: `/calendar?date=YYYY-MM-DD` (a bell notification click lands
+  // here) jumps straight to that month/day and opens the day sheet, so the
+  // invite is never "invisible". Re-reads on every search-string change so a
+  // second click while already on the calendar still navigates.
+  const urlSearch = typeof window !== 'undefined' ? window.location.search : '';
+  useEffect(() => {
+    if (!mounted) return;
+    const params = new URLSearchParams(urlSearch);
+    const raw = params.get('date');
+    if (!raw || !/^\d{4}-\d{2}-\d{2}$/.test(raw)) return;
+    const target = parseISO(raw);
+    if (isNaN(target.getTime())) return;
+    setCurrentMonth(startOfMonth(target));
+    setSelectedDay(target);
+    setShowDayDetails(true);
+  }, [urlSearch, mounted]);
   const deleteEventMutation = useMutation(api.calendarEvents.remove);
   const updateEventMutation = useMutation(api.calendarEvents.update);
 
@@ -1070,7 +1094,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
 
     // Async fetch: the state updates land after the awaited response, not during
     // this effect. The lint rule cannot see across the async boundary.
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- state is set after the fetch resolves
+
     void fetchGoogleEvents(currentMonth);
   }, [currentMonth, fetchGoogleEvents]);
 
@@ -1205,6 +1229,24 @@ export const CalendarClient = React.memo(function CalendarClient() {
   const scopedCustomEvents = useMemo(
     () => filterForScope(customEvents, scope, (evt) => isMyCustomEvent(evt, viewer)),
     [customEvents, scope, viewer],
+  );
+
+  // Invitations that still need an answer — the RSVP surface right on the
+  // calendar, so the bell is not the only place to respond. The user's own
+  // events are excluded: the organizer cannot answer their own invitation.
+  const [dismissedInvites, setDismissedInvites] = useState<Set<string>>(new Set());
+  const pendingInvites = useMemo(
+    () =>
+      customEvents
+        .filter(
+          (e) =>
+            e.createdBy !== user?.id &&
+            e.myResponse === 'needs_action' &&
+            !dismissedInvites.has(e.id) &&
+            !isPastDate(parseISO(e.date)),
+        )
+        .sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime)),
+    [customEvents, user?.id, dismissedInvites],
   );
 
   // --- Company events --------------------------------------------------------
@@ -1764,6 +1806,57 @@ export const CalendarClient = React.memo(function CalendarClient() {
                         {t('common.reject', 'Reject')}
                       </Button>
                     </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {pendingInvites.length > 0 && (
+              <div
+                className="space-y-2"
+                aria-label={t('calendar.invitations.title', 'Invitations')}
+              >
+                <div className="flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-(--brand-text)" />
+                  <h3 className="text-sm font-bold text-(--text-primary)">
+                    {t('calendar.invitations.title', 'Invitations')}
+                  </h3>
+                  <span className="rounded-full bg-(--brand)/15 px-2 py-0.5 text-xs font-semibold text-(--brand-text)">
+                    {pendingInvites.length}
+                  </span>
+                </div>
+                {pendingInvites.map((evt) => (
+                  <div
+                    key={evt.id}
+                    className="flex flex-col gap-2 rounded-lg border border-(--border) bg-(--surface-1) p-3 sm:flex-row sm:items-center"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-(--text-primary)">{evt.title}</p>
+                      <p className="mt-0.5 text-xs text-(--text-muted)">
+                        {format(parseISO(evt.date), 'EEE, d MMM', {
+                          locale: lang === 'ru' ? ru : lang === 'hy' ? hy : enUS,
+                        })}
+                        {evt.allDay === false
+                          ? ` · ${evt.startTime}`
+                          : ` · ${t('createMeeting.allDay')}`}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const target = parseISO(evt.date);
+                        setCurrentMonth(startOfMonth(target));
+                        setSelectedDay(target);
+                        setShowDayDetails(true);
+                      }}
+                      className="text-xs font-medium text-(--brand-text) hover:underline cursor-pointer"
+                    >
+                      {t('calendar.invitations.openDay', 'Open day')}
+                    </button>
+                    <EventInviteButtons
+                      eventId={evt.id}
+                      compact
+                      onResponded={() => setDismissedInvites((prev) => new Set(prev).add(evt.id))}
+                    />
                   </div>
                 ))}
               </div>
@@ -2782,11 +2875,12 @@ export const CalendarClient = React.memo(function CalendarClient() {
             viewerId={user?.id}
             onClose={() => setShowDayDetails(false)}
             onOpenTimeline={setTimelineInput}
-            onOpenRoom={(roomId) => {
+            onOpenRoom={(roomId, bookingDate) => {
               const room = rooms.find((r) => r._id === roomId);
               if (room) {
                 setShowDayDetails(false);
                 setDetailsRoom(room);
+                setDetailsRoomDate(bookingDate ?? null);
               }
             }}
           />
@@ -2805,11 +2899,16 @@ export const CalendarClient = React.memo(function CalendarClient() {
         {/* Meeting room details */}
         <RoomDetailsModal
           open={detailsRoom !== null}
-          onClose={() => setDetailsRoom(null)}
+          onClose={() => {
+            setDetailsRoom(null);
+            setDetailsRoomDate(null);
+          }}
           room={detailsRoom}
           canManage={user?.role === 'admin' || user?.role === 'superadmin'}
+          initialDate={detailsRoomDate ?? undefined}
           onBook={(room, day) => {
             setDetailsRoom(null);
+            setDetailsRoomDate(null);
             setRoomBookingRoomId(room._id);
             setRoomBookingDate(day);
             setShowRoomBooking(true);
