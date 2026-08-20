@@ -23,7 +23,9 @@ async function getExistingSettings(ctx: QueryCtx, userId: Id<'users'>) {
 // Mutations only — a query context cannot insert, so getUserSettings never
 // calls this (previously the cast hid that `ctx.db.insert` doesn't exist on a
 // query ctx, crashing at runtime with "db.insert is not a function").
-async function getOrCreateSettings(ctx: MutationCtx, userId: Id<'users'>) {
+// Exported so `users.updateOwnProfile` keeps the settings row in sync when it
+// writes localization fields to the users doc — one source of truth for both.
+export async function getOrCreateSettings(ctx: MutationCtx, userId: Id<'users'>) {
   const existing = await getExistingSettings(ctx, userId);
   if (existing) return existing;
 
@@ -136,8 +138,16 @@ export const updateLocalizationSettings = mutation({
       timeFormat: args.timeFormat,
       firstDayOfWeek: args.firstDayOfWeek,
     });
-    // Also update user record so language is available on user object
-    await ctx.db.patch(caller._id, { language: args.language });
+    // Also mirror every field onto the user record so the users doc and the
+    // settings row never diverge, whichever writer touched them (this mutation
+    // or `users.updateOwnProfile`).
+    await ctx.db.patch(caller._id, {
+      language: args.language,
+      timezone: args.timezone,
+      dateFormat: args.dateFormat,
+      timeFormat: args.timeFormat,
+      firstDayOfWeek: args.firstDayOfWeek,
+    });
     return { success: true };
   },
 });

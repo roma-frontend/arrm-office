@@ -363,6 +363,122 @@ describe('getAllTasks', () => {
   });
 });
 
+// ── getVisibleTasks (reporting-line visibility) ─────────────────────────────
+describe('getVisibleTasks', () => {
+  it('lets an employee see their own and manager-assigned tasks, not colleagues', async () => {
+    const c = await seed();
+    const selfTaskId = await createTaskAs(c, 'employee@acme.test', {
+      assignedTo: c.employeeId,
+      title: 'My own',
+    });
+    const assignedTaskId = await createTaskAs(c, 'manager@acme.test', {
+      assignedTo: c.employeeId,
+      title: 'Assigned to me',
+    });
+    await createTaskAs(c, 'manager@acme.test', {
+      assignedTo: c.peerId,
+      title: 'Peer task',
+    });
+
+    const res = await c.t
+      .withIdentity({ email: 'employee@acme.test' })
+      .query(api.tasks.getVisibleTasks, {});
+    const ids = res.map((t) => t._id).sort();
+    expect(ids).toEqual([selfTaskId, assignedTaskId].sort());
+  });
+
+  it('lets a supervisor see own, report and manager-assigned tasks across the branch', async () => {
+    const c = await seed();
+    const ownTaskId = await createTaskAs(c, 'manager@acme.test', {
+      assignedTo: c.supervisorId,
+      title: 'My own',
+    });
+    const reportTaskId = await createTaskAs(c, 'manager@acme.test', {
+      assignedTo: c.employeeId,
+      title: 'Assigned to report',
+    });
+    const bossAssignedId = await createTaskAs(c, 'admin@acme.test', {
+      assignedTo: c.supervisorId,
+      title: 'Boss assigned to me',
+    });
+    const selfCreatedId = await createTaskAs(c, 'employee@acme.test', {
+      assignedTo: c.employeeId,
+      title: 'Report self-created',
+    });
+    // Assigned by the admin (not the supervisor) to another report of the same
+    // supervisor — the supervisor still sees it: the assignee is in their tree.
+    const peerAssignedId = await createTaskAs(c, 'admin@acme.test', {
+      assignedTo: c.peerId,
+      title: 'Peer assigned by admin',
+    });
+
+    const res = await c.t
+      .withIdentity({ email: 'manager@acme.test' })
+      .query(api.tasks.getVisibleTasks, {});
+    const ids = res.map((t) => t._id).sort();
+    expect(ids).toEqual(
+      [ownTaskId, reportTaskId, bossAssignedId, selfCreatedId, peerAssignedId].sort(),
+    );
+  });
+
+  it('does not leak tasks from another organization', async () => {
+    const c = await seed();
+    const foreignTaskId = await createTaskAs(c, 'foreign-admin@other.test', {
+      assignedTo: c.foreignId,
+      title: 'Foreign',
+    });
+    const acmeTaskId = await createTaskAs(c, 'manager@acme.test', {
+      assignedTo: c.employeeId,
+      title: 'Acme',
+    });
+
+    const res = await c.t
+      .withIdentity({ email: 'manager@acme.test' })
+      .query(api.tasks.getVisibleTasks, {});
+    const ids = res.map((t) => t._id);
+    expect(ids).toContain(acmeTaskId);
+    expect(ids).not.toContain(foreignTaskId);
+  });
+
+  it('returns nothing for unauthenticated callers', async () => {
+    const c = await seed();
+    await createTaskWithComment(c);
+    const res = await c.t.run((ctx) => ctx.runQuery(api.tasks.getVisibleTasks, {}));
+    expect(res).toEqual([]);
+  });
+
+  it('lets an admin see every task of the organization (org-wide override)', async () => {
+    const c = await seed();
+    const t1 = await createTaskWithComment(c);
+    const t2 = await createTaskAs(c, 'employee@acme.test', {
+      assignedTo: c.employeeId,
+      title: 'My own',
+    });
+
+    const res = await c.t
+      .withIdentity({ email: 'admin@acme.test' })
+      .query(api.tasks.getVisibleTasks, {});
+    const ids = res.map((t) => t._id).sort();
+    expect(ids).toEqual([t1, t2].sort());
+  });
+
+  it('lets a superadmin filter by selected organization', async () => {
+    const c = await seed();
+    const acmeTaskId = await createTaskWithComment(c);
+    const foreignTaskId = await createTaskAs(c, 'foreign-admin@other.test', {
+      assignedTo: c.foreignId,
+      title: 'Foreign',
+    });
+
+    const res = await c.t
+      .withIdentity({ email: 'super@acme.test' })
+      .query(api.tasks.getVisibleTasks, { selectedOrganizationId: c.otherOrgId });
+    const ids = res.map((t) => t._id);
+    expect(ids).toContain(foreignTaskId);
+    expect(ids).not.toContain(acmeTaskId);
+  });
+});
+
 // ── getTeamTasks / getMyEmployees (by_supervisor index) ─────────────────────
 describe('team queries', () => {
   it('getTeamTasks aggregates tasks of all subordinates', async () => {

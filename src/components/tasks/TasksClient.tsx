@@ -668,10 +668,12 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
     [t],
   );
 
-  // Queries - for admin/superadmin, get all tasks in their organization
-  const adminTasks = useQuery(
-    api.tasks.getAllTasks,
-    (userRole === 'admin' || userRole === 'superadmin') && convexId
+  // Queries — one visibility rule for every role, decided server-side by the
+  // reporting line (see convex/tasks.ts `getVisibleTasks`): employees and
+  // supervisors see their branch, admins/superadmins see the whole org.
+  const visibleTasks = useQuery(
+    api.tasks.getVisibleTasks,
+    convexId
       ? {
           selectedOrganizationId: effectiveOrgId
             ? (effectiveOrgId as Id<'organizations'>)
@@ -679,23 +681,8 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
         }
       : 'skip',
   );
-  const supervisorTasks = useQuery(
-    api.tasks.getTasksAssignedBy,
-    userRole === 'supervisor' && convexId ? { supervisorId: convexId } : 'skip',
-  );
-  const employeeTasks = useQuery(
-    api.tasks.getTasksForEmployee,
-    (userRole === 'employee' || userRole === 'driver') && convexId ? { userId: convexId } : 'skip',
-  );
 
-  const rawTasks =
-    userRole === 'admin'
-      ? adminTasks
-      : userRole === 'supervisor'
-        ? supervisorTasks
-        : userRole === 'superadmin'
-          ? adminTasks
-          : employeeTasks;
+  const rawTasks = visibleTasks;
 
   // Active recurring series, shown as a compact strip above the board. The
   // query scopes server-side: managers see every series in the org, everyone

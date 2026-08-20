@@ -2,6 +2,7 @@
 
 import { useTranslation } from 'react-i18next';
 import type { User } from '@/store/useAuthStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import React, { useState, useEffect } from 'react';
 import { Globe, Calendar, Clock, CheckCircle2 } from 'lucide-react';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
@@ -15,37 +16,85 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { useMutation } from 'convex/react';
+import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { logger } from '@/lib/logger';
 import { toast } from 'sonner';
 import type { Id } from '@/convex/_generated/dataModel';
 
-interface LocalizationUser extends User {
-  language?: string;
-  timezone?: string;
-  dateFormat?: string;
-  firstDayOfWeek?: string;
-  timeFormat?: string;
-}
-
 interface LocalizationSettingsProps {
   userId: Id<'users'>;
-  user: LocalizationUser | null;
+  user: User | null;
   onSettingsChange: (settings: Record<string, unknown>) => void;
+}
+
+const DEFAULT_SETTINGS = {
+  language: 'en',
+  timezone: 'UTC',
+  dateFormat: 'DD/MM/YYYY',
+  firstDayOfWeek: 'monday',
+  timeFormat: '24h',
+} as const;
+
+/**
+ * Render the selected date/time format verbatim, so the preview reflects the
+ * dropdown choices instead of the locale's default format.
+ */
+function formatDatePreview(language: string, dateFormat: string): string {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  switch (dateFormat) {
+    case 'MM/DD/YYYY':
+      return `${month}/${day}/${year}`;
+    case 'YYYY-MM-DD':
+      return `${year}-${month}-${day}`;
+    case 'DD.MM.YYYY':
+      return `${day}.${month}.${year}`;
+    default:
+      return `${day}/${month}/${year}`;
+  }
+}
+
+function formatTimePreview(language: string, timeFormat: string): string {
+  const locale = language === 'ru' ? 'ru-RU' : language === 'hy' ? 'hy-AM' : 'en-US';
+  return new Date().toLocaleTimeString(locale, {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: timeFormat === '12h',
+  });
 }
 
 export function LocalizationSettings({ user, onSettingsChange }: LocalizationSettingsProps) {
   const { t, i18n } = useTranslation();
+  const { login } = useAuthStore();
   const [isSaving, setIsSaving] = useState(false);
 
-  const [language, setLanguage] = useState(user?.language ?? 'en');
-  const [timezone, setTimezone] = useState(user?.timezone ?? 'UTC');
-  const [dateFormat, setDateFormat] = useState(user?.dateFormat ?? 'DD/MM/YYYY');
-  const [firstDayOfWeek, setFirstDayOfWeek] = useState(user?.firstDayOfWeek ?? 'monday');
-  const [timeFormat, setTimeFormat] = useState(user?.timeFormat ?? '24h');
+  const [language, setLanguage] = useState<string>(DEFAULT_SETTINGS.language);
+  const [timezone, setTimezone] = useState<string>(DEFAULT_SETTINGS.timezone);
+  const [dateFormat, setDateFormat] = useState<string>(DEFAULT_SETTINGS.dateFormat);
+  const [firstDayOfWeek, setFirstDayOfWeek] = useState<string>(DEFAULT_SETTINGS.firstDayOfWeek);
+  const [timeFormat, setTimeFormat] = useState<string>(DEFAULT_SETTINGS.timeFormat);
 
   const updateSettings = useMutation(api.settings.updateLocalizationSettings);
+
+  // Real-time source of truth: subscribe to the saved settings instead of the
+  // session user (the JWT never carries localization fields, so the store
+  // would reset the tab to defaults after every reload). Convex re-delivers
+  // this query after any save, on any device.
+  const savedSettings = useQuery(api.settings.getUserSettings, user?.id ? {} : 'skip');
+
+  // Sync local state when saved settings arrive or change
+  useEffect(() => {
+    if (savedSettings) {
+      setLanguage(savedSettings.language ?? DEFAULT_SETTINGS.language);
+      setTimezone(savedSettings.timezone ?? DEFAULT_SETTINGS.timezone);
+      setDateFormat(savedSettings.dateFormat ?? DEFAULT_SETTINGS.dateFormat);
+      setFirstDayOfWeek(savedSettings.firstDayOfWeek ?? DEFAULT_SETTINGS.firstDayOfWeek);
+      setTimeFormat(savedSettings.timeFormat ?? DEFAULT_SETTINGS.timeFormat);
+    }
+  }, [savedSettings]);
 
   // Update parent when settings change (local only)
   useEffect(() => {
@@ -58,17 +107,6 @@ export function LocalizationSettings({ user, onSettingsChange }: LocalizationSet
     });
   }, [language, timezone, dateFormat, timeFormat, firstDayOfWeek, onSettingsChange]);
 
-  // Sync when user data changes
-  useEffect(() => {
-    if (user) {
-      setLanguage(user.language ?? 'en');
-      setTimezone(user.timezone ?? 'UTC');
-      setDateFormat(user.dateFormat ?? 'DD/MM/YYYY');
-      setFirstDayOfWeek(user.firstDayOfWeek ?? 'monday');
-      setTimeFormat(user.timeFormat ?? '24h');
-    }
-  }, [user]);
-
   const handleSave = async () => {
     setIsSaving(true);
     try {
@@ -79,6 +117,13 @@ export function LocalizationSettings({ user, onSettingsChange }: LocalizationSet
         timeFormat,
         firstDayOfWeek,
       });
+
+      // Mirror into the auth store so the current session reflects the change
+      // immediately (the JWT is not refreshed, but nothing reads localization
+      // off it — the DB query above is the source of truth).
+      if (user) {
+        login({ ...user, language, timezone, dateFormat, timeFormat, firstDayOfWeek });
+      }
 
       // Always persist language to cookie and localStorage
       localStorage.setItem('i18nextLng', language);
@@ -211,10 +256,7 @@ export function LocalizationSettings({ user, onSettingsChange }: LocalizationSet
                 </SelectContent>
               </Select>
               <p className="text-xs text-(--text-muted)">
-                Preview:{' '}
-                {new Date().toLocaleDateString(
-                  i18n.language === 'ru' ? 'ru-RU' : i18n.language === 'hy' ? 'hy-AM' : 'en-US',
-                )}
+                Preview: {formatDatePreview(i18n.language, dateFormat)}
               </p>
             </div>
 
@@ -230,10 +272,7 @@ export function LocalizationSettings({ user, onSettingsChange }: LocalizationSet
                 </SelectContent>
               </Select>
               <p className="text-xs text-(--text-muted)">
-                Preview:{' '}
-                {new Date().toLocaleTimeString(
-                  i18n.language === 'ru' ? 'ru-RU' : i18n.language === 'hy' ? 'hy-AM' : 'en-US',
-                )}
+                Preview: {formatTimePreview(i18n.language, timeFormat)}
               </p>
             </div>
           </div>

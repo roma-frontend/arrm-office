@@ -8,7 +8,7 @@ import { getSubordinateIds, resolveSupervisorId } from './lib/reportingLine';
 
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
-import { getAuthCaller } from './lib/getAuthCaller';
+import { getAuthCaller, type AuthenticatedCaller } from './lib/getAuthCaller';
 import { notify } from './lib/notify';
 import { sanitizeTitle, sanitizeText } from './lib/sanitize';
 import { assertModuleAccess } from './lib/entitlements';
@@ -660,6 +660,41 @@ export const getTasksAssignedBy = query({
 
 // ── Get All Tasks (admin) ──────────────────────────────────────────────────
 // OPTIMIZED: Batch loading eliminates N+1 queries
+//
+// Shared by `getAllTasks` and `getVisibleTasks`: staff (admin / superadmin)
+// always see the whole scope — the org for an admin, everything (or the
+// selected org) for a superadmin. Visibility for everyone else is decided by
+// the reporting line instead, see `getVisibleTasks`.
+async function fetchAllTasksForStaff(
+  ctx: QueryCtx,
+  requester: AuthenticatedCaller,
+  selectedOrganizationId?: Id<'organizations'>,
+) {
+  const userIsSuperadmin = isSuperadmin(requester);
+
+  // Superadmin without org can still access (but will see nothing if no tasks exist)
+  if (!userIsSuperadmin && !requester.organizationId) {
+    throw new Error('Admin must belong to an organization');
+  }
+
+  const tasks = await ctx.db.query('tasks').order('desc').take(DEFAULT_LIST_CAP);
+
+  // Filter tasks by organization
+  let orgTasks = tasks;
+  if (userIsSuperadmin) {
+    // For superadmin: filter by selectedOrganizationId if provided
+    if (selectedOrganizationId) {
+      orgTasks = tasks.filter((task) => task.organizationId === selectedOrganizationId);
+    }
+    // If no selectedOrganizationId, superadmin sees all tasks (no filter)
+  } else {
+    // For regular admin: filter by their organization
+    orgTasks = tasks.filter((task) => task.organizationId === requester.organizationId);
+  }
+
+  return enrichTasksWithUserData(ctx, orgTasks);
+}
+
 export const getAllTasks = query({
   args: { selectedOrganizationId: v.optional(v.id('organizations')) },
   handler: async (ctx, args) => {
@@ -671,29 +706,89 @@ export const getAllTasks = query({
       throw new Error('Only admins can access all tasks');
     }
 
-    const userIsSuperadmin = isSuperadmin(requester);
+    return fetchAllTasksForStaff(ctx, requester, args.selectedOrganizationId);
+  },
+});
 
-    // Superadmin without org can still access (but will see nothing if no tasks exist)
-    if (!userIsSuperadmin && !requester.organizationId) {
-      throw new Error('Admin must belong to an organization');
+// ── Get Visible Tasks (reporting-line visibility) ──────────────────────────
+// One visibility rule for the whole board, decided by the reporting line and
+// not by role. A task is visible to a caller when the caller is the assignee
+// (`assignedTo`), the assigner (`assignedBy`), or a manager of either — i.e.
+// when one of the two people connected by the task is the caller or someone in
+// the caller's reporting subtree. The subtree walk makes the rule transitive:
+// a mid-level manager sees what their reports do, their reports' reports, and
+// so on down the branch.
+//
+//   employee   → sees tasks assigned to them (incl. self-created ones) and
+//                nothing else — their subtree is just themselves.
+//   supervisor → sees their own tasks, tasks they assigned, tasks assigned to
+//                them by their own managers, and everything their branch
+//                produced (created or received).
+//   admin      → org-wide override: HR/CEO see the whole organization.
+//   superadmin → platform operator: everything, scoped by selectedOrganizationId.
+//
+// The caller is taken from the authenticated session — never from an argument —
+// so asking for somebody else's board is impossible.
+export const getVisibleTasks = query({
+  args: {
+    /** When a superadmin has no org, pass the selected org to scope the board. */
+    selectedOrganizationId: v.optional(v.id('organizations')),
+  },
+  handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return [];
+
+    // Staff see the whole scope — the admin override is deliberate: HR and the
+    // CEO need org-wide oversight even when part of the tree is not under them.
+    if (caller.role === 'admin' || isSuperadmin(caller)) {
+      return fetchAllTasksForStaff(ctx, caller, args.selectedOrganizationId);
     }
 
-    const tasks = await ctx.db.query('tasks').order('desc').take(DEFAULT_LIST_CAP);
+    // Everyone else: caller + their whole reporting subtree.
+    const subtreeIds = await getSubordinateIds(ctx, caller._id, caller.organizationId);
+    const visibleIds = [caller._id, ...subtreeIds];
 
-    // Filter tasks by organization
-    let orgTasks = tasks;
-    if (userIsSuperadmin) {
-      // For superadmin: filter by selectedOrganizationId if provided
-      if (args.selectedOrganizationId) {
-        orgTasks = tasks.filter((task) => task.organizationId === args.selectedOrganizationId);
+    // Collect per person: tasks assigned to them and tasks they created. The
+    // caller's own lists get the full cap; deeper branches are capped tighter —
+    // the board renders a bounded list anyway.
+    const perPerson = await Promise.all(
+      visibleIds.map((id) => {
+        const cap = id === caller._id ? DEFAULT_LIST_CAP : SMALL_LIST_CAP;
+        return Promise.all([
+          ctx.db
+            .query('tasks')
+            .withIndex('by_assigned_to', (q) => q.eq('assignedTo', id))
+            .order('desc')
+            .take(cap),
+          ctx.db
+            .query('tasks')
+            .withIndex('by_assigned_by', (q) => q.eq('assignedBy', id))
+            .order('desc')
+            .take(cap),
+        ]);
+      }),
+    );
+
+    // Merge + de-dupe, org-scoped, newest first.
+    const seen = new Set<string>();
+    const merged: Doc<'tasks'>[] = [];
+    for (const [assignedToTasks, assignedByTasks] of perPerson) {
+      for (const task of [...assignedToTasks, ...assignedByTasks]) {
+        if (seen.has(task._id)) continue;
+        seen.add(task._id);
+        // A caller with an org only ever sees that org's tasks; an org-less
+        // caller (unplaced account) only sees legacy tasks without an org.
+        if (caller.organizationId) {
+          if (task.organizationId !== caller.organizationId) continue;
+        } else if (task.organizationId) {
+          continue;
+        }
+        merged.push(task);
       }
-      // If no selectedOrganizationId, superadmin sees all tasks (no filter)
-    } else {
-      // For regular admin: filter by their organization
-      orgTasks = tasks.filter((task) => task.organizationId === requester.organizationId);
     }
+    merged.sort((a, b) => b.createdAt - a.createdAt);
 
-    return enrichTasksWithUserData(ctx, orgTasks);
+    return enrichTasksWithUserData(ctx, merged.slice(0, DEFAULT_LIST_CAP));
   },
 });
 

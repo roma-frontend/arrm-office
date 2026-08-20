@@ -36,9 +36,7 @@ jest.mock('convex/react', () => ({
 jest.mock('../../convex/_generated/api', () => ({
   api: {
     tasks: {
-      getAllTasks: { _name: 'getAllTasks' },
-      getTasksAssignedBy: { _name: 'getTasksAssignedBy' },
-      getTasksForEmployee: { _name: 'getTasksForEmployee' },
+      getVisibleTasks: { _name: 'getVisibleTasks' },
     },
     recurringTasks: {
       listRecurringTasks: { _name: 'listRecurringTasks' },
@@ -211,7 +209,7 @@ describe('TasksClient project filter', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     queryResults = {};
-    queryResults.getAllTasks = ALL_TASKS;
+    queryResults.getVisibleTasks = ALL_TASKS;
   });
 
   it('builds project filter options from loaded tasks with counts', () => {
@@ -228,7 +226,7 @@ describe('TasksClient project filter', () => {
   });
 
   it('omits the "Without project" option when every task has a project', () => {
-    queryResults.getAllTasks = [alphaTask, betaTask, gammaTask];
+    queryResults.getVisibleTasks = [alphaTask, betaTask, gammaTask];
     const { container } = render(<TasksClient userId="user-1" userRole="admin" />);
 
     const select = getProjectSelect(container);
@@ -282,7 +280,7 @@ describe('TasksClient project filter', () => {
     expect(screen.getAllByText('Alpha task').length).toBeGreaterThan(0);
 
     // All tasks of proj-1 get unlinked — proj-1 is no longer an option.
-    queryResults.getAllTasks = [
+    queryResults.getVisibleTasks = [
       { ...alphaTask, projectId: undefined, projectName: null },
       { ...betaTask, projectId: undefined, projectName: null },
       gammaTask,
@@ -304,7 +302,7 @@ describe('TasksClient project filter', () => {
     expect(screen.getAllByText('Delta task').length).toBeGreaterThan(0);
 
     // Delta gets a project — the "without project" group disappears.
-    queryResults.getAllTasks = [
+    queryResults.getVisibleTasks = [
       alphaTask,
       betaTask,
       gammaTask,
@@ -318,7 +316,7 @@ describe('TasksClient project filter', () => {
   });
 
   it('shows the project filter for employee role as well', () => {
-    queryResults.getTasksForEmployee = [alphaTask];
+    queryResults.getVisibleTasks = [alphaTask];
     const { container } = render(<TasksClient userId="user-1" userRole="employee" />);
 
     const select = getProjectSelect(container);
@@ -328,7 +326,7 @@ describe('TasksClient project filter', () => {
   });
 
   it('renders the loading state while tasks are not loaded', () => {
-    queryResults.getAllTasks = undefined;
+    queryResults.getVisibleTasks = undefined;
     const { container } = render(<TasksClient userId="user-1" userRole="admin" />);
     expect(container.querySelector('[data-testid="shield-loader"]')).toBeInTheDocument();
   });

@@ -17,6 +17,14 @@ export interface User {
   organizationName?: string;
   isApproved?: boolean;
   phone?: string;
+  // Localization preferences (Regional settings) — mirrored into the store on
+  // save so the UI reflects them immediately; the source of truth is the DB
+  // (`settings.getUserSettings`).
+  language?: string;
+  timezone?: string;
+  dateFormat?: string;
+  timeFormat?: string;
+  firstDayOfWeek?: string;
   impersonation?: {
     active: boolean;
     sessionId: string;

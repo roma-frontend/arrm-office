@@ -391,8 +391,14 @@ describe('settings.updateLocalizationSettings', () => {
       timeFormat: '24h',
       firstDayOfWeek: 'monday',
     });
-    // Second call: user record language
-    expect(mockPatch).toHaveBeenCalledWith('user-1', { language: 'ru' });
+    // Second call: user record mirrored with the same localization fields
+    expect(mockPatch).toHaveBeenCalledWith('user-1', {
+      language: 'ru',
+      timezone: 'Europe/Moscow',
+      dateFormat: 'DD.MM.YYYY',
+      timeFormat: '24h',
+      firstDayOfWeek: 'monday',
+    });
   });
 
   it('returns success', async () => {

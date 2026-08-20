@@ -14,6 +14,7 @@ import { requireRole, requireOrgAdmin, requireUser } from '../lib/rbac';
  * this rework removes.
  */
 import { isSuperadmin as hasSuperadminPowers } from '../lib/auth';
+import { getOrCreateSettings } from '../settings';
 import { assertAssignable } from '../lib/reportingLine';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from '../lib/limits';
 import { notify } from '../lib/notify';
@@ -774,6 +775,26 @@ export const updateOwnProfile = mutation({
     if (!user) throw new Error('User not found');
 
     await ctx.db.patch(userId, updates);
+
+    // Keep the dedicated settings row in sync when localization fields change:
+    // `getUserSettings` reads `userSettings` first, so a global "Save All
+    // Changes" that only patched the users doc would leave the settings-based
+    // UI (Notifications, Localization) showing stale values.
+    const localizationFields = [
+      'language',
+      'timezone',
+      'dateFormat',
+      'timeFormat',
+      'firstDayOfWeek',
+    ] as const;
+    if (localizationFields.some((f) => updates[f] !== undefined)) {
+      const settings = await getOrCreateSettings(ctx, userId);
+      const settingsPatch: Record<string, unknown> = {};
+      for (const f of localizationFields) {
+        if (updates[f] !== undefined) settingsPatch[f] = updates[f];
+      }
+      await ctx.db.patch(settings._id, settingsPatch);
+    }
 
     // Audit log: profile updated
     await ctx.db.insert('auditLogs', {
