@@ -30,6 +30,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { logger } from '@/lib/logger';
+import { EmployeeHoverCard } from '@/components/employees/EmployeeHoverCard';
 import type {
   AttendeeResponse,
   BookingActivityEvent,
@@ -266,6 +267,7 @@ export function BookingTrackingPanel({
         </h5>
 
         <AttendeeRow
+          userId={organizer.userId}
           name={organizer.name}
           email={organizer.email}
           avatarUrl={organizer.avatarUrl}
@@ -282,6 +284,7 @@ export function BookingTrackingPanel({
         {attendees.map((attendee) => (
           <AttendeeRow
             key={attendee.userId}
+            userId={attendee.userId}
             name={attendee.name}
             email={attendee.email}
             avatarUrl={attendee.avatarUrl}
@@ -427,6 +430,7 @@ function CountTile({
 type Translate = (key: string, options?: Record<string, unknown>) => string;
 
 function AttendeeRow({
+  userId,
   name,
   email,
   avatarUrl,
@@ -442,6 +446,7 @@ function AttendeeRow({
   formatAbsolute,
   t,
 }: {
+  userId?: string;
   name: string;
   email?: string;
   avatarUrl?: string;
@@ -484,7 +489,15 @@ function AttendeeRow({
 
       <div className="min-w-0 flex-1">
         <p className="flex flex-wrap items-center gap-1.5 text-xs font-semibold text-(--text-primary)">
-          <span className="truncate">{name}</span>
+          {userId ? (
+            <EmployeeHoverCard userId={userId} name={name}>
+              <span className="truncate cursor-pointer hover:underline hover:underline-offset-2">
+                {name}
+              </span>
+            </EmployeeHoverCard>
+          ) : (
+            <span className="truncate">{name}</span>
+          )}
           {isOrganizer && (
             <Badge variant="info" className="h-4 px-1 text-[9px]">
               {t('rooms.tracking.organizer')}

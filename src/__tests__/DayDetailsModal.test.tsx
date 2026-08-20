@@ -52,6 +52,9 @@ jest.mock('@/lib/cssMotion', () => ({
   },
 }));
 
+jest.mock('@/components/employees/EmployeeHoverCard', () => ({
+  EmployeeHoverCard: ({ children, name }: any) => <span>{name ?? children}</span>,
+}));
 jest.mock('@/components/ui/badge', () => ({
   Badge: ({ children, variant, className, style }: any) => (
     <span data-testid="badge" data-variant={variant} className={className} style={style}>
@@ -570,7 +573,7 @@ describe('DayDetailsModal', () => {
     expect(screen.getByText('rooms.calendar.roomBookings')).toBeInTheDocument();
     expect(screen.getByText('Boardroom Booking')).toBeInTheDocument();
     expect(screen.getByText('Focus Time')).toBeInTheDocument();
-    expect(screen.getByText(/· Alice$/)).toBeInTheDocument();
+    expect(screen.getByText(/Alice/)).toBeInTheDocument();
     expect(screen.getByText('Bob, Carol')).toBeInTheDocument();
     expect(screen.getByText('Boardroom')).toBeInTheDocument();
     expect(screen.getByText('Focus Room')).toBeInTheDocument();

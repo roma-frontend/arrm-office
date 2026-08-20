@@ -26,6 +26,17 @@ jest.mock('react-i18next', () => ({
   }),
 }));
 
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: jest.fn(),
+    replace: jest.fn(),
+    back: jest.fn(),
+    prefetch: jest.fn(),
+  }),
+  useSearchParams: () => new URLSearchParams(),
+  usePathname: () => '/calendar',
+}));
+
 let queryResults: Record<string, unknown> = {};
 const mutationCalls: Array<{ name?: string; args: any[] }> = [];
 let mutationImpl: ((...args: any[]) => Promise<unknown>) | null = null;
@@ -120,6 +131,9 @@ jest.mock('sonner', () => ({
   toast: { success: jest.fn(), error: jest.fn(), info: jest.fn() },
 }));
 
+jest.mock('@/components/employees/EmployeeHoverCard', () => ({
+  EmployeeHoverCard: ({ children, name }: any) => <span>{name ?? children}</span>,
+}));
 jest.mock('@/components/ui/button', () => ({
   Button: ({ children, onClick, disabled, variant, size, className, ...props }: any) => (
     <button
@@ -743,11 +757,29 @@ describe('CalendarClient', () => {
     });
   });
 
-  it('opens the create-event modal in edit mode from a custom row click', async () => {
+  it('opens the timeline from a custom row click', async () => {
     render(<CalendarClient />);
-    const rows = Array.from(document.querySelectorAll('[title="eventTimeline.hints.doubleClick"]'));
+    const rows = Array.from(
+      document.querySelectorAll(
+        '[title="eventTimeline.hints.singleDetails"], [title="Click to view details · double-click to edit"]',
+      ),
+    );
     const row = rows.find((r) => r.textContent?.includes('Birthday party')) as HTMLElement;
     fireEvent.click(row);
+    await waitFor(() => {
+      expect(screen.getByTestId('timeline-modal')).toBeInTheDocument();
+    });
+  });
+
+  it('opens the create-event modal in edit mode from a custom row double-click', async () => {
+    render(<CalendarClient />);
+    const rows = Array.from(
+      document.querySelectorAll(
+        '[title="eventTimeline.hints.singleDetails"], [title="Click to view details · double-click to edit"]',
+      ),
+    );
+    const row = rows.find((r) => r.textContent?.includes('Birthday party')) as HTMLElement;
+    fireEvent.doubleClick(row);
     await waitFor(() => {
       expect(screen.getByTestId('create-event-modal')).toBeInTheDocument();
     });

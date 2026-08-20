@@ -46,6 +46,7 @@ import {
 } from '@/lib/types';
 import { getInitials } from '@/lib/stringUtils';
 import type { CalendarEvent } from './CreateEventModal';
+import { EmployeeHoverCard } from '@/components/employees/EmployeeHoverCard';
 import { EventInviteActions } from './EventInviteActions';
 import {
   COMPANY_EVENT_ACCENTS,
@@ -647,7 +648,22 @@ export function DayDetailsModal({
                           <p className="mt-0.5 text-xs text-(--text-muted)">
                             {format(new Date(booking.startTime), 'HH:mm', { locale })} –{' '}
                             {format(new Date(booking.endTime), 'HH:mm', { locale })}
-                            {booking.organizerName ? ` · ${booking.organizerName}` : ''}
+                            {booking.organizerName ? (
+                              <>
+                                {' '}
+                                ·{' '}
+                                <EmployeeHoverCard
+                                  userId={booking.organizerId}
+                                  name={booking.organizerName}
+                                >
+                                  <span className="cursor-pointer hover:underline hover:underline-offset-2">
+                                    {booking.organizerName}
+                                  </span>
+                                </EmployeeHoverCard>
+                              </>
+                            ) : (
+                              ''
+                            )}
                           </p>
                           <p className="mt-1 flex items-center gap-1 truncate text-xs text-(--text-secondary)">
                             <MapPin className="h-3 w-3 shrink-0" />

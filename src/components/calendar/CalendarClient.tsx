@@ -117,6 +117,7 @@ import { logger } from '@/lib/logger';
 import { toast } from 'sonner';
 import nextDynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
+import { EmployeeHoverCard } from '@/components/employees/EmployeeHoverCard';
 
 // The fullscreen mode of the calendar is the accounting timesheet («табель»):
 // employees × days with every leave type, statuses and overtime. Heavy, so
@@ -2507,18 +2508,21 @@ export const CalendarClient = React.memo(function CalendarClient() {
                                 i) *
                               0.04,
                           }}
-                          title={t('eventTimeline.hints.doubleClick')}
+                          title={t(
+                            'eventTimeline.hints.singleDetails',
+                            'Click to view details · double-click to edit',
+                          )}
                           className="flex items-start gap-2.5 p-2.5 rounded-lg border border-(--brand-outline) dark:border-(--brand-outline) bg-(--brand-quiet) cursor-pointer hover:border-(--brand-outline) transition-colors group"
                           onClick={() =>
-                            dualClick.single(() => {
+                            dualClick.single(() =>
+                              setTimelineInput({ source: 'custom', data: evt }),
+                            )
+                          }
+                          onDoubleClick={() =>
+                            dualClick.double(() => {
                               setEditEvent(evt);
                               setShowCreateEvent(true);
                             })
-                          }
-                          onDoubleClick={() =>
-                            dualClick.double(() =>
-                              setTimelineInput({ source: 'custom', data: evt }),
-                            )
                           }
                         >
                           <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-(--brand) text-white">
@@ -2648,7 +2652,22 @@ export const CalendarClient = React.memo(function CalendarClient() {
                                 {format(new Date(booking.endTime), 'HH:mm', {
                                   locale: dateFnsLocale,
                                 })}
-                                {booking.organizerName ? ` · ${booking.organizerName}` : ''}
+                                {booking.organizerName ? (
+                                  <>
+                                    {' '}
+                                    ·{' '}
+                                    <EmployeeHoverCard
+                                      userId={booking.organizerId}
+                                      name={booking.organizerName}
+                                    >
+                                      <span className="cursor-pointer hover:underline hover:underline-offset-2">
+                                        {booking.organizerName}
+                                      </span>
+                                    </EmployeeHoverCard>
+                                  </>
+                                ) : (
+                                  ''
+                                )}
                               </p>
                               <div className="flex items-center gap-1 mt-1 min-w-0">
                                 <span
