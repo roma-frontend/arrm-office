@@ -580,11 +580,11 @@ describe('DayDetailsModal', () => {
     expect(container.querySelector('[style*="rgb(255, 0, 0)"]')).not.toBeNull();
   });
 
-  it('opens a room on click and via Enter/Space keys', () => {
+  it('opens a room on click and via Enter/Space keys, passing the booking day', () => {
     const onOpenRoom = jest.fn();
     render(<DayDetailsModal {...makeProps({ roomBookings: ROOMS, onOpenRoom })} />);
     fireEvent.click(screen.getByText('Boardroom Booking'));
-    expect(onOpenRoom).toHaveBeenCalledWith('rm1');
+    expect(onOpenRoom).toHaveBeenCalledWith('rm1', '2026-05-15');
 
     fireEvent.keyDown(screen.getByText('Boardroom Booking'), { key: 'Enter' });
     fireEvent.keyDown(screen.getByText('Boardroom Booking'), { key: ' ' });
