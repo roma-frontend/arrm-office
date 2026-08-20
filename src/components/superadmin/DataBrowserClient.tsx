@@ -1083,7 +1083,7 @@ export function DataBrowserClient() {
           )}
         </p>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="w-full flex items-center justify-end gap-2">
         <Button
           variant="outline"
           onClick={() => setShowHistory(true)}
