@@ -60,6 +60,8 @@ export interface RoomBookingDoc {
   createdAt: number;
   updatedAt: number;
   tracking?: BookingResponseCounts;
+  videoUrl?: string;
+  meetingStatus?: 'scheduled' | 'live' | 'ended';
 }
 
 /** RSVP state of one invited person, as shown in the tracking panel. */

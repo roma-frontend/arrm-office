@@ -2618,6 +2618,7 @@
       "checkIn": "Ich bin da",
       "checkedIn": "Eingecheckt",
       "checkInWindow": "Einchecken ist nur rund um die Besprechungszeit möglich",
+      "joinMeeting": "Meeting beitreten",
       "capacityExceeded": "In diesen Raum passen {{max}} Personen",
       "selectRoom": "Raum auswählen",
       "titleRequired": "Geben Sie einen Titel ein",

@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useRouter } from 'next/navigation';
 import { useMutation, useQuery } from 'convex/react';
 import { toast } from 'sonner';
 import { addDays, format, isSameDay, startOfDay } from 'date-fns';
@@ -15,9 +16,11 @@ import {
   ChevronRight,
   Clock,
   MapPin,
+  Radio,
   Trash2,
   UserCheck,
   Users,
+  Video,
 } from 'lucide-react';
 import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
@@ -63,6 +66,7 @@ export function RoomDetailsModal({
   onBook: (room: RoomDoc, day: Date) => void;
 }) {
   const { t } = useTranslation();
+  const router = useRouter();
   const { user } = useAuthStore();
   const now = useNow(15_000);
   const statusText = useRoomStatusText();
@@ -287,6 +291,7 @@ export function RoomDetailsModal({
             bookings.map((booking) => {
               const isCurrent = booking.startTime <= now && now < booking.endTime;
               const isMine = booking.organizerId === user?.id;
+              const isAttendee = (booking.attendeeIds ?? []).includes(user?.id as string);
               const canCancel = (isMine || canManage) && booking.endTime > now;
               const canCheckIn =
                 isMine &&
@@ -295,6 +300,15 @@ export function RoomDetailsModal({
                 now <= booking.endTime;
               const isExpanded = expandedBookingId === booking._id;
               const counts = booking.tracking;
+              // Show "Join Meeting" when there's a video link and the user is a participant.
+              const hasVideo = !!booking.videoUrl;
+              const isParticipant = isMine || isAttendee;
+              const canJoinMeeting =
+                hasVideo &&
+                isParticipant &&
+                // Either the meeting is live (status override) or within the time window.
+                (booking.meetingStatus === 'live' ||
+                  (booking.startTime <= now + 15 * 60_000 && booking.endTime > now));
 
               return (
                 <div
@@ -371,6 +385,26 @@ export function RoomDetailsModal({
                         >
                           <UserCheck className="h-3 w-3" />
                           {t('rooms.booking.checkIn')}
+                        </Button>
+                      )}
+                      {canJoinMeeting && (
+                        <Button
+                          size="xs"
+                          className="gap-1.5 bg-emerald-600 text-white hover:bg-emerald-700"
+                          onClick={() => router.push(booking.videoUrl!)}
+                        >
+                          {booking.meetingStatus === 'live' ? (
+                            <Radio className="h-3 w-3 animate-pulse" />
+                          ) : (
+                            <Video className="h-3 w-3" />
+                          )}
+                          {t('rooms.booking.joinMeeting', 'Join Meeting')}
+                          {booking.meetingStatus === 'live' && (
+                            <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-white/20 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider">
+                              <span className="size-1.5 animate-pulse rounded-full bg-white" />
+                              LIVE
+                            </span>
+                          )}
                         </Button>
                       )}
                       {canCancel && (

@@ -284,6 +284,10 @@ export interface EnrichedBooking extends Doc<'roomBookings'> {
   attendeeNames: string[];
   /** RSVP roll-up, so a list can show "3 ✓ · 1 ✗" without a second round-trip. */
   tracking: ResponseCounts;
+  /** Video conference join link if this booking is linked to a calendar event with video. */
+  videoUrl?: string;
+  /** Status of the linked meeting (scheduled / live / ended). */
+  meetingStatus?: 'scheduled' | 'live' | 'ended';
 }
 
 export interface ResponseCounts {
@@ -351,6 +355,23 @@ async function enrichBookings(
       const name = await resolveName(id);
       if (name) attendeeNames.push(name);
     }
+
+    // Look up the linked calendar event for video conference info.
+    const linkedEvent = await ctx.db
+      .query('calendarEvents')
+      .withIndex('by_room_booking', (q) => q.eq('roomBookingId', booking._id))
+      .first();
+
+    // Resolve the live meeting status if a video conference is linked.
+    let meetingStatus: 'scheduled' | 'live' | 'ended' | undefined;
+    if (linkedEvent?.videoUrl) {
+      const meeting = await ctx.db
+        .query('meetings')
+        .withIndex('by_event', (q) => q.eq('eventId', linkedEvent._id))
+        .unique();
+      meetingStatus = meeting?.status;
+    }
+
     enriched.push({
       ...booking,
       roomName: room?.name ?? 'Unknown room',
@@ -361,6 +382,8 @@ async function enrichBookings(
       organizerName: await resolveName(booking.organizerId),
       attendeeNames: [...attendeeNames, ...(booking.externalAttendees ?? [])],
       tracking: await countResponses(ctx, booking),
+      videoUrl: linkedEvent?.videoUrl,
+      meetingStatus,
     });
   }
   return enriched;
