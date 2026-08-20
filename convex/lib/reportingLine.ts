@@ -168,6 +168,20 @@ export async function getSubordinateIds(
 }
 
 /**
+ * The people whose work a caller can see: themselves plus everyone in their
+ * reporting subtree. `tasks.getVisibleTasks` treats a task as visible when the
+ * assignee or the assigner is one of them; the recurring-series and projects
+ * lists apply the same rule to their own "connected people".
+ */
+export async function getVisibleUserIds(
+  ctx: Pick<QueryCtx, 'db'>,
+  caller: { _id: Id<'users'>; organizationId?: Id<'organizations'> },
+): Promise<Set<Id<'users'>>> {
+  const subtreeIds = await getSubordinateIds(ctx, caller._id, caller.organizationId);
+  return new Set([caller._id, ...subtreeIds]);
+}
+
+/**
  * Reject an assignment that cannot stand: self-management, or a manager who
  * already reports (directly or transitively) to the employee.
  *

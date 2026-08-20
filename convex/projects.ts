@@ -1,7 +1,8 @@
 import { v } from 'convex/values';
-import { mutation, query } from './_generated/server';
+import { mutation, query, type QueryCtx } from './_generated/server';
 import { getAuthCaller, type AuthenticatedCaller } from './lib/getAuthCaller';
 import { isSuperadmin } from './lib/auth';
+import { getVisibleUserIds } from './lib/reportingLine';
 import { DEFAULT_LIST_CAP } from './lib/limits';
 import type { Doc, Id } from './_generated/dataModel';
 import {
@@ -31,6 +32,29 @@ function canManageOrg(
   return caller.role === 'admin' || caller.role === 'supervisor';
 }
 
+/**
+ * Projects visible to the caller, by the same reporting-line rule the task
+ * board uses (`tasks.getVisibleTasks`): staff (admin / superadmin) see the
+ * whole org; everyone else sees projects they own, created or are a member
+ * of — plus projects of their reporting subtree, so a manager sees what their
+ * branch works on.
+ */
+async function filterVisibleProjects(
+  ctx: QueryCtx,
+  caller: AuthenticatedCaller,
+  projects: Doc<'projects'>[],
+): Promise<Doc<'projects'>[]> {
+  if (caller.role === 'admin' || isSuperadmin(caller)) return projects;
+
+  const visibleUsers = await getVisibleUserIds(ctx, caller);
+  return projects.filter(
+    (p) =>
+      (p.ownerId !== undefined && visibleUsers.has(p.ownerId)) ||
+      visibleUsers.has(p.createdBy) ||
+      p.memberIds.some((m) => visibleUsers.has(m)),
+  );
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // PROJECTS
 // ═══════════════════════════════════════════════════════════════════════════
@@ -48,9 +72,11 @@ export const listProjects = query({
       .order('desc')
       .take(DEFAULT_LIST_CAP);
 
+    const visible = await filterVisibleProjects(ctx, caller, projects);
+
     // Enrich with owner names and task counts
     const enriched = await Promise.all(
-      projects.map(async (project) => {
+      visible.map(async (project) => {
         const owner = project.ownerId ? await ctx.db.get(project.ownerId) : null;
         const tasks = await ctx.db
           .query('tasks')
@@ -84,6 +110,11 @@ export const getProject = query({
     const project = await ctx.db.get(projectId);
     if (!project) return null;
     if (!canReadOrg(caller, project.organizationId)) return null;
+
+    // Same reporting-line rule as the list: a project is only open to people
+    // connected to it (owner / creator / member) or to their managers.
+    const visibleProjects = await filterVisibleProjects(ctx, caller, [project]);
+    if (visibleProjects.length === 0) return null;
 
     const owner = project.ownerId ? await ctx.db.get(project.ownerId) : null;
     const members = await Promise.all(project.memberIds.map((id) => ctx.db.get(id)));
@@ -428,16 +459,20 @@ export const getProjectStats = query({
       .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
       .take(DEFAULT_LIST_CAP);
 
-    const total = projects.length;
-    const active = projects.filter((p) => p.status === 'active').length;
-    const planning = projects.filter((p) => p.status === 'planning').length;
-    const completed = projects.filter((p) => p.status === 'completed').length;
-    const onHold = projects.filter((p) => p.status === 'on_hold').length;
+    // Stats mirror the list: non-staff callers only see the projects their
+    // reporting line is connected to.
+    const visible = await filterVisibleProjects(ctx, caller, projects);
+
+    const total = visible.length;
+    const active = visible.filter((p) => p.status === 'active').length;
+    const planning = visible.filter((p) => p.status === 'planning').length;
+    const completed = visible.filter((p) => p.status === 'completed').length;
+    const onHold = visible.filter((p) => p.status === 'on_hold').length;
 
     // Count all tasks across all projects
     let totalTasks = 0;
     let completedTasks = 0;
-    for (const project of projects) {
+    for (const project of visible) {
       const tasks = await ctx.db
         .query('tasks')
         .withIndex('by_project', (q) => q.eq('projectId', project._id))

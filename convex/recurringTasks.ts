@@ -19,6 +19,7 @@ import type { MutationCtx, QueryCtx } from './_generated/server';
 import type { Doc, Id } from './_generated/dataModel';
 import { getAuthCaller, type AuthenticatedCaller } from './lib/getAuthCaller';
 import { isSuperadmin } from './lib/auth';
+import { getVisibleUserIds } from './lib/reportingLine';
 import { notify } from './lib/notify';
 import { sanitizeTitle, sanitizeText } from './lib/sanitize';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
@@ -329,9 +330,18 @@ export const listRecurringTasks = query({
       .order('desc')
       .take(DEFAULT_LIST_CAP);
 
-    const visible = mayManageSeries(caller)
-      ? all
-      : all.filter((s) => s.assignedTo === caller._id || s.assignedBy === caller._id);
+    // Same visibility rule as the task board (`tasks.getVisibleTasks`): staff
+    // (admin / superadmin) see the whole org; everyone else sees series that
+    // touch the caller or their reporting subtree — a series is visible when
+    // its assignee or its author is one of those people.
+    const staff = caller.role === 'admin' || isSuperadmin(caller);
+    let visible: Doc<'recurringTasks'>[];
+    if (staff) {
+      visible = all;
+    } else {
+      const visibleUsers = await getVisibleUserIds(ctx, caller);
+      visible = all.filter((s) => visibleUsers.has(s.assignedTo) || visibleUsers.has(s.assignedBy));
+    }
 
     const scoped = args.includeInactive ? visible : visible.filter((s) => s.isActive);
 
@@ -370,7 +380,16 @@ export const getRecurringTaskOccurrences = query({
     const series = await ctx.db.get(args.seriesId);
     if (!series) return [];
     if (!isSuperadmin(caller) && caller.organizationId !== series.organizationId) return [];
-    if (!mayManageSeries(caller) && series.assignedTo !== caller._id) return [];
+
+    // Same reporting-line rule as the series list: occurrences belong to the
+    // people connected to the rule (assignee / author), not to the org.
+    const staff = caller.role === 'admin' || isSuperadmin(caller);
+    if (!staff) {
+      const visibleUsers = await getVisibleUserIds(ctx, caller);
+      if (!visibleUsers.has(series.assignedTo) && !visibleUsers.has(series.assignedBy)) {
+        return [];
+      }
+    }
 
     return await ctx.db
       .query('tasks')
