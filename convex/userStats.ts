@@ -110,6 +110,20 @@ export const getUserStats = query({
       leavesTaken: approved.length,
       projects: projects.size,
 
+      // Legacy metrics used by the profile page
+      taskCompletionRate: Math.round(taskCompletionRate),
+      punctualityRate:
+        attendanceStats.presentDays + attendanceStats.absentDays > 0
+          ? Math.round(
+              (attendanceStats.presentDays /
+                (attendanceStats.presentDays + attendanceStats.absentDays)) *
+                100,
+            )
+          : 0,
+      totalWorkedHours: 0,
+      totalTasks,
+      pendingLeaves: pending.length,
+
       // Overall productivity score (0-100)
       productivityScore: Math.round(
         taskCompletionRate * 0.4 +

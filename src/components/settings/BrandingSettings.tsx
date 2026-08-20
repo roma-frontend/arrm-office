@@ -97,7 +97,7 @@ function luminance(hex: string): number {
     parseInt(h.slice(2, 4), 16),
     parseInt(h.slice(4, 6), 16),
   ];
-  const [rs, gs, bs] = [r, g, b].map((c) => {
+  const [rs = 0, gs = 0, bs = 0] = [r, g, b].map((c) => {
     const s = c / 255;
     return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
   });

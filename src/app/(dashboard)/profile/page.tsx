@@ -29,6 +29,7 @@ import {
   Edit2,
   Star,
   Eye,
+  type LucideIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -116,7 +117,7 @@ function StatCard({
   value,
   color,
 }: {
-  icon: React.ElementType;
+  icon: LucideIcon;
   label: string;
   value: string | number;
   color: string;
@@ -321,7 +322,7 @@ export default function ProfilePage() {
                 className="flex flex-wrap items-center gap-2 mt-3"
               >
                 <Badge className="bg-white/15 text-white border-0 hover:bg-white/25 text-xs">
-                  {t(`roles.${user?.role}`, user?.role)}
+                  {t(`roles.${user?.role ?? 'undefined'}`, { defaultValue: user?.role ?? '' })}
                 </Badge>
                 <Badge className="bg-white/10 text-white/80 border-0 text-xs flex items-center gap-1">
                   <Mail className="w-3 h-3" />
