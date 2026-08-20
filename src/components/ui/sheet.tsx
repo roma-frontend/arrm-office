@@ -38,7 +38,7 @@ const SheetOverlay = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Overlay
     ref={ref}
-    className={cn('spark-scrim fixed inset-0 z-(--z-sheet)', className)}
+    className={cn('spark-scrim fixed inset-0', className)}
     {...props}
   />
 ));
@@ -108,13 +108,23 @@ const SheetContent = React.forwardRef<
     ref,
   ) => (
     <SheetPortal>
-      <SheetOverlay className={overlayClassName} />
+      <SheetOverlay
+        className={cn(
+          overlayClassName,
+          // Full-width sheets must cover the left sidebar (z-60) too.
+          size === 'full' ? 'z-[70]' : 'z-(--z-sheet)',
+        )}
+      />
       <DialogPrimitive.Content
         ref={ref}
         data-side={side}
         aria-describedby={undefined}
         className={cn(
-          'spark-sheet fixed z-(--z-sheet) flex flex-col overflow-hidden',
+          // `full` sheets span the whole viewport and would slide *under* the
+          // left sidebar (z-60), so they sit one layer above it — still below
+          // toasts (--z-toast: 80).
+          'spark-sheet fixed flex flex-col overflow-hidden',
+          size === 'full' ? 'z-[70]' : 'z-(--z-sheet)',
           'border-(--border-default) text-(--text-primary)',
           SIDE_CLASSES[side],
           side !== 'bottom' && SIZE_CLASSES[size],

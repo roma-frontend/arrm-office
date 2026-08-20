@@ -399,7 +399,7 @@ function MilestoneRail({
         {/* The rail itself: inset so it starts and ends inside the first/last dot. */}
         <span
           aria-hidden
-          className="absolute top-3 bottom-3 left-[15px] w-px bg-gradient-to-b from-(--border) via-(--border) to-transparent"
+          className="absolute top-3 bottom-3 left-[20px] w-px bg-gradient-to-b from-(--border) via-(--border) to-transparent"
         />
         {timeline.milestones.map((milestone, index) => {
           const Icon = MILESTONE_ICONS[milestone.icon];
@@ -411,8 +411,14 @@ function MilestoneRail({
               initial={{ opacity: 0, x: -8 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: Math.min(index * 0.05, 0.4) }}
-              className="relative flex gap-3 rounded-xl px-1 py-2"
+              className="relative z-0 flex gap-3 rounded-xl px-1 py-2"
             >
+              {/* Opaque base the same size as the icon dot, so the rail (at
+                  left-[20px]) never shows through the tinted / animated circle. */}
+              <span
+                aria-hidden
+                className="absolute top-2 left-[20px] -z-10 size-8 -translate-x-1/2 rounded-full bg-(--background)"
+              />
               <span
                 className={[
                   'relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ring-2',
@@ -429,7 +435,9 @@ function MilestoneRail({
                 {isNow && (
                   <span
                     className="absolute inset-0 animate-ping rounded-full opacity-40"
-                    style={{ background: `${timeline.accent}55` }}
+                    style={{
+                      background: `${timeline.accent}55, linear-gradient(var(--background), var(--background))`,
+                    }}
                   />
                 )}
               </span>
