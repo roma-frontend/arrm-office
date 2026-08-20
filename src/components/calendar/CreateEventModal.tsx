@@ -148,11 +148,7 @@ export interface CalendarEvent {
   };
 }
 
-export type EventRsvpResponse =
-  | 'needs_action'
-  | 'accepted'
-  | 'tentative'
-  | 'declined';
+export type EventRsvpResponse = 'needs_action' | 'accepted' | 'tentative' | 'declined';
 
 interface OrgUser {
   _id: Id<'users'>;

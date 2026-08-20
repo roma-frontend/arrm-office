@@ -126,5 +126,8 @@ export function EventInviteActions({
   }
 
   if (myResponse === undefined) return null;
+  // The invitation is answered — one click retires it from every surface, so
+  // the buttons must not come back here just because the day card re-renders.
+  if (myResponse !== 'needs_action') return null;
   return <EventInviteButtons eventId={eventId} compact />;
 }
