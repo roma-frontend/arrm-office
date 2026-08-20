@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery } from 'convex/react';
@@ -77,6 +77,20 @@ export function RoomDetailsModal({
   const [busyBookingId, setBusyBookingId] = useState<string | null>(null);
   /** Only one tracking panel is expanded at a time — it is a tall block. */
   const [expandedBookingId, setExpandedBookingId] = useState<string | null>(null);
+
+  // Smooth fade when switching days — briefly set opacity to 0 then back to 1
+  const [contentFading, setContentFading] = useState(false);
+  const prevDayOffset = useRef(dayOffset);
+  useEffect(() => {
+    if (prevDayOffset.current !== dayOffset) {
+      setContentFading(true);
+      const id = requestAnimationFrame(() => {
+        requestAnimationFrame(() => setContentFading(false));
+      });
+      prevDayOffset.current = dayOffset;
+      return () => cancelAnimationFrame(id);
+    }
+  }, [dayOffset]);
 
   const lang = i18n.language || 'en';
   const locale = lang === 'ru' ? ru : lang === 'hy' ? hy : enUS;
@@ -272,7 +286,12 @@ export function RoomDetailsModal({
         </div>
 
         {/* Bookings */}
-        <div className="space-y-2">
+        <div
+          className={cn(
+            'min-h-[200px] space-y-2 transition-opacity duration-200',
+            contentFading && 'opacity-0',
+          )}
+        >
           {bookings === undefined ? (
             <div className="space-y-2">
               {[0, 1].map((index) => (

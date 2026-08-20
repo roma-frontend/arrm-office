@@ -61,7 +61,7 @@ export function DashboardHeader({ selectedOrganization, userRole }: DashboardHea
           </div>
         </div>
 
-        <div className="flex gap-1.5 sm:gap-2 flex-wrap lg:justify-end lg:shrink-0">
+        <div className="max-w-full flex gap-1.5 sm:gap-2 flex-wrap lg:shrink-0">
           {userRole === 'superadmin' && (
             <>
               <Button

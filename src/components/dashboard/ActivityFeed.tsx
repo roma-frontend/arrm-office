@@ -518,45 +518,33 @@ function ActivityItem({
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.3, delay: index * 0.05, ease: 'easeOut' }}
-      className="group relative"
+      className="group relative pl-9"
     >
-      {/* Timeline line */}
-      {index > 0 && (
-        <div className="absolute left-[17px] top-0 bottom-1/2 w-px bg-(--border) -translate-y-0" />
-      )}
+      {/* Timeline line — runs through center of circles */}
+      <div className="absolute left-4 top-0 bottom-0 w-px bg-(--border-subtle)" />
 
-      <div className="flex items-start gap-3 p-3 rounded-xl hover:bg-(--background-subtle)/50 transition-colors duration-200">
-        {/* Icon circle */}
-        <div className={`relative z-10 p-2 rounded-xl ${cfg.bg} ${cfg.color} shrink-0`}>
-          <Icon className="w-4 h-4" />
+      <div className="relative flex items-start gap-3 py-3">
+        {/* Icon circle — sits on top of the line */}
+        <div
+          className={`absolute -left-9 z-10 flex size-8 items-center justify-center rounded-full border-2 border-(--border-subtle) ${cfg.bg} ${cfg.color} shrink-0`}
+          style={{ top: '10px' }}
+        >
+          <Icon className="w-3.5 h-3.5" />
         </div>
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            {activity.user && (
-              <span className="text-sm font-semibold text-(--text-primary) truncate max-w-[120px]">
-                {activity.user.name}
-              </span>
-            )}
-            <span className="text-sm text-(--text-primary) line-clamp-1">{activity.title}</span>
-          </div>
+          <p className="text-sm font-semibold text-(--text-primary) line-clamp-1">
+            {activity.title}
+          </p>
           {activity.description && (
-            <p className="text-xs text-(--text-muted) mt-0.5 line-clamp-1">
+            <p className="text-xs text-(--brand-text) mt-0.5 line-clamp-1">
               {activity.description}
             </p>
           )}
-          <div className="flex items-center gap-2 mt-1">
-            {' '}
-            <span className="text-[10px] text-(--text-muted)">
-              {timeAgo(activity.timestamp, now, t)}
-            </span>{' '}
-            {activity.severity === 'error' && (
-              <Badge variant="destructive" className="text-[8px] px-1 py-0">
-                Critical
-              </Badge>
-            )}
-          </div>
+          <span className="mt-0.5 block text-[11px] text-(--text-muted)">
+            {timeAgo(activity.timestamp, now, t)}
+          </span>
         </div>
 
         {/* Action link */}
@@ -727,7 +715,7 @@ export default function ActivityFeed({ limit = 8, showViewAll = true }: Activity
             </p>
           </div>
         ) : (
-          <div className="px-4 pb-4 space-y-1">
+          <div className="px-4 pb-4">
             {' '}
             <>
               {allActivities.map((activity, idx) => (

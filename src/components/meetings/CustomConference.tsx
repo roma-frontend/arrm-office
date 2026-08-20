@@ -779,83 +779,72 @@ export function CustomConference(props: ConferenceProps) {
         </div>
       </header>
 
-      {/* ── Stage ── */}
-      <div className="flex min-h-0 flex-1 flex-col gap-4 px-4 pt-4 pb-28">
-        {shareTrack && (
-          <div className="relative min-h-0 flex-1 overflow-hidden rounded-2xl bg-black shadow-[0_2px_12px_-2px_rgba(0,0,0,0.35)]">
-            <VideoSurface track={shareTrack} className="object-contain" />
-            <div className="absolute top-2 left-2 flex items-center gap-1.5 rounded-lg bg-black/55 px-2 py-1 backdrop-blur-sm">
-              <MonitorUp className="h-3 w-3 text-(--brand)" />
-              <span className="max-w-48 truncate text-[11px] font-medium text-white/90">
-                {activeShare?.participant?.name ||
-                  t('meetings.screenShare', { defaultValue: 'Screen share' })}
-              </span>
+      {/* ── Content area: stage + side panel ── */}
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        {/* ── Stage ── */}
+        <div className="flex min-h-0 flex-1 flex-col gap-4 px-4 pt-4 pb-28">
+          {shareTrack && (
+            <div className="relative min-h-0 flex-1 overflow-hidden rounded-2xl bg-black shadow-[0_2px_12px_-2px_rgba(0,0,0,0.35)]">
+              <VideoSurface track={shareTrack} className="object-contain" />
+              <div className="absolute top-2 left-2 flex items-center gap-1.5 rounded-lg bg-black/55 px-2 py-1 backdrop-blur-sm">
+                <MonitorUp className="h-3 w-3 text-(--brand)" />
+                <span className="max-w-48 truncate text-[11px] font-medium text-white/90">
+                  {activeShare?.participant?.name ||
+                    t('meetings.screenShare', { defaultValue: 'Screen share' })}
+                </span>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {shareTrack ? (
-          filmstrip(participants)
-        ) : focusParticipant ? (
-          <>
-            <div className="relative min-h-0 flex-1">
-              <MeetingTile
-                participant={focusParticipant}
-                isLocal={focusParticipant.identity === localIdentity}
-                speaking={speakingSet.has(focusParticipant.identity)}
-                handRaised={!!hands[focusParticipant.identity || focusParticipant.sid]}
-                fallbackName={youName}
-                className="h-full"
-              />
+          {shareTrack ? (
+            filmstrip(participants)
+          ) : focusParticipant ? (
+            <>
+              <div className="relative min-h-0 flex-1">
+                <MeetingTile
+                  participant={focusParticipant}
+                  isLocal={focusParticipant.identity === localIdentity}
+                  speaking={speakingSet.has(focusParticipant.identity)}
+                  handRaised={!!hands[focusParticipant.identity || focusParticipant.sid]}
+                  fallbackName={youName}
+                  className="h-full"
+                />
+              </div>
+              {filmstrip(participants.filter((p) => p.identity !== focusParticipant.identity))}
+            </>
+          ) : (
+            <div
+              className={cn(
+                'mx-auto grid h-full w-full content-center gap-4',
+                n <= 1 && 'max-w-4xl',
+                n === 2 && 'max-w-5xl',
+                n >= 3 && 'max-w-[1400px]',
+              )}
+              style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+            >
+              {participants.map((p) => (
+                <MeetingTile
+                  key={p.identity || p.sid}
+                  participant={p}
+                  isLocal={p.identity === localIdentity}
+                  speaking={speakingSet.has(p.identity)}
+                  handRaised={!!hands[p.identity || p.sid]}
+                  fallbackName={youName}
+                />
+              ))}
             </div>
-            {filmstrip(participants.filter((p) => p.identity !== focusParticipant.identity))}
-          </>
-        ) : (
-          <div
-            className={cn(
-              'mx-auto grid h-full w-full content-center gap-4',
-              n <= 1 && 'max-w-4xl',
-              n === 2 && 'max-w-5xl',
-              n >= 3 && 'max-w-[1400px]',
-            )}
-            style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
-          >
-            {participants.map((p) => (
-              <MeetingTile
-                key={p.identity || p.sid}
-                participant={p}
-                isLocal={p.identity === localIdentity}
-                speaking={speakingSet.has(p.identity)}
-                handRaised={!!hands[p.identity || p.sid]}
-                fallbackName={youName}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* ── Floating reactions ── */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-24 z-10 flex justify-center overflow-hidden">
-        {floating.map((f) => (
-          <span key={f.id} className="meeting-reaction absolute text-3xl">
-            {f.emoji}
-          </span>
-        ))}
-      </div>
-
-      {/* ── Connection banner ── */}
-      {connectionState !== 'connected' && connectionState !== 'connecting' && (
-        <div className="absolute top-16 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/15 px-3 py-2 text-xs font-medium text-red-300 shadow-lg backdrop-blur">
-          <WifiOff className="h-3.5 w-3.5" />
-          {t('meetings.connectionLost', { defaultValue: 'Connection lost — reconnecting…' })}
+          )}
         </div>
-      )}
 
-      {/* ── Right panels (chat + participants, stacked like Zoom) ── */}
-      {(chatOpen || participantsOpen) && (
-        <div className="absolute top-14 right-3 bottom-24 z-20 flex w-80 max-w-[calc(100%-1.5rem)] flex-col gap-3">
+        {/* ── Right panel (slides in from right) ── */}
+        <div
+          className={cn(
+            'flex shrink-0 flex-col gap-3 overflow-hidden transition-all duration-300 ease-in-out',
+            chatOpen || participantsOpen ? 'w-[340px] pl-3 pr-3 pt-3' : 'w-0',
+          )}
+        >
           {chatOpen && (
-            <section className="meeting-panel-in flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-[#141824]/95 shadow-2xl shadow-black/50 backdrop-blur-xl">
+            <section className="meeting-panel-in flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-[#141824]/95 shadow-[0_2px_12px_-2px_rgba(0,0,0,0.35)] backdrop-blur-xl">
               <div className="flex items-center justify-between border-b border-white/10 px-4 py-2.5">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-white/90">
@@ -916,39 +905,19 @@ export function CustomConference(props: ConferenceProps) {
                           className={cn(
                             'max-w-[80%] px-3 py-2',
                             groupStart ? 'rounded-2xl' : 'rounded-2xl',
-                            mine
-                              ? 'rounded-br-md bg-(--brand)/90 text-white'
-                              : 'rounded-bl-md bg-white/[0.07]',
-                            !groupStart && (mine ? 'mr-0' : 'ml-0'),
+                            mine ? 'bg-(--brand)/25 text-white/90' : 'bg-white/10 text-white/85',
                           )}
                         >
-                          {groupStart && (
-                            <div
-                              className={cn(
-                                'mb-0.5 flex items-baseline gap-1.5',
-                                mine && 'flex-row-reverse',
-                              )}
-                            >
-                              <span
-                                className={cn(
-                                  'text-[10px] font-semibold',
-                                  mine ? 'text-white/80' : 'text-[#93b4fd]',
-                                )}
-                              >
-                                {mine ? t('meetings.you') : sender}
-                              </span>
-                              <span className="text-[9px] text-white/35">
-                                {fmtTime(m.timestamp)}
-                              </span>
-                            </div>
+                          {!mine && groupStart && (
+                            <p className="mb-0.5 text-[10px] font-semibold text-(--brand)">
+                              {sender}
+                            </p>
                           )}
-                          <p
-                            className={cn(
-                              'text-xs leading-relaxed break-words whitespace-pre-wrap',
-                              mine ? 'text-white' : 'text-white/90',
-                            )}
-                          >
+                          <p className="break-words text-[12px] leading-relaxed whitespace-pre-wrap">
                             {m.message}
+                          </p>
+                          <p className="mt-0.5 text-right text-[9px] text-white/30">
+                            {fmtTime(m.timestamp)}
                           </p>
                         </div>
                       </div>
@@ -957,34 +926,36 @@ export function CustomConference(props: ConferenceProps) {
                 })}
                 <div ref={chatEndRef} />
               </div>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  submitChat();
-                }}
-                className="border-t border-white/10 px-3 py-2.5"
-              >
-                <div className="flex items-center gap-2 rounded-xl bg-white/[0.06] px-3 py-1.5 focus-within:bg-white/[0.09]">
+              <div className="border-t border-white/10 p-3">
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!chatDraft.trim()) return;
+                    send(chatDraft.trim());
+                    setChatDraft('');
+                  }}
+                  className="flex items-center gap-2"
+                >
                   <input
+                    type="text"
                     value={chatDraft}
                     onChange={(e) => setChatDraft(e.target.value)}
-                    placeholder={t('meetings.chatPlaceholder', { defaultValue: 'Message…' })}
-                    className="w-full bg-transparent text-xs text-white outline-none placeholder:text-white/40"
+                    placeholder={t('meetings.message', { defaultValue: 'Message...' })}
+                    className="flex-1 rounded-xl border border-white/10 bg-white/[0.06] px-3 py-2 text-xs text-white/85 placeholder:text-white/30 focus:border-(--brand)/50 focus:outline-none"
                   />
                   <button
                     type="submit"
                     disabled={!chatDraft.trim()}
-                    className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-(--brand) text-white transition hover:opacity-90 disabled:opacity-40"
+                    className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-(--brand)/80 text-white transition hover:bg-(--brand) disabled:opacity-30"
                   >
                     <Send className="h-3.5 w-3.5" />
                   </button>
-                </div>
-              </form>
+                </form>
+              </div>
             </section>
           )}
-
           {participantsOpen && (
-            <section className="meeting-panel-in flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-[#141824]/95 shadow-2xl shadow-black/50 backdrop-blur-xl">
+            <section className="meeting-panel-in flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-[#141824]/95 shadow-[0_2px_12px_-2px_rgba(0,0,0,0.35)] backdrop-blur-xl">
               <div className="flex items-center justify-between border-b border-white/10 px-4 py-2.5">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-white/90">
@@ -1003,18 +974,21 @@ export function CustomConference(props: ConferenceProps) {
                 </button>
               </div>
               {isHost && (
-                <div className="border-b border-white/10 px-3 py-2">
+                <div className="px-3 pt-3">
                   <button
                     type="button"
-                    onClick={() => sendHostCommand('muteMic', '*')}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-500/15 px-3 py-2 text-xs font-semibold text-red-300 transition hover:bg-red-500/25"
+                    onClick={() => {
+                      const localP = participants.find((p) => p.identity === localIdentity);
+                      if (localP) sendHostCommand('mute-all', localP.identity);
+                    }}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.06] px-3 py-2 text-xs font-medium text-white/70 transition hover:bg-white/10 hover:text-white"
                   >
                     <MicOff className="h-3.5 w-3.5" />
                     {t('meetings.muteAll', { defaultValue: 'Mute all' })}
                   </button>
                 </div>
               )}
-              <div className="chat-scroll flex-1 space-y-1 overflow-y-auto p-2">
+              <div className="flex-1 space-y-1 overflow-y-auto p-2">
                 {participants.map((p) => (
                   <ParticipantRow
                     key={p.identity || p.sid}
@@ -1033,6 +1007,23 @@ export function CustomConference(props: ConferenceProps) {
               </div>
             </section>
           )}
+        </div>
+      </div>
+
+      {/* ── Floating reactions ── */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-24 z-10 flex justify-center overflow-hidden">
+        {floating.map((f) => (
+          <span key={f.id} className="meeting-reaction absolute text-3xl">
+            {f.emoji}
+          </span>
+        ))}
+      </div>
+
+      {/* ── Connection banner ── */}
+      {connectionState !== 'connected' && connectionState !== 'connecting' && (
+        <div className="absolute top-16 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/15 px-3 py-2 text-xs font-medium text-red-300 shadow-lg backdrop-blur">
+          <WifiOff className="h-3.5 w-3.5" />
+          {t('meetings.connectionLost', { defaultValue: 'Connection lost — reconnecting…' })}
         </div>
       )}
 
