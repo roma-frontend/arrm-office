@@ -2623,7 +2623,12 @@
       "selectRoom": "Raum auswählen",
       "titleRequired": "Geben Sie einen Titel ein",
       "invalidRange": "Die Endzeit muss nach der Startzeit liegen",
-      "pastNotAllowed": "Wählen Sie eine Zeit in der Zukunft"
+      "pastNotAllowed": "Wählen Sie eine Zeit in der Zukunft",
+      "videoConference": "Videokonferenz",
+      "videoConferenceHint": "Wählen Sie eine Plattform für externe Teilnehmer.",
+      "videoUrl": "Meeting-Link",
+      "livekitHint": "Ein eingebauter Videoraum wird automatisch erstellt.",
+      "shareLink": "Link teilen"
     },
     "details": {
       "open": "Details",
@@ -2722,6 +2727,23 @@
           "needs_action": "{{name}} hat die Antwort zurückgezogen"
         }
       }
+    },
+    "share": {
+      "ready": "Ihr Meeting-Link ist bereit zum Teilen",
+      "copied": "Link kopiert",
+      "copyFailed": "Kopieren fehlgeschlagen",
+      "howToShare": "So teilen Sie mit Gästen:",
+      "teamsTip1": "Link in einen Teams-Chat oder eine E-Mail einfügen",
+      "teamsTip2": "Gäste können ohne Teams-Konto teilnehmen",
+      "zoomTip1": "Link per E-Mail oder Messenger senden",
+      "zoomTip2": "Gäste treten über den Browser bei — keine Zoom-App nötig",
+      "meetTip1": "Link in einer E-Mail oder Kalendereinladung teilen",
+      "meetTip2": "Gäste können aus jedem Browser teilnehmen",
+      "livekitTip1": "Link zum eingebauten Videoraum teilen",
+      "livekitTip2": "Funktioniert in jedem modernen Browser",
+      "copy": "Kopieren",
+      "copiedLabel": "Kopiert!",
+      "openPlatform": "Öffnen in"
     }
   },
   "eventTimeline": {

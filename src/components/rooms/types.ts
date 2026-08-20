@@ -61,6 +61,7 @@ export interface RoomBookingDoc {
   updatedAt: number;
   tracking?: BookingResponseCounts;
   videoUrl?: string;
+  videoProvider?: 'livekit' | 'teams' | 'zoom' | 'meet';
   meetingStatus?: 'scheduled' | 'live' | 'ended';
 }
 

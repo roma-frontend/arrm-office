@@ -2623,7 +2623,12 @@
       "selectRoom": "Select a room",
       "titleRequired": "Enter a meeting title",
       "invalidRange": "The end time must be after the start time",
-      "pastNotAllowed": "Choose a time in the future"
+      "pastNotAllowed": "Choose a time in the future",
+      "videoConference": "Video Conference",
+      "videoConferenceHint": "Choose a platform for external guests to join remotely.",
+      "videoUrl": "Meeting Link",
+      "livekitHint": "A built-in video room will be created automatically.",
+      "shareLink": "Share Link"
     },
     "details": {
       "open": "Details",
@@ -2722,6 +2727,23 @@
           "needs_action": "{{name}} cleared their answer"
         }
       }
+    },
+    "share": {
+      "ready": "Your meeting link is ready to share",
+      "copied": "Link copied to clipboard",
+      "copyFailed": "Failed to copy link",
+      "howToShare": "How to share with guests:",
+      "teamsTip1": "Paste the link in a Teams chat or email",
+      "teamsTip2": "Guests can join without a Teams account",
+      "zoomTip1": "Send the link via email or messaging app",
+      "zoomTip2": "Guests join via browser — no Zoom app needed",
+      "meetTip1": "Share the link in an email or calendar invite",
+      "meetTip2": "Guests can join from any browser",
+      "livekitTip1": "Share the link for the built-in video room",
+      "livekitTip2": "Works in any modern browser",
+      "copy": "Copy",
+      "copiedLabel": "Copied!",
+      "openPlatform": "Open in"
     }
   },
   "eventTimeline": {

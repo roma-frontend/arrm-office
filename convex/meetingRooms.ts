@@ -286,6 +286,8 @@ export interface EnrichedBooking extends Doc<'roomBookings'> {
   tracking: ResponseCounts;
   /** Video conference join link if this booking is linked to a calendar event with video. */
   videoUrl?: string;
+  /** Which video platform the link points to. */
+  videoProvider?: 'livekit' | 'teams' | 'zoom' | 'meet';
   /** Status of the linked meeting (scheduled / live / ended). */
   meetingStatus?: 'scheduled' | 'live' | 'ended';
 }
@@ -382,7 +384,8 @@ async function enrichBookings(
       organizerName: await resolveName(booking.organizerId),
       attendeeNames: [...attendeeNames, ...(booking.externalAttendees ?? [])],
       tracking: await countResponses(ctx, booking),
-      videoUrl: linkedEvent?.videoUrl,
+      videoUrl: booking.videoUrl ?? linkedEvent?.videoUrl,
+      videoProvider: (booking.videoProvider as EnrichedBooking['videoProvider']) ?? undefined,
       meetingStatus,
     });
   }
@@ -1034,6 +1037,10 @@ export const bookRoom = mutation({
     endTime: v.number(),
     attendeeIds: v.optional(v.array(v.id('users'))),
     externalAttendees: v.optional(v.array(v.string())),
+    videoUrl: v.optional(v.string()),
+    videoProvider: v.optional(
+      v.union(v.literal('livekit'), v.literal('teams'), v.literal('zoom'), v.literal('meet')),
+    ),
   },
   handler: async (ctx, args) => {
     await assertModuleAccess(ctx, 'meetingRooms');
@@ -1079,6 +1086,8 @@ export async function reserveRoom(
     endTime: number;
     attendeeIds?: Id<'users'>[];
     externalAttendees?: string[];
+    videoUrl?: string;
+    videoProvider?: 'livekit' | 'teams' | 'zoom' | 'meet';
     /** Set when re-booking an event so its own reservation does not block it. */
     excludeBookingId?: Id<'roomBookings'>;
   },
@@ -1121,6 +1130,8 @@ export async function reserveRoom(
     organizerId: caller._id,
     attendeeIds: attendeeIds.length ? attendeeIds : undefined,
     externalAttendees: externalAttendees.length ? externalAttendees : undefined,
+    videoUrl: args.videoUrl?.trim() || undefined,
+    videoProvider: args.videoProvider,
     status: 'confirmed',
     createdAt: now,
     updatedAt: now,

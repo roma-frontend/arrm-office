@@ -58,6 +58,10 @@ export const meetingRooms = {
     cancelledAt: v.optional(v.number()),
     cancelledBy: v.optional(v.id('users')),
     cancelReason: v.optional(v.string()),
+    videoUrl: v.optional(v.string()),
+    videoProvider: v.optional(
+      v.union(v.literal('livekit'), v.literal('teams'), v.literal('zoom'), v.literal('meet')),
+    ),
     createdAt: v.number(),
     updatedAt: v.number(),
   })

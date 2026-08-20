@@ -13,6 +13,7 @@ import {
   Search,
   Sparkles,
   Users,
+  Video,
   X,
 } from 'lucide-react';
 import { api } from '../../../convex/_generated/api';
@@ -104,6 +105,10 @@ export function RoomBookingModal({
   const [attendees, setAttendees] = useState<OrgUser[]>([]);
   const [attendeeSearch, setAttendeeSearch] = useState('');
   const [externalInput, setExternalInput] = useState('');
+  const [videoProvider, setVideoProvider] = useState<'livekit' | 'teams' | 'zoom' | 'meet' | ''>(
+    '',
+  );
+  const [videoUrl, setVideoUrl] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   // Seed the form each time the dialog opens.
@@ -142,6 +147,8 @@ export function RoomBookingModal({
     setAttendees([]);
     setAttendeeSearch('');
     setExternalInput('');
+    setVideoProvider('');
+    setVideoUrl('');
     // bookableRooms is intentionally read once per open — the list changing
     // mid-dialog must not reset what the user already typed.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -260,6 +267,13 @@ export function RoomBookingModal({
         endTime: end!,
         attendeeIds: attendees.map((attendee) => attendee._id as Id<'users'>),
         externalAttendees,
+        videoProvider: (videoProvider || undefined) as
+          | 'livekit'
+          | 'teams'
+          | 'zoom'
+          | 'meet'
+          | undefined,
+        videoUrl: videoUrl.trim() || undefined,
       });
       toast.success(t('rooms.booking.booked', { room: room.name }));
       onBooked?.(room._id);
@@ -567,6 +581,74 @@ export function RoomBookingModal({
             placeholder={t('rooms.booking.descriptionPlaceholder')}
             onChange={(event) => setDescription(event.target.value)}
           />
+        </div>
+
+        {/* Video conference platform selector */}
+        <div className="space-y-3 rounded-xl border border-(--border) bg-(--background-subtle) p-4">
+          <div className="flex items-center gap-2">
+            <Video className="h-4 w-4 text-(--text-muted)" />
+            <Label className="text-sm font-medium">
+              {t('rooms.booking.videoConference', 'Video Conference')}
+            </Label>
+          </div>
+          <p className="text-xs text-(--text-muted)">
+            {t(
+              'rooms.booking.videoConferenceHint',
+              'Choose a platform for external guests to join remotely.',
+            )}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {(
+              [
+                { id: 'livekit', label: 'LiveKit', color: '#0a0c12' },
+                { id: 'teams', label: 'Microsoft Teams', color: '#6264A7' },
+                { id: 'zoom', label: 'Zoom', color: '#2D8CFF' },
+                { id: 'meet', label: 'Google Meet', color: '#00897B' },
+              ] as const
+            ).map(({ id, label, color }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setVideoProvider(videoProvider === id ? '' : id)}
+                className={cn(
+                  'inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer',
+                  videoProvider === id
+                    ? 'border-(--primary) bg-(--primary)/10 text-(--primary)'
+                    : 'border-(--border) bg-(--card) text-(--text-muted) hover:text-(--text-primary)',
+                )}
+              >
+                <span className="h-2 w-2 rounded-full" style={{ background: color }} />
+                {label}
+              </button>
+            ))}
+          </div>
+          {videoProvider && videoProvider !== 'livekit' && (
+            <div className="space-y-1.5">
+              <Label htmlFor="booking-video-url" className="text-xs">
+                {t('rooms.booking.videoUrl', 'Meeting Link')}
+              </Label>
+              <Input
+                id="booking-video-url"
+                value={videoUrl}
+                placeholder={
+                  videoProvider === 'teams'
+                    ? 'https://teams.microsoft.com/l/meetup-join/...'
+                    : videoProvider === 'zoom'
+                      ? 'https://zoom.us/j/...'
+                      : 'https://meet.google.com/...'
+                }
+                onChange={(event) => setVideoUrl(event.target.value)}
+              />
+            </div>
+          )}
+          {videoProvider === 'livekit' && (
+            <p className="text-[11px] text-(--text-muted)">
+              {t(
+                'rooms.booking.livekitHint',
+                'A built-in video room will be created automatically.',
+              )}
+            </p>
+          )}
         </div>
       </div>
     </RoomModalShell>

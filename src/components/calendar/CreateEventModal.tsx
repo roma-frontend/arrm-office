@@ -133,7 +133,7 @@ export interface CalendarEvent {
   roomColor?: string;
   /** LiveKit video conference link (`/meetings/{roomName}`), when enabled. */
   videoUrl?: string;
-  videoProvider?: 'livekit';
+  videoProvider?: 'livekit' | 'teams' | 'zoom' | 'meet';
 }
 
 interface OrgUser {

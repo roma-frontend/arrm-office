@@ -62,6 +62,9 @@ export interface RoomBookingLite {
   checkedInAt?: number;
   /** Present on full booking documents; cancelled entries never count. */
   status?: string;
+  videoUrl?: string;
+  videoProvider?: 'livekit' | 'teams' | 'zoom' | 'meet';
+  meetingStatus?: 'scheduled' | 'live' | 'ended';
 }
 
 export interface RoomStatusInfo {
