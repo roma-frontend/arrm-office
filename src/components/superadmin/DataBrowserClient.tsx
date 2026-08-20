@@ -979,11 +979,11 @@ export function DataBrowserClient() {
                   </span>
                 </SheetTitle>
               </SheetHeader>
-              <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4">
-                <pre className="whitespace-pre-wrap rounded-xl border border-(--input-border) bg-(--input) p-3 font-mono text-xs leading-relaxed text-(--text-primary)">
+              <div className="flex flex-col min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4">
+                <pre className="overflow-y-auto whitespace-pre-wrap rounded-xl border border-(--input-border) bg-(--input) p-3 font-mono text-xs leading-relaxed text-(--text-primary)">
                   {JSON.stringify(detailRow.doc, null, 2)}
                 </pre>
-                <div className="flex items-center justify-end gap-2">
+                <div className="flex items-center justify-end gap-2 mt-auto">
                   <Button
                     className="gap-1.5"
                     disabled={deletingId === detailRow.id}
