@@ -992,7 +992,11 @@ describe('CreateEventModal — save flows', () => {
     const stSpy = jest.spyOn(global, 'setTimeout');
     fireEvent.click(screen.getByText('createMeeting.save'));
     await flush();
-    await waitFor(() => expect(createEventMutation).toHaveBeenCalled());
+    // Advance timers so async save + reminder scheduling resolve
+    await act(async () => {
+      jest.advanceTimersByTime(5000);
+    });
+    expect(createEventMutation).toHaveBeenCalled();
 
     const reminderCall = stSpy.mock.calls.find(
       (c: any) => typeof c[0] === 'function' && c[1] > 1000,
@@ -1081,7 +1085,7 @@ describe('CreateEventModal — save flows', () => {
     (createEventMutation as jest.Mock).mockRejectedValueOnce(new Error('ROOM_BUSY|abc|def|broken'));
     fireEvent.click(screen.getByText('createMeeting.save'));
     await flush();
-    await waitFor(() => expect(mockToast.error).toHaveBeenCalledWith('ROOM_BUSY|abc|def|broken'));
+    expect(mockToast.error).toHaveBeenCalledWith('ROOM_BUSY|abc|def|broken');
   });
 
   it('opens the file picker when the attach area is clicked', async () => {
@@ -1108,7 +1112,7 @@ describe('CreateEventModal — save flows', () => {
 
     fireEvent.click(screen.getByText('createMeeting.save'));
     await flush();
-    await waitFor(() => expect(createEventMutation).toHaveBeenCalled());
+    expect(createEventMutation).toHaveBeenCalled();
     expect(playNotificationSound).not.toHaveBeenCalled();
   });
 });
@@ -1178,7 +1182,7 @@ describe('CreateEventModal — wizard draft', () => {
     await flush();
     fireEvent.click(screen.getByText('createMeeting.save'));
     await flush();
-    await waitFor(() => expect(createEventMutation).toHaveBeenCalled());
+    expect(createEventMutation).toHaveBeenCalled();
 
     expect(mockDraft.clearDraft).toHaveBeenCalled();
   });
@@ -1214,7 +1218,7 @@ describe('CreateEventModal — wizard draft', () => {
     await flush();
     fireEvent.click(screen.getByText('createMeeting.save'));
     await flush();
-    await waitFor(() => expect(createEventMutation).toHaveBeenCalled());
+    expect(createEventMutation).toHaveBeenCalled();
     expect(onOpenChange).toHaveBeenCalledWith(false);
 
     // Reopening shows a clean form, not the saved event's data
