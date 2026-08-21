@@ -806,7 +806,9 @@ export const CalendarClient = React.memo(function CalendarClient() {
   const [detailsRoom, setDetailsRoom] = useState<RoomDoc | null>(null);
   /** The booking day (`yyyy-MM-dd`) the room view should open on, if any. */
   const [detailsRoomDate, setDetailsRoomDate] = useState<string | null>(null);
-  const [viewProfileTarget, setViewProfileTarget] = useState<{ id: string; name: string } | null>(null);
+  const [viewProfileTarget, setViewProfileTarget] = useState<{ id: string; name: string } | null>(
+    null,
+  );
 
   // ── Employee-sheet click-leak guard ──────────────────────────────────────
   // When the user clicks the Radix Dialog overlay to close the EmployeeSheet,
@@ -1157,7 +1159,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
     detailsRoom ||
     timelineInput,
   );
-  useScrollLock(anyModalOpen);  // Debug: Log whenever selectedOrgId changes
+  useScrollLock(anyModalOpen); // Debug: Log whenever selectedOrgId changes
   useEffect(() => {
     if (mounted) {
       logger.log('📅 selectedOrgId changed to:', selectedOrgId);
@@ -1662,7 +1664,8 @@ export const CalendarClient = React.memo(function CalendarClient() {
             onClose={() => setTimesheetLeave(null)}
           />
         </>
-      )}        <div ref={calendarContainerRef} className="space-y-6 transition-all duration-300 ease-in-out">
+      )}{' '}
+      <div ref={calendarContainerRef} className={`space-y-6 transition-all duration-300 ease-in-out${viewProfileTarget ? ' pointer-events-none' : ''}`}>
         {/* -- Sticky Header -- */}
         <div className="sticky top-0 z-10 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 mb-4 bg-(--background)/95 backdrop-blur supports-[backdrop-filter]:bg-(--background)/60 border-b border-(--border)">
           <div className="flex flex-col gap-4">
@@ -2751,7 +2754,9 @@ export const CalendarClient = React.memo(function CalendarClient() {
             {/* Live meeting-room availability */}
             <RoomAvailabilityStrip
               organizationId={selectedOrgId}
-              onOpenRoom={(room) => { if (!viewProfileTarget) setDetailsRoom(room); }}
+              onOpenRoom={(room) => {
+                if (!viewProfileTarget) setDetailsRoom(room);
+              }}
               onBookRoom={(room) => {
                 setRoomBookingRoomId(room._id);
                 setRoomBookingDate(selectedDay ?? new Date());
