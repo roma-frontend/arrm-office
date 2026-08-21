@@ -807,24 +807,16 @@ export const CalendarClient = React.memo(function CalendarClient() {
   /** The booking day (`yyyy-MM-dd`) the room view should open on, if any. */
   const [detailsRoomDate, setDetailsRoomDate] = useState<string | null>(null);  const [viewProfileTarget, setViewProfileTarget] = useState<{ id: string; name: string } | null>(null);
   const sheetCooldownRef = useRef(false);
-  const hadSheetRef = useRef(false);
 
-  // Track if the employee sheet was recently open.
-  // When the sheet closes, Radix removes its overlay BEFORE the click event
-  // fires, so the click physically hits calendar elements underneath and opens
-  // the room details. This effect detects that transition and forces close.
-  useEffect(() => {
-    if (viewProfileTarget) {
-      hadSheetRef.current = true;
-    } else if (hadSheetRef.current) {
-      hadSheetRef.current = false;
-      // Sheet just closed — if room details snuck in, force close them
-      if (detailsRoom) {
-        setDetailsRoom(null);
-        setDetailsRoomDate(null);
-      }
-    }
-  }, [viewProfileTarget, detailsRoom]);
+  // When closing the employee sheet, block room-detail clicks for 500ms.
+  // Radix Dialog removes its overlay BEFORE the click event fires, so
+  // the click physically lands on calendar elements underneath.
+  // The guard in setViewProfileTarget(null) + setTimeout handles this.
+  const closeSheet = useCallback(() => {
+    sheetCooldownRef.current = true;
+    setViewProfileTarget(null);
+    setTimeout(() => { sheetCooldownRef.current = false; }, 500);
+  }, []);
 
   const [editEvent, setEditEvent] = useState<CalendarEvent | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -2973,7 +2965,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
           createPortal(
             <EmployeeSheet
               employeeId={viewProfileTarget.id as Id<'users'>}
-              onClose={() => setViewProfileTarget(null)}
+              onClose={closeSheet}
               employeeName={viewProfileTarget.name}
               elevated
             />,
