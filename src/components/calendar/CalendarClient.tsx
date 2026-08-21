@@ -807,9 +807,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
   /** The booking day (`yyyy-MM-dd`) the room view should open on, if any. */
   const [detailsRoomDate, setDetailsRoomDate] = useState<string | null>(null);
   const [viewProfileTarget, setViewProfileTarget] = useState<{ id: string; name: string } | null>(null);
-  // When closing the employee sheet, block room-detail clicks for one frame.
-  // Radix portals events through the React tree, so overlay clicks reach calendar handlers.
-  const sheetCooldownRef = useRef(false);
+
   const [editEvent, setEditEvent] = useState<CalendarEvent | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const calendarContainerRef = useRef<HTMLDivElement>(null);
@@ -2633,7 +2631,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
                             tabIndex={0}
                             title={t('rooms.calendar.openRoom')}
                             onClick={() => {
-                              if (viewProfileTarget || sheetCooldownRef.current) return;
+                              if (viewProfileTarget) return;
                               const room = rooms.find((r) => r._id === booking.roomId);
                               if (room) setDetailsRoom(room);
                             }}
@@ -2722,7 +2720,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
             {/* Live meeting-room availability */}
             <RoomAvailabilityStrip
               organizationId={selectedOrgId}
-              onOpenRoom={(room) => { if (!viewProfileTarget && !sheetCooldownRef.current) setDetailsRoom(room); }}
+              onOpenRoom={(room) => { if (!viewProfileTarget) setDetailsRoom(room); }}
               onBookRoom={(room) => {
                 setRoomBookingRoomId(room._id);
                 setRoomBookingDate(selectedDay ?? new Date());
@@ -2908,7 +2906,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
             onClose={() => setShowDayDetails(false)}
             onOpenTimeline={setTimelineInput}
             onOpenRoom={(roomId, bookingDate) => {
-              if (viewProfileTarget || sheetCooldownRef.current) return;
+              if (viewProfileTarget) return;
               const room = rooms.find((r) => r._id === roomId);
               if (room) {
                 setShowDayDetails(false);
@@ -2953,23 +2951,16 @@ export const CalendarClient = React.memo(function CalendarClient() {
           }}
         />
 
-        {viewProfileTarget && (
-          <EmployeeSheet
-            employeeId={viewProfileTarget.id as Id<'users'>}
-            onClose={() => {
-              sheetCooldownRef.current = true;
-              setViewProfileTarget(null);
-              // Reset after React finishes rendering the close
-              requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                  sheetCooldownRef.current = false;
-                });
-              });
-            }}
-            employeeName={viewProfileTarget.name}
-            elevated
-          />
-        )}
+        {viewProfileTarget &&
+          createPortal(
+            <EmployeeSheet
+              employeeId={viewProfileTarget.id as Id<'users'>}
+              onClose={() => setViewProfileTarget(null)}
+              employeeName={viewProfileTarget.name}
+              elevated
+            />,
+            document.body,
+          )}
 
         {/* Full event timeline — opened by double-clicking any event */}
         <EventTimelineModal input={timelineInput} onClose={() => setTimelineInput(null)} />
