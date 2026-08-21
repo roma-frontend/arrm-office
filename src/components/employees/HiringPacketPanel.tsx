@@ -141,9 +141,11 @@ interface HiringPacketPanelProps {
   userId: Id<'users'>;
   /** Whether the viewer may edit and send documents (HR/admin, not the employee). */
   canManage: boolean;
+  /** When true, raise the preview sheet above the parent elevated sheet. */
+  elevated?: boolean;
 }
 
-export default function HiringPacketPanel({ userId, canManage }: HiringPacketPanelProps) {
+export default function HiringPacketPanel({ userId, canManage, elevated }: HiringPacketPanelProps) {
   const { t } = useTranslation();
   const labels = useDocumentLabels();
   const currentUser = useAuthStore((s) => s.user);
@@ -1043,7 +1045,13 @@ export default function HiringPacketPanel({ userId, canManage }: HiringPacketPan
 
         {/* Preview panel — a document deserves a full-height reading pane */}
         <Sheet open={previewRow !== null} onOpenChange={(open) => !open && setPreviewRow(null)}>
-          <SheetContent side="right" size="xl" closeLabel={t('common.close', 'Close')}>
+          <SheetContent
+            side="right"
+            size="xl"
+            closeLabel={t('common.close', 'Close')}
+            className={elevated ? 'z-[80]' : undefined}
+            overlayClassName={elevated ? 'z-[80]' : undefined}
+          >
             {previewRow &&
               (() => {
                 const doc = buildDoc(previewRow);
