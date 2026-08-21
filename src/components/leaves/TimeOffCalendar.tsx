@@ -1581,7 +1581,10 @@ export function TimeOffCalendar({
                             </div>
                           )}
                           <div className="relative min-w-0">
-                            <EmployeeHoverCard userId={row.emp._id as unknown as string} name={row.emp.name}>
+                            <EmployeeHoverCard
+                              userId={row.emp._id as unknown as string}
+                              name={row.emp.name}
+                            >
                               <p className="truncate text-[13px] font-semibold leading-tight text-(--brand-text) cursor-pointer hover:underline hover:underline-offset-2">
                                 {row.emp.name}
                               </p>

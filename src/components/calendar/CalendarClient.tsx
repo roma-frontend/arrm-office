@@ -2645,11 +2645,15 @@ export const CalendarClient = React.memo(function CalendarClient() {
                                 {booking.title}
                               </p>
                               <div className="text-[10px] text-(--text-muted) mt-0.5 truncate flex items-center gap-1">
-                                <span>{format(new Date(booking.startTime), 'HH:mm', {
-                                  locale: dateFnsLocale,
-                                })} – {format(new Date(booking.endTime), 'HH:mm', {
-                                  locale: dateFnsLocale,
-                                })}</span>
+                                <span>
+                                  {format(new Date(booking.startTime), 'HH:mm', {
+                                    locale: dateFnsLocale,
+                                  })}{' '}
+                                  –{' '}
+                                  {format(new Date(booking.endTime), 'HH:mm', {
+                                    locale: dateFnsLocale,
+                                  })}
+                                </span>
                                 {booking.organizerName ? (
                                   <>
                                     <span>·</span>

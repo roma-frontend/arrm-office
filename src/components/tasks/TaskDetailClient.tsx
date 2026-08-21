@@ -377,8 +377,13 @@ export default function TaskDetailClient({
                     <AvatarImage src={task.assignedToUser.avatarUrl} />
                     <AvatarFallback>{task.assignedToUser.name.charAt(0)}</AvatarFallback>
                   </Avatar>
-                  <EmployeeHoverCard userId={task.assignedToUser._id as unknown as string} name={task.assignedToUser.name}>
-                    <span className="font-medium cursor-pointer hover:underline hover:underline-offset-2">{task.assignedToUser.name}</span>
+                  <EmployeeHoverCard
+                    userId={task.assignedToUser._id as unknown as string}
+                    name={task.assignedToUser.name}
+                  >
+                    <span className="font-medium cursor-pointer hover:underline hover:underline-offset-2">
+                      {task.assignedToUser.name}
+                    </span>
                   </EmployeeHoverCard>
                 </div>
               </div>
@@ -624,7 +629,10 @@ export default function TaskDetailClient({
                   <div className="min-w-0 flex-1">
                     <div className="flex items-baseline justify-between gap-2">
                       {c.author?._id ? (
-                        <EmployeeHoverCard userId={c.author._id as unknown as string} name={c.author?.name ?? ''}>
+                        <EmployeeHoverCard
+                          userId={c.author._id as unknown as string}
+                          name={c.author?.name ?? ''}
+                        >
                           <span className="text-sm font-medium cursor-pointer hover:underline hover:underline-offset-2">
                             {c.author?.name ?? t('tasksClient.unknownUser')}
                           </span>

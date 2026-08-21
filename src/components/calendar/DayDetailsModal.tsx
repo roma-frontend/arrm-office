@@ -646,7 +646,10 @@ export function DayDetailsModal({
                             {booking.title}
                           </p>
                           <div className="mt-0.5 flex items-center gap-1 text-xs text-(--text-muted)">
-                            <span>{format(new Date(booking.startTime), 'HH:mm', { locale })} – {format(new Date(booking.endTime), 'HH:mm', { locale })}</span>
+                            <span>
+                              {format(new Date(booking.startTime), 'HH:mm', { locale })} –{' '}
+                              {format(new Date(booking.endTime), 'HH:mm', { locale })}
+                            </span>
                             {booking.organizerName ? (
                               <>
                                 <span>·</span>

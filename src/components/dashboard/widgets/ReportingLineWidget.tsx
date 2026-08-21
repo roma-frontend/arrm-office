@@ -44,7 +44,9 @@ function PersonRow({ person, muted }: { person: Person; muted?: boolean }) {
       <Avatar name={person.name} avatarUrl={person.avatarUrl} />
       <div className="flex-1 min-w-0">
         <EmployeeHoverCard userId={person._id} name={person.name}>
-          <p className="text-sm font-medium text-(--text-primary) truncate cursor-pointer hover:underline hover:underline-offset-2">{person.name}</p>
+          <p className="text-sm font-medium text-(--text-primary) truncate cursor-pointer hover:underline hover:underline-offset-2">
+            {person.name}
+          </p>
         </EmployeeHoverCard>
         {(person.position || person.department) && (
           <p

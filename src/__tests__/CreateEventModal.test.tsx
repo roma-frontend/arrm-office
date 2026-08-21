@@ -976,6 +976,7 @@ describe('CreateEventModal — save flows', () => {
   });
 
   it('schedules a reminder notification for a future event', async () => {
+    jest.useFakeTimers();
     mockRooms = [];
     // the event must sit in the future — scheduleReminder skips past events
     renderModal({ selectedDate: new Date(2099, 0, 1) });
