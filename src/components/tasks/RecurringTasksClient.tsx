@@ -43,6 +43,7 @@ import { CreateTaskWizard } from './CreateTaskWizard';
 import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { getConvexErrorMessage } from '@/lib/error-handler';
 import { cn } from '@/lib/utils';
+import { EmployeeHoverCard } from '@/components/employees/EmployeeHoverCard';
 
 interface RecurringTasksClientProps {
   userId: string;
@@ -179,7 +180,11 @@ export function RecurringTasksClient({
               </span>
               <span className="flex items-center gap-1">
                 <User className="h-3.5 w-3.5" />
-                {row.assignedToName}
+                <EmployeeHoverCard userId={row.assignedTo as string} name={row.assignedToName}>
+                  <span className="cursor-pointer underline-offset-2 hover:underline">
+                    {row.assignedToName}
+                  </span>
+                </EmployeeHoverCard>
               </span>
               {row.nextOccurrence && (
                 <span className="flex items-center gap-1">

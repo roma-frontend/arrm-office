@@ -561,6 +561,7 @@ interface RecurringSeriesRow {
   _id: string;
   title: string;
   isActive: boolean;
+  assignedTo?: string;
   assignedToName?: string;
 }
 
@@ -605,7 +606,13 @@ function RecurringStrip({
           >
             <RepeatIcon className="h-3 w-3 text-(--brand-text)" aria-hidden="true" />
             <span className="max-w-[180px] truncate font-medium">{s.title}</span>
-            {s.assignedToName && <span className="text-(--text-muted)">→ {s.assignedToName}</span>}
+            {s.assignedToName && (
+              <EmployeeHoverCard userId={s.assignedTo} name={s.assignedToName}>
+                <span className="text-(--text-muted) cursor-pointer underline-offset-2 hover:underline">
+                  → {s.assignedToName}
+                </span>
+              </EmployeeHoverCard>
+            )}
           </button>
         ))}
       </div>

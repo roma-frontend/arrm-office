@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { enUS, ru, hy } from 'date-fns/locale';
 import { Progress } from '@/components/ui/progress';
+import { EmployeeHoverCard } from '@/components/employees/EmployeeHoverCard';
 
 const StatusBadge = ({ status }: { status: string }) => {
   const { t } = useTranslation();
@@ -143,9 +144,15 @@ export default function SurveyDetailClient() {
           <div>
             <h1 className="text-2xl font-bold">{survey.title}</h1>
             <p className="text-muted-foreground">
-              {survey.creator
-                ? t('surveys.createdBy', { name: survey.creator.name })
-                : t('surveys.created')}
+              {survey.creator ? (
+                <EmployeeHoverCard userId={survey.createdBy as string} name={survey.creator.name}>
+                  <span className="cursor-pointer underline-offset-2 hover:underline">
+                    {t('surveys.createdBy', { name: survey.creator.name })}
+                  </span>
+                </EmployeeHoverCard>
+              ) : (
+                t('surveys.created')
+              )}
             </p>
           </div>
         </div>

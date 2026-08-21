@@ -49,6 +49,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
 import { ErrorBoundary } from '@/components/error/ErrorBoundary';
+import { EmployeeHoverCard } from '@/components/employees/EmployeeHoverCard';
 
 type TicketListItem = FunctionReturnType<typeof api.tickets.getAllTickets>[number];
 
@@ -455,7 +456,11 @@ function TicketRow({
             className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs transition-colors duration-200"
             style={{ color: 'var(--text-muted)' }}
           >
-            <span>{ticket.creatorName}</span>
+            <EmployeeHoverCard userId={ticket.createdBy as string} name={ticket.creatorName}>
+              <span className="cursor-pointer underline-offset-2 hover:underline">
+                {ticket.creatorName}
+              </span>
+            </EmployeeHoverCard>
             {ticket.organizationName && (
               <>
                 <span>•</span>
@@ -817,7 +822,11 @@ function TicketDetailDialog({
             className="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-xs transition-all duration-200"
             style={{ color: 'var(--text-muted)' }}
           >
-            <span>{ticket.creatorName}</span>
+            <EmployeeHoverCard userId={ticket.createdBy as string} name={ticket.creatorName}>
+              <span className="cursor-pointer underline-offset-2 hover:underline">
+                {ticket.creatorName}
+              </span>
+            </EmployeeHoverCard>
             {ticket.organizationName && (
               <>
                 <span>•</span>

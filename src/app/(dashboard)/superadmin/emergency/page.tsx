@@ -23,6 +23,7 @@ import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { EmployeeHoverCard } from '@/components/employees/EmployeeHoverCard';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { cn } from '@/lib/utils';
 import {
@@ -44,6 +45,7 @@ interface Ticket {
   ticketNumber: string;
   title: string;
   status: string;
+  createdBy?: string;
   creatorName: string;
   organizationName: string | null;
   minutesOpen: number;
@@ -342,7 +344,14 @@ export default function EmergencyDashboardPage() {
                             {ticket.title}
                           </p>
                           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                            <span>👤 {ticket.creatorName}</span>
+                            <EmployeeHoverCard
+                              userId={ticket.createdBy as string}
+                              name={ticket.creatorName}
+                            >
+                              <span className="cursor-pointer underline-offset-2 hover:underline">
+                                👤 {ticket.creatorName}
+                              </span>
+                            </EmployeeHoverCard>
                             {ticket.organizationName && <span>🏢 {ticket.organizationName}</span>}
                             <span>
                               ⏱️ {ticket.minutesOpen} {t('common.minutesAgo')}

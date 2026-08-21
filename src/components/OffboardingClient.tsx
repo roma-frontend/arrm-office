@@ -47,6 +47,7 @@ import {
   ArrowDownLeft,
   Calculator,
 } from 'lucide-react';
+import { EmployeeHoverCard } from '@/components/employees/EmployeeHoverCard';
 import { toast } from 'sonner';
 import SettlementPreviewDialog from '@/components/settlement/SettlementPreviewDialog';
 
@@ -506,7 +507,19 @@ function ProgramDetailDialog({
                       </p>
                       <span className="text-xs text-muted-foreground">
                         {t(`offboarding.assigneeType.${task.assigneeType}`, task.assigneeType)}
-                        {task.assigneeName ? ` • ${task.assigneeName}` : ''}
+                        {task.assigneeName && (
+                          <EmployeeHoverCard
+                            userId={
+                              (task as Record<string, unknown>).assigneeId as string | undefined
+                            }
+                            name={task.assigneeName}
+                          >
+                            <span className="cursor-pointer underline-offset-2 hover:underline">
+                              {' '}
+                              • {task.assigneeName}
+                            </span>
+                          </EmployeeHoverCard>
+                        )}
                       </span>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">

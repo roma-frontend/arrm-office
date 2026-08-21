@@ -43,6 +43,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CreateTicketWizard } from '@/components/help/CreateTicketWizard';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
+import { EmployeeHoverCard } from '@/components/employees/EmployeeHoverCard';
 
 export default function HelpSupportPage() {
   const { t } = useTranslation();
@@ -385,7 +386,11 @@ function TicketList({ tickets, emptyMessage }: { tickets: TicketData[]; emptyMes
                     {new Date(ticket.createdAt).toLocaleDateString()}
                   </span>
                   {ticket.assigneeName && (
-                    <span className="truncate">👤 {ticket.assigneeName}</span>
+                    <EmployeeHoverCard name={ticket.assigneeName}>
+                      <span className="truncate cursor-pointer underline-offset-2 hover:underline">
+                        👤 {ticket.assigneeName}
+                      </span>
+                    </EmployeeHoverCard>
                   )}
                 </div>
               </div>

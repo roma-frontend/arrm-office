@@ -23,6 +23,7 @@ import {
   AlertTriangle,
   FileText,
 } from 'lucide-react';
+import { EmployeeHoverCard } from '@/components/employees/EmployeeHoverCard';
 import { format } from 'date-fns';
 import { enUS, ru, hy } from 'date-fns/locale';
 
@@ -137,9 +138,15 @@ export default function EventDetailClient() {
           <div>
             <h1 className="text-2xl font-bold">{event.name}</h1>
             <p className="text-muted-foreground">
-              {event.creatorName
-                ? t('events.createdBy', { name: event.creatorName })
-                : t('events.created')}
+              {event.creatorName ? (
+                <EmployeeHoverCard userId={event.createdBy as string} name={event.creatorName}>
+                  <span className="cursor-pointer underline-offset-2 hover:underline">
+                    {t('events.createdBy', { name: event.creatorName })}
+                  </span>
+                </EmployeeHoverCard>
+              ) : (
+                t('events.created')
+              )}
             </p>
           </div>
         </div>

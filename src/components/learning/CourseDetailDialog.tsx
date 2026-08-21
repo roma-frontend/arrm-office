@@ -13,6 +13,7 @@ import {
   SheetFooter,
 } from '@/components/ui/sheet';
 import { Plus, ChevronRight, Video, FileText, HelpCircle } from 'lucide-react';
+import { EmployeeHoverCard } from '@/components/employees/EmployeeHoverCard';
 
 type CourseWithLessons = {
   _id: Id<'courses'>;
@@ -125,7 +126,11 @@ export function CourseDetailDialog({
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
               <p className="font-medium">{t('learning.instructor', 'Instructor')}</p>
-              <p className="text-muted-foreground">{course.creatorName}</p>
+              <EmployeeHoverCard userId={course.createdBy as string} name={course.creatorName}>
+                <p className="text-muted-foreground cursor-pointer underline-offset-2 hover:underline">
+                  {course.creatorName}
+                </p>
+              </EmployeeHoverCard>
             </div>
             <div>
               <p className="font-medium">{t('learning.lessons', 'Lessons')}</p>

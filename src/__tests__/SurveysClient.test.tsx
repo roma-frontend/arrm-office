@@ -122,6 +122,11 @@ jest.mock('../../convex/_generated/api', () => ({
       closeSurvey: { _name: 'surveys.closeSurvey' },
       deleteSurvey: { _name: 'surveys.deleteSurvey' },
     },
+    users: {
+      queries: {
+        getUserById: { _name: 'users.queries.getUserById' },
+      },
+    },
   },
 }));
 
@@ -130,6 +135,7 @@ jest.mock('convex/react', () => ({
     if (!q || q === 'skip') return undefined;
     if (q._name === 'surveys.listSurveys') return mockSurveys;
     if (q._name === 'surveys.getSurveyWithQuestions') return mockTakeSurvey;
+    if (q._name === 'users.queries.getUserById') return undefined;
     return undefined;
   },
   useMutation: (m: any) => {

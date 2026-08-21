@@ -21,7 +21,8 @@ let queryResults: Record<string, unknown> = {};
 const mutationCalls: Array<{ name?: string; args: any[] }> = [];
 
 jest.mock('convex/react', () => ({
-  useQuery: (ref: { _name?: string }) => queryResults[ref?._name ?? ''],
+  useQuery: (ref: { _name?: string }, args?: any) =>
+    args === 'skip' ? undefined : queryResults[ref?._name ?? ''],
   useMutation:
     (ref: { _name?: string }) =>
     (...args: any[]) => {
@@ -43,6 +44,11 @@ jest.mock('@/convex/_generated/api', () => ({
       completeProgram: { _name: 'completeProgram' },
       startOnboarding: { _name: 'startOnboarding' },
       createTemplate: { _name: 'createTemplate' },
+    },
+    users: {
+      queries: {
+        getUserById: { _name: 'users.queries.getUserById' },
+      },
     },
   },
 }));

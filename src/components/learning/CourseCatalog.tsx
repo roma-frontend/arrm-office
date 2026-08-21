@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { BookOpen, Search, Clock, Users, Plus, ChevronRight, Filter } from 'lucide-react';
+import { EmployeeHoverCard } from '@/components/employees/EmployeeHoverCard';
 
 type CourseWithLessons = {
   _id: Id<'courses'>;
@@ -249,7 +250,14 @@ export function CourseCatalog({
                   )}
                   <span className="flex items-center gap-1">
                     <Users className="h-4 w-4" />
-                    {course.creatorName}
+                    <EmployeeHoverCard
+                      userId={course.createdBy as string}
+                      name={course.creatorName}
+                    >
+                      <span className="cursor-pointer underline-offset-2 hover:underline">
+                        {course.creatorName}
+                      </span>
+                    </EmployeeHoverCard>
                   </span>
                 </div>
 

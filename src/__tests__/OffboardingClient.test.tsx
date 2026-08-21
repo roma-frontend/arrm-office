@@ -50,6 +50,11 @@ jest.mock('@/convex/_generated/api', () => ({
     assets: {
       checkActiveAssignmentsForEmployee: { _name: 'checkActiveAssignmentsForEmployee' },
     },
+    users: {
+      queries: {
+        getUserById: { _name: 'users.queries.getUserById' },
+      },
+    },
   },
 }));
 

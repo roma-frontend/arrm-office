@@ -47,6 +47,7 @@ import {
   ChevronLeft,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { EmployeeHoverCard } from '@/components/employees/EmployeeHoverCard';
 
 // ─── Types ───────────────────────────────────────────────────
 type TemplateTask = {
@@ -634,7 +635,16 @@ function ProgramDetailDialog({
                           {t(`onboarding.assigneeType.${task.assigneeType}`, task.assigneeType)}
                         </span>
                         {task.assigneeName && (
-                          <span className="text-xs">• {task.assigneeName}</span>
+                          <EmployeeHoverCard
+                            userId={
+                              (task as Record<string, unknown>).assigneeId as string | undefined
+                            }
+                            name={task.assigneeName}
+                          >
+                            <span className="text-xs cursor-pointer underline-offset-2 hover:underline">
+                              • {task.assigneeName}
+                            </span>
+                          </EmployeeHoverCard>
                         )}
                       </div>
                     </div>

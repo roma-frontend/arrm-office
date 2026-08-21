@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { useTypedQuery } from '@/lib/convex-typed';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
+import { EmployeeHoverCard } from '@/components/employees/EmployeeHoverCard';
 import {
   ClipboardList,
   Plus,
@@ -1301,9 +1302,14 @@ export function SurveysClient() {
                         {survey.responseCount} {t('surveys.responses')}
                       </span>
                       {survey.creator && (
-                        <span>
-                          {t('surveys.createdBy')} {survey.creator.name}
-                        </span>
+                        <EmployeeHoverCard
+                          userId={survey.createdBy as string}
+                          name={survey.creator.name}
+                        >
+                          <span className="cursor-pointer underline-offset-2 hover:underline">
+                            {t('surveys.createdBy')} {survey.creator.name}
+                          </span>
+                        </EmployeeHoverCard>
                       )}
                     </div>
                   </div>
