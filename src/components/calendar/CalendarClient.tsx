@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useMainRef } from '@/hooks/useMainRef';
 import { useHydrated } from '@/hooks/useHydrated';
@@ -808,27 +808,43 @@ export const CalendarClient = React.memo(function CalendarClient() {
   const [detailsRoomDate, setDetailsRoomDate] = useState<string | null>(null);
   const [viewProfileTarget, setViewProfileTarget] = useState<{ id: string; name: string } | null>(null);
 
-  // Block native click events for 300ms after the employee sheet closes.
-  // Radix Dialog closes on pointerdown → React re-renders → cleanup runs →
-  // but the native click arrives AFTER cleanup. So we use a single
-  // document-level listener that checks a ref instead of state.
+  // ── Employee-sheet click-leak guard ──────────────────────────────────────
+  // When the user clicks the Radix Dialog overlay to close the EmployeeSheet,
+  // Radix fires its dismiss on *pointerdown* and removes the overlay from the
+  // DOM before the subsequent *click* event fires. The click then lands on
+  // whatever calendar element sits at those coordinates (e.g. a room booking)
+  // and opens the RoomDetailsModal.
+  //
+  // Fix: a document-level *pointerdown* capture listener records that a
+  // sheet-closing gesture started, and a *click* capture listener swallows
+  // the very next click that would otherwise reach calendar handlers.
+  // The ref is cheap, runs on every render to stay in sync, and only one
+  // click is blocked (the one right after the overlay pointerdown).
+  const viewProfileTargetRef = useRef(viewProfileTarget);
+  viewProfileTargetRef.current = viewProfileTarget;
+
   const blockClicksUntilRef = useRef(0);
   useEffect(() => {
-    if (viewProfileTarget) {
-      blockClicksUntilRef.current = Date.now() + 500;
-    } else if (blockClicksUntilRef.current > 0) {
-      blockClicksUntilRef.current = Date.now() + 300;
-    }
-  });
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
+    const onPointerDown = (e: PointerEvent) => {
+      // When the sheet is open and the user initiates any pointer action,
+      // arm the click blocker. The subsequent click may leak through after
+      // Radix removes the overlay.
+      if (viewProfileTargetRef.current) {
+        blockClicksUntilRef.current = Date.now() + 500;
+      }
+    };
+    const onClick = (e: MouseEvent) => {
       if (Date.now() < blockClicksUntilRef.current) {
         e.stopPropagation();
         e.preventDefault();
       }
     };
-    document.addEventListener('click', handler, { capture: true });
-    return () => document.removeEventListener('click', handler, { capture: true });
+    document.addEventListener('pointerdown', onPointerDown, { capture: true });
+    document.addEventListener('click', onClick, { capture: true });
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown, { capture: true });
+      document.removeEventListener('click', onClick, { capture: true });
+    };
   }, []);
 
   const [editEvent, setEditEvent] = useState<CalendarEvent | null>(null);
@@ -1141,15 +1157,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
     detailsRoom ||
     timelineInput,
   );
-  useScrollLock(anyModalOpen);
-
-  // When the employee profile sheet is open, capture all clicks at the document
-  // level to prevent them from bubbling into calendar room-detail handlers.
-  // Radix Dialog portals its overlay to <body>, so React-level stopPropagation
-  // on a wrapper div does not work.
-
-
-  // Debug: Log whenever selectedOrgId changes
+  useScrollLock(anyModalOpen);  // Debug: Log whenever selectedOrgId changes
   useEffect(() => {
     if (mounted) {
       logger.log('📅 selectedOrgId changed to:', selectedOrgId);
@@ -2660,6 +2668,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
                             onKeyDown={(event) => {
                               if (event.key === 'Enter' || event.key === ' ') {
                                 event.preventDefault();
+                                if (viewProfileTarget) return;
                                 const room = rooms.find((r) => r._id === booking.roomId);
                                 if (room) setDetailsRoom(room);
                               }
