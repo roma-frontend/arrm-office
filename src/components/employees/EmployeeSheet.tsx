@@ -19,12 +19,15 @@
  * list page that may never open it.
  */
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
+import { Share2 } from 'lucide-react';
 
 import { DetailSheet } from '@/components/ui/detail-sheet';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
+import { Button } from '@/components/ui/button';
 import type { Id } from '../../../convex/_generated/dataModel';
 
 const EmployeeProfileDetail = dynamic(
@@ -51,12 +54,40 @@ export interface EmployeeSheetProps {
 export function EmployeeSheet({ employeeId, onClose, employeeName }: EmployeeSheetProps) {
   const { t } = useTranslation();
 
+  const handleShare = useCallback(async () => {
+    if (!employeeId) return;
+    const url = `${window.location.origin}/employees/${employeeId}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: employeeName || 'Employee', url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        toast.success(t('employeeSheet.linkCopied', 'Profile link copied to clipboard'));
+      }
+    } catch {
+      // User cancelled share or clipboard failed — ignore
+    }
+  }, [employeeId, employeeName, t]);
+
+  const shareButton = employeeId ? (
+    <Button
+      variant="ghost"
+      size="sm"
+      className="h-8 w-8 p-0 text-(--text-muted) hover:text-(--text-primary)"
+      onClick={handleShare}
+      title={t('employeeSheet.share', 'Share profile')}
+    >
+      <Share2 className="h-4 w-4" />
+    </Button>
+  ) : null;
+
   return (
     <DetailSheet
       open={employeeId !== null}
       onClose={onClose}
       size="xl"
       title={employeeName || t('nav.employees', 'Employees')}
+      headerActions={shareButton}
       {...(employeeId ? { deepLink: `/employees/${employeeId}` } : {})}
     >
       {/* Keyed on the id so switching rows remounts the body: the profile keeps

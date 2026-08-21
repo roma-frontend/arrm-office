@@ -2706,5 +2706,9 @@
       "leadTimeSaved": "Խdelays",
       "leadTimeError": "Խdelays"
     }
+  },
+  "employeeSheet": {
+    "linkCopied": "Պրոքինի հգումջու պականդենվել է",
+    "share": "Փիսվել պրոքինու"
   }
 }

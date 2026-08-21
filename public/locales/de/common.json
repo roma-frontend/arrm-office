@@ -2706,5 +2706,9 @@
       "leadTimeSaved": "Erinnerungszeit aktualisiert",
       "leadTimeError": "Aktualisierung fehlgeschlagen"
     }
+  },
+  "employeeSheet": {
+    "linkCopied": "Profillink in die Zwischenablage kopiert",
+    "share": "Profil teilen"
   }
 }

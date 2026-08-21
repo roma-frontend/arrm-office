@@ -37,6 +37,8 @@ export interface DetailSheetProps {
   contentClassName?: string;
   /** Extra classes for the scrim, paired with `contentClassName`. */
   overlayClassName?: string;
+  /** Optional action buttons rendered in the header, next to the title. */
+  headerActions?: React.ReactNode;
   children: React.ReactNode;
 }
 
@@ -49,6 +51,7 @@ export function DetailSheet({
   size = 'lg',
   contentClassName,
   overlayClassName,
+  headerActions,
   children,
 }: DetailSheetProps) {
   const { t } = useTranslation();
@@ -62,18 +65,21 @@ export function DetailSheet({
         className={contentClassName}
         overlayClassName={overlayClassName}
       >
-        <SheetHeader>
-          <SheetTitle>{title}</SheetTitle>
-          {subtitle && <p className="text-label text-(--text-3)">{subtitle}</p>}
-          {deepLink && (
-            <Link
-              href={deepLink}
-              className="inline-flex w-fit items-center gap-1.5 text-caption font-medium text-(--brand-text) hover:underline"
-            >
-              <ExternalLink className="size-3" aria-hidden="true" />
-              {t('common.openFullPage', 'Open full page')}
-            </Link>
-          )}
+        <SheetHeader className="flex-row items-start justify-between gap-2">
+          <div>
+            <SheetTitle>{title}</SheetTitle>
+            {subtitle && <p className="text-label text-(--text-3)">{subtitle}</p>}
+            {deepLink && (
+              <Link
+                href={deepLink}
+                className="inline-flex w-fit items-center gap-1.5 text-caption font-medium text-(--brand-text) hover:underline"
+              >
+                <ExternalLink className="size-3" aria-hidden="true" />
+                {t('common.openFullPage', 'Open full page')}
+              </Link>
+            )}
+          </div>
+          {headerActions && <div className="flex items-center gap-1 shrink-0">{headerActions}</div>}
         </SheetHeader>
 
         <SheetBody>{children}</SheetBody>

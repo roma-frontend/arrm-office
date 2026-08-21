@@ -2706,5 +2706,9 @@
       "leadTimeSaved": "Reminder timing updated",
       "leadTimeError": "Failed to update"
     }
+  },
+  "employeeSheet": {
+    "linkCopied": "Profile link copied to clipboard",
+    "share": "Share profile"
   }
 }
