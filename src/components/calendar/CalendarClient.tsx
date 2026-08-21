@@ -807,23 +807,24 @@ export const CalendarClient = React.memo(function CalendarClient() {
   /** The booking day (`yyyy-MM-dd`) the room view should open on, if any. */
   const [detailsRoomDate, setDetailsRoomDate] = useState<string | null>(null);  const [viewProfileTarget, setViewProfileTarget] = useState<{ id: string; name: string } | null>(null);
   const sheetCooldownRef = useRef(false);
+  const hadSheetRef = useRef(false);
 
-  // While employee sheet is open, intercept ALL pointerdown events in capture
-  // phase (before React synthetic events) and set a cooldown flag.
-  // This prevents the sheet overlay close-click from reaching room-detail handlers
-  // because Radix closes the sheet on pointerdown, React commits the state update,
-  // and then click arrives — at which point viewProfileTarget is already null.
+  // Track if the employee sheet was recently open.
+  // When the sheet closes, Radix removes its overlay BEFORE the click event
+  // fires, so the click physically hits calendar elements underneath and opens
+  // the room details. This effect detects that transition and forces close.
   useEffect(() => {
-    if (!viewProfileTarget) return;
-    const onDown = () => { sheetCooldownRef.current = true; };
-    const onUp = () => { setTimeout(() => { sheetCooldownRef.current = false; }, 50); };
-    document.addEventListener('pointerdown', onDown, { capture: true, passive: true } as any);
-    document.addEventListener('pointerup', onUp, { capture: true, passive: true } as any);
-    return () => {
-      document.removeEventListener('pointerdown', onDown, { capture: true } as any);
-      document.removeEventListener('pointerup', onUp, { capture: true } as any);
-    };
-  }, [viewProfileTarget]);
+    if (viewProfileTarget) {
+      hadSheetRef.current = true;
+    } else if (hadSheetRef.current) {
+      hadSheetRef.current = false;
+      // Sheet just closed — if room details snuck in, force close them
+      if (detailsRoom) {
+        setDetailsRoom(null);
+        setDetailsRoomDate(null);
+      }
+    }
+  }, [viewProfileTarget, detailsRoom]);
 
   const [editEvent, setEditEvent] = useState<CalendarEvent | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
