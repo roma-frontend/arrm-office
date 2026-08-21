@@ -805,8 +805,25 @@ export const CalendarClient = React.memo(function CalendarClient() {
   const [roomBookingRoomId, setRoomBookingRoomId] = useState<string | null>(null);
   const [detailsRoom, setDetailsRoom] = useState<RoomDoc | null>(null);
   /** The booking day (`yyyy-MM-dd`) the room view should open on, if any. */
-  const [detailsRoomDate, setDetailsRoomDate] = useState<string | null>(null);
-  const [viewProfileTarget, setViewProfileTarget] = useState<{ id: string; name: string } | null>(null);
+  const [detailsRoomDate, setDetailsRoomDate] = useState<string | null>(null);  const [viewProfileTarget, setViewProfileTarget] = useState<{ id: string; name: string } | null>(null);
+  const sheetCooldownRef = useRef(false);
+
+  // While employee sheet is open, intercept ALL pointerdown events in capture
+  // phase (before React synthetic events) and set a cooldown flag.
+  // This prevents the sheet overlay close-click from reaching room-detail handlers
+  // because Radix closes the sheet on pointerdown, React commits the state update,
+  // and then click arrives — at which point viewProfileTarget is already null.
+  useEffect(() => {
+    if (!viewProfileTarget) return;
+    const onDown = () => { sheetCooldownRef.current = true; };
+    const onUp = () => { setTimeout(() => { sheetCooldownRef.current = false; }, 50); };
+    document.addEventListener('pointerdown', onDown, { capture: true, passive: true } as any);
+    document.addEventListener('pointerup', onUp, { capture: true, passive: true } as any);
+    return () => {
+      document.removeEventListener('pointerdown', onDown, { capture: true } as any);
+      document.removeEventListener('pointerup', onUp, { capture: true } as any);
+    };
+  }, [viewProfileTarget]);
 
   const [editEvent, setEditEvent] = useState<CalendarEvent | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -2631,7 +2648,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
                             tabIndex={0}
                             title={t('rooms.calendar.openRoom')}
                             onClick={() => {
-                              if (viewProfileTarget) return;
+                              if (viewProfileTarget || sheetCooldownRef.current) return;
                               const room = rooms.find((r) => r._id === booking.roomId);
                               if (room) setDetailsRoom(room);
                             }}
@@ -2720,7 +2737,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
             {/* Live meeting-room availability */}
             <RoomAvailabilityStrip
               organizationId={selectedOrgId}
-              onOpenRoom={(room) => { if (!viewProfileTarget) setDetailsRoom(room); }}
+              onOpenRoom={(room) => {              if (!viewProfileTarget && !sheetCooldownRef.current) setDetailsRoom(room); }}
               onBookRoom={(room) => {
                 setRoomBookingRoomId(room._id);
                 setRoomBookingDate(selectedDay ?? new Date());
@@ -2906,7 +2923,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
             onClose={() => setShowDayDetails(false)}
             onOpenTimeline={setTimelineInput}
             onOpenRoom={(roomId, bookingDate) => {
-              if (viewProfileTarget) return;
+              if (viewProfileTarget || sheetCooldownRef.current) return;
               const room = rooms.find((r) => r._id === roomId);
               if (room) {
                 setShowDayDetails(false);
