@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { navItems, isSeparator, type NavItem } from '@/lib/nav';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useShallow } from 'zustand/shallow';
-import { ChevronDown, LayoutGrid, CornerDownRight, Lock } from 'lucide-react';
+import { ChevronDown, LayoutGrid, CornerDownRight, Lock, type LucideIcon } from 'lucide-react';
 import { usePlanGatedNav, isHrefLocked } from '@/lib/planGating';
 
 type Section = { labelKey?: string; items: NavItem[] };
@@ -175,7 +175,9 @@ export function ModulesMenu() {
                 const active = isActive(item.href);
                 const locked = isHrefLocked(entitlements, item.href);
                 const children = (item.children ?? []).filter(
-                  (c) => !c.roles || c.roles.includes(userRole),
+                  (c) =>
+                    ('type' in c && c.type === 'separator') ||
+                    ('roles' in c && (!c.roles || c.roles.includes(userRole))),
                 );
                 return (
                   <div key={item.href} className="mb-1">
@@ -212,15 +214,33 @@ export function ModulesMenu() {
                     </button>
                     {children.length > 0 && (
                       <div className="ml-4 mt-0.5 border-l border-(--border) pl-2">
-                        {children.map((child) => {
-                          const childActive = isActive(child.href);
-                          const childLocked = isHrefLocked(entitlements, child.href);
+                        {children.map((child, index) => {
+                          if ('type' in child && child.type === 'separator') {
+                            return (
+                              <div
+                                key={`sep-${child.labelKey}-${index}`}
+                                className="mt-2 mb-1 px-2"
+                              >
+                                <p className="text-[10px] font-semibold uppercase tracking-wider text-(--text-muted)">
+                                  {child.labelKey}
+                                </p>
+                              </div>
+                            );
+                          }
+                          const navChild = child as {
+                            href: string;
+                            labelKey: string;
+                            icon?: LucideIcon;
+                            roles?: string[];
+                          };
+                          const childActive = isActive(navChild.href);
+                          const childLocked = isHrefLocked(entitlements, navChild.href);
                           return (
                             <button
-                              key={child.href}
+                              key={navChild.href}
                               type="button"
                               onClick={() =>
-                                childLocked ? router.push('/pricing') : navigate(child.href)
+                                childLocked ? router.push('/pricing') : navigate(navChild.href)
                               }
                               title={
                                 childLocked
@@ -234,7 +254,7 @@ export function ModulesMenu() {
                               }`}
                             >
                               <CornerDownRight className="w-3 h-3 shrink-0 opacity-50" />
-                              <span className="truncate">{t(child.labelKey)}</span>
+                              <span className="truncate">{t(navChild.labelKey)}</span>
                               {childLocked && (
                                 <Lock className="w-3 h-3 shrink-0 text-(--warning-text)" />
                               )}

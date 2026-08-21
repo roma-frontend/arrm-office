@@ -84,12 +84,15 @@ export type NavItem = {
   icon: LucideIcon;
   roles: string[];
   badge?: string;
-  children?: {
-    href: string;
-    labelKey: string;
-    icon?: LucideIcon;
-    roles?: string[];
-  }[];
+  children?: (
+    | NavSeparator
+    | {
+        href: string;
+        labelKey: string;
+        icon?: LucideIcon;
+        roles?: string[];
+      }
+  )[];
 };
 
 export type NavSeparator = { type: 'separator'; labelKey?: string };
@@ -155,19 +158,12 @@ export const navItems: NavEntry[] = [
     icon: CheckSquare,
     roles: ['superadmin', 'admin', 'supervisor', 'employee', 'driver'],
     children: [
-      { href: '/tasks', labelKey: 'nav.tasks', icon: CheckSquare },
-      {
-        href: '/tasks/recurring',
-        labelKey: 'nav.recurringTasks',
-        icon: Repeat,
-        roles: ['superadmin', 'admin', 'supervisor', 'employee'],
-      },
-      {
-        href: '/projects',
-        labelKey: 'nav.projects',
-        icon: FolderKanban,
-        roles: ['superadmin', 'admin', 'supervisor', 'employee'],
-      },
+      { type: 'separator', labelKey: 'Work' },
+      { href: '/', labelKey: 'nav.home', icon: LayoutDashboard },
+      { href: '/chat', labelKey: 'nav.inbox', icon: MessageCircle },
+      { href: '/tasks', labelKey: 'nav.myTasks', icon: CheckSquare },
+      { href: '/projects', labelKey: 'nav.projects', icon: FolderKanban },
+      { type: 'separator', labelKey: 'Work' },
     ],
   },
 
@@ -525,15 +521,23 @@ export function flattenNavDestinations(role: UserRole | undefined): NavDestinati
     }
 
     for (const child of entry.children ?? []) {
+      // Skip separators
+      if ('type' in child && child.type === 'separator') continue;
       // A child without its own roles inherits the parent's, which we already
       // checked above.
-      if (child.roles && !child.roles.includes(userRole)) continue;
-      if (seen.has(child.href)) continue;
-      seen.add(child.href);
+      const navChild = child as {
+        href: string;
+        labelKey: string;
+        icon?: LucideIcon;
+        roles?: string[];
+      };
+      if (navChild.roles && !navChild.roles.includes(userRole)) continue;
+      if (seen.has(navChild.href)) continue;
+      seen.add(navChild.href);
       out.push({
-        href: child.href,
-        labelKey: child.labelKey,
-        icon: child.icon ?? entry.icon,
+        href: navChild.href,
+        labelKey: navChild.labelKey,
+        icon: navChild.icon ?? entry.icon,
         groupKey: group ?? entry.labelKey,
       });
     }

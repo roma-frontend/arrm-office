@@ -115,6 +115,9 @@ jest.mock('@/convex/_generated/api', () => ({
     branding: {
       getBranding: { _name: 'getBranding' },
     },
+    projects: {
+      listProjects: { _name: 'listProjects' },
+    },
   },
 }));
 

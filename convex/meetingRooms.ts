@@ -1641,6 +1641,10 @@ export const sendMeetingReminders = internalMutation({
           if (platformName) messageParts.push(`Platform: ${platformName}`);
           if (booking.videoUrl) messageParts.push(booking.videoUrl);
 
+          // Build a pre-computed platform text for i18n — the locale strings
+          // use a simple {{platformText}} variable, not JS ternary expressions.
+          const platformText = platformName ? ` Platform: ${platformName}` : '';
+
           await notify(ctx, {
             organizationId: booking.organizationId,
             userId: userId as Id<'users'>,
@@ -1652,6 +1656,7 @@ export const sendMeetingReminders = internalMutation({
               roomName: room.name,
               startTime: timeStr,
               platform: platformName,
+              platformText,
               videoUrl: (booking.videoUrl ?? '') as string,
             },
             fallbackTitle: `${booking.title} starts in 15 min`,

@@ -49,9 +49,11 @@ export interface EmployeeSheetProps {
   /** Name of the row that was clicked, so the header has a title before the
    *  profile query resolves. */
   employeeName?: string;
+  /** When true, the sheet opens above the parent modal (z-[70]). */
+  elevated?: boolean;
 }
 
-export function EmployeeSheet({ employeeId, onClose, employeeName }: EmployeeSheetProps) {
+export function EmployeeSheet({ employeeId, onClose, employeeName, elevated }: EmployeeSheetProps) {
   const { t } = useTranslation();
 
   const handleShare = useCallback(async () => {
@@ -89,6 +91,7 @@ export function EmployeeSheet({ employeeId, onClose, employeeName }: EmployeeShe
       title={employeeName || t('nav.employees', 'Employees')}
       headerActions={shareButton}
       {...(employeeId ? { deepLink: `/employees/${employeeId}` } : {})}
+      {...(elevated ? { contentClassName: 'z-[70]', overlayClassName: 'z-[70]' } : {})}
     >
       {/* Keyed on the id so switching rows remounts the body: the profile keeps
           tab state internally, and without this a colleague would open on

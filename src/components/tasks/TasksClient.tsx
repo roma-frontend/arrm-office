@@ -49,6 +49,7 @@ import type { TFunction } from 'i18next';
 type Status = 'pending' | 'in_progress' | 'review' | 'completed' | 'cancelled';
 type Priority = 'low' | 'medium' | 'high' | 'urgent';
 import TimelineView from './TimelineView';
+import Link from 'next/link';
 
 type ViewMode = 'kanban' | 'list' | 'timeline';
 
@@ -304,7 +305,10 @@ function TaskCardContent({ task, isDragging = false }: { task: TaskItem; isDragg
             size="sm"
           />
           {task.assignedToUser?._id ? (
-            <EmployeeHoverCard userId={task.assignedToUser._id} name={task.assignedToUser.name ?? '?'}>
+            <EmployeeHoverCard
+              userId={task.assignedToUser._id}
+              name={task.assignedToUser.name ?? '?'}
+            >
               <span className="text-xs text-(--text-muted) truncate max-w-[100px] cursor-pointer hover:underline hover:underline-offset-2">
                 {task.assignedToUser?.name ?? '—'}
               </span>
@@ -460,7 +464,10 @@ function TaskRow({ task, onOpen }: { task: TaskItem; onOpen: () => void }) {
               size="sm"
             />
             {task.assignedToUser?._id ? (
-              <EmployeeHoverCard userId={task.assignedToUser._id} name={task.assignedToUser.name ?? '?'}>
+              <EmployeeHoverCard
+                userId={task.assignedToUser._id}
+                name={task.assignedToUser.name ?? '?'}
+              >
                 <span className="text-sm text-(--text-secondary) cursor-pointer hover:underline hover:underline-offset-2">
                   {task.assignedToUser?.name ?? '—'}
                 </span>
@@ -574,7 +581,7 @@ function RecurringStrip({
 }) {
   if (series.length === 0) return null;
   return (
-    <div className="mb-4 rounded-2xl border border-(--border) bg-(--card) p-3">
+    <div className="m-4 rounded-2xl border border-(--border) bg-(--card) p-3">
       <div className="mb-2 flex items-center justify-between gap-2">
         <p className="flex items-center gap-1.5 text-xs font-semibold text-(--text-2)">
           <RepeatIcon className="h-3.5 w-3.5 text-(--brand-text)" aria-hidden="true" />
@@ -615,7 +622,12 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
   const { t } = useTranslation();
   const mainRef = useMainRef();
   const kanbanScrollRef = useRef<HTMLDivElement>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>('kanban');
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [sortBy, setSortBy] = useState<'name' | 'deadline' | 'priority' | 'status' | 'assignee'>(
+    'status',
+  );
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  const [groupBy, setGroupBy] = useState<'status' | 'priority' | 'project' | 'assignee'>('status');
   const [showCreate, setShowCreate] = useState(false);
   /** Recurring series manager, opened as a sheet instead of a separate page. */
   const [showRecurring, setShowRecurring] = useState(false);
@@ -797,10 +809,10 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
     }
   }, [projectFilterValues, filterProject]);
 
-  // Filter
+  // Filter + Sort
   const tasks = useMemo(() => {
     if (!rawTasksWithOptimistic) return [];
-    return rawTasksWithOptimistic.filter((t) => {
+    const filtered = rawTasksWithOptimistic.filter((t) => {
       const matchPriority = filterPriority === 'all' || t.priority === filterPriority;
       const matchStatus = filterStatus === 'all' || t.status === filterStatus;
       const matchSearch = !search || t.title.toLowerCase().includes(search.toLowerCase());
@@ -810,7 +822,49 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
         (filterProject === 'none' ? !t.projectId : t.projectId === filterProject);
       return matchPriority && matchStatus && matchSearch && matchEmployee && matchProject;
     });
-  }, [rawTasksWithOptimistic, filterPriority, filterStatus, search, filterEmployee, filterProject]);
+    const priorityOrder: Record<Priority, number> = { urgent: 0, high: 1, medium: 2, low: 3 };
+    const statusOrder: Record<Status, number> = {
+      pending: 0,
+      in_progress: 1,
+      review: 2,
+      completed: 3,
+      cancelled: 4,
+    };
+    const dir = sortDir === 'asc' ? 1 : -1;
+    return [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case 'name':
+          return dir * a.title.localeCompare(b.title);
+        case 'deadline':
+          return dir * ((a.deadline ?? Infinity) - (b.deadline ?? Infinity));
+        case 'priority':
+          return (
+            dir *
+            ((priorityOrder[a.priority as Priority] ?? 4) -
+              (priorityOrder[b.priority as Priority] ?? 4))
+          );
+        case 'status':
+          return (
+            dir * ((statusOrder[a.status as Status] ?? 4) - (statusOrder[b.status as Status] ?? 4))
+          );
+        case 'assignee':
+          return (
+            dir * (a.assignedToUser?.name ?? 'zzz').localeCompare(b.assignedToUser?.name ?? 'zzz')
+          );
+        default:
+          return 0;
+      }
+    });
+  }, [
+    rawTasksWithOptimistic,
+    filterPriority,
+    filterStatus,
+    search,
+    filterEmployee,
+    filterProject,
+    sortBy,
+    sortDir,
+  ]);
 
   // Stats — cancelled tasks are closed history: the kanban has no column for
   // them and overdue ignores them, so "total" counts active work only and the
@@ -847,297 +901,386 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
     return map;
   }, [tasks]);
 
+  // Group tasks for section-based view
+  const sections = useMemo(() => {
+    if (groupBy === 'status') {
+      const sectionOrder: Status[] = ['pending', 'in_progress', 'review', 'completed'];
+      return sectionOrder.map((status) => ({
+        key: status,
+        label: t(STATUS_CONFIG[status].labelKey),
+        tasks: tasks.filter((t) => t.status === status),
+      }));
+    }
+    if (groupBy === 'priority') {
+      const order: Priority[] = ['urgent', 'high', 'medium', 'low'];
+      return order.map((p) => ({
+        key: p,
+        label: t(PRIORITY_CONFIG[p].labelKey),
+        tasks: tasks.filter((t) => t.priority === p),
+      }));
+    }
+    if (groupBy === 'project') {
+      const map = new Map<string, { label: string; tasks: typeof tasks }>();
+      tasks.forEach((tk) => {
+        const key = tk.projectId ?? '__none__';
+        const existing = map.get(key);
+        if (existing) existing.tasks.push(tk);
+        else map.set(key, { label: tk.projectName || 'No project', tasks: [tk] });
+      });
+      return [...map.entries()].map(([key, v]) => ({ key, label: v.label, tasks: v.tasks }));
+    }
+    // groupBy === 'assignee'
+    const map = new Map<string, { label: string; tasks: typeof tasks }>();
+    tasks.forEach((tk) => {
+      const key = tk.assignedToUser?._id ?? '__unassigned__';
+      const name = tk.assignedToUser?.name || 'Unassigned';
+      const existing = map.get(key);
+      if (existing) existing.tasks.push(tk);
+      else map.set(key, { label: name, tasks: [tk] });
+    });
+    return [...map.entries()].map(([key, v]) => ({ key, label: v.label, tasks: v.tasks }));
+  }, [tasks, groupBy, t]);
+
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+  const toggleSection = (key: string) => {
+    setCollapsedSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  const toggleSort = (field: typeof sortBy) => {
+    if (sortBy === field) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    else {
+      setSortBy(field);
+      setSortDir('asc');
+    }
+  };
+
   return (
-    <div className="min-h-screen">
-      {/* Sticky Header */}
-      <div
-        className={`sticky top-0 z-10 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 mb-6 bg-(--background)/95 backdrop-blur supports-[backdrop-filter]:bg-(--background)/60 transition-all duration-200 ${isScrolled ? '' : 'border-b border-(--border)'}`}
-      >
-        <div className="flex items-start justify-between flex-wrap gap-4">
-          <div>
-            <h1
-              className="text-2xl font-bold tracking-tight"
-              style={{ color: 'var(--text-primary)' }}
-            >
-              {userRole === 'employee' || userRole === 'driver'
-                ? t('tasksClient.myTasks')
-                : t('tasksClient.taskManager')}
-            </h1>
-            <p className="mt-1 text-sm" style={{ color: 'var(--text-muted)' }}>
-              {userRole === 'employee' || userRole === 'driver'
-                ? t('tasksClient.trackAssignments')
-                : t('tasksClient.assignMonitor')}
-            </p>
+    <div className="flex flex-col h-full min-h-0">
+      {/* ═══ Page Header ═══ */}
+      {/* ═══ Page Header ═══ */}
+      <div className="flex items-center justify-between px-4 sm:px-6 py-3 shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-full bg-(--brand) flex items-center justify-center text-white font-bold text-xs shrink-0">
+            {userId ? userId.slice(0, 2).toUpperCase() : 'U'}
           </div>
-          <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto flex-col sm:flex-row">
-            {userRole === 'admin' && (
-              <button
-                onClick={() => {
-                  const mainEl = mainRef.current;
-                  if (mainEl) {
-                    mainEl.scrollTo({ top: 0, behavior: 'smooth' });
-                  }
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                  setShowAssign(true);
-                }}
-                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-(--border) text-(--text-secondary) hover:bg-(--background-subtle) transition-colors font-medium text-sm w-full sm:w-auto"
-              >
-                {t('tasksClient.assignSupervisor')}
-              </button>
-            )}
-            {canCreate && (
-              <button
-                onClick={() => {
-                  const mainEl = mainRef.current;
-                  if (mainEl) {
-                    mainEl.scrollTo({ top: 0, behavior: 'smooth' });
-                  }
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                  setShowCreate(true);
-                }}
-                className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl btn-gradient text-white font-semibold text-sm shadow-md shadow-blue-500/20 transition-all w-full sm:w-auto"
-              >
-                {t('tasksClient.newTask')}
-              </button>
-            )}
-          </div>
+          <h1 className="text-xl font-bold text-(--text-primary)">
+            {userRole === 'employee' || userRole === 'driver'
+              ? t('tasksClient.myTasks')
+              : t('tasksClient.taskManager')}
+          </h1>
+          <svg
+            className="w-4 h-4 text-(--text-muted)"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+        <div className="flex items-center gap-2">
+          <button className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-(--border) text-xs font-medium text-(--text-secondary) hover:bg-(--background-subtle) transition-colors">
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+              />
+            </svg>
+            {t('tasksClient.share', 'Share')}
+          </button>
+          <button className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-(--border) text-xs font-medium text-(--text-secondary) hover:bg-(--background-subtle) transition-colors">
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+              />
+            </svg>
+            {t('tasksClient.customize', 'Customize')}
+          </button>
         </div>
       </div>
 
-      {/* Stats row - scrollable on mobile */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3 my-4 sm:my-6">
+      {/* ═══ View Tabs ═══ */}
+      <div className="flex items-center gap-1 px-4 sm:px-6 border-b border-(--border) shrink-0">
         {[
-          {
-            id: 'total',
-            label: t('tasksClient.total'),
-            value: stats.total,
-            color: 'from-[var(--text-secondary)] to-[var(--text-muted)]',
-          },
-          {
-            id: 'pending',
-            label: t('tasksClient.pending'),
-            value: stats.pending,
-            color: 'from-[var(--text-muted)] to-[var(--text-muted)]',
-          },
-          {
-            id: 'inProgress',
-            label: t('tasksClient.inProgress'),
-            value: stats.inProgress,
-            color: 'from-(--brand) to-(--brand)',
-          },
-          {
-            id: 'inReview',
-            label: t('tasksClient.inReview'),
-            value: stats.review,
-            color: 'from-(--warning-solid) to-(--warning-solid)',
-          },
-          {
-            id: 'completed',
-            label: t('tasksClient.completed'),
-            value: stats.completed,
-            color: 'from-(--success-solid) to-(--success-solid)',
-          },
-          {
-            id: 'overdue',
-            label: t('tasksClient.overdue'),
-            value: stats.overdue,
-            color: 'from-(--danger-solid) to-(--danger-solid)',
-          },
-        ].map((s) => (
-          <div
-            key={s.id}
-            className="bg-(--card) rounded-xl sm:rounded-2xl border border-(--border) shadow-sm p-3 sm:p-4 text-center"
+          { key: 'list' as ViewMode, label: t('tasksClient.list') },
+          { key: 'kanban' as ViewMode, label: t('tasksClient.board', 'Board') },
+          { key: 'timeline' as ViewMode, label: t('tasksClient.timeline', 'Timeline') },
+        ].map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => startTransition(() => setViewMode(tab.key))}
+            className={`px-3 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              viewMode === tab.key
+                ? 'border-(--brand) text-(--brand-text)'
+                : 'border-transparent text-(--text-muted) hover:text-(--text-primary)'
+            }`}
           >
-            <p
-              className={`text-xl sm:text-2xl font-bold bg-linear-to-r ${s.color} bg-clip-text text-transparent`}
-            >
-              {s.value}
-            </p>
-            <p className="text-[10px] sm:text-xs text-(--text-muted) mt-0.5">{s.label}</p>
-          </div>
+            {tab.label}
+          </button>
         ))}
       </div>
 
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-        {/* Search */}
-        <div className="relative flex-1 min-w-[150px] sm:min-w-[200px]">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-(--text-muted) text-sm">
-            🔍
-          </span>
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t('placeholders.searchTasks')}
-            className="w-full pl-9 pr-4 py-2 sm:py-2.5 rounded-xl border border-(--input-border) bg-(--input) text-(--text-primary) text-sm focus:outline-none focus:ring-2 focus:ring-(--brand-text) focus:border-transparent placeholder:text-(--text-muted)"
-          />
-        </div>
-
-        {/* Priority filter */}
-        <CustomSelect
-          value={filterPriority}
-          onChange={(v) => setFilterPriority(v as Priority | 'all')}
-          options={[
-            { value: 'all', label: t('tasksClient.allPriorities') },
-            { value: 'urgent', label: t('tasksClient.urgent') },
-            { value: 'high', label: t('tasksClient.high') },
-            { value: 'medium', label: t('tasksClient.medium') },
-            { value: 'low', label: t('tasksClient.low') },
-          ]}
-          triggerClassName="px-2 sm:px-3 py-2 sm:py-2.5 rounded-xl border border-(--input-border) bg-(--input) text-(--text-secondary) text-sm focus:outline-none focus:ring-2 focus:ring-(--brand-text) shrink-0"
-          dropdownClassName="bg-(--input) border border-(--input-border) text-(--text-primary)"
-        />
-
-        {/* Status filter */}
-        <CustomSelect
-          value={filterStatus}
-          onChange={(v) => setFilterStatus(v as Status | 'all')}
-          options={[
-            { value: 'all', label: t('tasksClient.allStatuses') },
-            { value: 'pending', label: t('statuses.pending') },
-            { value: 'in_progress', label: t('taskStatus.inProgress') },
-            { value: 'review', label: t('taskStatus.inReview') },
-            { value: 'completed', label: t('statuses.completed') },
-            { value: 'cancelled', label: t('taskStatus.cancelled') },
-          ]}
-          triggerClassName="px-2 sm:px-3 py-2 sm:py-2.5 rounded-xl border border-(--border) bg-(--card) text-(--text-secondary) text-sm focus:outline-none focus:ring-2 focus:ring-(--brand-text) shrink-0"
-          dropdownClassName="bg-(--card) border border-(--border) text-(--text-primary)"
-        />
-
-        {/* Project filter (every role; options derived from loaded tasks) */}
-        {projectFilterOptions.length > 0 && (
-          <CustomSelect
-            value={filterProject}
-            onChange={(v) => setFilterProject(v)}
-            options={[
-              { value: 'all', label: t('tasksClient.allProjects', 'All Projects') },
-              ...projectFilterOptions,
-            ]}
-            triggerClassName="px-2 sm:px-3 py-2 sm:py-2.5 rounded-xl border border-(--border) bg-(--card) text-(--text-secondary) text-sm focus:outline-none focus:ring-2 focus:ring-(--brand-text) shrink-0"
-            dropdownClassName="bg-(--card) border border-(--border) text-(--text-primary)"
-          />
+      {/* ═══ Action Bar ═══ */}
+      <div className="flex items-center gap-2 px-4 sm:px-6 py-2 border-b border-(--border) shrink-0">
+        {canCreate && (
+          <div className="inline-flex items-center shrink-0 rounded-lg overflow-hidden shadow-sm">
+            <button
+              onClick={() => setShowCreate(true)}
+              className="flex items-center gap-1.5 px-4 py-2 bg-(--brand) text-white text-sm font-semibold hover:brightness-110 transition whitespace-nowrap"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+              {t('tasksClient.addTask', 'Add task')}
+            </button>
+          </div>
         )}
 
-        {/* Employee filter (admin/supervisor only) */}
-        {canManage && employees.length > 1 && (
+        <div className="flex items-center gap-1 ml-auto overflow-x-auto scrollbar-width-none">
           <CustomSelect
-            value={filterEmployee}
-            onChange={(v) => setFilterEmployee(v)}
+            value={filterStatus}
+            onChange={(v) => setFilterStatus(v as Status | 'all')}
             options={[
-              { value: 'all', label: t('tasksClient.allEmployees', 'All Employees') },
-              ...employees.map((e) => ({ value: e.id, label: `${e.name} (${e.taskCount})` })),
+              { value: 'all', label: t('tasksClient.filter', 'Filter') },
+              { value: 'pending', label: t('statuses.pending') },
+              { value: 'in_progress', label: t('taskStatus.inProgress') },
+              { value: 'review', label: t('taskStatus.inReview') },
+              { value: 'completed', label: t('statuses.completed') },
             ]}
-            triggerClassName="px-2 sm:px-3 py-2 sm:py-2.5 rounded-xl border border-(--primary)/30 bg-(--primary)/5 text-(--text-secondary) text-sm focus:outline-none focus:ring-2 focus:ring-(--brand-text) shrink-0"
+            triggerClassName="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-(--border) bg-(--background) text-xs text-(--text-secondary) hover:bg-(--background-subtle) transition-colors cursor-pointer shrink-0 whitespace-nowrap"
             dropdownClassName="bg-(--card) border border-(--border) text-(--text-primary)"
           />
-        )}
-
-        {/* View toggle */}
-        <div className="flex items-center bg-(--card) border border-(--border) rounded-xl p-1 ml-auto shrink-0">
-          <button
-            onClick={() => startTransition(() => setViewMode('kanban'))}
-            className={`px-2 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all ${viewMode === 'kanban' ? 'btn-gradient shadow-sm' : 'text-(--text-muted) hover:text-(--text-primary)'}`}
-          >
-            {t('tasksClient.kanban')}
-          </button>
-          <button
-            onClick={() => startTransition(() => setViewMode('list'))}
-            className={`px-2 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all ${viewMode === 'list' ? 'btn-gradient shadow-sm' : 'text-(--text-muted) hover:text-(--text-primary)'}`}
-          >
-            {t('tasksClient.list')}
-          </button>
-          <button
-            onClick={() => startTransition(() => setViewMode('timeline'))}
-            className={`px-2 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all ${viewMode === 'timeline' ? 'btn-gradient shadow-sm' : 'text-(--text-muted) hover:text-(--text-primary)'}`}
-          >
-            {t('tasksClient.timeline', 'Timeline')}
-          </button>
+          <CustomSelect
+            value={sortBy}
+            onChange={(v) => toggleSort(v as typeof sortBy)}
+            options={[
+              { value: 'status', label: t('tasksClient.sort.status', 'Status') },
+              { value: 'priority', label: t('tasksClient.sort.priority', 'Priority') },
+              { value: 'deadline', label: t('tasksClient.sort.deadline', 'Due date') },
+              { value: 'name', label: t('tasksClient.sort.name', 'Name') },
+              { value: 'assignee', label: t('tasksClient.sort.assignee', 'Assignee') },
+            ]}
+            triggerClassName="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-(--border) bg-(--background) text-xs text-(--text-secondary) hover:bg-(--background-subtle) transition-colors cursor-pointer shrink-0 whitespace-nowrap"
+            dropdownClassName="bg-(--card) border border-(--border) text-(--text-primary)"
+          />
+          <CustomSelect
+            value={groupBy}
+            onChange={(v) => setGroupBy(v as typeof groupBy)}
+            options={[
+              { value: 'status', label: t('tasksClient.group.status', 'Status') },
+              { value: 'priority', label: t('tasksClient.group.priority', 'Priority') },
+              { value: 'project', label: t('tasksClient.group.project', 'Project') },
+              { value: 'assignee', label: t('tasksClient.group.assignee', 'Assignee') },
+            ]}
+            triggerClassName="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-(--border) bg-(--background) text-xs text-(--text-secondary) hover:bg-(--background-subtle) transition-colors cursor-pointer shrink-0 whitespace-nowrap"
+            dropdownClassName="bg-(--card) border border-(--border) text-(--text-primary)"
+          />
+          {canManage && employees.length > 1 && (
+            <CustomSelect
+              value={filterEmployee}
+              onChange={(v) => setFilterEmployee(v)}
+              options={[
+                { value: 'all', label: t('tasksClient.assignee', 'Assignee') },
+                ...employees.map((e) => ({ value: e.id, label: `${e.name} (${e.taskCount})` })),
+              ]}
+              triggerClassName="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-(--border) bg-(--background) text-xs text-(--text-secondary) hover:bg-(--background-subtle) transition-colors cursor-pointer shrink-0 whitespace-nowrap"
+              dropdownClassName="bg-(--card) border border-(--border) text-(--text-primary)"
+            />
+          )}
+          {projectFilterOptions.length > 0 && (
+            <CustomSelect
+              value={filterProject}
+              onChange={(v) => setFilterProject(v)}
+              options={[
+                { value: 'all', label: t('tasksClient.project', 'Project') },
+                ...projectFilterOptions,
+              ]}
+              triggerClassName="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-(--border) bg-(--background) text-xs text-(--text-secondary) hover:bg-(--background-subtle) transition-colors cursor-pointer shrink-0 whitespace-nowrap"
+              dropdownClassName="bg-(--card) border border-(--border) text-(--text-primary)"
+            />
+          )}
+          {userRole === 'admin' && (
+            <button
+              onClick={() => setShowAssign(true)}
+              className="px-2.5 py-1.5 rounded-lg border border-(--border) bg-(--background) text-xs text-(--text-secondary) hover:bg-(--background-subtle) transition-colors shrink-0 whitespace-nowrap"
+            >
+              {t('tasksClient.assignSupervisor')}
+            </button>
+          )}
+          <CustomSelect
+            value={filterPriority}
+            onChange={(v) => setFilterPriority(v as Priority | 'all')}
+            options={[
+              { value: 'all', label: t('tasksClient.priority', 'Priority') },
+              { value: 'urgent', label: t('tasksClient.urgent') },
+              { value: 'high', label: t('tasksClient.high') },
+              { value: 'medium', label: t('tasksClient.medium') },
+              { value: 'low', label: t('tasksClient.low') },
+            ]}
+            triggerClassName="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-(--border) bg-(--background) text-xs text-(--text-secondary) hover:bg-(--background-subtle) transition-colors cursor-pointer shrink-0 whitespace-nowrap"
+            dropdownClassName="bg-(--card) border border-(--border) text-(--text-primary)"
+          />
+          <div className="relative">
+            <svg
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-(--text-muted)"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={t('placeholders.searchTasks')}
+              className="pl-8 pr-3 py-1.5 rounded-lg border border-(--border) bg-(--background) text-xs text-(--text-primary) w-40 sm:w-52 focus:outline-none focus:ring-1 focus:ring-(--brand) placeholder:text-(--text-muted)"
+            />
+          </div>
         </div>
       </div>
 
-      {/* Content */}
-      {rawTasks === undefined ? (
-        <div className="flex items-center justify-center py-20">
-          <ShieldLoader size="lg" />
-        </div>
-      ) : viewMode === 'timeline' ? (
-        <>
-          <RecurringStrip series={activeSeries} t={t} onManage={() => setShowRecurring(true)} />
-          <TimelineView tasks={tasks} onOpen={(task) => openTask(task)} />
-        </>
-      ) : viewMode === 'kanban' ? (
-        <DndContext
-          sensors={sensors}
-          onDragStart={(e: DragStartEvent) => {
-            const task = tasks.find((t) => t._id === e.active.id);
-            setActiveTask(task ?? null);
-          }}
-          onDragEnd={(e: DragEndEvent) => {
-            const { active, over } = e;
-            if (!over || !convexId) {
-              setActiveTask(null);
-              return;
-            }
-            const newStatus = over.id as Status;
-            const task = tasks.find((t) => t._id === active.id);
-            if (!task || task.status === newStatus) {
-              setActiveTask(null);
-              return;
-            }
-
-            // Synchronous state update BEFORE removing overlay
-            flushSync(() => {
-              setOptimisticStatuses((prev) => {
-                const next = new Map(prev);
-                next.set(task._id as string, newStatus);
-                return next;
-              });
-            });
-
-            // Now safe to remove overlay - card is already in new column
-            setActiveTask(null);
-
-            // Background server mutation
-            updateOptimistic(task._id as Id<'tasks'>, newStatus, convexId, task.status)
-              .then(() => {
-                toast.success(
-                  t('tasks.status.moved', { status: t(STATUS_CONFIG[newStatus].labelKey) }),
-                  { duration: 2000 },
-                );
-                setOptimisticStatuses((prev) => {
-                  const next = new Map(prev);
-                  next.delete(task._id as string);
-                  return next;
-                });
-              })
-              .catch(() => {
-                toast.error(t('tasks.failedToUpdateStatus'));
-                setOptimisticStatuses((prev) => {
-                  const next = new Map(prev);
-                  next.delete(task._id as string);
-                  return next;
-                });
-              });
-          }}
-          onDragCancel={() => setActiveTask(null)}
-        >
-          <RecurringStrip series={activeSeries} t={t} onManage={() => setShowRecurring(true)} />
-          <div ref={kanbanScrollRef} className="flex gap-4 overflow-x-auto pb-4">
-            {KANBAN_COLUMNS.map((status) => (
-              <DroppableKanbanColumn
-                key={status}
-                status={status}
-                tasks={tasksByStatus[status]}
-                onOpen={(task) => openTask(task)}
-              />
-            ))}
+      {/* ═══ Content ═══ */}
+      <div className="flex-1 overflow-y-auto min-h-0">
+        {rawTasks === undefined ? (
+          <div className="flex items-center justify-center py-20">
+            <ShieldLoader size="lg" />
           </div>
-        </DndContext>
-      ) : (
-        <>
-          <RecurringStrip series={activeSeries} t={t} onManage={() => setShowRecurring(true)} />
-          <div className="bg-(--card) rounded-2xl border border-(--border) shadow-sm overflow-x-auto">
-            {tasks.length === 0 ? (
+        ) : viewMode === 'kanban' ? (
+          <DndContext
+            sensors={sensors}
+            onDragStart={(e: DragStartEvent) => {
+              const task = tasks.find((t) => t._id === e.active.id);
+              setActiveTask(task ?? null);
+            }}
+            onDragEnd={(e: DragEndEvent) => {
+              const { active, over } = e;
+              if (!over || !convexId) {
+                setActiveTask(null);
+                return;
+              }
+              const newStatus = over.id as Status;
+              const task = tasks.find((t) => t._id === active.id);
+              if (!task || task.status === newStatus) {
+                setActiveTask(null);
+                return;
+              }
+              flushSync(() => {
+                setOptimisticStatuses((prev) => {
+                  const next = new Map(prev);
+                  next.set(task._id as string, newStatus);
+                  return next;
+                });
+              });
+              setActiveTask(null);
+              updateOptimistic(task._id as Id<'tasks'>, newStatus, convexId, task.status)
+                .then(() => {
+                  toast.success(
+                    t('tasks.status.moved', { status: t(STATUS_CONFIG[newStatus].labelKey) }),
+                    { duration: 2000 },
+                  );
+                  setOptimisticStatuses((prev) => {
+                    const next = new Map(prev);
+                    next.delete(task._id as string);
+                    return next;
+                  });
+                })
+                .catch(() => {
+                  toast.error(t('tasks.failedToUpdateStatus'));
+                  setOptimisticStatuses((prev) => {
+                    const next = new Map(prev);
+                    next.delete(task._id as string);
+                    return next;
+                  });
+                });
+            }}
+            onDragCancel={() => setActiveTask(null)}
+          >
+            <RecurringStrip series={activeSeries} t={t} onManage={() => setShowRecurring(true)} />
+            <div ref={kanbanScrollRef} className="flex gap-4 overflow-x-auto p-4 sm:p-6">
+              {KANBAN_COLUMNS.map((status) => (
+                <DroppableKanbanColumn
+                  key={status}
+                  status={status}
+                  tasks={tasksByStatus[status]}
+                  onOpen={(task) => openTask(task)}
+                />
+              ))}
+            </div>
+          </DndContext>
+        ) : viewMode === 'timeline' ? (
+          <div className="p-4 sm:p-6">
+            <RecurringStrip series={activeSeries} t={t} onManage={() => setShowRecurring(true)} />
+            <TimelineView tasks={tasks} onOpen={(task) => openTask(task)} />
+          </div>
+        ) : (
+          /* ═══ List View — ClickUp Design ═══ */
+          <div className="flex flex-col min-h-0">
+            <RecurringStrip series={activeSeries} t={t} onManage={() => setShowRecurring(true)} />
+
+            {/* Table Header */}
+            <div className="grid grid-cols-[minmax(0,2.5fr)_130px_150px_140px_110px] border-b border-(--border) bg-(--background-subtle) sticky top-0 z-10 shrink-0">
+              <div className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-(--text-muted)">
+                {t('tasksClient.task', 'Name')}
+              </div>
+              <div
+                className="flex items-center gap-1 px-4 py-2 text-xs font-semibold text-(--text-muted) cursor-pointer hover:text-(--text-primary) select-none"
+                onClick={() => toggleSort('deadline')}
+              >
+                {t('tasksClient.deadline', 'Due date')}
+                {sortBy === 'deadline' && (
+                  <svg
+                    className={`w-3 h-3 ${sortDir === 'desc' ? 'rotate-180' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 15l7-7 7 7"
+                    />
+                  </svg>
+                )}
+              </div>
+              <div className="flex items-center gap-1 px-4 py-2 text-xs font-semibold text-(--text-muted)">
+                {t('tasksClient.assignee', 'Collaborators')}
+              </div>
+              <div className="flex items-center gap-1 px-4 py-2 text-xs font-semibold text-(--text-muted)">
+                {t('tasksClient.project', 'Projects')}
+              </div>
+              <div className="flex items-center gap-1 px-4 py-2 text-xs font-semibold text-(--text-muted)">
+                {t('common.status', 'Status')}
+              </div>
+            </div>
+
+            {/* Sections */}
+            {tasks.length === 0 && rawTasks !== undefined ? (
               <div className="py-20 text-center">
                 <p className="text-4xl mb-3">📋</p>
                 <p className="text-(--text-secondary) font-medium">
@@ -1148,41 +1291,147 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
                 </p>
               </div>
             ) : (
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-(--background-subtle) border-b border-(--border)">
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-(--text-muted) uppercase tracking-wide">
-                      {t('tasksClient.task')}
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-(--text-muted) uppercase tracking-wide">
-                      {t('tasksClient.assignee')}
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-(--text-muted) uppercase tracking-wide">
-                      {t('tasksClient.priority')}
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-(--text-muted) uppercase tracking-wide">
-                      {t('common.status')}
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-(--text-muted) uppercase tracking-wide">
-                      {t('tasksClient.deadline')}
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-(--text-muted) uppercase tracking-wide"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tasks.map((task) => (
-                    <TaskRow key={task._id} task={task} onOpen={() => openTask(task)} />
-                  ))}
-                </tbody>
-              </table>
+              <>
+                {sections.map((section) => {
+                  const isCollapsed = collapsedSections.has(section.key);
+                  return (
+                    <div key={section.key}>
+                      {/* Section Header */}
+                      <button
+                        onClick={() => toggleSection(section.key)}
+                        className="w-full flex items-center gap-2 px-4 py-2 bg-(--background) hover:bg-(--background-subtle) transition-colors text-left border-b border-(--border)"
+                      >
+                        <svg
+                          className={`w-3.5 h-3.5 text-(--text-muted) transition-transform shrink-0 ${isCollapsed ? '' : 'rotate-90'}`}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5l7 7-7 7"
+                          />
+                        </svg>
+                        <span className="text-sm font-semibold text-(--text-primary)">
+                          {section.label}
+                        </span>
+                      </button>
+
+                      {/* Task Rows */}
+                      {!isCollapsed &&
+                        section.tasks.map((task) => {
+                          const statusCfg = STATUS_CONFIG[task.status as Status];
+                          return (
+                            <div
+                              key={task._id}
+                              onClick={() => openTask(task)}
+                              className="grid grid-cols-[minmax(0,2.5fr)_130px_150px_140px_110px] border-b border-(--border) last:border-0 hover:bg-(--background-subtle) cursor-pointer transition-colors items-center"
+                            >
+                              {/* Name */}
+                              <div className="flex items-center gap-2 px-4 py-2 min-w-0">
+                                <span
+                                  className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${task.status === 'completed' ? 'border-(--success-solid) bg-(--success-solid)' : 'border-(--text-muted)'}`}
+                                >
+                                  {task.status === 'completed' && (
+                                    <svg
+                                      className="w-2.5 h-2.5 text-white"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={3}
+                                        d="M5 13l4 4L19 7"
+                                      />
+                                    </svg>
+                                  )}
+                                </span>
+                                <span className="text-sm text-(--text-primary) truncate font-medium">
+                                  {localizedTaskTitle(t, task)}
+                                </span>
+                              </div>
+                              {/* Due date */}
+                              <div className="px-4 py-2">
+                                <DeadlineBadge
+                                  deadline={task.deadline}
+                                  status={task.status as Status}
+                                />
+                              </div>
+                              {/* Collaborators */}
+                              <div className="flex items-center gap-2 px-4 py-2 min-w-0">
+                                <Avatar
+                                  name={task.assignedToUser?.name ?? '?'}
+                                  url={task.assignedToUser?.avatarUrl}
+                                  size="sm"
+                                />
+                                <span className="text-xs text-(--text-secondary) truncate">
+                                  {task.assignedToUser?.name ?? '—'}
+                                </span>
+                              </div>
+                              {/* Project */}
+                              <div className="px-4 py-2 min-w-0">
+                                <ProjectBadge
+                                  projectId={task.projectId}
+                                  projectName={task.projectName}
+                                  className="text-xs max-w-[140px]"
+                                />
+                              </div>
+                              {/* Status */}
+                              <div className="px-4 py-2">
+                                <div className="flex items-center gap-1.5">
+                                  <span
+                                    className={`w-2 h-2 rounded-full shrink-0 ${statusCfg.dot}`}
+                                  />
+                                  <span className={`text-xs font-medium ${statusCfg.color}`}>
+                                    {t(statusCfg.labelKey)}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+
+                      {/* Add task placeholder */}
+                      {!isCollapsed && canCreate && (
+                        <button
+                          onClick={() => setShowCreate(true)}
+                          className="w-full px-4 py-2 pl-10 text-left text-sm text-(--text-muted) hover:text-(--brand-text) hover:bg-(--background-subtle) transition-colors border-b border-(--border)"
+                        >
+                          {t('tasksClient.addTaskPlaceholder', 'Add task...')}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {/* Add section */}
+                {canCreate && (
+                  <button
+                    onClick={() => setShowCreate(true)}
+                    className="w-full px-4 py-3 text-left text-sm font-medium text-(--text-muted) hover:text-(--brand-text) hover:bg-(--background-subtle) transition-colors flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 4v16m8-8H4"
+                      />
+                    </svg>
+                    {t('tasksClient.addSection', 'Add section')}
+                  </button>
+                )}
+              </>
             )}
           </div>
-        </>
-      )}
+        )}
+      </div>
 
-      {/* Modals */}
-      {/* Detail slide-over. Opening a card no longer unmounts the board, so the
-          column arrangement — which is the whole point of a kanban — survives. */}
+      {/* ── Modals ── */}
       <TaskSheet
         taskId={sheetTask?.id ?? null}
         taskTitle={sheetTask?.title}
@@ -1200,8 +1449,6 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
               currentUserId={convexId}
               userRole={userRole as 'admin' | 'supervisor' | 'employee'}
               selectedOrgId={effectiveOrgId as Id<'organizations'> | undefined}
-              // Employees can only assign to themselves; default the picker so
-              // the wizard opens ready to go.
               assigneeId={userRole === 'employee' ? convexId : undefined}
               onComplete={() => setShowCreate(false)}
               onCancel={() => setShowCreate(false)}
@@ -1210,9 +1457,6 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
         </SheetContent>
       </Sheet>
 
-      {/* Recurring series manager in a sheet. It owns its own create/edit
-          panels, so opening it here keeps the board intact underneath — the
-          same slide-over pattern as a task detail. */}
       <Sheet open={showRecurring} onOpenChange={setShowRecurring}>
         <SheetContent side="right" size="lg" closeLabel={t('common.close', 'Close')}>
           <SheetHeader>
@@ -1230,7 +1474,6 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
         </SheetContent>
       </Sheet>
 
-      {/* "Draft saved. Restore?" for an accidentally closed task wizard. */}
       <DraftResumeBar
         show={taskDraft.available}
         label={t('task.createTask')}

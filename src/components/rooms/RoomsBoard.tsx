@@ -32,6 +32,7 @@ import { RoomCard, AmenityIcon } from './RoomCard';
 import { RoomFormModal } from './RoomFormModal';
 import { RoomBookingModal } from './RoomBookingModal';
 import { RoomDetailsModal } from './RoomDetailsModal';
+import { EmployeeSheet } from '@/components/employees/EmployeeSheet';
 import type { RoomWithBookings } from './types';
 
 const CAPACITY_STEPS = [0, 2, 4, 6, 10, 20];
@@ -82,6 +83,9 @@ export function RoomsBoard() {
   const [bookingOpen, setBookingOpen] = useState(false);
   const [detailsRoom, setDetailsRoom] = useState<RoomWithBookings | null>(null);
   const [pendingDelete, setPendingDelete] = useState<RoomWithBookings | null>(null);
+  const [viewProfileTarget, setViewProfileTarget] = useState<{ id: string; name: string } | null>(
+    null,
+  );
 
   const setRoomActive = useMutation(api.meetingRooms.setRoomActive);
   const deleteRoom = useMutation(api.meetingRooms.deleteRoom);
@@ -446,6 +450,17 @@ export function RoomsBoard() {
           setDetailsRoom(null);
           openBooking(target as RoomWithBookings, day);
         }}
+        onViewProfile={(userId, name) => {
+          setDetailsRoom(null);
+          setViewProfileTarget({ id: userId, name });
+        }}
+      />
+
+      <EmployeeSheet
+        employeeId={(viewProfileTarget?.id as Id<'users'>) ?? null}
+        onClose={() => setViewProfileTarget(null)}
+        employeeName={viewProfileTarget?.name}
+        elevated
       />
 
       <AlertDialog

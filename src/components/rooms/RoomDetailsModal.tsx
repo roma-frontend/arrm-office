@@ -62,6 +62,7 @@ export function RoomDetailsModal({
   canManage,
   onBook,
   initialDate,
+  onViewProfile,
 }: {
   open: boolean;
   onClose: () => void;
@@ -71,6 +72,9 @@ export function RoomDetailsModal({
   /** A `yyyy-MM-dd` the viewer asked for (e.g. a booking's own day) — the
    *  modal opens there instead of today. */
   initialDate?: string;
+  /** Called when "View Profile" is clicked on a participant avatar. The caller
+   *  should close this modal and open the employee sheet. */
+  onViewProfile?: (userId: string, name: string) => void;
 }) {
   const { t } = useTranslation();
   const router = useRouter();
@@ -383,13 +387,17 @@ export function RoomDetailsModal({
                           )}
                         </div>
                         <div className="mt-0.5 flex items-center gap-1 text-xs text-(--text-muted)">
-                          <span>{formatTime(booking.startTime)} – {formatTime(booking.endTime)}</span>
+                          <span>
+                            {formatTime(booking.startTime)} – {formatTime(booking.endTime)}
+                          </span>
                           {booking.organizerName ? (
                             <>
                               <span>·</span>
                               <EmployeeHoverCard
                                 userId={booking.organizerId}
                                 name={booking.organizerName}
+                                elevated
+                                onViewProfile={onViewProfile}
                               >
                                 <span className="cursor-pointer hover:underline hover:underline-offset-2">
                                   {booking.organizerName}
@@ -504,7 +512,9 @@ export function RoomDetailsModal({
                       </div>
                     </div>
 
-                    {isExpanded && <BookingTrackingPanel bookingId={booking._id} />}
+                    {isExpanded && (
+                      <BookingTrackingPanel bookingId={booking._id} onViewProfile={onViewProfile} />
+                    )}
                   </div>
                 );
               })

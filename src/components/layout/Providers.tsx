@@ -164,6 +164,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const { isEnabled: isFeatureEnabled } = useFeatureFlags();
   const isAIChatPage = pathname?.startsWith('/ai-chat');
   const isChatPage = pathname?.startsWith('/chat') && !isAIChatPage;
+  const isFullscreenPage = pathname?.startsWith('/tasks');
   // The chat module itself can be toggled off; the page then renders a
   // friendly disabled state instead of a live conversation surface.
   const isChatDisabled = isChatPage && !isFeatureEnabled('chat.realtime');
@@ -262,7 +263,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             {/* Ambient background — drifting colour orbs behind all content (z-0) */}
             <DashboardAmbient />
 
-            {/* Desktop Sidebar — ssr:false prevents localStorage persist mismatch */}
+            {/* Desktop Sidebar */}
             <Sidebar />
 
             {/* Mobile Sidebar */}
@@ -270,7 +271,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
             {/* Main content — overflow-clip prevents content bleed without creating containing block */}
             <div className="flex-1 flex flex-col min-w-0 overflow-clip">
-              {/* Navbar — ssr:false prevents theme/user/notification mismatch */}
+              {/* Navbar */}
               <Navbar />
               {/* Impersonation banner — always visible while acting as a user */}
               {user && <ImpersonationBanner />}
@@ -285,9 +286,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
               {/* Main content area — min-h-0 prevents CLS when content loads */}
               <main
                 className={
-                  isChatPage || isAIChatPage
-                    ? 'flex-1 overflow-hidden flex flex-col min-h-0 app-main'
-                    : 'flex-1 overflow-y-auto overflow-x-hidden min-h-0 main-scrollable app-main'
+                  isFullscreenPage
+                    ? 'flex-1 overflow-y-auto overflow-x-hidden min-h-0 app-main'
+                    : isChatPage || isAIChatPage
+                      ? 'flex-1 overflow-hidden flex flex-col min-h-0 app-main'
+                      : 'flex-1 overflow-y-auto overflow-x-hidden min-h-0 main-scrollable app-main'
                 }
               >
                 <PlanRouteGate>
@@ -300,6 +303,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
                       <p className="max-w-sm text-sm text-(--text-muted)">
                         {t('chat.disabled.description')}
                       </p>
+                    </div>
+                  ) : isFullscreenPage ? (
+                    <div className="flex flex-col flex-1 min-h-0 h-full p-0">
+                      <div className="flex flex-col flex-1 min-h-0 h-full mx-auto w-full">
+                        {children}
+                      </div>
                     </div>
                   ) : isChatPage ? (
                     <div className="flex flex-col flex-1 min-h-0 h-full p-0 sm:p-3 md:p-4">

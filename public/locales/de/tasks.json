@@ -102,7 +102,28 @@
     "week": "Woche",
     "month": "Monat",
     "quarter": "Quartal",
-    "today": "Heute"
+    "today": "Heute",
+    "share": "Teilen",
+    "customize": "Anpassen",
+    "board": "Board",
+    "addTask": "Aufgabe hinzufügen",
+    "filter": "Filter",
+    "sort": {
+      "status": "Nach Status sortieren",
+      "priority": "Nach Priorität sortieren",
+      "deadline": "Nach Frist sortieren",
+      "name": "Nach Name sortieren",
+      "assignee": "Nach Zuweisung sortieren"
+    },
+    "group": {
+      "status": "Nach Status gruppieren",
+      "priority": "Nach Priorität gruppieren",
+      "project": "Nach Projekt gruppieren",
+      "assignee": "Nach Zuweisung gruppieren"
+    },
+    "project": "Projekt",
+    "addTaskPlaceholder": "Aufgabe hinzufügen...",
+    "addSection": "+ Abschnitt hinzufügen"
   },
   "taskStatus": {
     "pending": "Ausstehend",

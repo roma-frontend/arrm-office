@@ -4,7 +4,18 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
-import { Building2, ChevronLeft, ChevronRight, Lock, X } from 'lucide-react';
+import {
+  Building2,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  FolderKanban,
+  LayoutDashboard,
+  Lock,
+  MessageCircle,
+  X,
+  CheckSquare,
+} from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSidebarStore } from '@/store/useSidebarStore';
@@ -64,12 +75,28 @@ export function Sidebar() {
   // Org branding — null means no branding configured (use defaults).
   const branding = useQuery(api.branding.getBranding, user?.organizationId ? {} : 'skip');
 
+  // Projects for dynamic sidebar items under Tasks sub-nav
+  const projects = useQuery(
+    api.projects.listProjects,
+    user?.organizationId ? { organizationId: user.organizationId as never } : 'skip',
+  );
+
   React.useEffect(() => setMounted(true), []);
 
   // Close sub-nav when sidebar collapses
   React.useEffect(() => {
     if (collapsed) setActiveSubNav(null);
   }, [collapsed]);
+
+  // Auto-open Tasks sub-nav when navigating to /tasks
+  React.useEffect(() => {
+    if (pathname.startsWith('/tasks')) {
+      const tasksItem = navItems.find(
+        (e) => !isSeparator(e) && (e as NavItem).href === '/tasks',
+      ) as NavItem | undefined;
+      if (tasksItem?.children) setActiveSubNav(tasksItem);
+    }
+  }, [pathname]);
 
   // Every badge below comes from the shared NavBadgesProvider — one set of
   // Convex subscriptions for the whole shell instead of a duplicated set per
@@ -100,11 +127,14 @@ export function Sidebar() {
   // toggle back on restores the original children.
   const withModuleChildren = (item: NavItem): NavItem => {
     if (MODULE_TOGGLE_BY_HREF[item.href]) return item;
-    if (!item.children?.some((c) => MODULE_TOGGLE_BY_HREF[c.href])) return item;
+    if (!item.children?.some((c) => !('type' in c) && MODULE_TOGGLE_BY_HREF[c.href])) return item;
     return {
       ...item,
       children: item.children.filter(
-        (c) => !MODULE_TOGGLE_BY_HREF[c.href] || isEnabled(MODULE_TOGGLE_BY_HREF[c.href]),
+        (c) =>
+          ('type' in c && c.type === 'separator') ||
+          (!('type' in c) &&
+            (!MODULE_TOGGLE_BY_HREF[c.href] || isEnabled(MODULE_TOGGLE_BY_HREF[c.href]))),
       ),
     };
   };
@@ -142,8 +172,8 @@ export function Sidebar() {
         const next = visibleItems[idx + 1];
         if (next && !isSeparator(next)) {
           const label = t(next.labelKey).toLowerCase();
-          const childMatch = next.children?.some((c) =>
-            t(c.labelKey).toLowerCase().includes(query),
+          const childMatch = next.children?.some(
+            (c) => !('type' in c) && t(c.labelKey).toLowerCase().includes(query),
           );
           if (label.includes(query) || childMatch) {
             result.push(entry);
@@ -151,7 +181,9 @@ export function Sidebar() {
         }
       } else {
         const label = t(entry.labelKey).toLowerCase();
-        const childMatch = entry.children?.some((c) => t(c.labelKey).toLowerCase().includes(query));
+        const childMatch = entry.children?.some(
+          (c) => !('type' in c) && t(c.labelKey).toLowerCase().includes(query),
+        );
         if (label.includes(query) || childMatch) {
           result.push(entry);
         }
@@ -629,80 +661,211 @@ export function Sidebar() {
               </button>
 
               {/* Sub-nav items */}
-              {activeSubNav?.children
-                ?.filter((child) => !child.roles || child.roles.includes(userRole))
-                .map((child, index) => {
-                  const ChildIcon = (child.icon || activeSubNav.icon) as LucideIcon;
-                  const isChildActive =
-                    pathname === child.href || pathname.startsWith(child.href + '/');
-                  const isSignaturesChild = child.href === '/signatures';
-                  const showChildBadge = isSignaturesChild && signatureBadgeCount > 0;
-                  const childLocked = isHrefLocked(entitlements, child.href);
+              {(() => {
+                const children =
+                  activeSubNav?.children?.filter((child) => {
+                    if ('type' in child && child.type === 'separator') return true;
+                    return (
+                      !(child as NavItem).roles || (child as NavItem).roles!.includes(userRole)
+                    );
+                  }) ?? [];
 
-                  return (
-                    <Link
-                      key={child.href}
-                      href={childLocked ? '/pricing' : child.href}
-                      onMouseEnter={() => setHoveredItem(child.href)}
-                      onMouseLeave={() => setHoveredItem(null)}
-                      className={cn(
-                        'group relative flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200',
-                        'focus:outline-none focus:ring-2 focus:ring-primary/30',
-                        isChildActive
-                          ? 'bg-sidebar-item-active shadow-sm text-sidebar-item-active-text'
-                          : cn(
-                              'text-sidebar-text',
-                              hoveredItem === child.href
-                                ? 'bg-sidebar-item-hover'
-                                : 'bg-transparent',
-                            ),
-                      )}
-                      style={{
-                        opacity: activeSubNav ? 1 : 0,
-                        transform: activeSubNav ? 'translateX(0)' : 'translateX(30px)',
-                        transition: `all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) ${activeSubNav ? 0.15 + index * 0.05 : 0}s`,
-                      }}
-                    >
-                      {isChildActive && (
-                        <div
-                          className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-r-full"
-                          style={{
-                            background:
-                              'linear-gradient(180deg, var(--primary) 0%, var(--primary-dark, var(--primary)) 100%)',
-                            animation: 'slideIn 0.3s ease-out',
-                          }}
-                        />
-                      )}
-                      <div className="relative">
-                        <ChildIcon
+                // Find the second separator index to insert projects after it
+                let separatorCount = 0;
+                let secondSeparatorIndex = -1;
+                children.forEach((child, idx) => {
+                  if ('type' in child && child.type === 'separator') {
+                    separatorCount++;
+                    if (separatorCount === 2) secondSeparatorIndex = idx;
+                  }
+                });
+
+                // Split: static items + dynamic projects after second separator
+                const staticItems =
+                  secondSeparatorIndex >= 0
+                    ? children.slice(0, secondSeparatorIndex + 1)
+                    : children;
+                const afterSeparator =
+                  secondSeparatorIndex >= 0 ? children.slice(secondSeparatorIndex + 1) : [];
+
+                return (
+                  <>
+                    {/* Static items from nav config */}
+                    {staticItems.map((child, index) => {
+                      // Separator
+                      if ('type' in child && child.type === 'separator') {
+                        return (
+                          <div
+                            key={`sep-${index}`}
+                            className="pt-2 pb-1 px-3"
+                            style={{
+                              opacity: activeSubNav ? 1 : 0,
+                              transform: activeSubNav ? 'translateX(0)' : 'translateX(20px)',
+                              transition: `all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) ${activeSubNav ? 0.1 + index * 0.05 : 0}s`,
+                            }}
+                          >
+                            <p className="text-[10px] font-semibold uppercase tracking-wider text-(--text-muted)">
+                              {child.labelKey}
+                            </p>
+                          </div>
+                        );
+                      }
+
+                      const navChild = child as {
+                        href: string;
+                        labelKey: string;
+                        icon?: LucideIcon;
+                        roles?: string[];
+                      };
+                      const ChildIcon = (navChild.icon || activeSubNav?.icon) as LucideIcon;
+                      const isChildActive =
+                        pathname === navChild.href || pathname.startsWith(navChild.href + '/');
+                      const childLocked = isHrefLocked(entitlements, navChild.href);
+
+                      return (
+                        <Link
+                          key={navChild.href}
+                          href={childLocked ? '/pricing' : navChild.href}
+                          onMouseEnter={() => setHoveredItem(navChild.href)}
+                          onMouseLeave={() => setHoveredItem(null)}
                           className={cn(
-                            'w-5 h-5 transition-all duration-200',
-                            isChildActive && 'scale-110',
+                            'group relative flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200',
+                            'focus:outline-none focus:ring-2 focus:ring-primary/30',
+                            isChildActive
+                              ? 'bg-sidebar-item-active shadow-sm text-sidebar-item-active-text'
+                              : cn(
+                                  'text-sidebar-text',
+                                  hoveredItem === navChild.href
+                                    ? 'bg-sidebar-item-hover'
+                                    : 'bg-transparent',
+                                ),
                           )}
                           style={{
-                            color: isChildActive
-                              ? 'var(--sidebar-item-active-text)'
-                              : 'var(--text-disabled)',
+                            opacity: activeSubNav ? 1 : 0,
+                            transform: activeSubNav ? 'translateX(0)' : 'translateX(30px)',
+                            transition: `all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) ${activeSubNav ? 0.15 + index * 0.05 : 0}s`,
                           }}
-                        />
-                        {childLocked && <PlanLockOverlay />}
-                        {showChildBadge && (
-                          <span
-                            className={cn(
-                              'absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full text-white text-[9px] font-bold flex items-center justify-center shadow-lg bg-linear-to-r from-(--danger-solid) to-(--danger-solid) animate-pulse',
-                            )}
-                          >
-                            {signatureBadgeCount > 9 ? '9+' : signatureBadgeCount}
+                        >
+                          {isChildActive && (
+                            <div
+                              className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-r-full"
+                              style={{
+                                background:
+                                  'linear-gradient(180deg, var(--primary) 0%, var(--primary-dark, var(--primary)) 100%)',
+                                animation: 'slideIn 0.3s ease-out',
+                              }}
+                            />
+                          )}
+                          <div className="relative">
+                            <ChildIcon
+                              className={cn(
+                                'w-5 h-5 transition-all duration-200',
+                                isChildActive && 'scale-110',
+                              )}
+                              style={{
+                                color: isChildActive
+                                  ? 'var(--sidebar-item-active-text)'
+                                  : 'var(--text-disabled)',
+                              }}
+                            />
+                            {childLocked && <PlanLockOverlay />}
+                          </div>
+                          <span className="flex-1 min-w-0 flex items-center gap-1">
+                            <span className="text-sm font-medium truncate">
+                              {t(navChild.labelKey)}
+                            </span>
+                            {childLocked && <UpgradePill />}
                           </span>
-                        )}
-                      </div>
-                      <span className="flex-1 min-w-0 flex items-center gap-1">
-                        <span className="text-sm font-medium truncate">{t(child.labelKey)}</span>
-                        {childLocked && <UpgradePill />}
-                      </span>
-                    </Link>
-                  );
-                })}
+                        </Link>
+                      );
+                    })}
+
+                    {/* Dynamic projects from database */}
+                    {afterSeparator.map((child, index) => {
+                      if ('type' in child && child.type === 'separator') {
+                        return (
+                          <div
+                            key={`sep-after-${index}`}
+                            className="pt-4 pb-1 px-3"
+                            style={{
+                              opacity: activeSubNav ? 1 : 0,
+                              transform: activeSubNav ? 'translateX(0)' : 'translateX(20px)',
+                              transition: `all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) ${activeSubNav ? 0.1 + (staticItems.length + index) * 0.05 : 0}s`,
+                            }}
+                          >
+                            <p className="text-[10px] font-semibold uppercase tracking-wider text-(--text-muted)">
+                              {child.labelKey}
+                            </p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })}
+
+                    {/* Render actual projects from database */}
+                    {secondSeparatorIndex >= 0 &&
+                      projects?.slice(0, 5).map((project, index) => {
+                        const projectHref = `/projects/${project._id}`;
+                        const isProjectActive =
+                          pathname === projectHref || pathname.startsWith(projectHref + '/');
+                        const baseIndex = staticItems.length + index;
+
+                        return (
+                          <Link
+                            key={project._id}
+                            href={projectHref}
+                            onMouseEnter={() => setHoveredItem(projectHref)}
+                            onMouseLeave={() => setHoveredItem(null)}
+                            className={cn(
+                              'group relative flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200',
+                              'focus:outline-none focus:ring-2 focus:ring-primary/30',
+                              isProjectActive
+                                ? 'bg-sidebar-item-active shadow-sm text-sidebar-item-active-text'
+                                : cn(
+                                    'text-sidebar-text',
+                                    hoveredItem === projectHref
+                                      ? 'bg-sidebar-item-hover'
+                                      : 'bg-transparent',
+                                  ),
+                            )}
+                            style={{
+                              opacity: activeSubNav ? 1 : 0,
+                              transform: activeSubNav ? 'translateX(0)' : 'translateX(30px)',
+                              transition: `all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) ${activeSubNav ? 0.15 + baseIndex * 0.05 : 0}s`,
+                            }}
+                          >
+                            {isProjectActive && (
+                              <div
+                                className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-r-full"
+                                style={{
+                                  background:
+                                    'linear-gradient(180deg, var(--primary) 0%, var(--primary-dark, var(--primary)) 100%)',
+                                  animation: 'slideIn 0.3s ease-out',
+                                }}
+                              />
+                            )}
+                            <div className="relative">
+                              <FolderKanban
+                                className={cn(
+                                  'w-5 h-5 transition-all duration-200',
+                                  isProjectActive && 'scale-110',
+                                )}
+                                style={{
+                                  color: isProjectActive
+                                    ? 'var(--sidebar-item-active-text)'
+                                    : 'var(--text-disabled)',
+                                }}
+                              />
+                            </div>
+                            <span className="flex-1 min-w-0 flex items-center gap-1">
+                              <span className="text-sm font-medium truncate">{project.name}</span>
+                            </span>
+                          </Link>
+                        );
+                      })}
+                  </>
+                );
+              })()}
             </div>
           )}
         </div>
@@ -761,6 +924,12 @@ export function MobileSidebar() {
   const [searchQuery, setSearchQuery] = React.useState('');
   const branding = useQuery(api.branding.getBranding, user?.organizationId ? {} : 'skip');
 
+  // Projects for dynamic sidebar items under Tasks sub-nav
+  const projects = useQuery(
+    api.projects.listProjects,
+    user?.organizationId ? { organizationId: user.organizationId as never } : 'skip',
+  );
+
   React.useEffect(() => setMounted(true), []);
 
   // Shared badge subscriptions (NavBadgesProvider) — this mobile sidebar used
@@ -816,11 +985,14 @@ export function MobileSidebar() {
   // Same module-toggle filtering as the desktop sidebar (see useFeatureFlags).
   const withModuleChildren = (item: NavItem): NavItem => {
     if (MODULE_TOGGLE_BY_HREF[item.href]) return item;
-    if (!item.children?.some((c) => MODULE_TOGGLE_BY_HREF[c.href])) return item;
+    if (!item.children?.some((c) => !('type' in c) && MODULE_TOGGLE_BY_HREF[c.href])) return item;
     return {
       ...item,
       children: item.children.filter(
-        (c) => !MODULE_TOGGLE_BY_HREF[c.href] || isEnabled(MODULE_TOGGLE_BY_HREF[c.href]),
+        (c) =>
+          ('type' in c && c.type === 'separator') ||
+          (!('type' in c) &&
+            (!MODULE_TOGGLE_BY_HREF[c.href] || isEnabled(MODULE_TOGGLE_BY_HREF[c.href]))),
       ),
     };
   };
@@ -860,8 +1032,8 @@ export function MobileSidebar() {
         const next = visibleItems[idx + 1];
         if (next && !isSeparator(next)) {
           const label = t(next.labelKey).toLowerCase();
-          const childMatch = next.children?.some((c) =>
-            t(c.labelKey).toLowerCase().includes(query),
+          const childMatch = next.children?.some(
+            (c) => !('type' in c) && t(c.labelKey).toLowerCase().includes(query),
           );
           if (label.includes(query) || childMatch) {
             result.push(entry);
@@ -869,7 +1041,9 @@ export function MobileSidebar() {
         }
       } else {
         const label = t(entry.labelKey).toLowerCase();
-        const childMatch = entry.children?.some((c) => t(c.labelKey).toLowerCase().includes(query));
+        const childMatch = entry.children?.some(
+          (c) => !('type' in c) && t(c.labelKey).toLowerCase().includes(query),
+        );
         if (label.includes(query) || childMatch) {
           result.push(entry);
         }
@@ -1230,73 +1404,180 @@ export function MobileSidebar() {
                 </span>
               </button>
 
-              {activeSubNav?.children
-                ?.filter((child) => !child.roles || child.roles.includes(userRole))
-                .map((child, index) => {
-                  const ChildIcon = (child.icon || activeSubNav.icon) as LucideIcon;
-                  const isChildActive =
-                    pathname === child.href || pathname.startsWith(child.href + '/');
-                  const isSignaturesChild = child.href === '/signatures';
-                  const showChildBadge = isSignaturesChild && mobileSignatureCount > 0;
-                  const childLocked = isHrefLocked(entitlements, child.href);
+              {(() => {
+                const children =
+                  activeSubNav?.children?.filter((child) => {
+                    if ('type' in child && child.type === 'separator') return true;
+                    return (
+                      !(child as NavItem).roles || (child as NavItem).roles!.includes(userRole)
+                    );
+                  }) ?? [];
 
-                  return (
-                    <Link
-                      key={child.href}
-                      href={childLocked ? '/pricing' : child.href}
-                      onClick={() => setMobileOpen(false)}
-                      className={cn(
-                        'flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200',
-                        'focus:outline-none focus:ring-2 focus:ring-(--primary)/30',
-                        isChildActive && 'shadow-sm',
-                      )}
-                      style={{
-                        backgroundColor: isChildActive
-                          ? 'var(--sidebar-item-active)'
-                          : 'transparent',
-                        color: isChildActive
-                          ? 'var(--sidebar-item-active-text)'
-                          : 'var(--text-muted)',
-                        opacity: activeSubNav ? 1 : 0,
-                        transform: activeSubNav ? 'translateX(0)' : 'translateX(30px)',
-                        transition: `all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) ${activeSubNav ? 0.15 + index * 0.05 : 0}s`,
-                      }}
-                    >
-                      {isChildActive && (
-                        <div
-                          className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-r-full"
-                          style={{
-                            background:
-                              'linear-gradient(180deg, var(--primary) 0%, var(--primary-dark, var(--primary)) 100%)',
-                          }}
-                        />
-                      )}
-                      <div className="relative">
-                        <ChildIcon
+                // Find the second separator index to insert projects after it
+                let separatorCount = 0;
+                let secondSeparatorIndex = -1;
+                children.forEach((child, idx) => {
+                  if ('type' in child && child.type === 'separator') {
+                    separatorCount++;
+                    if (separatorCount === 2) secondSeparatorIndex = idx;
+                  }
+                });
+
+                // Split: static items + dynamic projects after second separator
+                const staticItems =
+                  secondSeparatorIndex >= 0
+                    ? children.slice(0, secondSeparatorIndex + 1)
+                    : children;
+
+                return (
+                  <>
+                    {/* Static items from nav config */}
+                    {staticItems.map((child, index) => {
+                      if ('type' in child && child.type === 'separator') {
+                        return (
+                          <div
+                            key={`sep-${index}`}
+                            className="pt-4 pb-1 px-3"
+                            style={{
+                              opacity: activeSubNav ? 1 : 0,
+                              transform: activeSubNav ? 'translateX(0)' : 'translateX(20px)',
+                              transition: `all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) ${activeSubNav ? 0.1 + index * 0.05 : 0}s`,
+                            }}
+                          >
+                            <p className="text-[10px] font-semibold uppercase tracking-wider text-(--text-muted)">
+                              {child.labelKey}
+                            </p>
+                          </div>
+                        );
+                      }
+
+                      const navChild = child as {
+                        href: string;
+                        labelKey: string;
+                        icon?: LucideIcon;
+                        roles?: string[];
+                      };
+                      const ChildIcon = (navChild.icon || activeSubNav?.icon) as LucideIcon;
+                      const isChildActive =
+                        pathname === navChild.href || pathname.startsWith(navChild.href + '/');
+                      const childLocked = isHrefLocked(entitlements, navChild.href);
+
+                      return (
+                        <Link
+                          key={navChild.href}
+                          href={childLocked ? '/pricing' : navChild.href}
+                          onClick={() => setMobileOpen(false)}
                           className={cn(
-                            'w-5 h-5 transition-transform',
-                            isChildActive && 'scale-110',
+                            'flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200',
+                            'focus:outline-none focus:ring-2 focus:ring-(--primary)/30',
+                            isChildActive && 'shadow-sm',
                           )}
                           style={{
+                            backgroundColor: isChildActive
+                              ? 'var(--sidebar-item-active)'
+                              : 'transparent',
                             color: isChildActive
                               ? 'var(--sidebar-item-active-text)'
-                              : 'var(--text-disabled)',
+                              : 'var(--text-muted)',
+                            opacity: activeSubNav ? 1 : 0,
+                            transform: activeSubNav ? 'translateX(0)' : 'translateX(30px)',
+                            transition: `all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) ${activeSubNav ? 0.15 + index * 0.05 : 0}s`,
                           }}
-                        />
-                        {childLocked && <PlanLockOverlay />}
-                        {showChildBadge && (
-                          <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-linear-to-r from-(--danger-solid) to-(--danger-solid) text-white text-[9px] font-bold flex items-center justify-center shadow-lg animate-pulse">
-                            {mobileSignatureCount > 9 ? '9+' : mobileSignatureCount}
+                        >
+                          {isChildActive && (
+                            <div
+                              className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-r-full"
+                              style={{
+                                background:
+                                  'linear-gradient(180deg, var(--primary) 0%, var(--primary-dark, var(--primary)) 100%)',
+                              }}
+                            />
+                          )}
+                          <div className="relative">
+                            <ChildIcon
+                              className={cn(
+                                'w-5 h-5 transition-transform',
+                                isChildActive && 'scale-110',
+                              )}
+                              style={{
+                                color: isChildActive
+                                  ? 'var(--sidebar-item-active-text)'
+                                  : 'var(--text-disabled)',
+                              }}
+                            />
+                            {childLocked && <PlanLockOverlay />}
+                          </div>
+                          <span className="flex-1 min-w-0 flex items-center gap-1">
+                            <span className="text-sm font-medium truncate">
+                              {t(navChild.labelKey)}
+                            </span>
+                            {childLocked && <UpgradePill />}
                           </span>
-                        )}
-                      </div>
-                      <span className="flex-1 min-w-0 flex items-center gap-1">
-                        <span className="text-sm font-medium truncate">{t(child.labelKey)}</span>
-                        {childLocked && <UpgradePill />}
-                      </span>
-                    </Link>
-                  );
-                })}
+                        </Link>
+                      );
+                    })}
+
+                    {/* Dynamic projects from database */}
+                    {secondSeparatorIndex >= 0 &&
+                      projects?.slice(0, 5).map((project, index) => {
+                        const projectHref = `/projects/${project._id}`;
+                        const isProjectActive =
+                          pathname === projectHref || pathname.startsWith(projectHref + '/');
+                        const baseIndex = staticItems.length + index;
+
+                        return (
+                          <Link
+                            key={project._id}
+                            href={projectHref}
+                            onClick={() => setMobileOpen(false)}
+                            className={cn(
+                              'flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200',
+                              'focus:outline-none focus:ring-2 focus:ring-(--primary)/30',
+                              isProjectActive && 'shadow-sm',
+                            )}
+                            style={{
+                              backgroundColor: isProjectActive
+                                ? 'var(--sidebar-item-active)'
+                                : 'transparent',
+                              color: isProjectActive
+                                ? 'var(--sidebar-item-active-text)'
+                                : 'var(--text-muted)',
+                              opacity: activeSubNav ? 1 : 0,
+                              transform: activeSubNav ? 'translateX(0)' : 'translateX(30px)',
+                              transition: `all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) ${activeSubNav ? 0.15 + baseIndex * 0.05 : 0}s`,
+                            }}
+                          >
+                            {isProjectActive && (
+                              <div
+                                className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-r-full"
+                                style={{
+                                  background:
+                                    'linear-gradient(180deg, var(--primary) 0%, var(--primary-dark, var(--primary)) 100%)',
+                                }}
+                              />
+                            )}
+                            <div className="relative">
+                              <FolderKanban
+                                className={cn(
+                                  'w-5 h-5 transition-transform',
+                                  isProjectActive && 'scale-110',
+                                )}
+                                style={{
+                                  color: isProjectActive
+                                    ? 'var(--sidebar-item-active-text)'
+                                    : 'var(--text-disabled)',
+                                }}
+                              />
+                            </div>
+                            <span className="flex-1 min-w-0 flex items-center gap-1">
+                              <span className="text-sm font-medium truncate">{project.name}</span>
+                            </span>
+                          </Link>
+                        );
+                      })}
+                  </>
+                );
+              })()}
             </div>
           </div>
         </nav>

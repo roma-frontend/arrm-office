@@ -90,6 +90,20 @@ jest.mock('@dnd-kit/utilities', () => ({
   CSS: { Translate: { toString: () => '' } },
 }));
 
+// Mock CustomSelect to render a native <select> so project filter tests work
+jest.mock('@/components/ui/CustomSelect', () => ({
+  CustomSelect: ({ value, onChange, options, placeholder }: any) => (
+    <select data-testid="custom-select" value={value} onChange={(e) => onChange(e.target.value)}>
+      {placeholder && <option value="">{placeholder}</option>}
+      {options.map((opt: any) => (
+        <option key={opt.value} value={opt.value}>
+          {opt.label}
+        </option>
+      ))}
+    </select>
+  ),
+}));
+
 // ── Icon mock ────────────────────────────────────────────────────────────────
 jest.mock('lucide-react', () => {
   const MockIcon = (props: any) => <span data-testid="lucide-icon" {...props} />;
@@ -196,7 +210,8 @@ const ALL_TASKS = [alphaTask, betaTask, gammaTask, deltaTask];
 function getProjectSelect(container: HTMLElement): HTMLSelectElement | null {
   const selects = container.querySelectorAll('select');
   for (const sel of Array.from(selects)) {
-    if (Array.from(sel.options).some((o) => o.textContent === 'All Projects')) {
+    const values = Array.from(sel.options).map((o) => o.value);
+    if (values.includes('none') || values.some((v) => v.startsWith('proj-'))) {
       return sel as HTMLSelectElement;
     }
   }
@@ -223,7 +238,7 @@ describe('TasksClient project filter', () => {
     expect(select).not.toBeNull();
 
     const labels = Array.from(select!.options).map((o) => o.textContent);
-    expect(labels).toContain('All Projects');
+    expect(labels).toContain('Project');
     expect(labels).toContain('Q4 Launch (2)');
     expect(labels).toContain('API (1)');
     expect(labels).toContain('Without project (1)');

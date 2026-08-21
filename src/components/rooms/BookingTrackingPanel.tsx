@@ -105,10 +105,14 @@ function useDateLocale() {
 export function BookingTrackingPanel({
   bookingId,
   enabled = true,
+  onViewProfile,
 }: {
   bookingId: string;
   /** Skips the query while the panel is collapsed. */
   enabled?: boolean;
+  /** Forwarded to EmployeeHoverCard — closes the parent modal and opens the
+   *  employee sheet at a higher level. */
+  onViewProfile?: (userId: string, name: string) => void;
 }) {
   const { t } = useTranslation();
   const locale = useDateLocale();
@@ -278,6 +282,7 @@ export function BookingTrackingPanel({
           isOrganizer
           formatAbsolute={formatAbsolute}
           formatRelative={formatRelative}
+          onViewProfile={onViewProfile}
           t={t}
         />
 
@@ -306,6 +311,7 @@ export function BookingTrackingPanel({
             isYou={attendee.userId === viewer.userId}
             formatAbsolute={formatAbsolute}
             formatRelative={formatRelative}
+            onViewProfile={onViewProfile}
             t={t}
           />
         ))}
@@ -444,6 +450,8 @@ function AttendeeRow({
   isOrganizer,
   isYou,
   formatAbsolute,
+  formatRelative,
+  onViewProfile,
   t,
 }: {
   userId?: string;
@@ -461,6 +469,7 @@ function AttendeeRow({
   isYou?: boolean;
   formatAbsolute: (ms: number) => string;
   formatRelative: (ms: number) => string;
+  onViewProfile?: (userId: string, name: string) => void;
   t: Translate;
 }) {
   const style = RESPONSE_STYLE[response];
@@ -490,7 +499,7 @@ function AttendeeRow({
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-1.5 text-xs font-semibold text-(--text-primary)">
           {userId ? (
-            <EmployeeHoverCard userId={userId} name={name}>
+            <EmployeeHoverCard userId={userId} name={name} elevated onViewProfile={onViewProfile}>
               <span className="truncate cursor-pointer hover:underline hover:underline-offset-2">
                 {name}
               </span>
