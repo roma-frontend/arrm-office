@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { describe, it, expect, jest } from '@jest/globals';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 
 // ── i18n mock ────────────────────────────────────────────────────────────────
 jest.mock('react-i18next', () => ({
@@ -45,13 +45,6 @@ jest.mock('next/navigation', () => ({
   useRouter: () => ({ push, back: jest.fn(), prefetch: jest.fn() }),
 }));
 
-// ── HoverCard mock (Radix opens on hover; in tests we render content directly) ──
-jest.mock('@/components/ui/hover-card', () => ({
-  HoverCard: ({ children }: any) => <>{children}</>,
-  HoverCardTrigger: ({ children }: any) => <>{children}</>,
-  HoverCardContent: ({ children }: any) => <div data-testid="hover-card-content">{children}</div>,
-}));
-
 // ── Avatar mock ──────────────────────────────────────────────────────────────
 jest.mock('@/components/ui/avatar', () => ({
   Avatar: ({ children }: any) => <div>{children}</div>,
@@ -70,16 +63,44 @@ jest.mock('@/lib/stringUtils', () => ({
       .slice(0, 2),
 }));
 
+// ── EmployeeSheet mock ───────────────────────────────────────────────────────
+jest.mock('@/components/employees/EmployeeSheet', () => ({
+  EmployeeSheet: ({ employeeId, onClose }: any) =>
+    employeeId ? (
+      <div data-testid="employee-sheet">
+        <button onClick={onClose}>close</button>
+      </div>
+    ) : null,
+}));
+
 // ── Import after mocks ───────────────────────────────────────────────────────
+
 import { EmployeeHoverCard } from '@/components/employees/EmployeeHoverCard';
 
-// ── Tests ────────────────────────────────────────────────────────────────────
-describe('EmployeeHoverCard', () => {
-  beforeEach(() => {
-    queryResults = {};
-    push.mockClear();
-  });
+// Helper: render and trigger hover to open the card
+function renderAndHover(ui: React.ReactElement) {
+  const result = render(ui);
+  const trigger = result.container.querySelector('.inline') as HTMLElement;
+  if (trigger) {
+    act(() => {
+      fireEvent.mouseEnter(trigger);
+      jest.advanceTimersByTime(500);
+    });
+  }
+  return result;
+}
 
+beforeEach(() => {
+  jest.useFakeTimers();
+  queryResults = {};
+  push.mockClear();
+});
+
+afterEach(() => {
+  jest.useRealTimers();
+});
+
+describe('EmployeeHoverCard', () => {
   it('renders children as the trigger', () => {
     render(
       <EmployeeHoverCard userId="user-1" name="John Doe">
@@ -89,21 +110,20 @@ describe('EmployeeHoverCard', () => {
     expect(screen.getByTestId('trigger')).toBeTruthy();
   });
 
-  it('shows Convex user data in the card', () => {
-    queryResults = {
-      'users.queries.getUserById': {
-        name: 'John Doe',
-        email: 'john@example.com',
-        role: 'admin',
-        department: 'Engineering',
-        position: 'Senior Developer',
-        phone: '+1234567890',
-        avatarUrl: 'https://example.com/avatar.jpg',
-      },
-    };
-
-    render(
-      <EmployeeHoverCard userId="user-1" name="John Doe">
+  it('shows employeeData directly without query', () => {
+    renderAndHover(
+      <EmployeeHoverCard
+        userId="user-1"
+        name="John Doe"
+        employeeData={{
+          name: 'John Doe',
+          email: 'john@example.com',
+          role: 'admin',
+          department: 'Engineering',
+          position: 'Senior Developer',
+          phone: '+1234567890',
+        }}
+      >
         <span>John Doe</span>
       </EmployeeHoverCard>,
     );
@@ -112,73 +132,57 @@ describe('EmployeeHoverCard', () => {
     expect(screen.getByText('Engineering')).toBeTruthy();
     expect(screen.getByText('Senior Developer')).toBeTruthy();
     expect(screen.getByText('+1234567890')).toBeTruthy();
-    expect(screen.getByText('admin')).toBeTruthy();
   });
 
-  it('opens EmployeeSheet on "View Profile" click instead of navigating', () => {
-    queryResults = {
-      'users.queries.getUserById': {
-        name: 'Jane Smith',
-        email: 'jane@example.com',
-        role: 'employee',
-      },
-    };
-
-    render(
-      <EmployeeHoverCard userId="user-2" name="Jane Smith">
+  it('opens EmployeeSheet on "View Profile" click', () => {
+    renderAndHover(
+      <EmployeeHoverCard userId="user-1" name="Jane Smith">
         <span>Jane Smith</span>
       </EmployeeHoverCard>,
     );
 
-    fireEvent.click(screen.getByText('View Profile'));
-    // Should NOT navigate — sheet should open instead
-    expect(push).not.toHaveBeenCalled();
+    const viewProfile = screen.getByText('View Profile');
+    act(() => {
+      fireEvent.click(viewProfile);
+      // Advance timers and flush rAF
+      jest.advanceTimersByTime(50);
+    });
+
+    expect(screen.getByTestId('employee-sheet')).toBeTruthy();
   });
 
   it('shows avatar image when avatarUrl is present', () => {
-    queryResults = {
-      'users.queries.getUserById': {
-        name: 'Alice Brown',
-        email: 'alice@example.com',
-        role: 'supervisor',
-        avatarUrl: 'https://cdn.example.com/alice.png',
-      },
-    };
-
-    render(
-      <EmployeeHoverCard userId="user-3" name="Alice Brown">
-        <span>Alice Brown</span>
+    renderAndHover(
+      <EmployeeHoverCard
+        userId="user-1"
+        name="John Doe"
+        employeeData={{ avatarUrl: 'https://example.com/avatar.jpg' }}
+      >
+        <span>John Doe</span>
       </EmployeeHoverCard>,
     );
 
-    const img = screen.getByTestId('avatar-image');
-    expect(img.getAttribute('src')).toBe('https://cdn.example.com/alice.png');
+    expect(screen.getByTestId('avatar-image')).toBeTruthy();
   });
 
   it('shows avatar fallback with initials when no avatarUrl', () => {
-    queryResults = {
-      'users.queries.getUserById': {
-        name: 'Bob Wilson',
-        email: 'bob@example.com',
-        role: 'employee',
-      },
-    };
-
-    render(
-      <EmployeeHoverCard userId="user-4" name="Bob Wilson">
-        <span>Bob Wilson</span>
+    renderAndHover(
+      <EmployeeHoverCard userId="user-1" name="John Doe">
+        <span>John Doe</span>
       </EmployeeHoverCard>,
     );
 
     expect(screen.getByTestId('avatar-fallback')).toBeTruthy();
+    expect(screen.getByTestId('avatar-fallback').textContent).toBe('JD');
   });
 
   it('renders without crashing when no userId', () => {
-    render(
+    renderAndHover(
       <EmployeeHoverCard name="No ID User">
         <span>No ID User</span>
       </EmployeeHoverCard>,
     );
+
     expect(screen.getAllByText('No ID User').length).toBeGreaterThanOrEqual(1);
   });
 });

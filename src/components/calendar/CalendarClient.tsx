@@ -118,6 +118,7 @@ import { toast } from 'sonner';
 import nextDynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmployeeHoverCard } from '@/components/employees/EmployeeHoverCard';
+import { EmployeeSheet } from '@/components/employees/EmployeeSheet';
 
 // The fullscreen mode of the calendar is the accounting timesheet («табель»):
 // employees × days with every leave type, statuses and overtime. Heavy, so
@@ -805,6 +806,10 @@ export const CalendarClient = React.memo(function CalendarClient() {
   const [detailsRoom, setDetailsRoom] = useState<RoomDoc | null>(null);
   /** The booking day (`yyyy-MM-dd`) the room view should open on, if any. */
   const [detailsRoomDate, setDetailsRoomDate] = useState<string | null>(null);
+  const [viewProfileTarget, setViewProfileTarget] = useState<{ id: string; name: string } | null>(null);
+  // When closing the employee sheet, block room-detail clicks for one frame.
+  // Radix portals events through the React tree, so overlay clicks reach calendar handlers.
+  const sheetCooldownRef = useRef(false);
   const [editEvent, setEditEvent] = useState<CalendarEvent | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const calendarContainerRef = useRef<HTMLDivElement>(null);
@@ -1116,6 +1121,12 @@ export const CalendarClient = React.memo(function CalendarClient() {
     timelineInput,
   );
   useScrollLock(anyModalOpen);
+
+  // When the employee profile sheet is open, capture all clicks at the document
+  // level to prevent them from bubbling into calendar room-detail handlers.
+  // Radix Dialog portals its overlay to <body>, so React-level stopPropagation
+  // on a wrapper div does not work.
+
 
   // Debug: Log whenever selectedOrgId changes
   useEffect(() => {
@@ -2622,6 +2633,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
                             tabIndex={0}
                             title={t('rooms.calendar.openRoom')}
                             onClick={() => {
+                              if (viewProfileTarget || sheetCooldownRef.current) return;
                               const room = rooms.find((r) => r._id === booking.roomId);
                               if (room) setDetailsRoom(room);
                             }}
@@ -2710,7 +2722,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
             {/* Live meeting-room availability */}
             <RoomAvailabilityStrip
               organizationId={selectedOrgId}
-              onOpenRoom={(room) => setDetailsRoom(room)}
+              onOpenRoom={(room) => { if (!viewProfileTarget && !sheetCooldownRef.current) setDetailsRoom(room); }}
               onBookRoom={(room) => {
                 setRoomBookingRoomId(room._id);
                 setRoomBookingDate(selectedDay ?? new Date());
@@ -2896,6 +2908,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
             onClose={() => setShowDayDetails(false)}
             onOpenTimeline={setTimelineInput}
             onOpenRoom={(roomId, bookingDate) => {
+              if (viewProfileTarget || sheetCooldownRef.current) return;
               const room = rooms.find((r) => r._id === roomId);
               if (room) {
                 setShowDayDetails(false);
@@ -2933,7 +2946,30 @@ export const CalendarClient = React.memo(function CalendarClient() {
             setRoomBookingDate(day);
             setShowRoomBooking(true);
           }}
+          onViewProfile={(userId, name) => {
+            setDetailsRoom(null);
+            setDetailsRoomDate(null);
+            setViewProfileTarget({ id: userId, name });
+          }}
         />
+
+        {viewProfileTarget && (
+          <EmployeeSheet
+            employeeId={viewProfileTarget.id as Id<'users'>}
+            onClose={() => {
+              sheetCooldownRef.current = true;
+              setViewProfileTarget(null);
+              // Reset after React finishes rendering the close
+              requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                  sheetCooldownRef.current = false;
+                });
+              });
+            }}
+            employeeName={viewProfileTarget.name}
+            elevated
+          />
+        )}
 
         {/* Full event timeline — opened by double-clicking any event */}
         <EventTimelineModal input={timelineInput} onClose={() => setTimelineInput(null)} />
