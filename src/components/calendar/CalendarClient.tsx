@@ -812,14 +812,18 @@ export const CalendarClient = React.memo(function CalendarClient() {
   // Radix Dialog removes its overlay BEFORE the click event fires, so
   // the click physically lands on calendar elements underneath.
   // The guard in setViewProfileTarget(null) + setTimeout handles this.
-  // Reset detailsRoom synchronously whenever viewProfileTarget changes.
-  // Prevents room details from appearing after the employee sheet closes.
+  // When the employee sheet transitions from open → closed, force-close
+  // any room details that snuck in via click-through.
+  const sheetWasOpenRef = useRef(false);
   useLayoutEffect(() => {
-    if (!viewProfileTarget && detailsRoom) {
+    if (viewProfileTarget) {
+      sheetWasOpenRef.current = true;
+    } else if (sheetWasOpenRef.current && detailsRoom) {
+      sheetWasOpenRef.current = false;
       setDetailsRoom(null);
       setDetailsRoomDate(null);
     }
-  }, [viewProfileTarget, detailsRoom]);
+  });
 
   const [editEvent, setEditEvent] = useState<CalendarEvent | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
