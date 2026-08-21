@@ -805,25 +805,31 @@ export const CalendarClient = React.memo(function CalendarClient() {
   const [roomBookingRoomId, setRoomBookingRoomId] = useState<string | null>(null);
   const [detailsRoom, setDetailsRoom] = useState<RoomDoc | null>(null);
   /** The booking day (`yyyy-MM-dd`) the room view should open on, if any. */
-  const [detailsRoomDate, setDetailsRoomDate] = useState<string | null>(null);  const [viewProfileTarget, setViewProfileTarget] = useState<{ id: string; name: string } | null>(null);
-  const sheetCooldownRef = useRef(false);
+  const [detailsRoomDate, setDetailsRoomDate] = useState<string | null>(null);
+  const [viewProfileTarget, setViewProfileTarget] = useState<{ id: string; name: string } | null>(null);
 
-  // When closing the employee sheet, block room-detail clicks for 500ms.
-  // Radix Dialog removes its overlay BEFORE the click event fires, so
-  // the click physically lands on calendar elements underneath.
-  // The guard in setViewProfileTarget(null) + setTimeout handles this.
-  // When the employee sheet transitions from open → closed, force-close
-  // any room details that snuck in via click-through.
-  const sheetWasOpenRef = useRef(false);
-  useLayoutEffect(() => {
+  // Block native click events for 300ms after the employee sheet closes.
+  // Radix Dialog closes on pointerdown → React re-renders → cleanup runs →
+  // but the native click arrives AFTER cleanup. So we use a single
+  // document-level listener that checks a ref instead of state.
+  const blockClicksUntilRef = useRef(0);
+  useEffect(() => {
     if (viewProfileTarget) {
-      sheetWasOpenRef.current = true;
-    } else if (sheetWasOpenRef.current && detailsRoom) {
-      sheetWasOpenRef.current = false;
-      setDetailsRoom(null);
-      setDetailsRoomDate(null);
+      blockClicksUntilRef.current = Date.now() + 500;
+    } else if (blockClicksUntilRef.current > 0) {
+      blockClicksUntilRef.current = Date.now() + 300;
     }
   });
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (Date.now() < blockClicksUntilRef.current) {
+        e.stopPropagation();
+        e.preventDefault();
+      }
+    };
+    document.addEventListener('click', handler, { capture: true });
+    return () => document.removeEventListener('click', handler, { capture: true });
+  }, []);
 
   const [editEvent, setEditEvent] = useState<CalendarEvent | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -1648,8 +1654,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
             onClose={() => setTimesheetLeave(null)}
           />
         </>
-      )}
-      <div ref={calendarContainerRef} className="space-y-6 transition-all duration-300 ease-in-out">
+      )}        <div ref={calendarContainerRef} className="space-y-6 transition-all duration-300 ease-in-out">
         {/* -- Sticky Header -- */}
         <div className="sticky top-0 z-10 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 mb-4 bg-(--background)/95 backdrop-blur supports-[backdrop-filter]:bg-(--background)/60 border-b border-(--border)">
           <div className="flex flex-col gap-4">
@@ -2648,7 +2653,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
                             tabIndex={0}
                             title={t('rooms.calendar.openRoom')}
                             onClick={() => {
-                              if (viewProfileTarget || sheetCooldownRef.current) return;
+                              if (viewProfileTarget) return;
                               const room = rooms.find((r) => r._id === booking.roomId);
                               if (room) setDetailsRoom(room);
                             }}
@@ -2737,7 +2742,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
             {/* Live meeting-room availability */}
             <RoomAvailabilityStrip
               organizationId={selectedOrgId}
-              onOpenRoom={(room) => {              if (!viewProfileTarget && !sheetCooldownRef.current) setDetailsRoom(room); }}
+              onOpenRoom={(room) => { if (!viewProfileTarget) setDetailsRoom(room); }}
               onBookRoom={(room) => {
                 setRoomBookingRoomId(room._id);
                 setRoomBookingDate(selectedDay ?? new Date());
@@ -2923,7 +2928,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
             onClose={() => setShowDayDetails(false)}
             onOpenTimeline={setTimelineInput}
             onOpenRoom={(roomId, bookingDate) => {
-              if (viewProfileTarget || sheetCooldownRef.current) return;
+              if (viewProfileTarget) return;
               const room = rooms.find((r) => r._id === roomId);
               if (room) {
                 setShowDayDetails(false);
@@ -2968,16 +2973,14 @@ export const CalendarClient = React.memo(function CalendarClient() {
           }}
         />
 
-        {viewProfileTarget &&
-          createPortal(
-            <EmployeeSheet
-              employeeId={viewProfileTarget.id as Id<'users'>}
-              onClose={() => setViewProfileTarget(null)}
-              employeeName={viewProfileTarget.name}
-              elevated
-            />,
-            document.body,
-          )}
+        {viewProfileTarget && (
+          <EmployeeSheet
+            employeeId={viewProfileTarget.id as Id<'users'>}
+            onClose={() => setViewProfileTarget(null)}
+            employeeName={viewProfileTarget.name}
+            elevated
+          />
+        )}
 
         {/* Full event timeline — opened by double-clicking any event */}
         <EventTimelineModal input={timelineInput} onClose={() => setTimelineInput(null)} />

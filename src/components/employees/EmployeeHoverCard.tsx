@@ -224,14 +224,14 @@ export function EmployeeHoverCard({
 
   return (
     <>
-      <div
+      <span
         ref={triggerRef}
         onMouseEnter={handleEnter}
         onMouseLeave={handleLeave}
         className="inline"
       >
         {children}
-      </div>
+      </span>
       {card}
       {!onViewProfile && (
         <EmployeeSheet
