@@ -7,6 +7,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { Users } from 'lucide-react';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { EmployeeHoverCard } from '@/components/employees/EmployeeHoverCard';
 
 const PRESENCE_CONFIG = {
   available: {
@@ -110,9 +111,11 @@ export function TeamPresence() {
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-(--text-primary) truncate">
-                    {member.name}
-                  </p>
+                  <EmployeeHoverCard userId={member._id as string} name={member.name}>
+                    <p className="text-sm font-medium text-(--text-primary) truncate cursor-pointer hover:underline hover:underline-offset-2">
+                      {member.name}
+                    </p>
+                  </EmployeeHoverCard>
                   <p className="text-[10px] text-(--text-muted) truncate">
                     {member.department || member.role}
                   </p>

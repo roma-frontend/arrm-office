@@ -19,6 +19,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
+import { EmployeeHoverCard } from '@/components/employees/EmployeeHoverCard';
 
 const ROLE_ICONS: Record<string, LucideIcon> = {
   admin: Crown,
@@ -195,12 +196,14 @@ export function ReportingLineWidget({
                     {/* Info */}
                     <div className="flex-1 min-w-0 pt-0.5">
                       <div className="flex items-center gap-2">
-                        <p
-                          className="font-semibold text-sm truncate"
-                          style={{ color: 'var(--text-primary)' }}
-                        >
-                          {person.name}
-                        </p>
+                        <EmployeeHoverCard userId={person._id as string} name={person.name}>
+                          <p
+                            className="font-semibold text-sm truncate cursor-pointer hover:underline hover:underline-offset-2"
+                            style={{ color: 'var(--text-primary)' }}
+                          >
+                            {person.name}
+                          </p>
+                        </EmployeeHoverCard>
                         {isSubject && (
                           <Badge className="text-[10px] py-0 px-1.5 bg-(--brand-quiet) text-(--brand-text) border-(--brand-outline) shrink-0">
                             {t('employees.current', 'Current')}
@@ -306,12 +309,14 @@ export function ReportingLineWidget({
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p
-                            className="text-sm font-medium truncate"
-                            style={{ color: 'var(--text-primary)' }}
-                          >
-                            {report.name}
-                          </p>
+                          <EmployeeHoverCard userId={report._id as string} name={report.name}>
+                            <p
+                              className="text-sm font-medium truncate cursor-pointer hover:underline hover:underline-offset-2"
+                              style={{ color: 'var(--text-primary)' }}
+                            >
+                              {report.name}
+                            </p>
+                          </EmployeeHoverCard>
                           <div className="flex items-center gap-2">
                             <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
                               {report.position || report.role}
