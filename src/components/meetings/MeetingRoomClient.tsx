@@ -293,7 +293,11 @@ export function MeetingRoomClient() {
             connect
             onConnected={onConnected}
             onDisconnected={onDisconnected}
-            onError={(error) => toast.error(`${t('meetings.joinError')} — ${String(error)}`)}
+            onError={(error) => {
+              const msg = String(error);
+              if (msg.includes('Client initiated disconnect') || msg.includes('disconnect')) return;
+              toast.error(`${t('meetings.joinError')} — ${msg}`);
+            }}
             className="h-full"
             data-lk-theme="default"
           >

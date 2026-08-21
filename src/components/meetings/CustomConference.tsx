@@ -58,6 +58,7 @@ import {
   X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { AnimatedEmoji } from './AnimatedEmoji';
 
 type MeetingStatus = 'scheduled' | 'live' | 'ended';
 
@@ -132,6 +133,7 @@ function MeetingTile({
   speaking,
   handRaised,
   fallbackName,
+  reactions,
   className,
 }: {
   participant: Participant;
@@ -139,6 +141,7 @@ function MeetingTile({
   speaking: boolean;
   handRaised: boolean;
   fallbackName: string;
+  reactions?: { id: number; emoji: string }[];
   className?: string;
 }) {
   const cameraRefs = useParticipantTracks([Track.Source.Camera], participant.identity);
@@ -182,6 +185,20 @@ function MeetingTile({
         >
           <Hand className="h-3.5 w-3.5 text-amber-950" />
         </span>
+      )}
+
+      {/* Centered emoji reactions on this tile */}
+      {reactions && reactions.length > 0 && (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          {reactions.map((r) => (
+            <span
+              key={r.id}
+              className="meeting-tile-reaction absolute drop-shadow-[0_4px_12px_rgba(0,0,0,0.5)]"
+            >
+              <AnimatedEmoji emoji={r.emoji} size={72} />
+            </span>
+          ))}
+        </div>
       )}
 
       <div className="absolute bottom-2 left-2 flex items-center gap-1.5 rounded-lg bg-black/50 px-2 py-1 backdrop-blur-sm">
@@ -412,17 +429,52 @@ export function CustomConference(props: ConferenceProps) {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const [unread, setUnread] = useState(0);
 
-  const [floating, setFloating] = useState<{ id: number; emoji: string }[]>([]);
-  const floatId = useRef(0);
-  const pushReaction = (emoji: string) => {
-    const id = ++floatId.current;
-    setFloating((prev) => [...prev, { id, emoji }]);
-    setTimeout(() => setFloating((prev) => prev.filter((f) => f.id !== id)), 2600);
+  // ── Reactions ───────────────────────────────────────────────────────────
+  // Per-tile reactions: emoji appears centered on the sender's video frame
+  const [tileReactions, setTileReactions] = useState<
+    Record<string, { id: number; emoji: string }[]>
+  >({});
+  const tileReactionId = useRef(0);
+
+  // Bottom cascade: all reactions float upward from the dock
+  const [cascadeReactions, setCascadeReactions] = useState<
+    { id: number; emoji: string; x: number }[]
+  >([]);
+  const cascadeId = useRef(0);
+
+  const pushTileReaction = (emoji: string, identity: string) => {
+    const id = ++tileReactionId.current;
+    setTileReactions((prev) => ({
+      ...prev,
+      [identity]: [...(prev[identity] || []), { id, emoji }],
+    }));
+    setTimeout(() => {
+      setTileReactions((prev) => ({
+        ...prev,
+        [identity]: (prev[identity] || []).filter((r) => r.id !== id),
+      }));
+    }, 2500);
   };
+
+  const pushCascadeReaction = (emoji: string) => {
+    const id = ++cascadeId.current;
+    // Stagger horizontal position: random offset within a range, centered
+    const x = (Math.random() - 0.5) * 280;
+    setCascadeReactions((prev) => [...prev.slice(-18), { id, emoji, x }]);
+    setTimeout(() => {
+      setCascadeReactions((prev) => prev.filter((r) => r.id !== id));
+    }, 2900);
+  };
+
   useDataChannel('reactions', (msg) => {
     try {
-      const emoji = new TextDecoder().decode(msg.payload as unknown as Uint8Array);
-      if (emoji) pushReaction(emoji);
+      const raw = new TextDecoder().decode(msg.payload as unknown as Uint8Array);
+      const data = JSON.parse(raw) as { emoji?: string; identity?: string };
+      if (data.emoji) {
+        const senderIdentity = data.identity || msg.from?.identity || '';
+        pushTileReaction(data.emoji, senderIdentity);
+        pushCascadeReaction(data.emoji);
+      }
     } catch {
       /* ignore malformed */
     }
@@ -618,9 +670,13 @@ export function CustomConference(props: ConferenceProps) {
   };
 
   const react = async (emoji: string) => {
-    pushReaction(emoji);
+    // Show on own tile immediately
+    const localId = localParticipant?.identity || '';
+    pushTileReaction(emoji, localId);
+    pushCascadeReaction(emoji);
     try {
-      await sendReaction(new TextEncoder().encode(emoji), { reliable: true });
+      const payload = JSON.stringify({ emoji, identity: localId });
+      await sendReaction(new TextEncoder().encode(payload), { reliable: true });
     } catch {
       /* reactions are best-effort */
     }
@@ -673,6 +729,7 @@ export function CustomConference(props: ConferenceProps) {
             speaking={speakingSet.has(p.identity)}
             handRaised={!!hands[p.identity || p.sid]}
             fallbackName={youName}
+            reactions={tileReactions[p.identity || p.sid]}
           />
         </div>
       ))}
@@ -807,6 +864,7 @@ export function CustomConference(props: ConferenceProps) {
                   speaking={speakingSet.has(focusParticipant.identity)}
                   handRaised={!!hands[focusParticipant.identity || focusParticipant.sid]}
                   fallbackName={youName}
+                  reactions={tileReactions[focusParticipant.identity || focusParticipant.sid]}
                   className="h-full"
                 />
               </div>
@@ -830,6 +888,7 @@ export function CustomConference(props: ConferenceProps) {
                   speaking={speakingSet.has(p.identity)}
                   handRaised={!!hands[p.identity || p.sid]}
                   fallbackName={youName}
+                  reactions={tileReactions[p.identity || p.sid]}
                 />
               ))}
             </div>
@@ -1010,12 +1069,18 @@ export function CustomConference(props: ConferenceProps) {
         </div>
       </div>
 
-      {/* ── Floating reactions ── */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-24 z-10 flex justify-center overflow-hidden">
-        {floating.map((f) => (
-          <span key={f.id} className="meeting-reaction absolute text-3xl">
-            {f.emoji}
-          </span>
+      {/* ── Bottom cascade reactions ── */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-24 z-10 overflow-hidden">
+        {cascadeReactions.map((r) => (
+          <div
+            key={r.id}
+            className="meeting-reaction-cascade absolute bottom-0"
+            style={{ left: `calc(50% + ${r.x}px)` }}
+          >
+            <span className="meeting-tile-reaction inline-block drop-shadow-[0_2px_8px_rgba(0,0,0,0.4)]">
+              <AnimatedEmoji emoji={r.emoji} size={48} />
+            </span>
+          </div>
         ))}
       </div>
 

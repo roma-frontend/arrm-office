@@ -156,7 +156,7 @@ export default function GoalDetailClient() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between my-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => router.push('/goals')}>
             <ArrowLeft className="h-5 w-5" />

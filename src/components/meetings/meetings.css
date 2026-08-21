@@ -208,21 +208,63 @@
   background: transparent !important;
 }
 
-/* Floating emoji reactions rise from the control dock and fade out. */
-.meeting-reaction {
-  animation: meeting-reaction-rise 2.6s ease-out forwards;
+/* Per-tile reaction: emoji pops in, holds with its own character
+   animation, then floats up and fades. The emoji text does the work. */
+.meeting-tile-reaction {
+  pointer-events: none;
+  animation: meeting-tile-pop 2.6s cubic-bezier(0.18, 1.2, 0.3, 1) forwards;
 }
-
-@keyframes meeting-reaction-rise {
+@keyframes meeting-tile-pop {
   0% {
-    transform: translateY(40px) scale(0.6);
+    transform: scale(0.1) translateY(20px);
     opacity: 0;
   }
-  15% {
+  10% {
+    transform: scale(1.35) translateY(-4px);
+    opacity: 1;
+  }
+  20% {
+    transform: scale(0.95) translateY(2px);
+    opacity: 1;
+  }
+  30% {
+    transform: scale(1.08) translateY(0);
+    opacity: 1;
+  }
+  40% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+  75% {
+    transform: scale(1) translateY(0);
     opacity: 1;
   }
   100% {
-    transform: translateY(-220px) scale(1.25);
+    transform: scale(1.06) translateY(-30px);
+    opacity: 0;
+  }
+}
+
+/* Bottom cascade: reactions drift upward from the bottom, staggered horizontally. */
+.meeting-reaction-cascade {
+  pointer-events: none;
+  animation: meeting-cascade-rise 2.8s ease-out forwards;
+}
+
+@keyframes meeting-cascade-rise {
+  0% {
+    transform: translateY(0) scale(0.6);
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+    transform: translateY(-8px) scale(1);
+  }
+  80% {
+    opacity: 0.7;
+  }
+  100% {
+    transform: translateY(-280px) scale(1.15);
     opacity: 0;
   }
 }
