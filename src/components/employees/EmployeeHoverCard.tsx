@@ -13,9 +13,8 @@
  *   </EmployeeHoverCard>
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useRouter } from 'next/navigation';
 import { useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
@@ -25,6 +24,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { getInitials } from '@/lib/stringUtils';
 import { ArrowRight, Briefcase, Building2, Mail, MapPin, Phone, User } from 'lucide-react';
+import { EmployeeSheet } from '@/components/employees/EmployeeSheet';
 
 interface EmployeeHoverCardProps {
   /** Convex user ID — used to fetch the full profile. */
@@ -44,7 +44,7 @@ export function EmployeeHoverCard({
   openDelay = 400,
 }: EmployeeHoverCardProps) {
   const { t } = useTranslation();
-  const router = useRouter();
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const userData = useQuery(
     api.users.queries.getUserById,
@@ -54,6 +54,7 @@ export function EmployeeHoverCard({
   const hasProfile = !!userId;
 
   return (
+    <>
     <HoverCard openDelay={openDelay} closeDelay={150}>
       <HoverCardTrigger asChild>{children}</HoverCardTrigger>
       <HoverCardContent side="bottom" align="start" className="pointer-events-auto">
@@ -130,7 +131,7 @@ export function EmployeeHoverCard({
                 variant="ghost"
                 size="sm"
                 className="mt-3 w-full justify-between text-xs font-medium text-(--brand)"
-                onClick={() => router.push(`/employees/${userId}`)}
+                onClick={() => setSheetOpen(true)}
               >
                 {t('employeeHover.viewProfile', 'View Profile')}
                 <ArrowRight className="h-3 w-3" />
@@ -140,6 +141,13 @@ export function EmployeeHoverCard({
         </div>
       </HoverCardContent>
     </HoverCard>
+
+    <EmployeeSheet
+      employeeId={sheetOpen ? (userId as Id<'users'>) : null}
+      onClose={() => setSheetOpen(false)}
+      employeeName={name}
+    />
+    </>
   );
 }
 

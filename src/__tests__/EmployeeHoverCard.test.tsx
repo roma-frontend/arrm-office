@@ -115,7 +115,7 @@ describe('EmployeeHoverCard', () => {
     expect(screen.getByText('admin')).toBeTruthy();
   });
 
-  it('navigates to profile on "View Profile" click', () => {
+  it('opens EmployeeSheet on "View Profile" click instead of navigating', () => {
     queryResults = {
       'users.queries.getUserById': {
         name: 'Jane Smith',
@@ -131,7 +131,8 @@ describe('EmployeeHoverCard', () => {
     );
 
     fireEvent.click(screen.getByText('View Profile'));
-    expect(push).toHaveBeenCalledWith('/employees/user-2');
+    // Should NOT navigate — sheet should open instead
+    expect(push).not.toHaveBeenCalled();
   });
 
   it('shows avatar image when avatarUrl is present', () => {
