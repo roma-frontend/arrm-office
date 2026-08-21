@@ -58,15 +58,20 @@ function CircularProgress({
   label,
   color = 'var(--brand)',
   size = 64,
+  textColor,
+  whiteTrack,
 }: {
   value?: number;
   label: string;
   color?: string;
   size?: number;
+  textColor?: string;
+  whiteTrack?: boolean;
 }) {
   const circumference = 2 * Math.PI * 28;
   const safeValue = typeof value === 'number' && !isNaN(value) ? value : 0;
   const offset = circumference - (safeValue / 100) * circumference;
+  const isHero = !!whiteTrack;
   return (
     <div className="flex flex-col items-center gap-1.5" style={{ width: size }}>
       <div className="relative" style={{ width: size, height: size }}>
@@ -76,9 +81,9 @@ function CircularProgress({
             cy="32"
             r="28"
             fill="none"
-            stroke="currentColor"
+            stroke={isHero ? 'rgba(255,255,255,0.3)' : 'currentColor'}
             strokeWidth="3"
-            className="text-(--border)"
+            className={isHero ? undefined : 'text-(--border)'}
           />
           <circle
             cx="32"
@@ -94,10 +99,22 @@ function CircularProgress({
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-sm font-bold text-(--text-primary)">{Math.round(safeValue)}%</span>
+          <span
+            className="text-sm font-bold"
+            style={{ color: isHero ? 'white' : (textColor ?? 'var(--text-primary)') }}
+          >
+            {Math.round(safeValue)}%
+          </span>
         </div>
       </div>
-      <span className="text-[11px] text-(--text-muted) text-center">{label}</span>
+      <span
+        className="text-[11px] text-center"
+        style={{
+          color: isHero ? 'rgba(255,255,255,0.8)' : textColor ? `${textColor}cc` : undefined,
+        }}
+      >
+        {label}
+      </span>
     </div>
   );
 }
@@ -320,14 +337,23 @@ export default function ProfilePage() {
             transition={{ duration: 0.4, delay: 0.25 }}
             className="flex gap-6 sm:gap-8"
           >
-            <CircularProgress value={completionRate} label={t('profile.tasksCompleted', 'Tasks')} />
+            <CircularProgress
+              value={completionRate}
+              label={t('profile.tasksCompleted', 'Tasks')}
+              textColor="white"
+              whiteTrack
+            />
             <CircularProgress
               value={productivity}
               label={t('profile.punctuality', 'Punctuality')}
+              textColor="white"
+              whiteTrack
             />
             <CircularProgress
               value={daysActive > 0 ? Math.min(100, daysActive) : 0}
               label={t('profile.daysActive', 'Days Active')}
+              textColor="white"
+              whiteTrack
             />
           </motion.div>
         </div>
@@ -343,7 +369,7 @@ export default function ProfilePage() {
             onClick={() => setActiveTab(id)}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all flex-1 justify-center ${
               activeTab === id
-                ? 'bg-(--card) text-(--text-primary) shadow-sm'
+                ? 'bg-(--brand) text-white shadow-sm'
                 : 'text-(--text-muted) hover:text-(--text-primary)'
             }`}
           >

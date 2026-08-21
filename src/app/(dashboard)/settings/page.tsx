@@ -15,7 +15,6 @@ import {
   LayoutDashboard,
   Link2,
   ShieldCheck,
-  User,
   ChevronLeft,
   ChevronRight,
   Building2,
@@ -95,11 +94,6 @@ const IntegrationSettings = dynamic(
     })),
   { ssr: false },
 );
-const ProfileSettings = dynamic(
-  () =>
-    import('@/components/settings/ProfileSettings').then((m) => ({ default: m.ProfileSettings })),
-  { ssr: false },
-);
 const SLASettings = dynamic(() => import('@/components/admin/SLASettings'), { ssr: false });
 const BrandingSettings = dynamic(() => import('@/components/settings/BrandingSettings'), {
   ssr: false,
@@ -108,17 +102,18 @@ const AIGovernancePanel = dynamic(() => import('@/components/ai/AIGovernancePane
   ssr: false,
 });
 const MeetingRoomSettings = dynamic(
-  () => import('@/components/settings/MeetingRoomSettings').then((m) => ({ default: m.MeetingRoomSettings })),
+  () =>
+    import('@/components/settings/MeetingRoomSettings').then((m) => ({
+      default: m.MeetingRoomSettings,
+    })),
   { ssr: false },
 );
 
 export default function SettingsPage() {
   const { t } = useTranslation();
   const { user, login } = useAuthStore();
-  const [activeTab, setActiveTab] = useState('profile');
+  const [activeTab, setActiveTab] = useState('productivity');
   const [saving, setSaving] = useState(false);
-  const [name, setName] = useState(user?.name ?? '');
-  const [email, setEmail] = useState(user?.email ?? '');
   const [productivitySettings, setProductivitySettings] = useState({});
   const [localizationSettings, setLocalizationSettings] = useState({});
   const [dashboardSettings, setDashboardSettings] = useState({});
@@ -205,12 +200,6 @@ export default function SettingsPage() {
   const updateOwnProfile = useMutation(api.users.mutations.updateOwnProfile);
   const migrateFaceToAvatar = useMutation(api.users.admin.migrateFaceToAvatar);
 
-  // Sync when user loads from store (async)
-  useEffect(() => {
-    if (user?.name) setName(user.name);
-    if (user?.email) setEmail(user.email);
-  }, [user?.name, user?.email]);
-
   // Auto-migrate: copy faceImageUrl → avatarUrl for users who registered face but have no avatar
   useEffect(() => {
     if (user?.role === 'admin') {
@@ -222,12 +211,7 @@ export default function SettingsPage() {
     if (!user?.id) return;
     setSaving(true);
     try {
-      const newName = name.trim() || user.name;
-      const newEmail = email.trim() || user.email;
-
       const allSettings = {
-        name: newName,
-        email: newEmail,
         ...productivitySettings,
         ...localizationSettings,
         ...dashboardSettings,
@@ -255,12 +239,6 @@ export default function SettingsPage() {
   };
 
   const tabs = [
-    {
-      value: 'profile',
-      label: t('settings.profile'),
-      icon: User,
-      description: t('settings.profileDesc'),
-    },
     {
       value: 'productivity',
       label: t('settings.productivity'),
@@ -426,16 +404,6 @@ export default function SettingsPage() {
         {/* Tab Content */}
         {/* Tab Content */}
         <div className="animate-in fade-in duration-150">
-          <TabsContent value="profile" className="space-y-6 mt-0">
-            <ProfileSettings
-              user={user}
-              name={name}
-              email={email}
-              onNameChange={setName}
-              onEmailChange={setEmail}
-            />
-          </TabsContent>
-
           <TabsContent value="productivity" className="space-y-6 mt-0">
             <ProductivitySettings user={user} onSettingsChange={setProductivitySettings} />
           </TabsContent>

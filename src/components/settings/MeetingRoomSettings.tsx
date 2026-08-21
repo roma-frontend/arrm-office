@@ -13,13 +13,7 @@ import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -36,9 +30,7 @@ export function MeetingRoomSettings() {
   const { t } = useTranslation();
   const { user } = useAuthStore();
   const selectedOrgId = useSelectedOrganization();
-  const organizationId = (selectedOrgId ?? user?.organizationId) as
-    | Id<'organizations'>
-    | undefined;
+  const organizationId = (selectedOrgId ?? user?.organizationId) as Id<'organizations'> | undefined;
 
   const leadTime = useQuery(
     api.meetingRooms.getMeetingReminderLeadTime,
@@ -58,12 +50,7 @@ export function MeetingRoomSettings() {
     setSaving(true);
     try {
       await updateLeadTime({ organizationId, leadTimeMinutes: selected });
-      toast.success(
-        t(
-          'settings.meetingRooms.leadTimeSaved',
-          'Reminder timing updated',
-        ),
-      );
+      toast.success(t('settings.meetingRooms.leadTimeSaved', 'Reminder timing updated'));
     } catch (err) {
       toast.error(
         err instanceof Error
@@ -128,14 +115,8 @@ export function MeetingRoomSettings() {
           </div>
 
           <div className="flex justify-end">
-            <Button
-              size="sm"
-              onClick={handleSave}
-              disabled={saving || leadTime === selected}
-            >
-              {saving
-                ? t('buttons.saving', 'Saving...')
-                : t('buttons.saveChanges', 'Save Changes')}
+            <Button size="sm" onClick={handleSave} disabled={saving || leadTime === selected}>
+              {saving ? t('buttons.saving', 'Saving...') : t('buttons.saveChanges', 'Save Changes')}
             </Button>
           </div>
         </div>
