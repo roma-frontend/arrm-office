@@ -2704,6 +2704,9 @@ export const CalendarClient = React.memo(function CalendarClient() {
                                     <EmployeeHoverCard
                                       userId={booking.organizerId}
                                       name={booking.organizerName}
+                                      onViewProfile={(userId, name) => {
+                                        setViewProfileTarget({ id: userId, name });
+                                      }}
                                     >
                                       <span className="cursor-pointer hover:underline hover:underline-offset-2">
                                         {booking.organizerName}
