@@ -382,12 +382,11 @@ export function RoomDetailsModal({
                             </Badge>
                           )}
                         </div>
-                        <p className="mt-0.5 text-xs text-(--text-muted)">
-                          {formatTime(booking.startTime)} – {formatTime(booking.endTime)}
+                        <div className="mt-0.5 flex items-center gap-1 text-xs text-(--text-muted)">
+                          <span>{formatTime(booking.startTime)} – {formatTime(booking.endTime)}</span>
                           {booking.organizerName ? (
                             <>
-                              {' '}
-                              ·{' '}
+                              <span>·</span>
                               <EmployeeHoverCard
                                 userId={booking.organizerId}
                                 name={booking.organizerName}
@@ -400,7 +399,7 @@ export function RoomDetailsModal({
                           ) : (
                             ''
                           )}
-                        </p>
+                        </div>
                         {booking.attendeeNames.length > 0 && (
                           <p className="mt-1 truncate text-xs text-(--text-secondary)">
                             <Users className="mr-1 inline h-3 w-3" />

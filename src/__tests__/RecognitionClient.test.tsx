@@ -35,6 +35,10 @@ jest.mock('react-i18next', () => ({
   }),
 }));
 
+jest.mock('@/components/employees/EmployeeHoverCard', () => ({
+  EmployeeHoverCard: ({ children }: any) => <span>{children}</span>,
+}));
+
 // ── Convex: keyed queries + mutations ────────────────────────────────────────
 let queryResults: Record<string, any> = {};
 const mockMutations: Record<string, jest.Mock> = {};

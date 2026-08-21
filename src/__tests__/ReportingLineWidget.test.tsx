@@ -32,6 +32,10 @@ jest.mock('@/components/ui/card', () => ({
   CardContent: ({ children }: any) => <div>{children}</div>,
 }));
 
+jest.mock('@/components/employees/EmployeeHoverCard', () => ({
+  EmployeeHoverCard: ({ children }: any) => <span>{children}</span>,
+}));
+
 jest.mock('lucide-react', () => {
   const names = ['Network', 'ChevronUp', 'Users'];
   const out: Record<string, (props: any) => React.ReactElement> = {};

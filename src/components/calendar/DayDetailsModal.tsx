@@ -645,13 +645,11 @@ export function DayDetailsModal({
                           <p className="truncate text-sm font-semibold text-(--text-primary)">
                             {booking.title}
                           </p>
-                          <p className="mt-0.5 text-xs text-(--text-muted)">
-                            {format(new Date(booking.startTime), 'HH:mm', { locale })} –{' '}
-                            {format(new Date(booking.endTime), 'HH:mm', { locale })}
+                          <div className="mt-0.5 flex items-center gap-1 text-xs text-(--text-muted)">
+                            <span>{format(new Date(booking.startTime), 'HH:mm', { locale })} – {format(new Date(booking.endTime), 'HH:mm', { locale })}</span>
                             {booking.organizerName ? (
                               <>
-                                {' '}
-                                ·{' '}
+                                <span>·</span>
                                 <EmployeeHoverCard
                                   userId={booking.organizerId}
                                   name={booking.organizerName}
@@ -664,7 +662,7 @@ export function DayDetailsModal({
                             ) : (
                               ''
                             )}
-                          </p>
+                          </div>
                           <p className="mt-1 flex items-center gap-1 truncate text-xs text-(--text-secondary)">
                             <MapPin className="h-3 w-3 shrink-0" />
                             <span className="truncate">{booking.roomName}</span>

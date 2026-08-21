@@ -25,6 +25,7 @@ import { DraftResumeBar } from '@/components/ui/DraftResumeBar';
 import { useDraftResume } from '@/hooks/useDraftResume';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { AssignSupervisorModal } from './AssignSupervisorModal';
+import { EmployeeHoverCard } from '@/components/employees/EmployeeHoverCard';
 import {
   DndContext,
   PointerSensor,
@@ -302,9 +303,17 @@ function TaskCardContent({ task, isDragging = false }: { task: TaskItem; isDragg
             url={task.assignedToUser?.avatarUrl}
             size="sm"
           />
-          <span className="text-xs text-(--text-muted) truncate max-w-[100px]">
-            {task.assignedToUser?.name ?? '—'}
-          </span>
+          {task.assignedToUser?._id ? (
+            <EmployeeHoverCard userId={task.assignedToUser._id} name={task.assignedToUser.name ?? '?'}>
+              <span className="text-xs text-(--text-muted) truncate max-w-[100px] cursor-pointer hover:underline hover:underline-offset-2">
+                {task.assignedToUser?.name ?? '—'}
+              </span>
+            </EmployeeHoverCard>
+          ) : (
+            <span className="text-xs text-(--text-muted) truncate max-w-[100px]">
+              {task.assignedToUser?.name ?? '—'}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {task.attachments && task.attachments.length > 0 && (
@@ -450,9 +459,17 @@ function TaskRow({ task, onOpen }: { task: TaskItem; onOpen: () => void }) {
               url={task.assignedToUser?.avatarUrl}
               size="sm"
             />
-            <span className="text-sm text-(--text-secondary)">
-              {task.assignedToUser?.name ?? '—'}
-            </span>
+            {task.assignedToUser?._id ? (
+              <EmployeeHoverCard userId={task.assignedToUser._id} name={task.assignedToUser.name ?? '?'}>
+                <span className="text-sm text-(--text-secondary) cursor-pointer hover:underline hover:underline-offset-2">
+                  {task.assignedToUser?.name ?? '—'}
+                </span>
+              </EmployeeHoverCard>
+            ) : (
+              <span className="text-sm text-(--text-secondary)">
+                {task.assignedToUser?.name ?? '—'}
+              </span>
+            )}
           </div>
         </td>
         <td className="px-4 py-3">

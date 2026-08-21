@@ -488,7 +488,7 @@ function AttendeeRow({
       </span>
 
       <div className="min-w-0 flex-1">
-        <p className="flex flex-wrap items-center gap-1.5 text-xs font-semibold text-(--text-primary)">
+        <div className="flex flex-wrap items-center gap-1.5 text-xs font-semibold text-(--text-primary)">
           {userId ? (
             <EmployeeHoverCard userId={userId} name={name}>
               <span className="truncate cursor-pointer hover:underline hover:underline-offset-2">
@@ -522,7 +522,7 @@ function AttendeeRow({
               {t('rooms.tracking.present')}
             </Badge>
           )}
-        </p>
+        </div>
         {(subtitle || email) && (
           <p className="truncate text-[11px] text-(--text-muted)">{subtitle || email}</p>
         )}

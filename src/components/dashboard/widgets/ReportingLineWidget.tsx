@@ -8,6 +8,7 @@ import { useQuery } from 'convex/react';
 import { Network, ChevronUp, Users } from 'lucide-react';
 import { api } from '../../../../convex/_generated/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { EmployeeHoverCard } from '@/components/employees/EmployeeHoverCard';
 
 type Person = {
   _id: string;
@@ -42,7 +43,9 @@ function PersonRow({ person, muted }: { person: Person; muted?: boolean }) {
     <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-(--background-subtle) transition-colors">
       <Avatar name={person.name} avatarUrl={person.avatarUrl} />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-(--text-primary) truncate">{person.name}</p>
+        <EmployeeHoverCard userId={person._id} name={person.name}>
+          <p className="text-sm font-medium text-(--text-primary) truncate cursor-pointer hover:underline hover:underline-offset-2">{person.name}</p>
+        </EmployeeHoverCard>
         {(person.position || person.department) && (
           <p
             className={`text-xs truncate ${muted ? 'text-(--text-muted)' : 'text-(--text-muted)'}`}

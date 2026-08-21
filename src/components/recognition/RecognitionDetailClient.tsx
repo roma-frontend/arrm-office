@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { enUS, ru, hy } from 'date-fns/locale';
+import { EmployeeHoverCard } from '@/components/employees/EmployeeHoverCard';
 
 const CategoryBadge = ({ category }: { category: string }) => {
   const { t } = useTranslation();
@@ -99,7 +100,9 @@ export default function RecognitionDetailClient() {
                 <AvatarFallback>{kudo.sender.name.charAt(0)}</AvatarFallback>
               </Avatar>
               <div>
-                <p className="font-medium">{kudo.sender.name}</p>
+                <EmployeeHoverCard userId={kudo.sender._id as unknown as string} name={kudo.sender.name}>
+                  <p className="font-medium cursor-pointer hover:underline hover:underline-offset-2">{kudo.sender.name}</p>
+                </EmployeeHoverCard>
                 <p className="text-sm text-muted-foreground">{t('recognition.sender')}</p>
               </div>
             </div>
@@ -122,7 +125,9 @@ export default function RecognitionDetailClient() {
               <AvatarFallback>{kudo.receiver.name.charAt(0)}</AvatarFallback>
             </Avatar>
             <div>
-              <p className="font-medium">{kudo.receiver.name}</p>
+              <EmployeeHoverCard userId={kudo.receiver._id as unknown as string} name={kudo.receiver.name}>
+                <p className="font-medium cursor-pointer hover:underline hover:underline-offset-2">{kudo.receiver.name}</p>
+              </EmployeeHoverCard>
               <p className="text-sm text-muted-foreground">{t('recognition.receiver')}</p>
             </div>
           </div>

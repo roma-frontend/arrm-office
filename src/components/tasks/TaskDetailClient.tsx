@@ -12,6 +12,7 @@ import { useNow } from '@/hooks/useNow';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { EmployeeHoverCard } from '@/components/employees/EmployeeHoverCard';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
@@ -376,7 +377,9 @@ export default function TaskDetailClient({
                     <AvatarImage src={task.assignedToUser.avatarUrl} />
                     <AvatarFallback>{task.assignedToUser.name.charAt(0)}</AvatarFallback>
                   </Avatar>
-                  <span className="font-medium">{task.assignedToUser.name}</span>
+                  <EmployeeHoverCard userId={task.assignedToUser._id as unknown as string} name={task.assignedToUser.name}>
+                    <span className="font-medium cursor-pointer hover:underline hover:underline-offset-2">{task.assignedToUser.name}</span>
+                  </EmployeeHoverCard>
                 </div>
               </div>
             )}
@@ -620,9 +623,17 @@ export default function TaskDetailClient({
                   </Avatar>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-baseline justify-between gap-2">
-                      <span className="text-sm font-medium">
-                        {c.author?.name ?? t('tasksClient.unknownUser')}
-                      </span>
+                      {c.author?._id ? (
+                        <EmployeeHoverCard userId={c.author._id as unknown as string} name={c.author?.name ?? ''}>
+                          <span className="text-sm font-medium cursor-pointer hover:underline hover:underline-offset-2">
+                            {c.author?.name ?? t('tasksClient.unknownUser')}
+                          </span>
+                        </EmployeeHoverCard>
+                      ) : (
+                        <span className="text-sm font-medium">
+                          {c.author?.name ?? t('tasksClient.unknownUser')}
+                        </span>
+                      )}
                       <span className="text-xs text-muted-foreground shrink-0">
                         {format(new Date(c._creationTime), 'dd MMM yyyy HH:mm', {
                           locale: dateLocale,

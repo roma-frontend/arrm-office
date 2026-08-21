@@ -28,6 +28,10 @@ jest.mock('react-i18next', () => ({
 // ── Convex mock ──────────────────────────────────────────────────────────────
 let queryResults: Record<string, unknown> = {};
 
+jest.mock('@/components/employees/EmployeeHoverCard', () => ({
+  EmployeeHoverCard: ({ children }: any) => <span>{children}</span>,
+}));
+
 jest.mock('convex/react', () => ({
   useQuery: (ref: { _name?: string }) => queryResults[ref?._name ?? ''],
   useMutation: () => jest.fn(),

@@ -52,6 +52,7 @@ import { Id, Doc } from '@/convex/_generated/dataModel';
 import { api } from '@/convex/_generated/api';
 import { RewardsTab } from './RewardsTab';
 import { RewardsAdminPanel } from './RewardsAdminPanel';
+import { EmployeeHoverCard } from '@/components/employees/EmployeeHoverCard';
 
 // ── Category Config ──────────────────────────────────────────────────────────
 
@@ -719,7 +720,9 @@ export function RecognitionClient() {
                       <AvatarFallback>{entry.name?.slice(0, 2).toUpperCase()}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{entry.name}</p>
+                      <EmployeeHoverCard userId={entry.userId as string} name={entry.name ?? ''}>
+                        <p className="font-medium truncate cursor-pointer hover:underline hover:underline-offset-2">{entry.name}</p>
+                      </EmployeeHoverCard>
                       <p className="text-sm text-muted-foreground truncate">
                         {entry.position} {entry.department && `• ${entry.department}`}
                       </p>
@@ -822,9 +825,13 @@ function KudoCard({ kudo, onReact, t, onClick }: KudoCardProps) {
 
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-1 text-sm">
-              <span className="font-semibold">{kudo.sender?.name}</span>
+              <EmployeeHoverCard userId={kudo.sender?._id as string} name={kudo.sender?.name ?? ''}>
+                <span className="font-semibold cursor-pointer hover:underline hover:underline-offset-2">{kudo.sender?.name}</span>
+              </EmployeeHoverCard>
               <span className="text-muted-foreground">{t('recognition.sentTo')}</span>
-              <span className="font-semibold">{kudo.receiver?.name}</span>
+              <EmployeeHoverCard userId={kudo.receiver?._id as string} name={kudo.receiver?.name ?? ''}>
+                <span className="font-semibold cursor-pointer hover:underline hover:underline-offset-2">{kudo.receiver?.name}</span>
+              </EmployeeHoverCard>
               <span className="text-muted-foreground">•</span>
               <span className="text-muted-foreground text-xs">{timeAgo}</span>
             </div>

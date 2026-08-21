@@ -2644,18 +2644,15 @@ export const CalendarClient = React.memo(function CalendarClient() {
                               <p className="text-xs font-semibold text-(--text-primary) truncate">
                                 {booking.title}
                               </p>
-                              <p className="text-[10px] text-(--text-muted) mt-0.5 truncate">
-                                {format(new Date(booking.startTime), 'HH:mm', {
+                              <div className="text-[10px] text-(--text-muted) mt-0.5 truncate flex items-center gap-1">
+                                <span>{format(new Date(booking.startTime), 'HH:mm', {
                                   locale: dateFnsLocale,
-                                })}
-                                {' – '}
-                                {format(new Date(booking.endTime), 'HH:mm', {
+                                })} – {format(new Date(booking.endTime), 'HH:mm', {
                                   locale: dateFnsLocale,
-                                })}
+                                })}</span>
                                 {booking.organizerName ? (
                                   <>
-                                    {' '}
-                                    ·{' '}
+                                    <span>·</span>
                                     <EmployeeHoverCard
                                       userId={booking.organizerId}
                                       name={booking.organizerName}
@@ -2668,7 +2665,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
                                 ) : (
                                   ''
                                 )}
-                              </p>
+                              </div>
                               <div className="flex items-center gap-1 mt-1 min-w-0">
                                 <span
                                   className="w-2 h-2 rounded-full shrink-0"

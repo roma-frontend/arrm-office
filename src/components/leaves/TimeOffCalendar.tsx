@@ -73,6 +73,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { getInitials, ALL_LEAVE_TYPES, getLeaveTypeColor } from '@/lib/types';
+import { EmployeeHoverCard } from '@/components/employees/EmployeeHoverCard';
 
 // ── Leave type catalogue ────────────────────────────────────────────────────
 // The full 9-type catalogue and its colours live in src/lib/types.ts so the
@@ -1580,9 +1581,11 @@ export function TimeOffCalendar({
                             </div>
                           )}
                           <div className="relative min-w-0">
-                            <p className="truncate text-[13px] font-semibold leading-tight text-(--brand-text)">
-                              {row.emp.name}
-                            </p>
+                            <EmployeeHoverCard userId={row.emp._id as unknown as string} name={row.emp.name}>
+                              <p className="truncate text-[13px] font-semibold leading-tight text-(--brand-text) cursor-pointer hover:underline hover:underline-offset-2">
+                                {row.emp.name}
+                              </p>
+                            </EmployeeHoverCard>
                             <p className="truncate text-[10px] leading-tight text-(--text-muted)">
                               {row.emp.position ?? ''}
                             </p>
