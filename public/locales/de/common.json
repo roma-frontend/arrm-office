@@ -2694,5 +2694,17 @@
   },
   "employeeHover": {
     "viewProfile": "Profil ansehen"
+  },
+  "settings": {
+    "meetingRooms": {
+      "tab": "Besuchsräume",
+      "tabDesc": "Erinnerungen & Videolinks",
+      "title": "Besprechungsraum-Erinnerungen",
+      "description": "Wie lange vor einer Besprechung sollen Teilnehmer benachrichtigt werden?",
+      "leadTime": "Erinnerungsvorlauf",
+      "leadTimeHint": "Teilnehmer erhalten eine Benachrichtigung {{minutes}} Minuten vor Beginn der Besprechung.",
+      "leadTimeSaved": "Erinnerungszeit aktualisiert",
+      "leadTimeError": "Aktualisierung fehlgeschlagen"
+    }
   }
 }

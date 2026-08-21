@@ -1488,6 +1488,44 @@ export const checkInBooking = mutation({
  * Aggregated count of confirmed bookings per video platform, scoped to an
  * organization and an optional time range. Returns `{ livekit: 5, teams: 3, ... }`.
  */
+export const VALID_LEAD_TIMES = [5, 10, 15, 30] as const;
+
+/** Get the org's meeting reminder lead time (minutes). */
+export const getMeetingReminderLeadTime = query({
+  args: { organizationId: v.id('organizations') },
+  handler: async (ctx, { organizationId }) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return 15;
+    assertOrgAccess(caller, organizationId);
+    const org = await ctx.db.get(organizationId);
+    return org?.meetingReminderLeadTime ?? 15;
+  },
+});
+
+/** Set the org's meeting reminder lead time. Admins only. */
+export const updateMeetingReminderLeadTime = mutation({
+  args: {
+    organizationId: v.id('organizations'),
+    leadTimeMinutes: v.number(),
+  },
+  handler: async (ctx, { organizationId, leadTimeMinutes }) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    assertOrgAccess(caller, organizationId);
+    if (!(caller.role === 'admin' || isSuperadmin(caller))) {
+      throw new Error('Insufficient permissions');
+    }
+    if (!(VALID_LEAD_TIMES as readonly number[]).includes(leadTimeMinutes)) {
+      throw new Error(`Invalid lead time. Allowed: ${VALID_LEAD_TIMES.join(', ')}`);
+    }
+    await ctx.db.patch(organizationId, {
+      meetingReminderLeadTime: leadTimeMinutes,
+      updatedAt: Date.now(),
+    });
+    return { success: true };
+  },
+});
+
 export const getBookingPlatformStats = query({
   args: {
     organizationId: v.id('organizations'),
@@ -1537,8 +1575,10 @@ export const sendMeetingReminders = internalMutation({
   args: {},
   handler: async (ctx) => {
     const now = Date.now();
-    const windowMs = 15 * 60 * 1000; // 15 minutes
-    const upperBound = now + windowMs;
+    // Use the maximum possible lead time (30 min) to fetch bookings,
+    // then filter per-org when sending notifications.
+    const MAX_LEAD_MS = 30 * 60 * 1000;
+    const upperBound = now + MAX_LEAD_MS;
 
     // Walk bookings whose startTime falls inside [now, now + 15 min].
     // Query active rooms directly — the time window is narrow so a full
@@ -1560,6 +1600,14 @@ export const sendMeetingReminders = internalMutation({
 
       for (const booking of bookings) {
         if (booking.status !== 'confirmed') continue;
+
+        // Check the org's configured lead time — skip if booking is still
+        // outside the reminder window for this org.
+        const org = await ctx.db.get(booking.organizationId);
+        const leadMinutes = org?.meetingReminderLeadTime ?? 15;
+        const leadMs = leadMinutes * 60 * 1000;
+        const timeUntilStart = booking.startTime - now;
+        if (timeUntilStart > leadMs) continue; // too early for this org
 
         const room = await ctx.db.get(booking.roomId);
         if (!room) continue;

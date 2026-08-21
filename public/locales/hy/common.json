@@ -2694,5 +2694,17 @@
   },
   "employeeHover": {
     "viewProfile": "Դիտօրել պուձուլ"
+  },
+  "settings": {
+    "meetingRooms": {
+      "tab": "Խores",
+      "tabDesc": "Խores",
+      "title": "Օdelays",
+      "description": "Կdelays",
+      "leadTime": "Օdelays",
+      "leadTimeHint": "Մdelays",
+      "leadTimeSaved": "Խdelays",
+      "leadTimeError": "Խdelays"
+    }
   }
 }

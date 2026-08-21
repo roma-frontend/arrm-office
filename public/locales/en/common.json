@@ -2694,5 +2694,17 @@
   },
   "employeeHover": {
     "viewProfile": "View Profile"
+  },
+  "settings": {
+    "meetingRooms": {
+      "tab": "Meeting Rooms",
+      "tabDesc": "Room reminders & video links",
+      "title": "Meeting Room Reminders",
+      "description": "How far before a meeting should participants be notified?",
+      "leadTime": "Reminder lead time",
+      "leadTimeHint": "Participants will receive a notification {{minutes}} minutes before the meeting starts.",
+      "leadTimeSaved": "Reminder timing updated",
+      "leadTimeError": "Failed to update"
+    }
   }
 }

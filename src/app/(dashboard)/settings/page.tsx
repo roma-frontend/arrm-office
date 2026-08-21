@@ -20,6 +20,7 @@ import {
   ChevronRight,
   Building2,
   Bot,
+  Clock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -106,6 +107,10 @@ const BrandingSettings = dynamic(() => import('@/components/settings/BrandingSet
 const AIGovernancePanel = dynamic(() => import('@/components/ai/AIGovernancePanel'), {
   ssr: false,
 });
+const MeetingRoomSettings = dynamic(
+  () => import('@/components/settings/MeetingRoomSettings').then((m) => ({ default: m.MeetingRoomSettings })),
+  { ssr: false },
+);
 
 export default function SettingsPage() {
   const { t } = useTranslation();
@@ -334,6 +339,12 @@ export default function SettingsPage() {
             icon: Bot,
             description: t('settings.aiGovernanceDesc', 'AI agent oversight & guardrails'),
           },
+          {
+            value: 'meeting-rooms',
+            label: t('settings.meetingRooms.tab', 'Meeting Rooms'),
+            icon: Clock,
+            description: t('settings.meetingRooms.tabDesc', 'Room reminders & video links'),
+          },
         ]
       : []),
   ];
@@ -481,9 +492,15 @@ export default function SettingsPage() {
           )}
 
           {user?.role === 'admin' && (
-            <TabsContent value="ai-governance" className="space-y-6 mt-0">
-              <AIGovernancePanel />
-            </TabsContent>
+            <>
+              <TabsContent value="ai-governance" className="space-y-6 mt-0">
+                <AIGovernancePanel />
+              </TabsContent>
+
+              <TabsContent value="meeting-rooms" className="space-y-6 mt-0">
+                <MeetingRoomSettings />
+              </TabsContent>
+            </>
           )}
         </div>
       </Tabs>

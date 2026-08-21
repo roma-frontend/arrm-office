@@ -54,6 +54,12 @@ export const organizations = {
     // moved it to trash.
     deletedAt: v.optional(v.number()),
     deletedBy: v.optional(v.id('users')),
+    /**
+     * Lead time in minutes for meeting room reminders. The cron fires
+     * `meetingReminderLeadTime` minutes before each booking starts.
+     * Valid values: 5, 10, 15, 30. Defaults to 15 if unset.
+     */
+    meetingReminderLeadTime: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
