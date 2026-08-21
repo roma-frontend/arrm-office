@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useMainRef } from '@/hooks/useMainRef';
 import { useHydrated } from '@/hooks/useHydrated';
@@ -812,11 +812,14 @@ export const CalendarClient = React.memo(function CalendarClient() {
   // Radix Dialog removes its overlay BEFORE the click event fires, so
   // the click physically lands on calendar elements underneath.
   // The guard in setViewProfileTarget(null) + setTimeout handles this.
-  const closeSheet = useCallback(() => {
-    sheetCooldownRef.current = true;
-    setViewProfileTarget(null);
-    setTimeout(() => { sheetCooldownRef.current = false; }, 500);
-  }, []);
+  // Reset detailsRoom synchronously whenever viewProfileTarget changes.
+  // Prevents room details from appearing after the employee sheet closes.
+  useLayoutEffect(() => {
+    if (!viewProfileTarget && detailsRoom) {
+      setDetailsRoom(null);
+      setDetailsRoomDate(null);
+    }
+  }, [viewProfileTarget, detailsRoom]);
 
   const [editEvent, setEditEvent] = useState<CalendarEvent | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -2965,7 +2968,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
           createPortal(
             <EmployeeSheet
               employeeId={viewProfileTarget.id as Id<'users'>}
-              onClose={closeSheet}
+              onClose={() => setViewProfileTarget(null)}
               employeeName={viewProfileTarget.name}
               elevated
             />,
