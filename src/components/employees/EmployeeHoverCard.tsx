@@ -45,6 +45,7 @@ export function EmployeeHoverCard({
 }: EmployeeHoverCardProps) {
   const { t } = useTranslation();
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [hoverOpen, setHoverOpen] = useState<boolean | undefined>(undefined);
 
   const userData = useQuery(
     api.users.queries.getUserById,
@@ -55,7 +56,7 @@ export function EmployeeHoverCard({
 
   return (
     <>
-    <HoverCard openDelay={openDelay} closeDelay={150}>
+    <HoverCard openDelay={openDelay} closeDelay={150} open={hoverOpen} onOpenChange={setHoverOpen}>
       <HoverCardTrigger asChild>{children}</HoverCardTrigger>
       <HoverCardContent side="bottom" align="start" className="pointer-events-auto">
         <div className="relative overflow-hidden">
@@ -131,7 +132,7 @@ export function EmployeeHoverCard({
                 variant="ghost"
                 size="sm"
                 className="mt-3 w-full justify-between text-xs font-medium text-(--brand)"
-                onClick={() => setSheetOpen(true)}
+                onClick={() => { setHoverOpen(false); setSheetOpen(true); }}
               >
                 {t('employeeHover.viewProfile', 'View Profile')}
                 <ArrowRight className="h-3 w-3" />
