@@ -96,7 +96,9 @@ export function EmployeeSheet({ employeeId, onClose, employeeName, elevated }: E
       {/* Keyed on the id so switching rows remounts the body: the profile keeps
           tab state internally, and without this a colleague would open on
           whichever tab the previous one was left on. */}
-      {employeeId && <EmployeeProfileDetail key={employeeId} employeeId={employeeId} elevated={elevated} />}
+      {employeeId && (
+        <EmployeeProfileDetail key={employeeId} employeeId={employeeId} elevated={elevated} />
+      )}
     </DetailSheet>
   );
 }

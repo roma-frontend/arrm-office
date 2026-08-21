@@ -88,7 +88,10 @@ const TAB_GRID_BY_COUNT: Record<number, string> = {
 const TAB_TRIGGER_CLASS =
   'w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-(--background-subtle) shadow-sm font-medium flex items-center justify-center gap-2';
 
-export default function EmployeeProfileDetail({ employeeId, elevated }: EmployeeProfileDetailProps) {
+export default function EmployeeProfileDetail({
+  employeeId,
+  elevated,
+}: EmployeeProfileDetailProps) {
   const { user: currentUser } = useAuthStore();
   const [activeTab, setActiveTab] = useState('overview');
   const [showRatingForm, setShowRatingForm] = useState(false);
@@ -746,7 +749,11 @@ export default function EmployeeProfileDetail({ employeeId, elevated }: Employee
         {showDocumentsTab && (
           <TabsContent value="documents" className="space-y-6">
             {/* Hiring document packet — generated at creation, signed during onboarding */}
-            <HiringPacketPanel userId={employeeId as Id<'users'>} canManage={canManagePacket} elevated={elevated} />
+            <HiringPacketPanel
+              userId={employeeId as Id<'users'>}
+              canManage={canManagePacket}
+              elevated={elevated}
+            />
 
             {documents.length > 0 ? (
               <Card>
