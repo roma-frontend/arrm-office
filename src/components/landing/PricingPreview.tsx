@@ -9,6 +9,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useRouter } from 'next/navigation';
 import { useCurrency } from '@/hooks/useCurrency';
+import { applyRate } from '@/lib/currency';
 import { api } from '@/convex/_generated/api';
 import { logger } from '@/lib/logger';
 
@@ -187,6 +188,9 @@ interface PricingTier {
   priceKey: string;
   priceMonthly?: number;
   priceYearly?: number;
+  /** Currency the numeric prices above are authored in. Defaults to USD — the
+   *  base every exchange rate is quoted against. */
+  priceCurrency?: string;
   descriptionKey: string;
   icon: React.ReactNode;
   featureKeys: string[];
@@ -545,6 +549,7 @@ function PricingCard({
   displayPrice,
   priceAmount,
   billing,
+  symbol,
 }: {
   tier: PricingTier;
   delay: number;
@@ -553,11 +558,12 @@ function PricingCard({
   /** Numeric price in the current currency, null for custom-priced plans. */
   priceAmount: number | null;
   billing: 'monthly' | 'annual';
+  /** Currency symbol, passed down so it can never lag behind `priceAmount`. */
+  symbol: string;
 }) {
   const { ref, style } = useReveal(`${delay}s`);
   const { t } = useTranslation();
   const { user } = useAuthStore();
-  const { symbol } = useCurrency();
   const [loading, setLoading] = useState(false);
   const [hovered, setHovered] = useState(false);
   // Legacy subscriptions use 'professional' while the editor's plan key is
@@ -1137,6 +1143,7 @@ export default function PricingPreview() {
       priceKey: 'pricing.starterPrice',
       priceMonthly: p.plan.priceMonthly ?? undefined,
       priceYearly: p.plan.priceYearly ?? undefined,
+      priceCurrency: p.plan.currency,
       descriptionKey: 'pricing.starterDesc',
       featureKeys: [],
       nameText: p.plan.name,
@@ -1171,6 +1178,18 @@ export default function PricingPreview() {
   // Numeric amounts (in the current currency) for the count-up animation and
   // the savings calculator. Data-driven tiers prefer their explicit yearly
   // price; bundled tiers apply the 20% annual discount. Custom plans are null.
+  //
+  // Plan prices — both the bundled tiers and the ones published from
+  // /superadmin/plans — are authored in USD (convex/billing/defaults.ts), so
+  // every amount goes through the active rate. Skipping this is what made the
+  // language switch move only the symbol and leave the digits in dollars
+  // (₽29 instead of ₽2,610). A plan explicitly published in another currency is
+  // shown as authored rather than converted twice.
+  const localize = (amount: number, priceCurrency?: string) =>
+    (priceCurrency ?? 'USD').toUpperCase() === 'USD'
+      ? applyRate(amount, currency.rate)
+      : Math.round(amount);
+
   const priceAmounts: Record<string, number | null> = Object.fromEntries(
     tiers.map((tier) => {
       const base =
@@ -1178,7 +1197,7 @@ export default function PricingPreview() {
           ? (tier.priceYearly ??
             (tier.priceMonthly !== undefined ? tier.priceMonthly * 0.8 : undefined))
           : tier.priceMonthly;
-      return [tier.id, base === undefined ? null : Math.round(base)];
+      return [tier.id, base === undefined ? null : localize(base, tier.priceCurrency)];
     }),
   );
 
@@ -1195,8 +1214,16 @@ export default function PricingPreview() {
   );
 
   const proTier = tiers.find((tier) => tier.id === 'pro' || tier.id === 'professional');
+  const proMonthly = proTier?.priceMonthly;
+  // Always the *monthly* amount in the current currency — the calculator's
+  // per-seat assumptions are anchored to the $79/mo plan, so it must not swing
+  // with the billing toggle.
   const professionalAmount =
-    proTier?.priceMonthly ?? currency.professional.amount ?? FALLBACK_CURRENCY.amount;
+    proMonthly !== undefined
+      ? localize(proMonthly, proTier?.priceCurrency)
+      : (currency.professional.amount ||
+        applyRate(FALLBACK_CURRENCY.amount, currency.rate) ||
+        FALLBACK_CURRENCY.amount);
 
   return (
     <section id="pricing" className="relative z-10 px-6 md:px-12 py-12 md:py-24 overflow-hidden">
@@ -1303,6 +1330,7 @@ export default function PricingPreview() {
             displayPrice={priceMap[tier.id] ?? '$0'}
             priceAmount={priceAmounts[tier.id] ?? null}
             billing={billing}
+            symbol={currency.symbol}
           />
         ))}
       </div>

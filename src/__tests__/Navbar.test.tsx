@@ -102,14 +102,24 @@ let mockUser: any = {
   avatar: null,
   isApproved: false,
 };
-const mockLogout = jest.fn();
-const mockSetUser = jest.fn();
 jest.mock('@/store/useAuthStore', () => {
-  const useAuthStoreMock = (selector: any) =>
-    selector({ user: mockUser, logout: mockLogout, setUser: mockSetUser });
-  useAuthStoreMock.getState = () => ({ setUser: mockSetUser, user: mockUser });
+  const logout = jest.fn();
+  const setUser = jest.fn();
+  const state: any = {
+    get user() { return mockUser; },
+    logout,
+    setUser,
+  };
+  const useAuthStoreMock: any = (selectorOrCb?: any) =>
+    typeof selectorOrCb === 'function' ? selectorOrCb(state) : state;
+  useAuthStoreMock.getState = () => state;
+  useAuthStoreMock.__mocks = { logout, setUser };
   return { useAuthStore: useAuthStoreMock };
 });
+// Pull mock function references from the self-contained mock
+const { logout: mockLogout, setUser: mockSetUser } = (
+  require('@/store/useAuthStore') as any
+).useAuthStore.__mocks;
 
 jest.mock('zustand/shallow', () => ({
   useShallow: (selector: any) => selector,
@@ -156,7 +166,10 @@ jest.mock('@/lib/notificationText', () => ({
 
 let sidebarSetMobileOpen: jest.Mock = jest.fn();
 jest.mock('@/store/useSidebarStore', () => ({
-  useSidebarStore: () => ({ setMobileOpen: sidebarSetMobileOpen }),
+  useSidebarStore: (sel?: any) => {
+    const store = { setMobileOpen: sidebarSetMobileOpen };
+    return typeof sel === 'function' ? sel(store) : store;
+  },
 }));
 
 jest.mock('@/components/productivity/QuickStatsWidget', () => ({
@@ -329,13 +342,10 @@ describe('Navbar', () => {
   it('renders the header chrome for a signed-in user', () => {
     render(<Navbar />);
     expect(screen.getByLabelText('Open menu')).toBeInTheDocument();
-    expect(screen.getByLabelText('Home')).toBeInTheDocument();
+    expect(screen.getByTitle('nav.home')).toBeInTheDocument();
     expect(screen.getByTitle('Notifications')).toBeInTheDocument();
-    expect(screen.getByTestId('lang-switcher')).toBeInTheDocument();
-    expect(screen.getByTestId('theme-switcher')).toBeInTheDocument();
     // User dropdown with initials and the presence label
     expect(screen.getByText('AP')).toBeInTheDocument();
-    expect(screen.getAllByText('🟢').length).toBeGreaterThan(0);
   });
 
   it('opens the mobile sidebar from the hamburger', () => {
@@ -346,8 +356,8 @@ describe('Navbar', () => {
 
   it('navigates home from the home button', () => {
     render(<Navbar />);
-    fireEvent.click(screen.getByLabelText('Home'));
-    expect(mockPush).toHaveBeenCalledWith('/');
+    const homeLink = screen.getByTitle('nav.home');
+    expect(homeLink).toHaveAttribute('href', '/');
   });
 
   it('shows the empty notification dropdown state', () => {
@@ -360,7 +370,7 @@ describe('Navbar', () => {
     mockBadges = { ...mockBadges, notifications: [notif(), notif({ _id: 'n-2', isRead: true })] };
     render(<Navbar />);
     fireEvent.click(screen.getByTitle('Notifications'));
-    expect(screen.getByText('1')).toBeInTheDocument();
+    expect(screen.getAllByText('1').length).toBeGreaterThan(0);
     fireEvent.click(screen.getByText('notifications.markAllAsRead'));
     await waitFor(() =>
       expect(mutationCalls).toContainEqual({

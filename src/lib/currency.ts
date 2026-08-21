@@ -107,3 +107,23 @@ export function getCurrencyConfig(locale: string = 'en'): { symbol: string; code
   const config = FALLBACK_RATES[targetCurrency] ?? FALLBACK_RATES.USD;
   return { symbol: config!.symbol, code: config!.code };
 }
+
+/**
+ * Bundled fallback rate for a locale, available synchronously (no network).
+ * Used as the starting point before live rates land, and as the last resort
+ * when /api/currency-rates is unreachable.
+ */
+export function getFallbackRate(locale: string = 'en'): number {
+  const targetCurrency = LOCALE_CURRENCY[locale] ?? 'USD';
+  return FALLBACK_RATES[targetCurrency]?.rate ?? 1;
+}
+
+/**
+ * Localize an arbitrary USD amount with an already-resolved rate.
+ * Prices coming from the billing plan editor are stored in USD, so every
+ * surface that renders them must run them through the active rate — otherwise
+ * the symbol switches with the language while the digits stay in dollars.
+ */
+export function applyRate(usdAmount: number, rate: number): number {
+  return Math.round(usdAmount * rate);
+}

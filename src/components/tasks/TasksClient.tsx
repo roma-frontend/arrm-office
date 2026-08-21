@@ -1380,7 +1380,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
                                 </span>
                               </div>
                               {/* Project */}
-                              <div className="px-4 py-2 min-w-0">
+                              <div className="px-4 py-2 min-w-0 truncate">
                                 <ProjectBadge
                                   projectId={task.projectId}
                                   projectName={task.projectName}
