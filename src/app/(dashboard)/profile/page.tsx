@@ -18,16 +18,13 @@ import {
   Trash2,
   Upload,
   Clock,
-  Award,
   Settings,
   Activity,
-  BarChart3,
   CheckCircle2,
   FileText,
   Target,
   TrendingUp,
   Edit2,
-  Star,
   Eye,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -49,8 +46,6 @@ import { useQuery, useMutation } from 'convex/react';
 import { api } from '../../../../convex/_generated/api';
 import { Badge } from '@/components/ui/badge';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
-
-type UserStats = NonNullable<ReturnType<typeof useQuery<typeof api.userStats.getUserStats>>>;
 
 // ── Circular Progress Ring ──
 function CircularProgress({
@@ -179,6 +174,7 @@ export default function ProfilePage() {
   const [avatar, setAvatar] = useState<string | undefined>(undefined);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (userStats) {
       setName(userStats.userName ?? '');
@@ -192,6 +188,7 @@ export default function ProfilePage() {
       setAvatar(userData.avatarUrl ?? undefined);
     }
   }, [userStats, userData, user]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const getLocale = () => {
     switch (i18n.language) {

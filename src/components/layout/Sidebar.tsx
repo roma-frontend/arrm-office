@@ -4,18 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
-import {
-  Building2,
-  Calendar,
-  ChevronLeft,
-  ChevronRight,
-  FolderKanban,
-  LayoutDashboard,
-  Lock,
-  MessageCircle,
-  X,
-  CheckSquare,
-} from 'lucide-react';
+import { Building2, ChevronLeft, ChevronRight, FolderKanban, Lock, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSidebarStore } from '@/store/useSidebarStore';

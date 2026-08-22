@@ -95,6 +95,7 @@ export default function PendingApprovalPage() {
             className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white dark:bg-(--surface-3) shadow-lg mb-4"
             style={orgBranding ? { background: orgBranding.primaryColor } : undefined}
           >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             {orgBranding?.logoUrl ? (
               <img
                 src={orgBranding.logoUrl}

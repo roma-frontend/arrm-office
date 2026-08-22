@@ -54,7 +54,6 @@ import {
   Package,
   PenTool,
   Receipt,
-  Repeat,
   Rocket,
   ScrollText,
   Settings,

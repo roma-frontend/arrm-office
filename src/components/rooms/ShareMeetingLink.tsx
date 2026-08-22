@@ -8,13 +8,12 @@
 
 import React, { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Check, Copy, ExternalLink, Video, X } from 'lucide-react';
+import { Check, Copy, ExternalLink, Video } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from '@/lib/cssMotion';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 
 type VideoProvider = 'livekit' | 'teams' | 'zoom' | 'meet';
 

@@ -42,14 +42,39 @@ import { toast } from 'sonner';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { useOptimisticTaskStatus } from '@/hooks/useOptimisticActions';
 import { memo } from 'react';
-import { Repeat as RepeatIcon } from 'lucide-react';
+import {
+  ArrowDownWideNarrow,
+  ArrowUpNarrowWide,
+  Repeat as RepeatIcon,
+  Search as SearchIcon,
+  X as XIcon,
+} from 'lucide-react';
 import type { TFunction } from 'i18next';
+import { useGlobalShortcut } from '@/hooks/useGlobalShortcut';
+import {
+  DEFAULT_TASK_VIEW,
+  clearTaskFilters,
+  countActiveFilters,
+  decodeTaskView,
+  encodeTaskView,
+  taskViewLink,
+  type TaskViewState,
+} from '@/lib/taskViewState';
+import { exportFileStem, tasksToCsv, tasksToMarkdown, type ExportTaskRow } from '@/lib/taskExport';
+import {
+  TASK_BOARD_COLUMN_KEYS,
+  useTaskViewPreferences,
+  type TaskBoardColumnKey,
+} from '@/hooks/useTaskViewPreferences';
+import { ShareViewMenu } from './ShareViewMenu';
+import { CustomizeViewMenu } from './CustomizeViewMenu';
+import { TaskStatsBar, type TaskStatItem } from './TaskStatsBar';
+import { TaskFilterChips, type TaskFilterChip } from './TaskFilterChips';
 
 // â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 type Status = 'pending' | 'in_progress' | 'review' | 'completed' | 'cancelled';
 type Priority = 'low' | 'medium' | 'high' | 'urgent';
 import TimelineView from './TimelineView';
-import Link from 'next/link';
 
 type ViewMode = 'kanban' | 'list' | 'timeline';
 
@@ -155,7 +180,9 @@ const PRIORITY_CONFIG: Record<
   },
 };
 
-const KANBAN_COLUMNS: Status[] = ['pending', 'in_progress', 'review', 'completed'];
+// Which kanban lanes exist at all; which of them are *shown* is a per-person
+// preference (see `useTaskViewPreferences`). Cancelled work has no lane by
+// default because it is closed history, not a stage.
 
 // â”€â”€ Avatar helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function Avatar({
@@ -225,6 +252,22 @@ function DeadlineBadge({ deadline, status }: { deadline?: number; status: Status
 }
 
 // â”€â”€ Task Card (base content, reused in both draggable and overlay) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+/** Shown only on the sorted column, pointing the way the rows actually run. */
+function SortCaret({ active, dir }: { active: boolean; dir: 'asc' | 'desc' }) {
+  if (!active) return null;
+  return (
+    <svg
+      className={`h-3 w-3 ${dir === 'desc' ? 'rotate-180' : ''}`}
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+    </svg>
+  );
+}
+
 function TaskCardContent({ task, isDragging = false }: { task: TaskItem; isDragging?: boolean }) {
   const { t } = useTranslation();
   const statusCfg = STATUS_CONFIG[task.status as Status];
@@ -429,6 +472,7 @@ function DroppableKanbanColumn({
   );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function TaskRow({ task, onOpen }: { task: TaskItem; onOpen: () => void }) {
   const { t } = useTranslation();
   const statusCfg = STATUS_CONFIG[task.status as Status];
@@ -626,15 +670,38 @@ interface TasksClientProps {
 }
 
 export const TasksClient = memo(function TasksClient({ userId, userRole }: TasksClientProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const mainRef = useMainRef();
   const kanbanScrollRef = useRef<HTMLDivElement>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>('list');
-  const [sortBy, setSortBy] = useState<'name' | 'deadline' | 'priority' | 'status' | 'assignee'>(
-    'status',
-  );
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
-  const [groupBy, setGroupBy] = useState<'status' | 'priority' | 'project' | 'assignee'>('status');
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  /**
+   * Filters, sort, grouping and view mode live in one object because they are
+   * one thing: the view. That is what a shared link carries (see
+   * `@/lib/taskViewState`), so keeping them as nine separate `useState` calls
+   * would mean nine places to remember when serializing.
+   */
+  const [viewState, setViewState] = useState<TaskViewState>(DEFAULT_TASK_VIEW);
+  const patchView = useCallback((patch: Partial<TaskViewState>) => {
+    setViewState((prev) => ({ ...prev, ...patch }));
+  }, []);
+  const {
+    view: viewMode,
+    sort: sortBy,
+    dir: sortDir,
+    group: groupBy,
+    status: filterStatus,
+    priority: filterPriority,
+    assignee: filterEmployee,
+    project: filterProject,
+    q: search,
+    overdue: filterOverdue,
+  } = viewState;
+
+  /** Layout choices are per person, not per link. */
+  const { prefs, setPrefs, toggleColumn, toggleBoardColumn, reset, isDefault } =
+    useTaskViewPreferences();
+
   const [showCreate, setShowCreate] = useState(false);
   /** Recurring series manager, opened as a sheet instead of a separate page. */
   const [showRecurring, setShowRecurring] = useState(false);
@@ -642,32 +709,43 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
   /** Task shown in the slide-over, with its title for the panel header. */
   const [sheetTask, setSheetTask] = useState<{ id: Id<'tasks'>; title: string } | null>(null);
   const [showAssign, setShowAssign] = useState(false);
-  const [filterPriority, setFilterPriority] = useState<Priority | 'all'>('all');
-  const [filterStatus, setFilterStatus] = useState<Status | 'all'>('all');
-  const [filterEmployee, setFilterEmployee] = useState<string>('all');
-  const [filterProject, setFilterProject] = useState<string>('all');
-  const [search, setSearch] = useState('');
   const [_activeTask, setActiveTask] = useState<TaskItem | null>(null);
   const [_isPending, startTransition] = useTransition();
-  const [isScrolled, setIsScrolled] = useState(false);
+
+  /**
+   * The address bar is the source of truth for the view, so a link someone
+   * pasted is honoured on mount and every later change is written back.
+   *
+   * `history.replaceState` rather than `router.replace`: this page owns the
+   * whole query string, nothing on the server reads it, and a Next.js
+   * navigation per keystroke would re-render the route tree for a filter
+   * change. Reading `window.location` in an effect instead of `useSearchParams`
+   * keeps the page out of a Suspense boundary for the same reason.
+   */
+  const urlSynced = useRef(false);
+  useEffect(() => {
+    urlSynced.current = true;
+    const fromUrl = decodeTaskView(window.location.search);
+    if (encodeTaskView(fromUrl) !== '') setViewState(fromUrl);
+  }, []);
+
+  useEffect(() => {
+    if (!urlSynced.current) return;
+    const query = encodeTaskView(viewState);
+    const next = query === '' ? window.location.pathname : `${window.location.pathname}?${query}`;
+    window.history.replaceState(window.history.state, '', next);
+  }, [viewState]);
+
+  // `/` is the search shortcut everywhere else in this app; the hook ignores it
+  // while the user is already typing in a field.
+  useGlobalShortcut({ key: '/' }, () => searchRef.current?.focus());
 
   useEffect(() => {
     const mainEl = mainRef.current;
-    const handleScroll = () => {
-      if (mainEl) {
-        setIsScrolled(mainEl.scrollTop > 10);
-      }
-    };
-    if (mainEl) {
-      mainEl.addEventListener('scroll', handleScroll, { passive: true });
-      handleScroll();
-    }
-    return () => {
-      if (mainEl) {
-        mainEl.removeEventListener('scroll', handleScroll);
-      }
-    };
-  }, [mainRef]);
+    // Each view scrolls in its own container, so the page starts at the top
+    // whenever the user switches between them.
+    if (mainEl) mainEl.scrollTop = 0;
+  }, [mainRef, viewMode]);
 
   const convexId = userId && userId !== '' ? (userId as Id<'users'>) : null;
   // Superadmins can manage tasks like admins (they see all org tasks too).
@@ -812,13 +890,16 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
   );
   useEffect(() => {
     if (!projectFilterValues.has(filterProject)) {
-      setFilterProject('all');
+      patchView({ project: 'all' });
     }
-  }, [projectFilterValues, filterProject]);
+  }, [projectFilterValues, filterProject, patchView]);
 
   // Filter + Sort
   const tasks = useMemo(() => {
     if (!rawTasksWithOptimistic) return [];
+    // One `now` for the whole pass so a task cannot be overdue in one row and
+    // not in the next while the list is being built.
+    const now = Date.now();
     const filtered = rawTasksWithOptimistic.filter((t) => {
       const matchPriority = filterPriority === 'all' || t.priority === filterPriority;
       const matchStatus = filterStatus === 'all' || t.status === filterStatus;
@@ -827,7 +908,21 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
       const matchProject =
         filterProject === 'all' ||
         (filterProject === 'none' ? !t.projectId : t.projectId === filterProject);
-      return matchPriority && matchStatus && matchSearch && matchEmployee && matchProject;
+      const matchOverdue =
+        !filterOverdue ||
+        (!!t.deadline && t.deadline < now && t.status !== 'completed' && t.status !== 'cancelled');
+      // A layout preference, not a filter: it is deliberately not in the link,
+      // so a shared view never silently hides finished work from the recipient.
+      const matchCompleted = !prefs.hideCompleted || t.status !== 'completed';
+      return (
+        matchPriority &&
+        matchStatus &&
+        matchSearch &&
+        matchEmployee &&
+        matchProject &&
+        matchOverdue &&
+        matchCompleted
+      );
     });
     const priorityOrder: Record<Priority, number> = { urgent: 0, high: 1, medium: 2, low: 3 };
     const statusOrder: Record<Status, number> = {
@@ -869,6 +964,8 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
     search,
     filterEmployee,
     filterProject,
+    filterOverdue,
+    prefs.hideCompleted,
     sortBy,
     sortDir,
   ]);
@@ -959,65 +1056,315 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
   };
 
   const toggleSort = (field: typeof sortBy) => {
-    if (sortBy === field) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
-    else {
-      setSortBy(field);
-      setSortDir('asc');
-    }
+    if (sortBy === field) patchView({ dir: sortDir === 'asc' ? 'desc' : 'asc' });
+    else patchView({ sort: field, dir: 'asc' });
   };
+
+  // ── Summary tiles ──────────────────────────────────────────────────────────
+  // Clicking a tile narrows the board to it; clicking the active one clears the
+  // narrowing, so a tile is a toggle rather than a dead end. "All" is the way
+  // back regardless of what is selected.
+  const selectStat = useCallback(
+    (key: string) => {
+      if (key === 'total') {
+        patchView({ status: 'all', overdue: false });
+        return;
+      }
+      if (key === 'overdue') {
+        patchView({ overdue: !filterOverdue, status: 'all' });
+        return;
+      }
+      patchView({ status: filterStatus === key ? 'all' : key, overdue: false });
+    },
+    [patchView, filterOverdue, filterStatus],
+  );
+
+  const statItems = useMemo<TaskStatItem[]>(() => {
+    const noNarrowing = filterStatus === 'all' && !filterOverdue;
+    return [
+      {
+        key: 'total',
+        label: t('tasksClient.total', 'Total'),
+        count: stats.total,
+        tone: 'neutral' as const,
+        active: noNarrowing,
+      },
+      {
+        key: 'pending',
+        label: t('tasks.status.pending', 'Pending'),
+        count: stats.pending,
+        tone: 'neutral' as const,
+        active: filterStatus === 'pending',
+      },
+      {
+        key: 'in_progress',
+        label: t('tasks.status.inProgress', 'In progress'),
+        count: stats.inProgress,
+        tone: 'brand' as const,
+        active: filterStatus === 'in_progress',
+      },
+      {
+        key: 'review',
+        label: t('tasks.status.review', 'Review'),
+        count: stats.review,
+        tone: 'warning' as const,
+        active: filterStatus === 'review',
+      },
+      {
+        key: 'completed',
+        label: t('tasks.status.completed', 'Completed'),
+        count: stats.completed,
+        tone: 'success' as const,
+        active: filterStatus === 'completed',
+      },
+      {
+        key: 'overdue',
+        label: t('tasksClient.overdue', 'Overdue'),
+        count: stats.overdue,
+        tone: 'danger' as const,
+        active: filterOverdue,
+      },
+    ];
+  }, [stats, filterStatus, filterOverdue, t]);
+
+  // ── Active filters, as chips ───────────────────────────────────────────────
+  const activeFilterCount = countActiveFilters(viewState);
+
+  const filterChips = useMemo<TaskFilterChip[]>(() => {
+    const chips: TaskFilterChip[] = [];
+    if (filterStatus !== 'all') {
+      chips.push({
+        key: 'status',
+        field: t('common.status', 'Status'),
+        value: t(STATUS_CONFIG[filterStatus as Status]?.labelKey ?? filterStatus),
+      });
+    }
+    if (filterPriority !== 'all') {
+      chips.push({
+        key: 'priority',
+        field: t('tasksClient.priority', 'Priority'),
+        value: t(PRIORITY_CONFIG[filterPriority as Priority]?.labelKey ?? filterPriority),
+      });
+    }
+    if (filterEmployee !== 'all') {
+      chips.push({
+        key: 'assignee',
+        field: t('tasksClient.assignee', 'Assignee'),
+        value: employees.find((e) => e.id === filterEmployee)?.name ?? filterEmployee,
+      });
+    }
+    if (filterProject !== 'all') {
+      const label =
+        filterProject === 'none'
+          ? t('tasksClient.noProject', 'Without project')
+          : (rawTasksWithOptimistic?.find((tk) => tk.projectId === filterProject)?.projectName ??
+            filterProject);
+      chips.push({ key: 'project', field: t('tasksClient.project', 'Project'), value: label });
+    }
+    if (filterOverdue) {
+      chips.push({
+        key: 'overdue',
+        field: t('tasksClient.deadline', 'Due date'),
+        value: t('tasksClient.overdue', 'Overdue'),
+      });
+    }
+    if (search.trim() !== '') {
+      chips.push({ key: 'q', field: t('common.search', 'Search'), value: search.trim() });
+    }
+    return chips;
+  }, [
+    filterStatus,
+    filterPriority,
+    filterEmployee,
+    filterProject,
+    filterOverdue,
+    search,
+    employees,
+    rawTasksWithOptimistic,
+    t,
+  ]);
+
+  const removeChip = useCallback(
+    (key: string) => {
+      switch (key) {
+        case 'status':
+          patchView({ status: 'all' });
+          break;
+        case 'priority':
+          patchView({ priority: 'all' });
+          break;
+        case 'assignee':
+          patchView({ assignee: 'all' });
+          break;
+        case 'project':
+          patchView({ project: 'all' });
+          break;
+        case 'overdue':
+          patchView({ overdue: false });
+          break;
+        case 'q':
+          patchView({ q: '' });
+          break;
+      }
+    },
+    [patchView],
+  );
+
+  const clearAllFilters = useCallback(() => {
+    setViewState((prev) => clearTaskFilters(prev));
+  }, []);
+
+  // ── Share payloads ─────────────────────────────────────────────────────────
+  const boardTitle =
+    userRole === 'employee' || userRole === 'driver'
+      ? t('tasksClient.myTasks')
+      : t('tasksClient.taskManager');
+
+  const dateLocale =
+    i18n?.language === 'ru' ? 'ru-RU' : i18n?.language === 'hy' ? 'hy-AM' : 'en-GB';
+
+  /**
+   * Absolute link to the current view. The origin is read after mount rather
+   * than during render: the server has no idea which host the browser used, and
+   * guessing would produce a link that works for nobody.
+   */
+  const [locationBase, setLocationBase] = useState({ origin: '', pathname: '/tasks' });
+  useEffect(() => {
+    setLocationBase({ origin: window.location.origin, pathname: window.location.pathname });
+  }, []);
+  const shareLink = useMemo(() => taskViewLink(viewState, locationBase), [viewState, locationBase]);
+
+  /** Kanban lanes the user kept on; at least one is guaranteed by the hook. */
+  const visibleBoardColumns = useMemo<TaskBoardColumnKey[]>(
+    () => TASK_BOARD_COLUMN_KEYS.filter((key) => prefs.board[key]),
+    [prefs.board],
+  );
+
+  /**
+   * The list grid was a hardcoded five-column template, so hiding a column was
+   * impossible and priority — the field people sort by most — had nowhere to go.
+   * It is now derived from the preferences, header and rows sharing one style
+   * object so they cannot drift apart.
+   */
+  const listColumnOrder = useMemo(
+    () =>
+      (
+        [
+          ['deadline', '130px'],
+          ['assignee', '150px'],
+          ['project', '140px'],
+          ['priority', '120px'],
+          ['status', '110px'],
+        ] as const
+      ).filter(([key]) => prefs.columns[key]),
+    [prefs.columns],
+  );
+  const listGridStyle = useMemo(
+    () => ({
+      gridTemplateColumns: ['minmax(0,2.5fr)', ...listColumnOrder.map(([, w]) => w)].join(' '),
+    }),
+    [listColumnOrder],
+  );
+  const cellPad = prefs.density === 'compact' ? 'px-3 py-1' : 'px-4 py-2';
+
+  /** Built only when the user actually opens an export — see ShareViewMenu. */
+  const exportRow = useCallback(
+    (task: TaskItem): ExportTaskRow => ({
+      title: localizedTaskTitle(t, task),
+      status: t(STATUS_CONFIG[task.status as Status].labelKey),
+      priority: t(PRIORITY_CONFIG[task.priority as Priority].labelKey),
+      done: task.status === 'completed',
+      deadline: task.deadline ? new Date(task.deadline).toLocaleDateString(dateLocale) : undefined,
+      assignee: task.assignedToUser?.name ?? undefined,
+      project: task.projectName ?? undefined,
+      tags: task.tags,
+    }),
+    [t, dateLocale],
+  );
+
+  const buildCsv = useCallback(
+    () =>
+      tasksToCsv(tasks.map(exportRow), {
+        title: t('tasksClient.task', 'Name'),
+        status: t('common.status', 'Status'),
+        priority: t('tasksClient.priority', 'Priority'),
+        deadline: t('tasksClient.deadline', 'Due date'),
+        assignee: t('tasksClient.assignee', 'Assignee'),
+        project: t('tasksClient.project', 'Project'),
+        tags: t('tasksClient.tags', 'Tags'),
+      }),
+    [tasks, exportRow, t],
+  );
+
+  const buildMarkdown = useCallback(
+    () =>
+      tasksToMarkdown(
+        sections.map((section) => ({
+          label: section.label,
+          tasks: section.tasks.map(exportRow),
+        })),
+        {
+          title: boardTitle,
+          url: shareLink,
+          emptyLabel: t('tasksClient.noTasksFound'),
+        },
+      ),
+    [sections, exportRow, boardTitle, shareLink, t],
+  );
 
   return (
     <div className="flex flex-col h-full min-h-0">
       {/* ═══ Page Header ═══ */}
-      {/* ═══ Page Header ═══ */}
-      <div className="flex items-center justify-between px-4 sm:px-6 py-3 shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-(--brand) flex items-center justify-center text-white font-bold text-xs shrink-0">
-            {userId ? userId.slice(0, 2).toUpperCase() : 'U'}
-          </div>
-          <h1 className="text-xl font-bold text-(--text-primary)">
-            {userRole === 'employee' || userRole === 'driver'
-              ? t('tasksClient.myTasks')
-              : t('tasksClient.taskManager')}
-          </h1>
-          <svg
-            className="w-4 h-4 text-(--text-muted)"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
+      {/* The title used to sit next to a circle showing the first two
+          characters of the viewer's Convex id and a chevron that opened
+          nothing. Both are gone: the space now carries the one thing a board
+          header can usefully say — how much of the board you are looking at. */}
+      <div className="flex items-start justify-between gap-3 px-4 sm:px-6 py-3 shrink-0">
+        <div className="min-w-0">
+          <h1 className="truncate text-xl font-bold text-(--text-primary)">{boardTitle}</h1>
+          <p className="mt-0.5 text-xs text-(--text-muted)">
+            {rawTasks === undefined ? (
+              t('common.loading', 'Loading…')
+            ) : (
+              <>
+                {t('tasksClient.headerSummary', {
+                  shown: tasks.length,
+                  total: stats.total,
+                  defaultValue: '{{shown}} of {{total}} tasks',
+                })}
+                {stats.overdue > 0 && (
+                  <span className="font-medium text-(--danger-text)">
+                    {' · '}
+                    {t('tasksClient.overdueCount', {
+                      count: stats.overdue,
+                      defaultValue: '{{count}} overdue',
+                    })}
+                  </span>
+                )}
+              </>
+            )}
+          </p>
         </div>
-        <div className="flex items-center gap-2">
-          <button className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-(--border) text-xs font-medium text-(--text-secondary) hover:bg-(--background-subtle) transition-colors">
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
-              />
-            </svg>
-            {t('tasksClient.share', 'Share')}
-          </button>
-          <button className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-(--border) text-xs font-medium text-(--text-secondary) hover:bg-(--background-subtle) transition-colors">
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-              />
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-              />
-            </svg>
-            {t('tasksClient.customize', 'Customize')}
-          </button>
+        <div className="flex shrink-0 items-center gap-2">
+          <ShareViewMenu
+            link={shareLink}
+            taskCount={tasks.length}
+            activeFilterLabels={filterChips.map((chip) => `${chip.field}: ${chip.value}`)}
+            buildMarkdown={buildMarkdown}
+            buildCsv={buildCsv}
+            fileStem={exportFileStem(boardTitle || 'tasks', new Date())}
+            shareTitle={boardTitle}
+          />
+          <CustomizeViewMenu
+            prefs={prefs}
+            viewMode={viewMode}
+            setPrefs={setPrefs}
+            toggleColumn={toggleColumn}
+            toggleBoardColumn={toggleBoardColumn}
+            reset={reset}
+            isDefault={isDefault}
+            hasRecurring={activeSeries.length > 0}
+          />
         </div>
       </div>
 
@@ -1030,7 +1377,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
         ].map((tab) => (
           <button
             key={tab.key}
-            onClick={() => startTransition(() => setViewMode(tab.key))}
+            onClick={() => startTransition(() => patchView({ view: tab.key }))}
             className={`px-3 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
               viewMode === tab.key
                 ? 'border-(--brand) text-(--brand-text)'
@@ -1066,7 +1413,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
         <div className="flex items-center gap-1 ml-auto overflow-x-auto scrollbar-width-none">
           <CustomSelect
             value={filterStatus}
-            onChange={(v) => setFilterStatus(v as Status | 'all')}
+            onChange={(v) => patchView({ status: v })}
             options={[
               { value: 'all', label: t('tasksClient.filter', 'Filter') },
               { value: 'pending', label: t('statuses.pending') },
@@ -1090,9 +1437,28 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
             triggerClassName="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-(--border) bg-(--background) text-xs text-(--text-secondary) hover:bg-(--background-subtle) transition-colors cursor-pointer shrink-0 whitespace-nowrap"
             dropdownClassName="bg-(--card) border border-(--border) text-(--text-primary)"
           />
+          {/* Sort direction. Previously the only way to flip it was to
+              re-select the field that was already selected, which reads as a
+              no-op — this makes the current direction visible and reversible. */}
+          <button
+            type="button"
+            onClick={() => patchView({ dir: sortDir === 'asc' ? 'desc' : 'asc' })}
+            aria-label={
+              sortDir === 'asc'
+                ? t('tasksClient.sortAsc', 'Ascending — click for descending')
+                : t('tasksClient.sortDesc', 'Descending — click for ascending')
+            }
+            className="flex shrink-0 items-center rounded-lg border border-(--border) bg-(--background) p-1.5 text-(--text-secondary) transition-colors hover:bg-(--background-subtle)"
+          >
+            {sortDir === 'asc' ? (
+              <ArrowUpNarrowWide className="h-3.5 w-3.5" aria-hidden="true" />
+            ) : (
+              <ArrowDownWideNarrow className="h-3.5 w-3.5" aria-hidden="true" />
+            )}
+          </button>
           <CustomSelect
             value={groupBy}
-            onChange={(v) => setGroupBy(v as typeof groupBy)}
+            onChange={(v) => patchView({ group: v as typeof groupBy })}
             options={[
               { value: 'status', label: t('tasksClient.group.status', 'Status') },
               { value: 'priority', label: t('tasksClient.group.priority', 'Priority') },
@@ -1105,7 +1471,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
           {canManage && employees.length > 1 && (
             <CustomSelect
               value={filterEmployee}
-              onChange={(v) => setFilterEmployee(v)}
+              onChange={(v) => patchView({ assignee: v })}
               options={[
                 { value: 'all', label: t('tasksClient.assignee', 'Assignee') },
                 ...employees.map((e) => ({ value: e.id, label: `${e.name} (${e.taskCount})` })),
@@ -1117,7 +1483,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
           {projectFilterOptions.length > 0 && (
             <CustomSelect
               value={filterProject}
-              onChange={(v) => setFilterProject(v)}
+              onChange={(v) => patchView({ project: v })}
               options={[
                 { value: 'all', label: t('tasksClient.project', 'Project') },
                 ...projectFilterOptions,
@@ -1136,7 +1502,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
           )}
           <CustomSelect
             value={filterPriority}
-            onChange={(v) => setFilterPriority(v as Priority | 'all')}
+            onChange={(v) => patchView({ priority: v })}
             options={[
               { value: 'all', label: t('tasksClient.priority', 'Priority') },
               { value: 'urgent', label: t('tasksClient.urgent') },
@@ -1147,29 +1513,68 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
             triggerClassName="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-(--border) bg-(--background) text-xs text-(--text-secondary) hover:bg-(--background-subtle) transition-colors cursor-pointer shrink-0 whitespace-nowrap"
             dropdownClassName="bg-(--card) border border-(--border) text-(--text-primary)"
           />
-          <div className="relative">
-            <svg
-              className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-(--text-muted)"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={t('placeholders.searchTasks')}
-              className="pl-8 pr-3 py-1.5 rounded-lg border border-(--border) bg-(--background) text-xs text-(--text-primary) w-40 sm:w-52 focus:outline-none focus:ring-1 focus:ring-(--brand) placeholder:text-(--text-muted)"
+          <div className="relative shrink-0">
+            <SearchIcon
+              className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-(--text-muted)"
+              aria-hidden="true"
             />
+            <input
+              ref={searchRef}
+              value={search}
+              onChange={(e) => patchView({ q: e.target.value })}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape' && search !== '') {
+                  e.stopPropagation();
+                  patchView({ q: '' });
+                }
+              }}
+              placeholder={t('placeholders.searchTasks')}
+              aria-label={t('placeholders.searchTasks')}
+              className="w-40 rounded-lg border border-(--border) bg-(--background) py-1.5 pl-8 pr-7 text-xs text-(--text-primary) placeholder:text-(--text-muted) focus:outline-none focus:ring-1 focus:ring-(--brand) sm:w-52"
+            />
+            {search !== '' && (
+              <button
+                type="button"
+                onClick={() => patchView({ q: '' })}
+                aria-label={t('tasksClient.clearSearch', 'Clear search')}
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-(--text-muted) transition-colors hover:bg-(--background-subtle) hover:text-(--text-primary)"
+              >
+                <XIcon className="h-3 w-3" aria-hidden="true" />
+              </button>
+            )}
           </div>
         </div>
       </div>
+
+      {/* ═══ Summary tiles — the stats that used to be computed and thrown away ═══ */}
+      {prefs.showStats && rawTasks !== undefined && (
+        <div className="shrink-0 border-b border-(--border)">
+          <TaskStatsBar items={statItems} onSelect={selectStat} />
+        </div>
+      )}
+
+      {/* ═══ Active filters ═══ */}
+      {activeFilterCount > 0 && (
+        <div className="shrink-0 border-b border-(--border) bg-(--background-subtle)/40">
+          <TaskFilterChips
+            chips={filterChips}
+            onRemove={removeChip}
+            onClearAll={clearAllFilters}
+            clearAllLabel={t('tasksClient.clearFilters', 'Clear all')}
+            removeLabel={(chip) =>
+              t('tasksClient.removeFilter', {
+                field: chip.field,
+                defaultValue: 'Remove {{field}} filter',
+              })
+            }
+            resultSummary={t('tasksClient.headerSummary', {
+              shown: tasks.length,
+              total: stats.total,
+              defaultValue: '{{shown}} of {{total}} tasks',
+            })}
+          />
+        </div>
+      )}
 
       {/* ═══ Content ═══ */}
       <div className="flex-1 overflow-y-auto min-h-0">
@@ -1227,9 +1632,13 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
             }}
             onDragCancel={() => setActiveTask(null)}
           >
-            <RecurringStrip series={activeSeries} t={t} onManage={() => setShowRecurring(true)} />
+            <RecurringStrip
+              series={prefs.showRecurring ? activeSeries : []}
+              t={t}
+              onManage={() => setShowRecurring(true)}
+            />
             <div ref={kanbanScrollRef} className="flex gap-4 overflow-x-auto p-4 sm:p-6">
-              {KANBAN_COLUMNS.map((status) => (
+              {visibleBoardColumns.map((status) => (
                 <DroppableKanbanColumn
                   key={status}
                   status={status}
@@ -1241,49 +1650,52 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
           </DndContext>
         ) : viewMode === 'timeline' ? (
           <div className="p-4 sm:p-6">
-            <RecurringStrip series={activeSeries} t={t} onManage={() => setShowRecurring(true)} />
+            <RecurringStrip
+              series={prefs.showRecurring ? activeSeries : []}
+              t={t}
+              onManage={() => setShowRecurring(true)}
+            />
             <TimelineView tasks={tasks} onOpen={(task) => openTask(task)} />
           </div>
         ) : (
           /* ═══ List View — ClickUp Design ═══ */
           <div className="flex flex-col min-h-0">
-            <RecurringStrip series={activeSeries} t={t} onManage={() => setShowRecurring(true)} />
+            <RecurringStrip
+              series={prefs.showRecurring ? activeSeries : []}
+              t={t}
+              onManage={() => setShowRecurring(true)}
+            />
 
             {/* Table Header */}
-            <div className="grid grid-cols-[minmax(0,2.5fr)_130px_150px_140px_110px] border-b border-(--border) bg-(--background-subtle) sticky top-0 z-10 shrink-0">
-              <div className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-(--text-muted)">
-                {t('tasksClient.task', 'Name')}
-              </div>
+            <div
+              style={listGridStyle}
+              className="grid border-b border-(--border) bg-(--background-subtle) sticky top-0 z-10 shrink-0"
+            >
               <div
-                className="flex items-center gap-1 px-4 py-2 text-xs font-semibold text-(--text-muted) cursor-pointer hover:text-(--text-primary) select-none"
-                onClick={() => toggleSort('deadline')}
+                className={`flex items-center gap-1 ${cellPad} cursor-pointer select-none text-xs font-semibold text-(--text-muted) hover:text-(--text-primary)`}
+                onClick={() => toggleSort('name')}
               >
-                {t('tasksClient.deadline', 'Due date')}
-                {sortBy === 'deadline' && (
-                  <svg
-                    className={`w-3 h-3 ${sortDir === 'desc' ? 'rotate-180' : ''}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 15l7-7 7 7"
-                    />
-                  </svg>
-                )}
+                {t('tasksClient.task', 'Name')}
+                <SortCaret active={sortBy === 'name'} dir={sortDir} />
               </div>
-              <div className="flex items-center gap-1 px-4 py-2 text-xs font-semibold text-(--text-muted)">
-                {t('tasksClient.assignee', 'Collaborators')}
-              </div>
-              <div className="flex items-center gap-1 px-4 py-2 text-xs font-semibold text-(--text-muted)">
-                {t('tasksClient.project', 'Projects')}
-              </div>
-              <div className="flex items-center gap-1 px-4 py-2 text-xs font-semibold text-(--text-muted)">
-                {t('common.status', 'Status')}
-              </div>
+              {listColumnOrder.map(([key]) => (
+                <div
+                  key={key}
+                  className={`flex items-center gap-1 ${cellPad} text-xs font-semibold text-(--text-muted) ${
+                    key === 'project'
+                      ? ''
+                      : 'cursor-pointer select-none hover:text-(--text-primary)'
+                  }`}
+                  onClick={key === 'project' ? undefined : () => toggleSort(key)}
+                >
+                  {key === 'deadline' && t('tasksClient.deadline', 'Due date')}
+                  {key === 'assignee' && t('tasksClient.assignee', 'Collaborators')}
+                  {key === 'project' && t('tasksClient.project', 'Projects')}
+                  {key === 'priority' && t('tasksClient.priority', 'Priority')}
+                  {key === 'status' && t('common.status', 'Status')}
+                  {key !== 'project' && <SortCaret active={sortBy === key} dir={sortDir} />}
+                </div>
+              ))}
             </div>
 
             {/* Sections */}
@@ -1330,14 +1742,16 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
                       {!isCollapsed &&
                         section.tasks.map((task) => {
                           const statusCfg = STATUS_CONFIG[task.status as Status];
+                          const priorityCfg = PRIORITY_CONFIG[task.priority as Priority];
                           return (
                             <div
                               key={task._id}
                               onClick={() => openTask(task)}
-                              className="grid grid-cols-[minmax(0,2.5fr)_130px_150px_140px_110px] border-b border-(--border) last:border-0 hover:bg-(--background-subtle) cursor-pointer transition-colors items-center"
+                              style={listGridStyle}
+                              className="grid border-b border-(--border) last:border-0 hover:bg-(--background-subtle) cursor-pointer transition-colors items-center"
                             >
                               {/* Name */}
-                              <div className="flex items-center gap-2 px-4 py-2 min-w-0">
+                              <div className={`flex items-center gap-2 ${cellPad} min-w-0`}>
                                 <span
                                   className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${task.status === 'completed' ? 'border-(--success-solid) bg-(--success-solid)' : 'border-(--text-muted)'}`}
                                 >
@@ -1361,43 +1775,67 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
                                   {localizedTaskTitle(t, task)}
                                 </span>
                               </div>
-                              {/* Due date */}
-                              <div className="px-4 py-2">
-                                <DeadlineBadge
-                                  deadline={task.deadline}
-                                  status={task.status as Status}
-                                />
-                              </div>
-                              {/* Collaborators */}
-                              <div className="flex items-center gap-2 px-4 py-2 min-w-0">
-                                <Avatar
-                                  name={task.assignedToUser?.name ?? '?'}
-                                  url={task.assignedToUser?.avatarUrl}
-                                  size="sm"
-                                />
-                                <span className="text-xs text-(--text-secondary) truncate">
-                                  {task.assignedToUser?.name ?? '—'}
-                                </span>
-                              </div>
-                              {/* Project */}
-                              <div className="px-4 py-2 min-w-0 truncate">
-                                <ProjectBadge
-                                  projectId={task.projectId}
-                                  projectName={task.projectName}
-                                  className="text-xs max-w-[140px]"
-                                />
-                              </div>
-                              {/* Status */}
-                              <div className="px-4 py-2">
-                                <div className="flex items-center gap-1.5">
-                                  <span
-                                    className={`w-2 h-2 rounded-full shrink-0 ${statusCfg.dot}`}
-                                  />
-                                  <span className={`text-xs font-medium ${statusCfg.color}`}>
-                                    {t(statusCfg.labelKey)}
-                                  </span>
-                                </div>
-                              </div>
+                              {/* Cells, in the same order as the header */}
+                              {listColumnOrder.map(([key]) => {
+                                if (key === 'deadline')
+                                  return (
+                                    <div key={key} className={cellPad}>
+                                      <DeadlineBadge
+                                        deadline={task.deadline}
+                                        status={task.status as Status}
+                                      />
+                                    </div>
+                                  );
+                                if (key === 'assignee')
+                                  return (
+                                    <div
+                                      key={key}
+                                      className={`flex items-center gap-2 ${cellPad} min-w-0`}
+                                    >
+                                      <Avatar
+                                        name={task.assignedToUser?.name ?? '?'}
+                                        url={task.assignedToUser?.avatarUrl}
+                                        size="sm"
+                                      />
+                                      <span className="text-xs text-(--text-secondary) truncate">
+                                        {task.assignedToUser?.name ?? '—'}
+                                      </span>
+                                    </div>
+                                  );
+                                if (key === 'project')
+                                  return (
+                                    <div key={key} className={`${cellPad} min-w-0 truncate`}>
+                                      <ProjectBadge
+                                        projectId={task.projectId}
+                                        projectName={task.projectName}
+                                        className="text-xs max-w-[140px]"
+                                      />
+                                    </div>
+                                  );
+                                if (key === 'priority')
+                                  return (
+                                    <div key={key} className={cellPad}>
+                                      <span
+                                        className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${priorityCfg.bg} ${priorityCfg.color}`}
+                                      >
+                                        {priorityCfg.icon && <span>{priorityCfg.icon}</span>}
+                                        {t(priorityCfg.labelKey)}
+                                      </span>
+                                    </div>
+                                  );
+                                return (
+                                  <div key={key} className={cellPad}>
+                                    <div className="flex items-center gap-1.5">
+                                      <span
+                                        className={`w-2 h-2 rounded-full shrink-0 ${statusCfg.dot}`}
+                                      />
+                                      <span className={`text-xs font-medium ${statusCfg.color}`}>
+                                        {t(statusCfg.labelKey)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                );
+                              })}
                             </div>
                           );
                         })}

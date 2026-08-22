@@ -823,11 +823,12 @@ export const CalendarClient = React.memo(function CalendarClient() {
   // The ref is cheap, runs on every render to stay in sync, and only one
   // click is blocked (the one right after the overlay pointerdown).
   const viewProfileTargetRef = useRef(viewProfileTarget);
+  // eslint-disable-next-line react-hooks/refs
   viewProfileTargetRef.current = viewProfileTarget;
 
   const blockClicksUntilRef = useRef(0);
   useEffect(() => {
-    const onPointerDown = (e: PointerEvent) => {
+    const onPointerDown = (_e: PointerEvent) => {
       // When the sheet is open and the user initiates any pointer action,
       // arm the click blocker. The subsequent click may leak through after
       // Radix removes the overlay.

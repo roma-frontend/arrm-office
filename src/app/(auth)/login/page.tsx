@@ -25,7 +25,6 @@ import { SmartErrorMessage, parseAuthError } from '@/components/auth/SmartErrorM
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import dynamic from 'next/dynamic';
-import { useLoginBranding } from '@/hooks/useLoginBranding';
 
 // Lazy load FaceLogin to prevent TensorFlow.js from loading on every page view
 const FaceLogin = dynamic(

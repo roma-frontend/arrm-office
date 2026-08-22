@@ -56,7 +56,7 @@ module.exports = {
     // Thin UI wrappers: presentational/Radix passthroughs with zero logic (and
     // therefore zero coverage credit). Logic-bearing ui components (wizard,
     // CustomSelect, avatar-upload, prompt-dialog, …) stay in the report.
-    '!src/components/ui/{alert-dialog,dropdown-menu,mobile-card,scroll-area,separator,switch,tabs}.tsx',
+    '!src/components/ui/{alert-dialog,dropdown-menu,mobile-card,popover,scroll-area,separator,switch,tabs}.tsx',
   ],
   coverageDirectory: '<rootDir>/coverage',
   coverageReporters: ['text', 'text-summary', 'lcov', 'html', 'json-summary'],
@@ -88,6 +88,6 @@ module.exports = {
     '/__mocks__/',
     // Thin UI wrappers (presentational/Radix passthroughs, no logic to cover) —
     // mirrors the collectCoverageFrom exclusion above.
-    '/src/components/ui/(alert-dialog|dropdown-menu|mobile-card|scroll-area|separator|switch|tabs)\\.tsx$',
+    '/src/components/ui/(alert-dialog|dropdown-menu|mobile-card|popover|scroll-area|separator|switch|tabs)\\.tsx$',
   ],
 };

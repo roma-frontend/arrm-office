@@ -115,6 +115,7 @@ export function EmployeeHoverCard({
   // Keep position updated while open (for scroll)
   useEffect(() => {
     if (!hoverOpen) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     updatePosition();
     const onScroll = () => updatePosition();
     window.addEventListener('scroll', onScroll, { passive: true });

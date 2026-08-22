@@ -34,6 +34,7 @@ export function useLoginBranding(): LoginBranding | null {
   // Only query when we have an org ID.
   const branding = useQuery(
     api.branding.getBrandingByOrg,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
     orgId ? { organizationId: orgId as any } : 'skip',
   );
 

@@ -44,7 +44,7 @@ export function ShieldLoader({
 
   // Default variant - full loader with dots
   return (
-    <div className={`flex items-center justify-center ${className}`}>
+    <div className={`min-h-screen flex items-center justify-center ${className}`}>
       <div
         className={`flex flex-col items-center ${size === 'xs' || size === 'sm' ? 'gap-2' : 'gap-6'} animate-fade-in`}
       >

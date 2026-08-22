@@ -14,7 +14,7 @@
  * override the theme defaults.
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -75,7 +75,7 @@ function buildBrandVars(primary: string, secondary: string, accent: string) {
   const darker = darken(primary, 0.15);
   const darker2 = darken(primary, 0.25);
   const lighter = lighten(primary, 0.25);
-  const lightBg = lighten(primary, 0.65);
+  const _lightBg = lighten(primary, 0.65);
 
   // ── Core brand (light theme) ──────────────────────────────────────────
   const vars: Record<string, string> = {
@@ -152,25 +152,28 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
   const realBranding = useQuery(api.branding.getBranding, hasOrg && !previewMode ? {} : 'skip');
 
   // In preview mode, use the form values; otherwise use real Convex data.
-  const branding =
-    previewMode && previewValues
-      ? {
-          primaryColor: previewValues.primaryColor,
-          secondaryColor: previewValues.secondaryColor,
-          accentColor: previewValues.accentColor,
-          primaryColorDark: previewValues.primaryColorDark,
-          secondaryColorDark: previewValues.secondaryColorDark,
-          accentColorDark: previewValues.accentColorDark,
-          headingFont: previewValues.headingFont,
-          bodyFont: previewValues.bodyFont,
-          customCss: previewValues.customCss,
-          logoUrl: previewValues.logoUrl ?? undefined,
-          faviconUrl: previewValues.faviconUrl ?? undefined,
-          brandName: previewValues.brandName ?? undefined,
-          enableWhiteLabel: previewValues.enableWhiteLabel,
-          hidePoweredBy: previewValues.hidePoweredBy,
-        }
-      : realBranding;
+  const branding = useMemo(
+    () =>
+      previewMode && previewValues
+        ? {
+            primaryColor: previewValues.primaryColor,
+            secondaryColor: previewValues.secondaryColor,
+            accentColor: previewValues.accentColor,
+            primaryColorDark: previewValues.primaryColorDark,
+            secondaryColorDark: previewValues.secondaryColorDark,
+            accentColorDark: previewValues.accentColorDark,
+            headingFont: previewValues.headingFont,
+            bodyFont: previewValues.bodyFont,
+            customCss: previewValues.customCss,
+            logoUrl: previewValues.logoUrl ?? undefined,
+            faviconUrl: previewValues.faviconUrl ?? undefined,
+            brandName: previewValues.brandName ?? undefined,
+            enableWhiteLabel: previewValues.enableWhiteLabel,
+            hidePoweredBy: previewValues.hidePoweredBy,
+          }
+        : realBranding,
+    [previewMode, previewValues, realBranding],
+  );
 
   const styleRef = useRef<HTMLStyleElement | null>(null); // ── Inject CSS custom properties ──────────────────────────────────────────
   useEffect(() => {
@@ -232,6 +235,7 @@ ${fontRules.join('\n')}
 }`;
 
     // Append dark mode overrides if present.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
     const darkRule = (vars as any).__dark;
     if (darkRule) rootRule += `\n${darkRule}`;
 
@@ -294,6 +298,7 @@ ${fontRules.join('\n')}
     }
 
     const b = branding ?? FALLBACK;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
     customCssRef.current.textContent = (b as any).customCss ?? '';
 
     return () => {
@@ -308,7 +313,9 @@ ${fontRules.join('\n')}
 
     const b = branding ?? FALLBACK;
     const fonts = new Set<string>();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument
     if ((b as any).headingFont) fonts.add((b as any).headingFont);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument
     if ((b as any).bodyFont) fonts.add((b as any).bodyFont);
 
     if (fonts.size === 0) return;

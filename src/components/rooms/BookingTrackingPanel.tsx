@@ -450,7 +450,7 @@ function AttendeeRow({
   isOrganizer,
   isYou,
   formatAbsolute,
-  formatRelative,
+  formatRelative: _formatRelative,
   onViewProfile,
   t,
 }: {

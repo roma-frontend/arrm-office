@@ -44,6 +44,21 @@ if (typeof globalThis.PushManager === 'undefined') {
   };
 }
 
+// ── ResizeObserver ───────────────────────────────────────────────────────────
+// jsdom has no layout engine and therefore no ResizeObserver, but every
+// floating-ui-positioned Radix primitive (popover, dropdown menu, hover card,
+// tooltip) constructs one as soon as its content opens. Without this, any test
+// that opens such a panel dies with "ResizeObserver is not defined" rather than
+// failing on something meaningful. Observing nothing is correct here: there is
+// no layout to react to.
+if (typeof globalThis.ResizeObserver === 'undefined') {
+  (globalThis as any).ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+}
+
 // ── Polyfill performance API methods missing in jsdom ────────────────────────
 if (typeof globalThis.performance !== 'undefined') {
   if (typeof (globalThis.performance as any).mark !== 'function') {
