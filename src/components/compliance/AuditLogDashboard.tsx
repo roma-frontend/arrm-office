@@ -108,7 +108,7 @@ const CATEGORY_ICONS: Record<string, typeof Shield> = {
 
 function formatTimeAgo(
   creationTime: number,
-  t: (key: string, options?: Record<string, unknown>) => string,
+  t: ReturnType<typeof useTranslation>['t'],
 ): string {
   const diff = Date.now() - creationTime;
   const mins = Math.floor(diff / 60000);
