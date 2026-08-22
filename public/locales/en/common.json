@@ -1064,8 +1064,8 @@
     "valueTooLarge": "Value is too large",
     "fileTooBig": "File size is too large",
     "invalidFileType": "Invalid file type",
-    "maxLength": "Maximum length exceeded",
-    "minLength": "Minimum length not met"
+    "maxLength": "Maximum length is {{max}} characters",
+    "minLength": "Minimum length is {{min}} characters"
   },
   "search": {
     "search": "Search",
@@ -1381,6 +1381,7 @@
       "calendarAccessGranted": "Your calendar access request was approved",
       "calendarAccessRejected": "Your calendar access request was declined",
       "calendarAccessRequest": "{{requesterName}} wants to view your calendar",
+      "calendarAccessRevoked": "{{ownerName}} revoked your access to their calendar",
       "calendarOrganizationAccessRequest": "{{requesterName}} wants to view all organization events",
       "driverArrived": "Your driver has arrived at the pickup location",
       "driverEtaUpdated": "Your driver will arrive in approximately {{count}} minutes",
@@ -1459,7 +1460,8 @@
       "leaveCancellationApproved": "Your $t(leaveTypes.{{type}}) ({{start}} → {{end}}) cancellation has been approved.",
       "leaveCancellationRejected": "Your $t(leaveTypes.{{type}}) ({{start}} → {{end}}) cancellation was rejected by {{reviewerName}}.",
       "leaveCancellationRejectedWithReason": "Your $t(leaveTypes.{{type}}) ({{start}} → {{end}}) cancellation was rejected by {{reviewerName}}. Reason: {{comment}}",
-      "roomMeetingReminder": "Starts at {{startTime}} in {{roomName}}.{{platform ? \" Platform: \" + platform : \"\"}} {{videoUrl}}"
+      "roomMeetingReminder": "Starts at {{startTime}} in {{roomName}}",
+      "roomMeetingReminderWithPlatform": "Starts at {{startTime}} in {{roomName}} · {{platform}}"
     },
     "titles": {
       "movementFormReady": "📄 Movement Form Ready for Signing",
@@ -1500,6 +1502,7 @@
       "calendarAccessGranted": "Calendar Access Granted",
       "calendarAccessRejected": "Calendar Access Declined",
       "calendarAccessRequest": "Calendar Access Request",
+      "calendarAccessRevoked": "Calendar Access Revoked",
       "driverArrived": "Driver Has Arrived",
       "driverEtaUpdated": "Driver ETA Updated",
       "leaveRequestReceived": "📋 Request Received",
@@ -2089,7 +2092,18 @@
     "searchPlaceholder": "Search events, users, actions...",
     "allSeverities": "All Severities",
     "dateRange": "Last 24 hours",
-    "noResults": "No audit events match your filter criteria"
+    "noResults": "No audit events match your filter criteria",
+    "allCategories": "All Categories",
+    "authentication": "Authentication",
+    "dataChanges": "Data Changes",
+    "adminActions": "Admin Actions",
+    "aiActivity": "AI Activity",
+    "system": "System",
+    "justNow": "Just now",
+    "minutesAgo": "{{n}}m ago",
+    "hoursAgo": "{{n}}h ago",
+    "daysAgo": "{{n}}d ago",
+    "exportCSV": "Export CSV"
   },
   "reportBuilder": {
     "widgets": "widgets",

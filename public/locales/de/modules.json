@@ -1603,7 +1603,7 @@
       "department": "Abteilung",
       "deptPlaceholder": "z.B. Entwicklung",
       "taskTitle": "Aufgabentitel",
-      "dayPlaceholder": "Tag {{day}}"
+      "dayPlaceholder": "Tag"
     },
     "checkLater": "Später erneut prüfen"
   },
@@ -3112,7 +3112,7 @@
         "categoryPlaceholder": "Wählen Sie die Kategorie"
       },
       "submit": "Ticket erstellen",
-      "selected": "Ausgewählt: {{type}}"
+      "selected": "Ausgewählt"
     },
     "alerts": {
       "ticketCreated": "Ticket erfolgreich erstellt",
@@ -3325,7 +3325,7 @@
     "submitting": "Senden...",
     "submittedSuccess": "Bewertung für {{name}} erfolgreich gesendet!",
     "submitFailed": "Fehler beim Senden der Bewertung",
-    "lastRated": "Letzte Bewertung am {{date}}",
+    "lastRated": "Letzte Bewertung",
     "rate": "Bewerten"
   },
   "wizard": {

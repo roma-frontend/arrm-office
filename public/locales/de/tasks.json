@@ -66,7 +66,7 @@
     "assignSupervisor": "Vorgesetzten zuweisen",
     "newTask": "Neue Aufgabe",
     "noDeadline": "Kein Termin",
-    "total": "Insgesamt {{count}} Aufgaben",
+    "total": "Insgesamt",
     "allPriorities": "Alle Prioritäten",
     "allStatuses": "Alle Status",
     "allProjects": "Alle Projekte",

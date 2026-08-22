@@ -6,6 +6,13 @@ import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useState, useEffect, useRef, useCallback, useMemo, Fragment } from 'react';
+
+/** Props accepted when rendered inside a sheet. */
+export interface LeaveEditSheetProps {
+  leaveId: Id<'leaveRequests'>;
+  onClose: () => void;
+}
+
 import { useWizardDraft } from '@/hooks/useWizardDraft';
 import { WizardDraftNotice } from '@/components/ui/WizardDraftNotice';
 import { useTranslation } from 'react-i18next';
@@ -35,12 +42,17 @@ import i18n from 'i18next';
 import { cn } from '@/lib/utils';
 import { motion } from '@/lib/cssMotion';
 
-export default function LeaveEditClient() {
+export default function LeaveEditClient({ leaveId: leaveIdProp, onClose }: LeaveEditSheetProps | Record<string, never> = {}) {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuthStore();
   const { t } = useTranslation();
-  const leaveId = params.id as Id<'leaveRequests'>;
+  const leaveId = leaveIdProp ?? (params.id as Id<'leaveRequests'>);
+  /** Close the sheet if in sheet mode, otherwise navigate back to the detail page. */
+  const goBack = useCallback(() => {
+    if (onClose) onClose();
+    else router.push(`/leaves/${leaveId}`);
+  }, [onClose, router, leaveId]);
 
   const lang = i18n.language || 'en';
   const dateFnsLocale = lang === 'ru' ? ru : lang === 'hy' ? hy : enUS;
@@ -129,7 +141,7 @@ export default function LeaveEditClient() {
 
       toast.success(t('leave.updatedSuccess', 'Leave request updated successfully'));
       clearDraft();
-      router.push(`/leaves/${leaveId}`);
+      goBack();
     } catch (error: unknown) {
       toast.error(
         (error as Error).message || t('leave.updateFailed', 'Failed to update leave request'),
@@ -211,8 +223,8 @@ export default function LeaveEditClient() {
   if (leave.status !== 'pending' && user?.role !== 'admin' && user?.role !== 'superadmin') {
     return (
       <div className="space-y-6">
-        <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" size="icon" onClick={() => router.push(`/leaves/${leaveId}`)}>
+        <div className="flex items-center gap-4 my-4">
+          <Button variant="ghost" size="icon" onClick={goBack}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
@@ -226,7 +238,7 @@ export default function LeaveEditClient() {
             <p className="text-(--text-muted)">
               {t('leave.cannotEditStatus', 'Only pending leave requests can be edited')}
             </p>
-            <Button className="mt-4" onClick={() => router.push(`/leaves/${leaveId}`)}>
+            <Button className="mt-4" onClick={goBack}>
               {t('common.back')}
             </Button>
           </CardContent>
@@ -239,8 +251,8 @@ export default function LeaveEditClient() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4 mb-6">
-        <Button variant="ghost" size="icon" onClick={() => router.push(`/leaves/${leaveId}`)}>
+      <div className="flex items-center gap-4 my-4">
+        <Button variant="ghost" size="icon" onClick={goBack}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>

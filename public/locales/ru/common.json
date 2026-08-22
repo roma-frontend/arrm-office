@@ -76,7 +76,7 @@
     "noOrgFound": "Организация не найдена",
     "askAdminSetup": "Пожалуйста, попросите администратора настроить вашу организацию",
     "inviteDetected": "Приглашение обнаружено",
-    "invitedJoin": "Вы были приглашены присоединиться к {{organization}}. Хотите принять приглашение?",
+    "invitedJoin": "Вас пригласили присоединиться",
     "emailAddress": "Адрес электронной почты",
     "internal": "Внутренний",
     "open": "Открытый",
@@ -1399,6 +1399,7 @@
       "calendarAccessGranted": "Ваш запрос доступа к календарю одобрен",
       "calendarAccessRejected": "Ваш запрос доступа к календарю отклонён",
       "calendarAccessRequest": "{{requesterName}} хочет просматривать ваш календарь",
+      "calendarAccessRevoked": "{{ownerName}} отозвал доступ к своему календарю",
       "calendarOrganizationAccessRequest": "{{requesterName}} хочет просматривать все мероприятия организации",
       "driverArrived": "Ваш водитель прибыл в место посадки",
       "driverEtaUpdated": "Ваш водитель прибудет примерно через {{count}} мин.",
@@ -1477,7 +1478,8 @@
       "leaveCancellationApproved": "Ваша отмена $t(leaveTypes.{{type}}) ({{start}} → {{end}}) одобрена.",
       "leaveCancellationRejected": "{{reviewerName}} отклонил вашу отмену $t(leaveTypes.{{type}}) ({{start}} → {{end}}).",
       "leaveCancellationRejectedWithReason": "{{reviewerName}} отклонил вашу отмену $t(leaveTypes.{{type}}) ({{start}} → {{end}}). Причина: {{comment}}",
-      "roomMeetingReminder": "Начало в {{startTime}}, {{roomName}}{{platform ? \". Платформа: \" + platform : \"\"}} {{videoUrl}}"
+      "roomMeetingReminder": "Начало в {{startTime}}, {{roomName}}",
+      "roomMeetingReminderWithPlatform": "Начало в {{startTime}}, {{roomName}} · {{platform}}"
     },
     "titles": {
       "movementFormReady": "📄 Акт перемещения готов к подписанию",
@@ -1518,6 +1520,7 @@
       "calendarAccessGranted": "Доступ к календарю предоставлен",
       "calendarAccessRejected": "В доступе к календарю отказано",
       "calendarAccessRequest": "Запрос доступа к календарю",
+      "calendarAccessRevoked": "Доступ к календарю отозван",
       "driverArrived": "Водитель приехал",
       "driverEtaUpdated": "Время прибытия водителя обновлено",
       "leaveRequestReceived": "📋 Заявка получена",
@@ -2109,7 +2112,18 @@
     "searchPlaceholder": "Поиск событий, пользователей, действий...",
     "allSeverities": "Все уровни",
     "dateRange": "Последние 24 часа",
-    "noResults": "События аудита не найдены по вашему запросу"
+    "noResults": "События аудита не найдены по вашему запросу",
+    "allCategories": "Все категории",
+    "authentication": "Аутентификация",
+    "dataChanges": "Изменения данных",
+    "adminActions": "Действия администратора",
+    "aiActivity": "Активность ИИ",
+    "system": "Система",
+    "justNow": "Только что",
+    "minutesAgo": "{{n}} мин. назад",
+    "hoursAgo": "{{n}} ч. назад",
+    "daysAgo": "{{n}} дн. назад",
+    "exportCSV": "Экспорт CSV"
   },
   "reportBuilder": {
     "widgets": "виджетов",

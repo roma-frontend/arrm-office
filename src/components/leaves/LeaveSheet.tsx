@@ -37,9 +37,11 @@ export interface LeaveSheetProps {
   requesterName?: string;
   /** Raise the panel above a fullscreen overlay (e.g. the timesheet at z-70). */
   elevated?: boolean;
+  /** Open the edit wizard in a sheet instead of navigating to the edit page. */
+  onEdit?: (leaveId: Id<'leaveRequests'>) => void;
 }
 
-export function LeaveSheet({ leaveId, onClose, requesterName, elevated }: LeaveSheetProps) {
+export function LeaveSheet({ leaveId, onClose, requesterName, elevated, onEdit }: LeaveSheetProps) {
   const { t } = useTranslation();
 
   return (
@@ -52,7 +54,7 @@ export function LeaveSheet({ leaveId, onClose, requesterName, elevated }: LeaveS
       {...(leaveId ? { deepLink: `/leaves/${leaveId}` } : {})}
       {...(elevated ? { contentClassName: 'z-[75]', overlayClassName: 'z-[74]' } : {})}
     >
-      {leaveId && <LeaveDetailClient key={leaveId} leaveId={leaveId} onDone={onClose} />}
+      {leaveId && <LeaveDetailClient key={leaveId} leaveId={leaveId} onDone={onClose} onEdit={onEdit} />}
     </DetailSheet>
   );
 }

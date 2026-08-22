@@ -644,7 +644,7 @@
     "localStorageSaveFailed": "Սխալ localStorage-ում պահպանելիս",
     "failedToLoad": "Չհաջողվեց բեռնել",
     "tryAgainLater": "Խնդրում ենք կրկին փորձել ավելի ուշ։ Եթե խնդիրը շարունակվի, կապվեք աջակցության հետ։",
-    "errorDetails": "Սխալի մանրամասներ: {{details}}",
+    "errorDetails": "Սխալի մանրամասներ՝",
     "reloadPage": "Վերաբեռնեք էջը",
     "contactSupport": "Կապվեք աջակցության հետ"
   },
@@ -1064,8 +1064,8 @@
     "valueTooLarge": "Արժեքը չափազանց մեծ է",
     "fileTooBig": "Ֆայլը չափազանց մեծ է",
     "invalidFileType": "Անվավեր ֆայլի տեսակ",
-    "maxLength": "Առավելագույն երկարություն գերազանցված է",
-    "minLength": "Նվազագույն երկարություն չի հասնում"
+    "maxLength": "Առավելագույն երկարությունը {{max}} նշան է",
+    "minLength": "Նվազագույն երկարությունը {{min}} նշան է"
   },
   "search": {
     "search": "Որոնում",
@@ -1338,10 +1338,10 @@
     "messages": {
       "taskCompleted": "\"{{taskTitle}}\" առաջադրանքը ավարտվել է {{userName}}-ի կողմից",
       "taskSubmittedForReview": "\"{{taskTitle}}\" առաջադրանքը ներկայացվել է վերանայման {{userName}}-ի կողմից",
-      "taskAssigned": "\"{{taskTitle}}\" առաջադրանքը նշանակվել է {{userName}}-ի կողմից",
+      "taskAssigned": "«{{taskTitle}}» առաջադրանքը նշանակվել է ձեզ",
       "leaveRequestNew": "{{userName}}-ի {{type}} հայտը ներկայացվել է ({{start}} – {{end}})",
-      "leaveApproved": "{{userName}}-ի {{type}} հայտը հաստատվել է ({{start}} – {{end}})",
-      "leaveRejected": "{{userName}}-ի {{type}} հայտը մերժվել է ({{start}} – {{end}})",
+      "leaveApproved": "Ձեր {{type}} հայտը ({{start}} – {{end}}) հաստատվել է",
+      "leaveRejected": "Ձեր {{type}} հայտը ({{start}} – {{end}}) մերժվել է",
       "impersonation": "{{name}} սկսել է իմպերսոնացիայի սեսիա ձեր հաշվում: Պատճառ: {{reason}}",
       "signMovementForm": "Խնդրում ենք ստորագրել «{{assetName}}»-ի տեղափոխման ակտը «Էլեկտրոնային ստորագրություններ» բաժնում։",
       "signReturnForm": "Խնդրում ենք ստորագրել «{{assetName}}»-ի վերադարձի ակտը «Էլեկտրոնային ստորագրություններ» բաժնում։",
@@ -1381,6 +1381,7 @@
       "calendarAccessGranted": "Օրացույցի հասանելիության ձեր հայտը հաստատվել է",
       "calendarAccessRejected": "Օրացույցի հասանելիության ձեր հայտը մերժվել է",
       "calendarAccessRequest": "{{requesterName}}-ը ցանկանում է դիտել ձեր օրացույցը",
+      "calendarAccessRevoked": "{{ownerName}}-ը հետ վերցրեց ձեր հասանելիությունը իր օրացույցին",
       "calendarOrganizationAccessRequest": "{{requesterName}}-ը ցանկանում է դիտել կազմակերպության բոլոր միջոցառումները",
       "driverArrived": "Ձեր վարորդը ժամանել է վերցնելու վայր",
       "driverEtaUpdated": "Ձեր վարորդը կժամանի մոտավորապես {{count}} րոպեից",
@@ -1459,7 +1460,8 @@
       "leaveCancellationApproved": "Ձեր $t(leaveTypes.{{type}}) ({{start}} → {{end}}) չեղարկումը հաստատվել է։",
       "leaveCancellationRejected": "{{reviewerName}}-ը մերժել է ձեր $t(leaveTypes.{{type}}) ({{start}} → {{end}}) չեղարկումը։",
       "leaveCancellationRejectedWithReason": "{{reviewerName}}-ը մերժել է ձեր $t(leaveTypes.{{type}}) ({{start}} → {{end}}) չեղարկումը։ Պատճառը՝ {{comment}}",
-      "roomMeetingReminder": "Ստաղումա {{startTime}}, {{roomName}}"
+      "roomMeetingReminder": "Սկսվում է {{startTime}}-ին, {{roomName}}",
+      "roomMeetingReminderWithPlatform": "Սկսվում է {{startTime}}-ին, {{roomName}} · {{platform}}"
     },
     "titles": {
       "movementFormReady": "📄 Տեղափոխման ակտը պատրաստ է ստորագրման",
@@ -1500,6 +1502,7 @@
       "calendarAccessGranted": "Օրացույցի հասանելիությունը տրվեց",
       "calendarAccessRejected": "Օրացույցի հասանելիությունը մերժվեց",
       "calendarAccessRequest": "Օրացույցի հասանելիության հայտ",
+      "calendarAccessRevoked": "Օրացույցի հասանելիությունը հետ է վերցվել",
       "driverArrived": "Վարորդը ժամանեց",
       "driverEtaUpdated": "Վարորդի ժամանման ժամը թարմացվեց",
       "leaveRequestReceived": "📋 Հայտը ստացվեց",
@@ -1573,7 +1576,7 @@
       "leaveCancelRequested": "Արձակուրդի չեղարկում է պահանջվել",
       "leaveCancellationApproved": "Չեղարկումը հաստատված է",
       "leaveCancellationRejected": "Չեղարկումը մերժված է",
-      "roomMeetingReminder": "Շորտ {{bookingTitle}}"
+      "roomMeetingReminder": "Շուտով՝ {{bookingTitle}}"
     }
   },
   "aiChat": {
@@ -1616,19 +1619,19 @@
     "aiPowered": "Հիմնված AI-ի վրա"
   },
   "aiMessages": {
-    "leaveConflict": "⚠️ Հնարավոր հակասություն {{type}} հայտի հետ ({{start}} → {{end}}):",
-    "insufficientBalance": "❌ Հաշվեկշռի պակաս: {{owner}}-ի հաշվեկշռում {{balance}} օր է մնացել, բայց փորձել է {{days}} օր վերցնել ({{start}} → {{end}}):",
-    "leaveSubmitted": "✅ {{owner}}-ի {{type}} հայտը հաջողությամբ ներկայացվել է ({{start}} → {{end}}): {{balanceNote}}",
-    "leaveDeleted": "✅ {{owner}}-ի {{type}} հայտը հաջողությամբ ջնջվել է ({{start}} → {{end}}): {{balanceNote}}",
-    "leaveDeletedBalance": "✅ {{owner}}-ի {{type}} հայտը հաջողությամբ ջնջվել է ({{start}} → {{end}}): {{balanceNote}}",
-    "leaveNotFound": "❌ Հայտը չի գտնվել (ID: {{id}})",
-    "leaveCannotEdit": "❌ Հայտը չի կարող խմբագրվել (ID: {{id}}) - արդեն հաստատված կամ մերժված է",
-    "leaveUpdated": "✅ {{owner}}-ի {{type}} հայտը հաջողությամբ թարմացվել է ({{start}} → {{end}}): {{balanceNote}}",
-    "leaveUpdatedAdmin": "✅ {{owner}}-ի {{type}} հայտը հաջողությամբ թարմացվել է ({{start}} → {{end}})՝ հաստատված կարգավիճակով: {{balanceNote}}",
-    "driverSubmitted": "✅ {{owner}}-ի վարորդի հայտը հաջողությամբ ներկայացվել է: {{balanceNote}}",
-    "conflictWarning": "⚠️ Հնարավոր հակասություն հայտնաբերվել է {{type}} հայտի հետ ({{start}} → {{end}}):",
-    "conflictDetected": "❌ Հակասություն հայտնաբերվել է {{type}} հայտի հետ ({{start}} → {{end}}):",
-    "conflictAdvice": "✅ Խորհուրդ է տրվում վերանայել և լուծել հակասությունը՝ հնարավոր է, որ {{owner}}-ի {{type}} հայտը չեղարկվի կամ մերժվի:",
+    "leaveConflict": "Դուք արդեն ունեք {{type}} հայտ ({{start}} → {{end}}), կարգավիճակը՝ «{{status}}»։ 💡 Առաջարկվող այլընտրանք՝ {{sugStart}} → {{sugEnd}}",
+    "insufficientBalance": "{{type}} հայտի հաշվեկշիռը բավարար չէ։ Հասանելի է {{available}} օր, հայցվում է {{requested}} օր։",
+    "leaveSubmitted": "✅ Ձեր {{type}} հայտը {{days}} օրվա համար ({{start}} → {{end}}) ներկայացվել է և ուղարկվել ադմինիստրատորին հաստատման։",
+    "leaveDeleted": "✅ {{owner}}-ի {{type}} հայտը ({{start}} → {{end}}) ջնջվել է։{{balanceNote}}",
+    "leaveDeletedBalance": " Արձակուրդի հաշվեկշիռը վերականգնվել է։",
+    "leaveNotFound": "Հայտը չի գտնվել։ Հասանելի են՝ {{preview}}",
+    "leaveCannotEdit": "❌ Հնարավոր չէ խմբագրել — կարգավիճակը՝ {{status}}։ Խմբագրվում են միայն սպասման մեջ գտնվող հայտերը։",
+    "leaveUpdated": "✅ Հայտը թարմացվել է։{{adminNote}}",
+    "leaveUpdatedAdmin": " Աշխատակիցը տեղեկացվել է։",
+    "driverSubmitted": "✅ Վարորդի հայտը ներկայացվել է։",
+    "conflictWarning": "⚠️ Ուշադրություն՝ {{warnings}}",
+    "conflictDetected": "🚨 **Հակասություն ձեր {{type}} հայտի հետ ({{start}} → {{end}})**՝",
+    "conflictAdvice": "Դիտարկեք այլ ամսաթվեր կամ քննարկեք ղեկավարի հետ։",
     "leaveCancelRequested": "↩️ Ձեր {{type}} արձակուրդի ({{start}} → {{end}}) չեղարկում է պահանջվել։ HR-ը կդիտարկի այն։"
   },
   "leaveTypes": {
@@ -1801,7 +1804,7 @@
     "addAttendees": "Ավելացնել",
     "searchPeople": "Փնտրել...",
     "noResults": "Արդյունքներ չեն գտնվել",
-    "conflict": "⚠️ Հնարավոր հակասություն հայտնաբերվել է {{type}} իրադարձության հետ ({{start}} → {{end}}):",
+    "conflict": "Այս ժամին զբաղված է",
     "uploading": "Բեռնվում է...",
     "back": "Նախորդ",
     "next": "Հաջորդ",
@@ -2089,7 +2092,18 @@
     "searchPlaceholder": "Որոնել իրադարձություններ, օգտատերեր, գործողություններ...",
     "allSeverities": "Բոլոր մակարդակները",
     "dateRange": "Վերջին 24 ժամերը",
-    "noResults": "Աուդիտի իրադարձությունները չեն գտնվել"
+    "noResults": "Աուդիտի իրադարձությունները չեն գտնվել",
+    "allCategories": "Բոլոր կատեգորիաները",
+    "authentication": "Նույնականացում",
+    "dataChanges": "Տվյալների փոփոխություններ",
+    "adminActions": "Ադմինիստրատորի գործողություններ",
+    "aiActivity": "ԱԲ գործունեություն",
+    "system": "Համակարգ",
+    "justNow": "Հիմա",
+    "minutesAgo": "{{n}} րոպե առաջ",
+    "hoursAgo": "{{n}} ժամ առաջ",
+    "daysAgo": "{{n}} օր առաջ",
+    "exportCSV": "Արտահանել CSV"
   },
   "reportBuilder": {
     "widgets": "վիջեթ",
@@ -2770,7 +2784,7 @@
       "title": "Օdelays",
       "description": "Կdelays",
       "leadTime": "Օdelays",
-      "leadTimeHint": "Մdelays",
+      "leadTimeHint": "Մասնակիցները ծանուցում կստանան հանդիպումից {{minutes}} րոպե առաջ։",
       "leadTimeSaved": "Խdelays",
       "leadTimeError": "Խdelays"
     }

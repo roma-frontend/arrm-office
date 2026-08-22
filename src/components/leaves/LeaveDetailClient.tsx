@@ -79,11 +79,14 @@ export interface LeaveDetailClientProps {
   leaveId?: Id<'leaveRequests'>;
   /** Replaces the navigation to `/leaves` when embedded. */
   onDone?: () => void;
+  /** When supplied, clicking Edit opens the edit wizard in a sheet instead of navigating. */
+  onEdit?: (leaveId: Id<'leaveRequests'>) => void;
 }
 
 export default function LeaveDetailClient({
   leaveId: leaveIdProp,
   onDone,
+  onEdit,
 }: LeaveDetailClientProps = {}) {
   const params = useParams();
   const router = useRouter();
@@ -246,7 +249,7 @@ export default function LeaveDetailClient({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 my-4">
         <div className="flex items-center gap-4">
           {/* Hidden when embedded: a panel already has a close control, and a
               second "back" affordance next to it is ambiguous about which one
@@ -311,7 +314,7 @@ export default function LeaveDetailClient({
           <Button
             variant="outline"
             size="icon"
-            onClick={() => router.push(`/leaves/${leaveId}/edit`)}
+            onClick={() => onEdit ? onEdit(leaveId) : router.push(`/leaves/${leaveId}/edit`)}
           >
             <Pencil className="h-4 w-4" />
           </Button>

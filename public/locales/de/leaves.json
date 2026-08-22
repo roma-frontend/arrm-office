@@ -195,7 +195,7 @@
         "reasonPlaceholder": "Zum Beispiel: Jahresurlaub",
         "commentLabel": "Kommentar",
         "commentPlaceholder": "Zusätzliche Informationen (optional)",
-        "balanceInfo": "Ihr Kontostand: {{balance}} Tage, nach diesem Urlaub: {{balanceAfter}} Tage"
+        "balanceInfo": "Ihr Kontostand: {{balance}} Tage"
       },
       "confirm": {
         "title": "Bestätigung",

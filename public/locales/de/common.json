@@ -76,7 +76,7 @@
     "noOrgFound": "Organisation nicht gefunden",
     "askAdminSetup": "Bitte bitten Sie den Administrator, Ihre Organisation einzurichten",
     "inviteDetected": "Einladung erkannt",
-    "invitedJoin": "Sie wurden eingeladen, {{organization}} beizutreten. Möchten Sie die Einladung annehmen?",
+    "invitedJoin": "Sie wurden zur Teilnahme eingeladen",
     "emailAddress": "E-Mail-Adresse",
     "internal": "Intern",
     "open": "Öffentlich",
@@ -1381,6 +1381,7 @@
       "calendarAccessGranted": "Ihre Kalenderzugriffsanfrage wurde genehmigt",
       "calendarAccessRejected": "Ihre Kalenderzugriffsanfrage wurde abgelehnt",
       "calendarAccessRequest": "{{requesterName}} möchte Ihren Kalender einsehen",
+      "calendarAccessRevoked": "{{ownerName}} hat Ihren Zugriff auf den Kalender entzogen",
       "calendarOrganizationAccessRequest": "{{requesterName}} möchte alle Termine der Organisation einsehen",
       "driverArrived": "Ihr Fahrer ist am Abholort angekommen",
       "driverEtaUpdated": "Ihr Fahrer kommt in etwa {{count}} Minuten an",
@@ -1459,7 +1460,8 @@
       "leaveCancellationApproved": "Ihre Stornierung von $t(leaveTypes.{{type}}) ({{start}} → {{end}}) wurde genehmigt.",
       "leaveCancellationRejected": "{{reviewerName}} hat Ihre Stornierung von $t(leaveTypes.{{type}}) ({{start}} → {{end}}) abgelehnt.",
       "leaveCancellationRejectedWithReason": "{{reviewerName}} hat Ihre Stornierung von $t(leaveTypes.{{type}}) ({{start}} → {{end}}) abgelehnt. Grund: {{comment}}",
-      "roomMeetingReminder": "Startet um {{startTime}} in {{roomName}}{{platform ? \". Plattform: \" + platform : \"\"}} {{videoUrl}}"
+      "roomMeetingReminder": "Startet um {{startTime}} in {{roomName}}",
+      "roomMeetingReminderWithPlatform": "Startet um {{startTime}} in {{roomName}} · {{platform}}"
     },
     "titles": {
       "movementFormReady": "📄 Übergabeprotokoll zur Unterschrift bereit",
@@ -1500,6 +1502,7 @@
       "calendarAccessGranted": "Kalenderzugriff gewährt",
       "calendarAccessRejected": "Kalenderzugriff abgelehnt",
       "calendarAccessRequest": "Anfrage für Kalenderzugriff",
+      "calendarAccessRevoked": "Kalenderzugriff entzogen",
       "driverArrived": "Fahrer ist angekommen",
       "driverEtaUpdated": "Ankunftszeit des Fahrers aktualisiert",
       "leaveRequestReceived": "📋 Antrag erhalten",
@@ -2089,7 +2092,18 @@
     "searchPlaceholder": "Ereignisse, Benutzer, Aktionen durchsuchen...",
     "allSeverities": "Alle Schweregrade",
     "dateRange": "Letzte 24 Stunden",
-    "noResults": "Keine Audit-Ereignisse entsprechen Ihren Filtern"
+    "noResults": "Keine Audit-Ereignisse entsprechen Ihren Filtern",
+    "allCategories": "Alle Kategorien",
+    "authentication": "Authentifizierung",
+    "dataChanges": "Datenänderungen",
+    "adminActions": "Admin-Aktionen",
+    "aiActivity": "KI-Aktivität",
+    "system": "System",
+    "justNow": "Gerade eben",
+    "minutesAgo": "vor {{n}} Min.",
+    "hoursAgo": "vor {{n}} Std.",
+    "daysAgo": "vor {{n}} Tagen",
+    "exportCSV": "CSV exportieren"
   },
   "reportBuilder": {
     "widgets": "Widgets",

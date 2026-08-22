@@ -1641,23 +1641,25 @@ export const sendMeetingReminders = internalMutation({
           if (platformName) messageParts.push(`Platform: ${platformName}`);
           if (booking.videoUrl) messageParts.push(booking.videoUrl);
 
-          // Build a pre-computed platform text for i18n — the locale strings
-          // use a simple {{platformText}} variable, not JS ternary expressions.
-          const platformText = platformName ? ` Platform: ${platformName}` : '';
+          // The platform belongs in the sentence, so each language decides where
+          // it goes: one key without it, one with. Building the fragment here
+          // (" Platform: Zoom") would hardcode English into every translation,
+          // and an i18next placeholder cannot hold a conditional expression.
+          const messageKey = platformName
+            ? 'notifications.messages.roomMeetingReminderWithPlatform'
+            : 'notifications.messages.roomMeetingReminder';
 
           await notify(ctx, {
             organizationId: booking.organizationId,
             userId: userId as Id<'users'>,
             type: 'room_meeting_reminder',
             titleKey: 'notifications.titles.roomMeetingReminder',
-            messageKey: 'notifications.messages.roomMeetingReminder',
+            messageKey,
             params: {
               bookingTitle: booking.title,
               roomName: room.name,
               startTime: timeStr,
               platform: platformName,
-              platformText,
-              videoUrl: (booking.videoUrl ?? '') as string,
             },
             fallbackTitle: `${booking.title} starts in 15 min`,
             fallbackMessage: messageParts.join(' — '),

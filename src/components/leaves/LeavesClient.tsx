@@ -34,6 +34,7 @@ import {
 } from '@/components/ui/select';
 import { LeaveRequestModal } from '@/components/leaves/LeaveRequestModal';
 import { LeaveSheet } from '@/components/leaves/LeaveSheet';
+import { LeaveEditSheet } from '@/components/leaves/LeaveEditSheet';
 import { TimeOffCalendar } from '@/components/leaves/TimeOffCalendar';
 import { useAuthStore, type User } from '@/store/useAuthStore';
 import { useShallow } from 'zustand/shallow';
@@ -109,6 +110,11 @@ export function LeavesClient() {
   const [modalOpen, setModalOpen] = useState(false);
   /** Request shown in the slide-over, with the requester's name for the header. */
   const [sheetLeave, setSheetLeave] = useState<{
+    id: Id<'leaveRequests'>;
+    requesterName: string;
+  } | null>(null);
+  /** Leave being edited in the edit sheet. */
+  const [editSheet, setEditSheet] = useState<{
     id: Id<'leaveRequests'>;
     requesterName: string;
   } | null>(null);
@@ -771,6 +777,18 @@ export function LeavesClient() {
         leaveId={sheetLeave?.id ?? null}
         requesterName={sheetLeave?.requesterName}
         onClose={() => setSheetLeave(null)}
+        onEdit={(id) => {
+          setSheetLeave(null);
+          setEditSheet({ id, requesterName: sheetLeave?.requesterName ?? '' });
+        }}
+      />
+
+      {/* Edit wizard in a slide-over. */}
+      <LeaveEditSheet
+        leaveId={editSheet?.id ?? null}
+        requesterName={editSheet?.requesterName}
+        onClose={() => setEditSheet(null)}
+        elevated
       />
 
       {/* Single request entry point (the wizard was removed — its state was never set). */}

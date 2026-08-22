@@ -6,7 +6,7 @@ import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useShallow } from 'zustand/shallow';
-import { useState, useEffect, Fragment } from 'react';
+import { useState, useEffect, useCallback, Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import {
@@ -123,12 +123,23 @@ function SortableQuestion({
   );
 }
 
-export default function SurveyEditClient() {
+/** Props accepted when rendered inside a sheet. */
+export interface SurveyEditSheetProps {
+  surveyId: Id<'surveys'>;
+  onClose: () => void;
+}
+
+export default function SurveyEditClient({ surveyId: surveyIdProp, onClose }: SurveyEditSheetProps | Record<string, never> = {}) {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuthStore(useShallow((state) => ({ user: state.user })));
   const { t } = useTranslation();
-  const surveyId = params.id as Id<'surveys'>;
+  const surveyId = surveyIdProp ?? (params.id as Id<'surveys'>);
+  /** Close the sheet if in sheet mode, otherwise navigate back to the detail page. */
+  const goBack = useCallback(() => {
+    if (onClose) onClose();
+    else router.push(`/surveys/${surveyId}`);
+  }, [onClose, router, surveyId]);
 
   const survey = useQuery(api.surveys.getSurveyWithQuestions, { surveyId });
 
@@ -284,7 +295,7 @@ export default function SurveyEditClient() {
       });
 
       toast.success(t('surveys.updated'));
-      router.push(`/surveys/${surveyId}`);
+      goBack();
     } catch (error: unknown) {
       toast.error((error as Error).message || t('surveys.errors.updateFailed'));
     } finally {
@@ -306,8 +317,8 @@ export default function SurveyEditClient() {
   if (survey.status !== 'draft') {
     return (
       <div className="space-y-6">
-        <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" size="icon" onClick={() => router.push(`/surveys/${surveyId}`)}>
+        <div className="flex items-center gap-4 my-4">
+          <Button variant="ghost" size="icon" onClick={goBack}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
@@ -317,7 +328,7 @@ export default function SurveyEditClient() {
         <Card>
           <CardContent className="pt-6">
             <p className="text-muted-foreground">{t('surveys.errors.cannotEditPublished')}</p>
-            <Button className="mt-4" onClick={() => router.push(`/surveys/${surveyId}`)}>
+            <Button className="mt-4" onClick={goBack}>
               {t('common.back')}
             </Button>
           </CardContent>
@@ -328,8 +339,8 @@ export default function SurveyEditClient() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4 mb-6">
-        <Button variant="ghost" size="icon" onClick={() => router.push(`/surveys/${surveyId}`)}>
+      <div className="flex items-center gap-4 my-4">
+        <Button variant="ghost" size="icon" onClick={goBack}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>

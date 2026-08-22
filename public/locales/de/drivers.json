@@ -230,7 +230,7 @@
       "revokeAccess": "Zugriff widerrufen",
       "grantAccess": "Zugriff gewähren",
       "accessLevel": "Zugriffsebene",
-      "expiresAt": "Zugriff läuft ab am {{date}}"
+      "expiresAt": "Zugriff läuft ab"
     },
     "notifications": {
       "newRequest": "Neue Fahreranfrage",

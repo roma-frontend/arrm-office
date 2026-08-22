@@ -5,7 +5,8 @@ import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
 import { useAuthStore } from '@/store/useAuthStore';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -49,7 +50,16 @@ const StatusBadge = ({ status }: { status: string }) => {
   );
 };
 
-export default function SurveyDetailClient() {
+const SurveyEditSheet = dynamic(() => import('@/components/surveys/SurveyEditSheet').then((m) => ({ default: m.SurveyEditSheet })), {
+  ssr: false,
+});
+
+interface SurveyDetailClientProps {
+  /** When supplied, clicking Edit opens the edit wizard in a sheet instead of navigating. */
+  onEdit?: (surveyId: Id<'surveys'>) => void;
+}
+
+export default function SurveyDetailClient({ onEdit }: SurveyDetailClientProps = {}) {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuthStore();
@@ -71,6 +81,7 @@ export default function SurveyDetailClient() {
   const [isPublishing, setIsPublishing] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [editingSurveyId, setEditingSurveyId] = useState<Id<'surveys'> | null>(null);
 
   const publishSurvey = useMutation(api.surveys.publishSurvey);
   const closeSurvey = useMutation(api.surveys.closeSurvey);
@@ -136,7 +147,7 @@ export default function SurveyDetailClient() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 my-4">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => router.push('/surveys')}>
             <ArrowLeft className="h-5 w-5" />
@@ -173,7 +184,7 @@ export default function SurveyDetailClient() {
           <Button
             variant="outline"
             size="icon"
-            onClick={() => router.push(`/surveys/${surveyId}/edit`)}
+            onClick={() => onEdit ? onEdit(surveyId) : setEditingSurveyId(surveyId)}
           >
             <Pencil className="h-4 w-4" />
           </Button>
@@ -353,6 +364,13 @@ export default function SurveyDetailClient() {
           </CardContent>
         </Card>
       )}
+
+      {/* Edit wizard in a slide-over. */}
+      <SurveyEditSheet
+        surveyId={editingSurveyId}
+        onClose={() => setEditingSurveyId(null)}
+        surveyTitle={survey?.title}
+      />
     </div>
   );
 }

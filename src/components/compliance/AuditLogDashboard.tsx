@@ -90,14 +90,7 @@ function deriveSeverity(action: string, details?: string): 'info' | 'warning' | 
   return 'info';
 }
 
-const CATEGORIES = [
-  { value: 'all', label: 'All Categories', icon: Activity },
-  { value: 'auth', label: 'Authentication', icon: LogIn },
-  { value: 'data', label: 'Data Changes', icon: FileText },
-  { value: 'admin', label: 'Admin Actions', icon: Settings },
-  { value: 'ai', label: 'AI Activity', icon: Bot },
-  { value: 'system', label: 'System', icon: AlertTriangle },
-];
+// Categories are translated inside the component where `t` is available.
 
 const SEVERITY_COLORS: Record<string, string> = {
   info: 'text-(--brand-text) bg-(--brand-quiet)',
@@ -113,19 +106,31 @@ const CATEGORY_ICONS: Record<string, typeof Shield> = {
   system: AlertTriangle,
 };
 
-function formatTimeAgo(creationTime: number): string {
+function formatTimeAgo(
+  creationTime: number,
+  t: (key: string, options?: Record<string, unknown>) => string,
+): string {
   const diff = Date.now() - creationTime;
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'Just now';
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 1) return t('auditLog.justNow', 'Just now');
+  if (mins < 60) return t('auditLog.minutesAgo', '{{n}}m ago', { n: mins });
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
+  if (hours < 24) return t('auditLog.hoursAgo', '{{n}}h ago', { n: hours });
   const days = Math.floor(hours / 24);
-  return `${days}d ago`;
+  return t('auditLog.daysAgo', '{{n}}d ago', { n: days });
 }
 
 export default function AuditLogDashboard() {
   const { t } = useTranslation();
+
+  const CATEGORIES = [
+    { value: 'all', label: t('auditLog.allCategories', 'All Categories'), icon: Activity },
+    { value: 'auth', label: t('auditLog.authentication', 'Authentication'), icon: LogIn },
+    { value: 'data', label: t('auditLog.dataChanges', 'Data Changes'), icon: FileText },
+    { value: 'admin', label: t('auditLog.adminActions', 'Admin Actions'), icon: Settings },
+    { value: 'ai', label: t('auditLog.aiActivity', 'AI Activity'), icon: Bot },
+    { value: 'system', label: t('auditLog.system', 'System'), icon: AlertTriangle },
+  ];
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [severityFilter, setSeverityFilter] = useState('all');
@@ -331,7 +336,8 @@ export default function AuditLogDashboard() {
                           </Badge>
                           <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 gap-1">
                             <CatIcon className="w-2.5 h-2.5" />
-                            {log.category}
+                            {CATEGORIES.find((c) => c.value === log.category)?.label ??
+                              log.category}
                           </Badge>
                         </div>
                         <p className="text-sm text-(--text-secondary) mt-0.5">
@@ -348,7 +354,7 @@ export default function AuditLogDashboard() {
                       </div>
                       <div className="flex items-center gap-3 shrink-0">
                         <span className="text-xs text-(--text-muted) whitespace-nowrap">
-                          {formatTimeAgo(log._creationTime)}
+                          {formatTimeAgo(log._creationTime, t)}
                         </span>
                         <Button
                           variant="ghost"
