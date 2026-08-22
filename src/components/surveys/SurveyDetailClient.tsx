@@ -50,9 +50,13 @@ const StatusBadge = ({ status }: { status: string }) => {
   );
 };
 
-const SurveyEditSheet = dynamic(() => import('@/components/surveys/SurveyEditSheet').then((m) => ({ default: m.SurveyEditSheet })), {
-  ssr: false,
-});
+const SurveyEditSheet = dynamic(
+  () =>
+    import('@/components/surveys/SurveyEditSheet').then((m) => ({ default: m.SurveyEditSheet })),
+  {
+    ssr: false,
+  },
+);
 
 interface SurveyDetailClientProps {
   /** When supplied, clicking Edit opens the edit wizard in a sheet instead of navigating. */
@@ -184,7 +188,7 @@ export default function SurveyDetailClient({ onEdit }: SurveyDetailClientProps =
           <Button
             variant="outline"
             size="icon"
-            onClick={() => onEdit ? onEdit(surveyId) : setEditingSurveyId(surveyId)}
+            onClick={() => (onEdit ? onEdit(surveyId) : setEditingSurveyId(surveyId))}
           >
             <Pencil className="h-4 w-4" />
           </Button>

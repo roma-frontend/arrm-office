@@ -54,7 +54,9 @@ export function LeaveSheet({ leaveId, onClose, requesterName, elevated, onEdit }
       {...(leaveId ? { deepLink: `/leaves/${leaveId}` } : {})}
       {...(elevated ? { contentClassName: 'z-[75]', overlayClassName: 'z-[74]' } : {})}
     >
-      {leaveId && <LeaveDetailClient key={leaveId} leaveId={leaveId} onDone={onClose} onEdit={onEdit} />}
+      {leaveId && (
+        <LeaveDetailClient key={leaveId} leaveId={leaveId} onDone={onClose} onEdit={onEdit} />
+      )}
     </DetailSheet>
   );
 }

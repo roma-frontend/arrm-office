@@ -129,7 +129,10 @@ export interface SurveyEditSheetProps {
   onClose: () => void;
 }
 
-export default function SurveyEditClient({ surveyId: surveyIdProp, onClose }: SurveyEditSheetProps | Record<string, never> = {}) {
+export default function SurveyEditClient({
+  surveyId: surveyIdProp,
+  onClose,
+}: SurveyEditSheetProps | Record<string, never> = {}) {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuthStore(useShallow((state) => ({ user: state.user })));

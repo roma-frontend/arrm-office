@@ -42,7 +42,10 @@ import i18n from 'i18next';
 import { cn } from '@/lib/utils';
 import { motion } from '@/lib/cssMotion';
 
-export default function LeaveEditClient({ leaveId: leaveIdProp, onClose }: LeaveEditSheetProps | Record<string, never> = {}) {
+export default function LeaveEditClient({
+  leaveId: leaveIdProp,
+  onClose,
+}: LeaveEditSheetProps | Record<string, never> = {}) {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuthStore();

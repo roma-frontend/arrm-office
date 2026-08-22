@@ -314,7 +314,7 @@ export default function LeaveDetailClient({
           <Button
             variant="outline"
             size="icon"
-            onClick={() => onEdit ? onEdit(leaveId) : router.push(`/leaves/${leaveId}/edit`)}
+            onClick={() => (onEdit ? onEdit(leaveId) : router.push(`/leaves/${leaveId}/edit`))}
           >
             <Pencil className="h-4 w-4" />
           </Button>
