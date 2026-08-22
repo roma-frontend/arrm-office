@@ -14,6 +14,8 @@ import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { NewTaskSheet } from '@/components/tasks/NewTaskSheet';
+import { TaskSheet } from '@/components/tasks/TaskSheet';
+import { TaskEditSheet } from '@/components/tasks/TaskEditSheet';
 import { ProjectEditSheet } from '@/components/projects/ProjectEditSheet';
 import {
   ArrowLeft,
@@ -63,6 +65,8 @@ export default function ProjectDetailClient({
 
   const [editOpen, setEditOpen] = useState(false);
   const [newTaskOpen, setNewTaskOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<{ id: Id<'tasks'>; title: string } | null>(null);
+  const [editingTask, setEditingTask] = useState<{ id: Id<'tasks'>; title: string } | null>(null);
 
   if (!project) return <ShieldLoader />;
 
@@ -182,7 +186,9 @@ export default function ProjectDetailClient({
               <div
                 key={task._id}
                 className="flex items-center justify-between p-3 rounded-xl bg-(--card) border border-(--border) hover:shadow-sm cursor-pointer transition-all"
-                onClick={() => router.push(`/tasks/${task._id}`)}
+                onClick={() =>
+                  setSelectedTask({ id: task._id, title: localizedTaskTitle(t, task) })
+                }
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <div
@@ -246,6 +252,24 @@ export default function ProjectDetailClient({
       {/* Edit in a slide-over too — the form ships straight from the project
           page, so re-orientation after saving is zero. */}
       <ProjectEditSheet open={editOpen} onClose={() => setEditOpen(false)} project={project} />
+
+      {/* Task detail in a slide-over. */}
+      <TaskSheet
+        taskId={selectedTask?.id ?? null}
+        taskTitle={selectedTask?.title}
+        onClose={() => setSelectedTask(null)}
+        onEdit={(id) => {
+          setSelectedTask(null);
+          setEditingTask({ id, title: selectedTask?.title ?? '' });
+        }}
+      />
+
+      {/* Task edit in a slide-over. */}
+      <TaskEditSheet
+        taskId={editingTask?.id ?? null}
+        taskTitle={editingTask?.title}
+        onClose={() => setEditingTask(null)}
+      />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useMutation, useQuery } from 'convex/react';
 import { useTranslation } from 'react-i18next';
@@ -40,11 +40,25 @@ const STATUS_KEYS: Record<(typeof STATUSES)[number], string> = {
 type Priority = (typeof PRIORITIES)[number];
 type Status = (typeof STATUSES)[number];
 
-export default function TaskEditClient() {
+/** Props accepted when rendered inside a sheet. */
+export interface TaskEditSheetProps {
+  taskId: Id<'tasks'>;
+  onClose: () => void;
+}
+
+export default function TaskEditClient({
+  taskId: taskIdProp,
+  onClose,
+}: TaskEditSheetProps | Record<string, never> = {}) {
   const params = useParams();
   const router = useRouter();
   const { t } = useTranslation();
-  const taskId = convexIdFromParam<Id<'tasks'>>(params?.id);
+  const taskId = taskIdProp ?? convexIdFromParam<Id<'tasks'>>(params?.id);
+  /** Close the sheet if in sheet mode, otherwise navigate back to the detail page. */
+  const goBack = useCallback(() => {
+    if (onClose) onClose();
+    else router.push(`/tasks/${taskId}`);
+  }, [onClose, router, taskId]);
 
   const task = useQuery(api.tasks.getTask, taskId ? { taskId } : 'skip');
   const updateTask = useMutation(api.tasks.updateTask);
@@ -111,7 +125,7 @@ export default function TaskEditClient() {
           .filter(Boolean),
       });
       toast.success(t('tasksClient.taskSaved'));
-      router.push(`/tasks/${taskId}`);
+      goBack();
     } catch (error) {
       logger.error('Failed to update task', error);
       toast.error(t('common.error', 'Something went wrong'));
@@ -121,8 +135,8 @@ export default function TaskEditClient() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => router.push(`/tasks/${taskId}`)}>
+      <div className="flex items-center gap-4 my-4">
+        <Button variant="ghost" size="icon" onClick={goBack}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
@@ -216,11 +230,7 @@ export default function TaskEditClient() {
             </div>
 
             <div className="flex items-center justify-end gap-2 pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => router.push(`/tasks/${taskId}`)}
-              >
+              <Button type="button" variant="outline" onClick={goBack}>
                 {t('common.cancel')}
               </Button>
               <Button type="submit" disabled={isSubmitting || !title.trim()}>

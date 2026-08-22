@@ -35,9 +35,11 @@ export interface TaskSheetProps {
   onClose: () => void;
   /** Title of the card that was clicked, shown before the query resolves. */
   taskTitle?: string;
+  /** Open the edit form in a sheet instead of navigating to the edit page. */
+  onEdit?: (taskId: Id<'tasks'>) => void;
 }
 
-export function TaskSheet({ taskId, onClose, taskTitle }: TaskSheetProps) {
+export function TaskSheet({ taskId, onClose, taskTitle, onEdit }: TaskSheetProps) {
   const { t } = useTranslation();
 
   return (
@@ -48,7 +50,7 @@ export function TaskSheet({ taskId, onClose, taskTitle }: TaskSheetProps) {
       title={taskTitle || t('nav.tasks', 'Tasks')}
       {...(taskId ? { deepLink: `/tasks/${taskId}` } : {})}
     >
-      {taskId && <TaskDetailClient key={taskId} taskId={taskId} onDone={onClose} />}
+      {taskId && <TaskDetailClient key={taskId} taskId={taskId} onDone={onClose} onEdit={onEdit} />}
     </DetailSheet>
   );
 }

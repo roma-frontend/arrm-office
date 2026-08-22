@@ -142,11 +142,14 @@ export interface TaskDetailClientProps {
   taskId?: Id<'tasks'>;
   /** Replaces the navigation to `/tasks` when embedded. */
   onDone?: () => void;
+  /** When supplied, clicking Edit opens the edit form in a sheet instead of navigating. */
+  onEdit?: (taskId: Id<'tasks'>) => void;
 }
 
 export default function TaskDetailClient({
   taskId: taskIdProp,
   onDone,
+  onEdit,
 }: TaskDetailClientProps = {}) {
   const params = useParams();
   const router = useRouter();
@@ -283,7 +286,7 @@ export default function TaskDetailClient({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between my-4">
         <div className="flex items-center gap-4">
           {/* Hidden when embedded — see the note in LeaveDetailClient. */}
           {!onDone && (
@@ -304,7 +307,7 @@ export default function TaskDetailClient({
             <Button
               variant="outline"
               size="icon"
-              onClick={() => router.push(`/tasks/${taskId}/edit`)}
+              onClick={() => (onEdit ? onEdit(taskId) : router.push(`/tasks/${taskId}/edit`))}
             >
               <Pencil className="h-4 w-4" />
             </Button>
