@@ -14,6 +14,10 @@ const mockLoggerError = jest.fn();
 jest.mock('@/lib/logger', () => ({
   logger: { error: (...args: unknown[]) => mockLoggerError(...args) },
 }));
+jest.mock('i18next', () => ({
+  __esModule: true,
+  default: { t: (_key: string, fallback: string) => fallback },
+}));
 
 import { GlobalErrorBoundaryProvider } from '@/components/error/GlobalErrorBoundaryProvider';
 

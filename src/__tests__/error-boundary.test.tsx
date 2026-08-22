@@ -3,6 +3,12 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { ErrorBoundary, ErrorBoundaryFallback } from '../components/error/ErrorBoundary';
 import { WidgetErrorBoundary } from '../components/error/WidgetErrorBoundary';
 
+// Mock i18next so i18n.t() returns the fallback string
+jest.mock('i18next', () => ({
+  __esModule: true,
+  default: { t: (_key: string, fallback: string) => fallback },
+}));
+
 // Mock Sentry
 const mockCaptureException = jest.fn();
 beforeEach(() => {
