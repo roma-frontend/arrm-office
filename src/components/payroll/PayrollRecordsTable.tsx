@@ -196,7 +196,7 @@ export default function PayrollRecordsTable() {
                       {t('payroll.netSalary')}
                     </th>
                     <th className="text-center py-3 px-4 text-sm font-medium text-(--text-muted)">
-                      {t('payroll.status')}
+                      {t('payroll.statusLabel', 'Status')}
                     </th>
                     <th className="text-right py-3 px-4 text-sm font-medium text-(--text-muted)">
                       {t('payroll.actions')}

@@ -297,7 +297,7 @@ export default function PayrollRunDetailClient({ params }: { params: Promise<{ i
                       {t('payroll.netSalary')}
                     </th>
                     <th className="text-center py-3 px-4 text-sm font-medium text-(--text-muted)">
-                      {t('payroll.status')}
+                      {t('payroll.statusLabel', 'Status')}
                     </th>
                     <th className="w-12" />
                   </tr>
