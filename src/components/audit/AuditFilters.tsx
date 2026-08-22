@@ -58,6 +58,7 @@ export function AuditFilters({
   useEffect(() => {
     if (filters.search !== committed.current) {
       committed.current = filters.search;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sync URL param to local draft
       setDraftSearch(filters.search);
     }
   }, [filters.search]);

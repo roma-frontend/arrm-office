@@ -106,10 +106,7 @@ const CATEGORY_ICONS: Record<string, typeof Shield> = {
   system: AlertTriangle,
 };
 
-function formatTimeAgo(
-  creationTime: number,
-  t: ReturnType<typeof useTranslation>['t'],
-): string {
+function formatTimeAgo(creationTime: number, t: ReturnType<typeof useTranslation>['t']): string {
   const diff = Date.now() - creationTime;
   const mins = Math.floor(diff / 60000);
   if (mins < 1) return t('auditLog.justNow', 'Just now');

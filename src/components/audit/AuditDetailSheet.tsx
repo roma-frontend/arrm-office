@@ -188,5 +188,3 @@ export function AuditDetailSheet({
     </DetailSheet>
   );
 }
-
-
