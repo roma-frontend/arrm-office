@@ -46,7 +46,9 @@ describe('copyText', () => {
   });
 
   it('falls back when the clipboard API rejects', async () => {
-    setClipboard({ writeText: jest.fn<() => Promise<void>>().mockRejectedValue(new Error('nope')) });
+    setClipboard({
+      writeText: jest.fn<() => Promise<void>>().mockRejectedValue(new Error('nope')),
+    });
     const execCommand = jest.fn(() => true);
     (document as unknown as { execCommand: unknown }).execCommand = execCommand;
 

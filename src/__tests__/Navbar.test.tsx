@@ -106,7 +106,9 @@ jest.mock('@/store/useAuthStore', () => {
   const logout = jest.fn();
   const setUser = jest.fn();
   const state: any = {
-    get user() { return mockUser; },
+    get user() {
+      return mockUser;
+    },
     logout,
     setUser,
   };
@@ -117,9 +119,8 @@ jest.mock('@/store/useAuthStore', () => {
   return { useAuthStore: useAuthStoreMock };
 });
 // Pull mock function references from the self-contained mock
-const { logout: mockLogout, setUser: mockSetUser } = (
-  require('@/store/useAuthStore') as any
-).useAuthStore.__mocks;
+const { logout: mockLogout, setUser: mockSetUser } = (require('@/store/useAuthStore') as any)
+  .useAuthStore.__mocks;
 
 jest.mock('zustand/shallow', () => ({
   useShallow: (selector: any) => selector,

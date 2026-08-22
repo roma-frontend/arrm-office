@@ -1221,9 +1221,9 @@ export default function PricingPreview() {
   const professionalAmount =
     proMonthly !== undefined
       ? localize(proMonthly, proTier?.priceCurrency)
-      : (currency.professional.amount ||
+      : currency.professional.amount ||
         applyRate(FALLBACK_CURRENCY.amount, currency.rate) ||
-        FALLBACK_CURRENCY.amount);
+        FALLBACK_CURRENCY.amount;
 
   return (
     <section id="pricing" className="relative z-10 px-6 md:px-12 py-12 md:py-24 overflow-hidden">

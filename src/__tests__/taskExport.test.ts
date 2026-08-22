@@ -186,7 +186,9 @@ describe('tasksToMarkdown', () => {
 
 describe('exportFileStem', () => {
   it('slugs the prefix and appends an ISO date', () => {
-    expect(exportFileStem('My Tasks', new Date('2026-08-22T10:00:00Z'))).toBe('my-tasks-2026-08-22');
+    expect(exportFileStem('My Tasks', new Date('2026-08-22T10:00:00Z'))).toBe(
+      'my-tasks-2026-08-22',
+    );
   });
 
   it('collapses runs of punctuation and never leaves a double hyphen', () => {

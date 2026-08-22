@@ -150,9 +150,7 @@ describe('clearTaskFilters', () => {
         overdue: true,
       }),
     );
-    expect(cleared).toEqual(
-      state({ view: 'kanban', sort: 'name', dir: 'desc', group: 'project' }),
-    );
+    expect(cleared).toEqual(state({ view: 'kanban', sort: 'name', dir: 'desc', group: 'project' }));
     expect(countActiveFilters(cleared)).toBe(0);
   });
 });
