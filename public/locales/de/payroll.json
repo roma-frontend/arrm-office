@@ -29,6 +29,7 @@
     "pension": "Rentenversicherung",
     "otherDeductions": "Andere Abzüge",
     "currency": "Währung",
+    "statusLabel": "Status",
     "status": {
       "generated": "Erstellt",
       "sent": "Gesendet",

@@ -29,6 +29,7 @@
     "pension": "Կենսաթոշակային ֆոնդ",
     "otherDeductions": "Այլ հաշվեգրումներ",
     "currency": "Արժույթ",
+    "statusLabel": "Կարգավիճակ",
     "status": {
       "generated": "Ստեղծված",
       "sent": "Ուղարկված",

@@ -29,6 +29,7 @@
     "pension": "Pension Fund",
     "otherDeductions": "Other Deductions",
     "currency": "Currency",
+    "statusLabel": "Status",
     "status": {
       "generated": "Generated",
       "sent": "Sent",

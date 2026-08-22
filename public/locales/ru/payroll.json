@@ -29,6 +29,7 @@
     "pension": "Пенсионный фонд",
     "otherDeductions": "Другие удержания",
     "currency": "Валюта",
+    "statusLabel": "Статус",
     "status": {
       "generated": "Создан",
       "sent": "Отправлен",
