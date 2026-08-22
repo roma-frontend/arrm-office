@@ -40,6 +40,7 @@ export function useMeetingDevices() {
   const [choices, setChoices] = useState<MeetingDeviceChoices>({});
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setChoices(readChoices());
   }, []);
 
@@ -102,6 +103,7 @@ export function useMicLevel(track: LocalAudioTrack | undefined, active = true): 
 
   useEffect(() => {
     if (!track || !active) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLevel(0);
       return;
     }

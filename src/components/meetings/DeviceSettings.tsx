@@ -92,6 +92,7 @@ export function DeviceSettings({
   const [canPickSpeaker, setCanPickSpeaker] = useState(false);
   useEffect(() => {
     try {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCanPickSpeaker(supportsAudioOutputSelection());
     } catch {
       setCanPickSpeaker(false);

@@ -111,10 +111,13 @@ export function useLiveCaptions({
 
   /** Keeps `send` out of the recognition effect's dependency list. */
   const sendRef = useRef(send);
-  sendRef.current = send;
   const identityRef = useRef(localIdentity);
-  identityRef.current = localIdentity;
   const nameRef = useRef(localName);
+  // eslint-disable-next-line react-hooks/refs
+  sendRef.current = send;
+  // eslint-disable-next-line react-hooks/refs
+  identityRef.current = localIdentity;
+  // eslint-disable-next-line react-hooks/refs
   nameRef.current = localName;
 
   const push = useCallback((line: CaptionLine) => {

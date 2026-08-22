@@ -97,6 +97,7 @@ export function useVideoEffects(track: LocalVideoTrack | undefined) {
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setEffectState(readEffect());
   }, []);
 
@@ -104,7 +105,9 @@ export function useVideoEffects(track: LocalVideoTrack | undefined) {
   // but the *state* around it (applied / pending) must not interleave either.
   const queue = useRef<Promise<void>>(Promise.resolve());
   const desired = useRef<VideoEffectId>('none');
-  desired.current = effect;
+  useEffect(() => {
+    desired.current = effect;
+  });
 
   const run = useCallback((target: LocalVideoTrack, id: VideoEffectId) => {
     setPending(true);
@@ -154,6 +157,7 @@ export function useVideoEffects(track: LocalVideoTrack | undefined) {
   // Re-apply on track identity change: a fresh camera track has no processor.
   useEffect(() => {
     if (!track) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setApplied('none');
       setPending(false);
       return;

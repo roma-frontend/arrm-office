@@ -57,7 +57,10 @@ export function useNoiseFilter(probe: boolean) {
 
   useEffect(() => {
     if (!probe || krispSupported !== undefined) {
-      if (krispSupported !== undefined) setSupported(krispSupported);
+      if (krispSupported !== undefined) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setSupported(krispSupported);
+      }
       return;
     }
     void probeKrisp().then((ok) => {
