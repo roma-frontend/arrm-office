@@ -1379,7 +1379,16 @@
       "min": "Мин. зарплата",
       "max": "Макс. зарплата",
       "currency": "Валюта"
-    }
+    },
+    "email": "Электронная почта",
+    "phone": "Телефон",
+    "blocked": "Заблокирован",
+    "blockCandidate": "Заблокировать кандидата",
+    "unblock": "Разблокировать",
+    "applicationHistory": "История заявлений",
+    "noApplications": "Заявлений пока нет",
+    "applied": "Подано",
+    "resume": "Резюме"
   },
   "careers": {
     "loading": "",
@@ -2504,7 +2513,16 @@
     "backToMine": "Вернуться к моему календарю",
     "viewingPerson": "Календарь {{name}} · {{department}}",
     "viewingPersonAnnounce": "Показан календарь {{name}}",
-    "entireOrganizationDesc": "Отпуска, брони и события всей организации"
+    "entireOrganizationDesc": "Отпуска, брони и события всей организации",
+    "availableTitle": "Календари, которые можно открыть",
+    "lastOpened": "Открывали {{time}}",
+    "tabCalendars": "Календари",
+    "tabViewers": "Кто видит мой",
+    "viewersSubtitle": "Все, кому вы открыли свой календарь. Доступ можно отозвать в любой момент.",
+    "viewerOrgScope": "Календарь организации",
+    "noViewers": "Пока никто не видит ваш календарь.",
+    "revoke": "Отозвать",
+    "revoked": "Доступ отозван"
   },
   "rooms": {
     "title": "Переговорные комнаты",

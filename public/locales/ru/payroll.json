@@ -29,7 +29,12 @@
     "pension": "Пенсионный фонд",
     "otherDeductions": "Другие удержания",
     "currency": "Валюта",
-    "status": "Статус",
+    "status": {
+      "generated": "Создан",
+      "sent": "Отправлен",
+      "viewed": "Просмотрен",
+      "paid": "Оплачен"
+    },
     "draft": "Черновик",
     "calculated": "Рассчитано",
     "approved": "Утверждено",
@@ -334,6 +339,16 @@
     "yearTotalNet": "Годовой Net",
     "completedMonths": "Завершено",
     "noRun": "Расчёта нет",
-    "current": "Текущий"
+    "current": "Текущий",
+    "noDeductions": "Без удержаний",
+    "netPay": "Чистая зарплата",
+    "afterDeductions": "После всех удержаний",
+    "employerTotalCost": "Итого расходы работодателя",
+    "generated": "Создано",
+    "sent": "Отправлено",
+    "payslipNumber": "Расчётный лист #",
+    "issueDate": "Дата выдачи",
+    "earnings": "Начисления",
+    "print": "Печать"
   }
 }

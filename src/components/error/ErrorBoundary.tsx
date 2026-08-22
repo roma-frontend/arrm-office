@@ -5,6 +5,7 @@ import { AlertTriangle, RefreshCw, Bug, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { logger } from '@/lib/logger';
+import i18n from 'i18next';
 
 interface Props {
   children: ReactNode;
@@ -89,9 +90,14 @@ export class ErrorBoundary extends Component<Props, State> {
               <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
                 <AlertTriangle className="w-8 h-8 text-destructive" />
               </div>
-              <CardTitle className="text-xl">Oops! Something went wrong</CardTitle>
+              <CardTitle className="text-xl">
+                {i18n.t('errors.oops', 'Oops! Something went wrong')}
+              </CardTitle>
               <CardDescription className="text-muted-foreground">
-                We&apos;re sorry for the inconvenience. Please try refreshing the page.
+                {i18n.t(
+                  'errors.pleaseRefresh',
+                  "We're sorry for the inconvenience. Please try refreshing the page.",
+                )}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -100,13 +106,15 @@ export class ErrorBoundary extends Component<Props, State> {
                 <div className="p-4 rounded-lg bg-muted/50 text-xs font-mono text-muted-foreground overflow-auto max-h-48">
                   <div className="flex items-start gap-2 mb-2">
                     <Bug className="w-4 h-4 mt-0.5 shrink-0" />
-                    <span className="font-semibold">Error Details:</span>
+                    <span className="font-semibold">
+                      {i18n.t('errors.details', 'Error Details:')}
+                    </span>
                   </div>
                   <p>{this.state.error.toString()}</p>
                   {this.state.errorInfo && (
                     <details className="mt-2">
                       <summary className="cursor-pointer hover:text-foreground">
-                        Component Stack Trace
+                        {i18n.t('errors.stackTrace', 'Component Stack Trace')}
                       </summary>
                       <pre className="mt-2 whitespace-pre-wrap">
                         {this.state.errorInfo.componentStack}
@@ -120,17 +128,22 @@ export class ErrorBoundary extends Component<Props, State> {
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button onClick={this.handleReload} className="flex-1">
                   <RefreshCw className="w-4 h-4 mr-2" />
-                  Reload Page
+                  {i18n.t('errors.reloadPage', 'Reload Page')}
                 </Button>
                 <Button onClick={this.handleGoHome} variant="outline" className="flex-1">
                   <Home className="w-4 h-4 mr-2" />
-                  Go Home
+                  {i18n.t('errors.goHome', 'Go Home')}
                 </Button>
               </div>
 
               {/* Support link */}
               <div className="text-center text-xs text-muted-foreground">
-                <p>If the problem persists, please contact support.</p>
+                <p>
+                  {i18n.t(
+                    'errors.contactSupport',
+                    'If the problem persists, please contact support.',
+                  )}
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -158,15 +171,17 @@ export function ErrorBoundaryFallback({ error, resetError }: ErrorBoundaryFallba
           <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
             <AlertTriangle className="w-8 h-8 text-destructive" />
           </div>
-          <CardTitle className="text-xl">Something went wrong</CardTitle>
+          <CardTitle className="text-xl">
+            {i18n.t('errors.somethingWentWrong', 'Something went wrong')}
+          </CardTitle>
           <CardDescription className="text-muted-foreground">
-            {error?.message || 'An unexpected error occurred'}
+            {error?.message || i18n.t('errors.unexpected', 'An unexpected error occurred')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Button onClick={resetError} className="w-full">
             <RefreshCw className="w-4 h-4 mr-2" />
-            Try Again
+            {i18n.t('errors.tryAgain', 'Try Again')}
           </Button>
         </CardContent>
       </Card>

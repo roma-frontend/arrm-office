@@ -29,7 +29,12 @@
     "pension": "Կենսաթոշակային ֆոնդ",
     "otherDeductions": "Այլ հաշվեգրումներ",
     "currency": "Արժույթ",
-    "status": "Կարգավիճակ",
+    "status": {
+      "generated": "Ստեղծված",
+      "sent": "Ուղարկված",
+      "viewed": "Դիտված",
+      "paid": "Վճարված"
+    },
     "draft": "Սևագիր",
     "calculated": "Հաշվարկված",
     "approved": "Հաստատված",
@@ -334,6 +339,16 @@
     "yearTotalNet": "Տարեկան Net",
     "completedMonths": "Ավարտված",
     "noRun": "Հաշվարկ չկա",
-    "current": "Ընթացիկ"
+    "current": "Ընթացիկ",
+    "noDeductions": "Չկան պահումներ",
+    "netPay": "Մաքուր աշխատավարձ",
+    "afterDeductions": "Բոլոր պահումներից հետո",
+    "employerTotalCost": "Գործատուի ընդհանուր ծախսեր",
+    "generated": "Ստեղծված",
+    "sent": "Ուղարկված",
+    "payslipNumber": "Աշխատավարձի թերթ #",
+    "issueDate": "Թողարկման ամսաթիվ",
+    "earnings": "Աշխատավարձ",
+    "print": "Տպել"
   }
 }

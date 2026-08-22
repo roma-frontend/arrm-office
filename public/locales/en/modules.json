@@ -1355,7 +1355,16 @@
       "min": "Min Salary",
       "max": "Max Salary",
       "currency": "Currency"
-    }
+    },
+    "email": "Email",
+    "phone": "Phone",
+    "blocked": "Blocked",
+    "blockCandidate": "Block Candidate",
+    "unblock": "Unblock",
+    "applicationHistory": "Application History",
+    "noApplications": "No applications yet",
+    "applied": "Applied",
+    "resume": "Resume"
   },
   "careers": {
     "loading": "Loading...",
@@ -2476,7 +2485,16 @@
     "backToMine": "Back to my calendar",
     "viewingPerson": "{{name}}'s calendar · {{department}}",
     "viewingPersonAnnounce": "Showing {{name}}'s calendar",
-    "entireOrganizationDesc": "Leaves, bookings and events across the whole organization"
+    "entireOrganizationDesc": "Leaves, bookings and events across the whole organization",
+    "availableTitle": "Calendars you can open",
+    "lastOpened": "Last opened {{time}}",
+    "tabCalendars": "Calendars",
+    "tabViewers": "Who sees mine",
+    "viewersSubtitle": "Everyone you let into your calendar. You can take access back at any time.",
+    "viewerOrgScope": "Organization calendar",
+    "noViewers": "Nobody can see your calendar yet.",
+    "revoke": "Revoke",
+    "revoked": "Access revoked"
   },
   "rooms": {
     "title": "Meeting Rooms",

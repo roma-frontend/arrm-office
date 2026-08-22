@@ -81,14 +81,15 @@ function formatDate(ts: number, locale: string): string {
 }
 
 function StatusBadge({ status }: { status: string }) {
+  const { t } = useTranslation();
   const config: Record<
     string,
-    { variant: 'success' | 'warning' | 'secondary'; icon: typeof CheckCircle }
+    { variant: 'success' | 'warning' | 'secondary'; icon: typeof CheckCircle; labelKey: string }
   > = {
-    generated: { variant: 'secondary', icon: Clock },
-    sent: { variant: 'warning', icon: AlertCircle },
-    viewed: { variant: 'success', icon: CheckCircle },
-    paid: { variant: 'success', icon: CheckCircle },
+    generated: { variant: 'secondary', icon: Clock, labelKey: 'payroll.status.generated' },
+    sent: { variant: 'warning', icon: AlertCircle, labelKey: 'payroll.status.sent' },
+    viewed: { variant: 'success', icon: CheckCircle, labelKey: 'payroll.status.viewed' },
+    paid: { variant: 'success', icon: CheckCircle, labelKey: 'payroll.status.paid' },
   };
   const cfg = config[status];
   if (!cfg) return <Badge variant="secondary">{status}</Badge>;
@@ -96,13 +97,14 @@ function StatusBadge({ status }: { status: string }) {
   return (
     <Badge variant={cfg.variant} className="flex items-center gap-1 capitalize">
       <Icon className="w-3 h-3" />
-      {status}
+      {t(cfg.labelKey, status)}
     </Badge>
   );
 }
 
 // ── Payslip Document ──
 function PayslipDocument({ payslip, locale }: { payslip: PayslipData; locale: string }) {
+  const { t } = useTranslation();
   const printRef = useRef<HTMLDivElement>(null);
   const now = useNow();
   const currency = payslip.record?.currency ?? 'AMD';
@@ -158,9 +160,11 @@ function PayslipDocument({ payslip, locale }: { payslip: PayslipData; locale: st
                 <Building2 className="w-6 h-6 text-(--brand-text)" />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-(--text-primary)">Payroll Slip</h2>
+                <h2 className="text-lg font-bold text-(--text-primary)">
+                  {t('payroll.payslip', 'Payslip')}
+                </h2>
                 <p className="text-sm text-(--text-muted)">
-                  Period:{' '}
+                  {t('payroll.period', 'Period')}:{' '}
                   <span className="font-medium text-(--text-primary)">{payslip.period}</span>
                 </p>
               </div>
@@ -169,7 +173,7 @@ function PayslipDocument({ payslip, locale }: { payslip: PayslipData; locale: st
               <StatusBadge status={payslip.run?.status ?? payslip.status} />
               {isOverdue && (
                 <Badge variant="destructive" className="animate-pulse">
-                  Overdue
+                  {t('payroll.overdue', 'Overdue')}
                 </Badge>
               )}
             </div>
@@ -182,21 +186,25 @@ function PayslipDocument({ payslip, locale }: { payslip: PayslipData; locale: st
             {[
               {
                 icon: User,
-                label: 'Employee',
+                label: t('payroll.employee', 'Employee'),
                 value: payslip.employeeName,
                 sub: payslip.employeePosition,
               },
               {
                 icon: Calendar,
-                label: 'Department',
+                label: t('payroll.department', 'Department'),
                 value: payslip.employeeDepartment ?? '\u2014',
               },
               {
                 icon: Calendar,
-                label: 'Issue Date',
+                label: t('payroll.issueDate', 'Issue Date'),
                 value: formatDate(payslip.generatedAt, locale),
               },
-              { icon: Hash, label: 'Payslip #', value: `#${payslip._id.slice(-8).toUpperCase()}` },
+              {
+                icon: Hash,
+                label: t('payroll.payslipNumber', 'Payslip #'),
+                value: `#${payslip._id.slice(-8).toUpperCase()}`,
+              },
             ].map((item, idx) => {
               const Icon = item.icon;
               return (
@@ -223,17 +231,17 @@ function PayslipDocument({ payslip, locale }: { payslip: PayslipData; locale: st
             <div>
               <h3 className="text-sm font-semibold text-(--text-primary) mb-3 flex items-center gap-2">
                 <div className="w-1 h-5 rounded-full bg-(--success-solid)" />
-                Earnings
+                {t('payroll.earnings', 'Earnings')}
               </h3>
               <div className="rounded-xl border border-(--border) overflow-hidden">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-(--background-subtle)/70 border-b border-(--border)">
                       <th className="text-left px-4 py-2.5 text-xs font-medium text-(--text-muted) uppercase tracking-wider">
-                        Description
+                        {t('payroll.description', 'Description')}
                       </th>
                       <th className="text-right px-4 py-2.5 text-xs font-medium text-(--text-muted) uppercase tracking-wider">
-                        Amount
+                        {t('payroll.amount', 'Amount')}
                       </th>
                     </tr>
                   </thead>
@@ -261,17 +269,17 @@ function PayslipDocument({ payslip, locale }: { payslip: PayslipData; locale: st
             <div>
               <h3 className="text-sm font-semibold text-(--text-primary) mb-3 flex items-center gap-2">
                 <div className="w-1 h-5 rounded-full bg-(--danger-solid)" />
-                Deductions
+                {t('payroll.deductions', 'Deductions')}
               </h3>
               <div className="rounded-xl border border-(--border) overflow-hidden">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-(--background-subtle)/70 border-b border-(--border)">
                       <th className="text-left px-4 py-2.5 text-xs font-medium text-(--text-muted) uppercase tracking-wider">
-                        Description
+                        {t('payroll.description', 'Description')}
                       </th>
                       <th className="text-right px-4 py-2.5 text-xs font-medium text-(--text-muted) uppercase tracking-wider">
-                        Amount
+                        {t('payroll.amount', 'Amount')}
                       </th>
                     </tr>
                   </thead>
@@ -291,13 +299,13 @@ function PayslipDocument({ payslip, locale }: { payslip: PayslipData; locale: st
                           colSpan={2}
                           className="px-4 py-4 text-center text-(--text-muted) text-sm"
                         >
-                          No deductions
+                          {t('payroll.noDeductions', 'No deductions')}
                         </td>
                       </tr>
                     )}
                     <tr className="bg-(--danger-quiet) border-t-2 border-(--danger-outline)">
                       <td className="px-4 py-3 font-bold text-(--text-primary)">
-                        Total Deductions
+                        {t('payroll.totalDeductions', 'Total Deductions')}
                       </td>
                       <td className="px-4 py-3 text-right font-bold text-(--danger-text) text-base">
                         -{formatCurrency(totalDeductions, currency)}
@@ -315,16 +323,20 @@ function PayslipDocument({ payslip, locale }: { payslip: PayslipData; locale: st
             <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
             <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
-                <p className="text-sm font-medium text-white/80 mb-1">Net Pay</p>
+                <p className="text-sm font-medium text-white/80 mb-1">
+                  {t('payroll.netPay', 'Net Pay')}
+                </p>
                 <p className="text-3xl sm:text-4xl font-black text-white tracking-tight">
                   {formatCurrency(net, currency)}
                 </p>
                 <p className="text-xs text-white/60 mt-1">
-                  {currency} &middot; After all deductions
+                  {currency} &middot; {t('payroll.afterDeductions', 'After all deductions')}
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-xs text-white/60">Employer total cost</p>
+                <p className="text-xs text-white/60">
+                  {t('payroll.employerTotalCost', 'Employer total cost')}
+                </p>
                 <p className="text-lg font-bold text-white/90">
                   {formatCurrency(payslip.record?.totalCost ?? gross, currency)}
                 </p>
@@ -336,10 +348,11 @@ function PayslipDocument({ payslip, locale }: { payslip: PayslipData; locale: st
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-4 border-t border-(--border)">
             <div className="flex items-center gap-2 text-xs text-(--text-muted)">
               <FileText className="w-3.5 h-3.5" />
-              Generated: {formatDate(payslip.generatedAt, locale)}
+              {t('payroll.generated', 'Generated')}: {formatDate(payslip.generatedAt, locale)}
               {payslip.sentAt && (
                 <>
-                  <span className="mx-1">&middot;</span> Sent: {formatDate(payslip.sentAt, locale)}
+                  <span className="mx-1">&middot;</span> {t('payroll.sent', 'Sent')}:{' '}
+                  {formatDate(payslip.sentAt, locale)}
                 </>
               )}
             </div>
@@ -360,7 +373,7 @@ function PayslipDocument({ payslip, locale }: { payslip: PayslipData; locale: st
       <div className="flex items-center gap-2 print:hidden">
         <Button variant="outline" size="sm" className="gap-2" onClick={() => window.print()}>
           <Printer className="w-4 h-4" />
-          Print
+          {t('common.print', 'Print')}
         </Button>
       </div>
     </div>
@@ -455,7 +468,7 @@ export default function PayslipViewer() {
                           payslip.record?.currency ?? 'AMD',
                         )}
                       </p>
-                      <p className="text-xs text-(--text-muted)">Net</p>
+                      <p className="text-xs text-(--text-muted)">{t('payroll.net', 'Net')}</p>
                     </div>
                     <StatusBadge status={payslip.run?.status ?? payslip.status} />
                     <ChevronRight

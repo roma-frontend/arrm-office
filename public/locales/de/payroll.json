@@ -29,7 +29,12 @@
     "pension": "Rentenversicherung",
     "otherDeductions": "Andere Abzüge",
     "currency": "Währung",
-    "status": "Status",
+    "status": {
+      "generated": "Erstellt",
+      "sent": "Gesendet",
+      "viewed": "Angesehen",
+      "paid": "Bezahlt"
+    },
     "draft": "Entwurf",
     "calculated": "Berechnet",
     "approved": "Genehmigt",
@@ -334,6 +339,16 @@
     "yearTotalNet": "Jahresnetto",
     "completedMonths": "Abgeschlossen",
     "noRun": "Keine Gehaltsabrechnung",
-    "current": "Aktuell"
+    "current": "Aktuell",
+    "noDeductions": "Keine Abzüge",
+    "netPay": "Nettolohn",
+    "afterDeductions": "Nach allen Abzügen",
+    "employerTotalCost": "Gesamtkosten Arbeitgeber",
+    "generated": "Erstellt",
+    "sent": "Gesendet",
+    "payslipNumber": "Gehaltsabrechnung #",
+    "issueDate": "Ausstellungsdatum",
+    "earnings": "Einkünfte",
+    "print": "Drucken"
   }
 }

@@ -326,14 +326,16 @@ function CandidateDetailPanel({ candidateId }: { candidateId: Id<'candidateProfi
         {/* Contact */}
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-lg border p-3">
-            <p className="text-xs text-muted-foreground mb-1">Email</p>
+            <p className="text-xs text-muted-foreground mb-1">{t('recruitment.email', 'Email')}</p>
             <a href={`mailto:${data.email}`} className="text-sm font-medium hover:underline">
               {data.email}
             </a>
           </div>
           {data.phone && (
             <div className="rounded-lg border p-3">
-              <p className="text-xs text-muted-foreground mb-1">Phone</p>
+              <p className="text-xs text-muted-foreground mb-1">
+                {t('recruitment.phone', 'Phone')}
+              </p>
               <a href={`tel:${data.phone}`} className="text-sm font-medium hover:underline">
                 {data.phone}
               </a>
@@ -355,7 +357,7 @@ function CandidateDetailPanel({ candidateId }: { candidateId: Id<'candidateProfi
           {data.isBlocked && (
             <Badge className="bg-(--danger-quiet) text-(--danger-text)">
               <UserX className="h-3 w-3 mr-1" />
-              Blocked
+              {t('recruitment.blocked', 'Blocked')}
             </Badge>
           )}
         </div>
@@ -365,12 +367,12 @@ function CandidateDetailPanel({ candidateId }: { candidateId: Id<'candidateProfi
           {!data.isBlocked ? (
             <Button size="sm" variant="destructive" onClick={handleBlock}>
               <UserX className="h-3 w-3 mr-1" />
-              Block Candidate
+              {t('recruitment.blockCandidate', 'Block Candidate')}
             </Button>
           ) : (
             <Button size="sm" variant="outline" onClick={handleUnblock}>
               <UserCheck className="h-3 w-3 mr-1" />
-              Unblock
+              {t('recruitment.unblock', 'Unblock')}
             </Button>
           )}
           <Button size="sm" variant="outline" onClick={handleExportCsv}>
@@ -383,10 +385,13 @@ function CandidateDetailPanel({ candidateId }: { candidateId: Id<'candidateProfi
         <div>
           <h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
             <Briefcase className="h-3.5 w-3.5" />
-            Application History ({data.applications.length})
+            {t('recruitment.applicationHistory', 'Application History')} ({data.applications.length}
+            )
           </h3>
           {data.applications.length === 0 ? (
-            <p className="text-xs text-muted-foreground">No applications yet</p>
+            <p className="text-xs text-muted-foreground">
+              {t('recruitment.noApplications', 'No applications yet')}
+            </p>
           ) : (
             <div className="space-y-2">
               {data.applications.map((app) => (
@@ -402,7 +407,7 @@ function CandidateDetailPanel({ candidateId }: { candidateId: Id<'candidateProfi
                           {t(`recruitment.stage.${app.stage}`, app.stage)}
                         </Badge>
                         <span className="text-[10px] text-muted-foreground">
-                          Applied {formatDate(app.createdAt)}
+                          {t('recruitment.applied', 'Applied')} {formatDate(app.createdAt)}
                         </span>
                       </div>
                     </div>
@@ -415,7 +420,8 @@ function CandidateDetailPanel({ candidateId }: { candidateId: Id<'candidateProfi
                         </div>
                       )}
                       <p className="text-[10px] text-muted-foreground mt-0.5">
-                        {app.interviewsCount} interviews · {app.scorecardsCount} scorecards
+                        {app.interviewsCount} {t('recruitment.interviews', 'interviews')} ·{' '}
+                        {app.scorecardsCount} {t('recruitment.scorecards', 'scorecards')}
                       </p>
                     </div>
                   </div>
@@ -428,7 +434,7 @@ function CandidateDetailPanel({ candidateId }: { candidateId: Id<'candidateProfi
         {/* Resume */}
         {data.resumeText && (
           <div>
-            <h3 className="text-sm font-semibold mb-2">Resume</h3>
+            <h3 className="text-sm font-semibold mb-2">{t('recruitment.resume', 'Resume')}</h3>
             <div className="rounded-lg border p-3 text-xs text-muted-foreground whitespace-pre-wrap max-h-48 overflow-y-auto">
               {data.resumeText}
             </div>

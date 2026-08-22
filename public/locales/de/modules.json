@@ -1355,7 +1355,16 @@
       "min": "Mindestgehalt",
       "max": "Höchstgehalt",
       "currency": "Währung"
-    }
+    },
+    "email": "E-Mail",
+    "phone": "Telefon",
+    "blocked": "Gesperrt",
+    "blockCandidate": "Kandidat sperren",
+    "unblock": "Entsperren",
+    "applicationHistory": "Bewerbungsverlauf",
+    "noApplications": "Noch keine Bewerbungen",
+    "applied": "Beworben",
+    "resume": "Lebenslauf"
   },
   "careers": {
     "loading": "",
@@ -2476,7 +2485,16 @@
     "backToMine": "Zurück zu meinem Kalender",
     "viewingPerson": "Kalender von {{name}} · {{department}}",
     "viewingPersonAnnounce": "Kalender von {{name}} wird angezeigt",
-    "entireOrganizationDesc": "Urlaub, Buchungen und Ereignisse der gesamten Organisation"
+    "entireOrganizationDesc": "Urlaub, Buchungen und Ereignisse der gesamten Organisation",
+    "availableTitle": "Kalender, die Sie öffnen können",
+    "lastOpened": "Zuletzt geöffnet {{time}}",
+    "tabCalendars": "Kalender",
+    "tabViewers": "Wer sieht meinen",
+    "viewersSubtitle": "Alle, denen Sie Ihren Kalender freigegeben haben. Der Zugriff lässt sich jederzeit zurücknehmen.",
+    "viewerOrgScope": "Organisationskalender",
+    "noViewers": "Noch kann niemand Ihren Kalender sehen.",
+    "revoke": "Entziehen",
+    "revoked": "Zugriff entzogen"
   },
   "rooms": {
     "title": "Besprechungsräume",

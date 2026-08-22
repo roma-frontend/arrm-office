@@ -145,7 +145,8 @@
     "publishing": "Publishing…",
     "selectOrganization": "Select an organization",
     "welcome": "Welcome",
-    "chat.realtime": "Real-time chat"
+    "chat.realtime": "Real-time chat",
+    "print": "Print"
   },
   "nav": {
     "home": "Home",
@@ -623,7 +624,7 @@
     "passwordMismatch": "Passwords don't match",
     "passwordTooShort": "Password must be at least 8 characters",
     "somethingWentWrong": "Something went wrong",
-    "tryAgain": "Please try again",
+    "tryAgain": "Try Again",
     "tryAgainLater": "Please try again later. If the problem persists, contact support.",
     "failedToLoad": "Failed to load",
     "unauthorized": "Unauthorized access",
@@ -646,7 +647,13 @@
     "localStorageSaveFailed": "Failed to save to localStorage",
     "errorDetails": "Error Details:",
     "reloadPage": "Reload Page",
-    "contactSupport": "If the problem persists, please contact support."
+    "contactSupport": "If the problem persists, please contact support.",
+    "oops": "Oops! Something went wrong",
+    "pleaseRefresh": "We're sorry for the inconvenience. Please try refreshing the page.",
+    "details": "Error Details:",
+    "stackTrace": "Component Stack Trace",
+    "goHome": "Go Home",
+    "unexpected": "An unexpected error occurred"
   },
   "success": {
     "saved": "Saved successfully",

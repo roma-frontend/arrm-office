@@ -29,7 +29,12 @@
     "pension": "Pension Fund",
     "otherDeductions": "Other Deductions",
     "currency": "Currency",
-    "status": "Status",
+    "status": {
+      "generated": "Generated",
+      "sent": "Sent",
+      "viewed": "Viewed",
+      "paid": "Paid"
+    },
     "draft": "Draft",
     "calculated": "Calculated",
     "approved": "Approved",
@@ -334,6 +339,16 @@
     "yearTotalNet": "Year Net",
     "completedMonths": "Completed",
     "noRun": "No payroll run",
-    "current": "Current"
+    "current": "Current",
+    "noDeductions": "No deductions",
+    "netPay": "Net Pay",
+    "afterDeductions": "After all deductions",
+    "employerTotalCost": "Employer total cost",
+    "generated": "Generated",
+    "sent": "Sent",
+    "payslipNumber": "Payslip #",
+    "issueDate": "Issue Date",
+    "earnings": "Earnings",
+    "print": "Print"
   }
 }
