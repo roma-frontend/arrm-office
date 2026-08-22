@@ -27,6 +27,14 @@ export const meetings = {
     status: v.union(v.literal('scheduled'), v.literal('live'), v.literal('ended')),
     /** Optional door code a participant must type before joining. */
     pinCode: v.optional(v.string()),
+    /** Live LiveKit Egress id while a cloud recording runs — absent = not recording. */
+    egressId: v.optional(v.string()),
+    /** When the running recording was started, so the UI can show an elapsed timer. */
+    recordingStartedAt: v.optional(v.number()),
+    /** Who started it — recording is a host action and stays attributable. */
+    recordingStartedBy: v.optional(v.id('users')),
+    /** Object path the Egress writes to; the finished file URL is built from it. */
+    recordingFilepath: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.optional(v.number()),
   })

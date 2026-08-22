@@ -333,7 +333,12 @@ function buildCsp(nonce: string, isProduction: boolean): string {
     styleSrc,
     "img-src 'self' blob: data: https://res.cloudinary.com https://lh3.googleusercontent.com https://*.sentry.io https://vercel.live https://va.vercel-scripts.com https://i.ytimg.com https://*.ytimg.com https://*.tile.openstreetmap.org",
     "font-src 'self' data: https://fonts.gstatic.com",
-    `connect-src 'self' https://*.convex.cloud https://*.convex.site https://*.sentry.io https://vercel.live https://*.stripe.com https://*.js.stripe.com https://va.vercel-scripts.com https://vitals.vercel-insights.com https://nominatim.openstreetmap.org https://cdn.jsdelivr.net wss://*.convex.cloud wss://*.vercel.live ${livekitSrc}`,
+    // `cdn.jsdelivr.net` and `storage.googleapis.com`: MediaPipe's selfie
+    // segmentation, used by @livekit/track-processors for background blur and
+    // virtual backgrounds. The WASM bundle comes from jsDelivr and the
+    // `.tflite` model from Google's model storage, both fetched at runtime —
+    // without them every background effect fails to apply.
+    `connect-src 'self' https://*.convex.cloud https://*.convex.site https://*.sentry.io https://vercel.live https://*.stripe.com https://*.js.stripe.com https://va.vercel-scripts.com https://vitals.vercel-insights.com https://nominatim.openstreetmap.org https://cdn.jsdelivr.net https://storage.googleapis.com wss://*.convex.cloud wss://*.vercel.live ${livekitSrc}`,
     "worker-src 'self' blob: https://cdn.jsdelivr.net",
     "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://*.js.stripe.com",
     "object-src 'none'",

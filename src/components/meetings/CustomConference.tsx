@@ -12,15 +12,25 @@
  *    an animated badge on the tile, a chip in the header and a row highlight
  *    in the participants panel.
  *  - Host controls: the organizer can mute a participant's mic/camera, ask to
- *    unmute, mute everyone and remove participants (server-side kick via
- *    `meetingsActions.removeParticipant`).
- *  - Speaker / grid layout toggle, fullscreen, participant avatar stack and a
- *    participants panel with per-row mic/cam/hand status.
+ *    unmute, mute everyone and remove participants. Mutes and the kick run
+ *    server-side through `meetingsActions` (`muteParticipantTrack`,
+ *    `muteEveryone`, `removeParticipant`) so they hold even against a modified
+ *    client; the `hostCtrl` data channel is only used to explain what happened.
+ *  - Pin / spotlight any tile, a debounced "sticky" active speaker so the stage
+ *    does not flicker between people, per-tile connection quality, a recording
+ *    indicator and join/leave toasts.
+ *  - Speaker / grid layout toggle, fullscreen, participant avatar stack, a
+ *    participants panel with per-row mic/cam/hand status, in-call device
+ *    settings and keyboard shortcuts (including hold-Space push-to-talk).
+ *  - Background blur / virtual backgrounds and Krisp noise cancellation on the
+ *    local tracks, plus live captions broadcast over a data channel.
+ *  - Host-only cloud recording through LiveKit Egress (`meetingsActions`), with
+ *    the running state mirrored on the meeting row so every client agrees.
  */
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Track, type Participant } from 'livekit-client';
+import { ConnectionQuality, Track, type LocalVideoTrack, type Participant } from 'livekit-client';
 import {
   useLocalParticipant,
   useParticipants,
@@ -31,8 +41,10 @@ import {
   useChat,
   useDataChannel,
   useConnectionState,
+  useConnectionQualityIndicator,
+  useIsRecording,
 } from '@livekit/components-react';
-import { useAction } from 'convex/react';
+import { useAction, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { toast } from 'sonner';
 import {
@@ -56,9 +68,30 @@ import {
   Link2,
   Radio,
   X,
+  Pin,
+  PinOff,
+  Settings,
+  Smile,
+  Keyboard,
+  Signal,
+  SignalHigh,
+  SignalLow,
+  SignalMedium,
+  Captions,
+  CaptionsOff,
+  Circle,
+  Loader2,
+  Square,
+  Waves,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AnimatedEmoji } from './AnimatedEmoji';
+import { DeviceSettings } from './DeviceSettings';
+import { BackgroundPicker } from './BackgroundPicker';
+import { useVideoEffects } from './useVideoEffects';
+import { useNoiseFilter } from './useNoiseFilter';
+import { captionsSupported, useLiveCaptions, type CaptionLine } from './useLiveCaptions';
+import type { MeetingDeviceChoices, MeetingDeviceKind } from './useMeetingDevices';
 
 type MeetingStatus = 'scheduled' | 'live' | 'ended';
 
@@ -71,6 +104,9 @@ export interface ConferenceProps {
   linkCopied: boolean;
   onCopyLink: () => void;
   onLeave: () => void;
+  /** Remembered mic / camera / speaker, shared with the pre-join screen. */
+  deviceChoices: MeetingDeviceChoices;
+  onDeviceChange: (kind: MeetingDeviceKind, deviceId: string) => void;
 }
 
 function getInitials(name: string) {
@@ -127,6 +163,54 @@ function VideoSurface({
   );
 }
 
+/**
+ * Per-participant connection quality. Only rendered once the SFU has an opinion
+ * (`Unknown` right after joining stays hidden), and only when it is worth
+ * knowing — a green bar on every tile is noise.
+ */
+function QualityBadge({ participant }: { participant: Participant }) {
+  const { t } = useTranslation();
+  const { quality } = useConnectionQualityIndicator({ participant });
+
+  if (quality === ConnectionQuality.Unknown) return null;
+
+  const look = {
+    [ConnectionQuality.Excellent]: {
+      Icon: SignalHigh,
+      tone: 'text-emerald-400',
+      label: t('meetings.quality.excellent'),
+    },
+    [ConnectionQuality.Good]: {
+      Icon: SignalMedium,
+      tone: 'text-white/70',
+      label: t('meetings.quality.good'),
+    },
+    [ConnectionQuality.Poor]: {
+      Icon: SignalLow,
+      tone: 'text-amber-400',
+      label: t('meetings.quality.poor'),
+    },
+    [ConnectionQuality.Lost]: {
+      Icon: Signal,
+      tone: 'text-red-400',
+      label: t('meetings.quality.lost'),
+    },
+  }[quality];
+
+  // Excellent is the expected state — keep the tile clean and say nothing.
+  if (quality === ConnectionQuality.Excellent) return null;
+
+  return (
+    <span
+      title={look.label}
+      aria-label={look.label}
+      className="rounded-lg bg-black/50 p-1 backdrop-blur-sm"
+    >
+      <look.Icon className={cn('h-3 w-3', look.tone)} />
+    </span>
+  );
+}
+
 function MeetingTile({
   participant,
   isLocal,
@@ -134,6 +218,8 @@ function MeetingTile({
   handRaised,
   fallbackName,
   reactions,
+  pinned,
+  onTogglePin,
   className,
 }: {
   participant: Participant;
@@ -142,8 +228,11 @@ function MeetingTile({
   handRaised: boolean;
   fallbackName: string;
   reactions?: { id: number; emoji: string }[];
+  pinned?: boolean;
+  onTogglePin?: () => void;
   className?: string;
 }) {
+  const { t } = useTranslation();
   const cameraRefs = useParticipantTracks([Track.Source.Camera], participant.identity);
   const micRefs = useParticipantTracks([Track.Source.Microphone], participant.identity);
   const cam = cameraRefs[0];
@@ -155,10 +244,11 @@ function MeetingTile({
   return (
     <div
       className={cn(
-        'group relative aspect-video min-h-0 overflow-hidden rounded-2xl bg-white/[0.06] transition-all duration-200',
+        'group relative min-h-0 overflow-hidden rounded-2xl bg-white/[0.06] transition-all duration-200',
         speaking
           ? 'ring-2 ring-(--brand) shadow-[0_0_0_4px_rgb(37_99_235/0.18),0_16px_48px_-16px_rgb(37_99_235/0.5)]'
           : 'shadow-[0_2px_12px_-2px_rgba(0,0,0,0.35)]',
+        pinned && !speaking && 'ring-2 ring-white/25',
         className,
       )}
     >
@@ -178,14 +268,34 @@ function MeetingTile({
         </span>
       )}
 
-      {handRaised && (
-        <span
-          title={fallbackName}
-          className="meeting-hand-badge absolute top-2 right-2 flex size-7 items-center justify-center rounded-full bg-amber-400 shadow-lg shadow-amber-400/40"
-        >
-          <Hand className="h-3.5 w-3.5 text-amber-950" />
-        </span>
-      )}
+      <div className="absolute top-2 right-2 flex items-center gap-1.5">
+        {onTogglePin && (
+          <button
+            type="button"
+            onClick={onTogglePin}
+            title={pinned ? t('meetings.unpin') : t('meetings.pin')}
+            aria-label={pinned ? t('meetings.unpin') : t('meetings.pin')}
+            className={cn(
+              'flex size-7 items-center justify-center rounded-lg backdrop-blur-sm transition',
+              // Hidden until hover/focus so the stage stays calm; always visible
+              // while pinned, otherwise there is no way to find the unpin.
+              pinned
+                ? 'bg-white/20 text-white'
+                : 'bg-black/45 text-white/70 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 hover:bg-black/70 hover:text-white focus-visible:opacity-100',
+            )}
+          >
+            {pinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
+          </button>
+        )}
+        {handRaised && (
+          <span
+            title={fallbackName}
+            className="meeting-hand-badge flex size-7 items-center justify-center rounded-full bg-amber-400 shadow-lg shadow-amber-400/40"
+          >
+            <Hand className="h-3.5 w-3.5 text-amber-950" />
+          </span>
+        )}
+      </div>
 
       {/* Centered emoji reactions on this tile */}
       {reactions && reactions.length > 0 && (
@@ -201,26 +311,29 @@ function MeetingTile({
         </div>
       )}
 
-      <div className="absolute bottom-2 left-2 flex items-center gap-1.5 rounded-lg bg-black/50 px-2 py-1 backdrop-blur-sm">
-        {micMuted ? (
-          <MicOff className="h-3 w-3 text-red-400" />
-        ) : (
-          <Mic className={cn('h-3 w-3', speaking ? 'text-emerald-400' : 'text-white/70')} />
-        )}
-        {speaking && (
-          <span className="flex h-3 items-end gap-0.5">
-            <span className="meeting-speaking-bar w-0.5 rounded-full bg-emerald-400" />
-            <span
-              className="meeting-speaking-bar w-0.5 rounded-full bg-emerald-400"
-              style={{ animationDelay: '180ms' }}
-            />
-            <span
-              className="meeting-speaking-bar w-0.5 rounded-full bg-emerald-400"
-              style={{ animationDelay: '360ms' }}
-            />
-          </span>
-        )}
-        <span className="max-w-40 truncate text-[11px] font-medium text-white/90">{name}</span>
+      <div className="absolute bottom-2 left-2 flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 rounded-lg bg-black/50 px-2 py-1 backdrop-blur-sm">
+          {micMuted ? (
+            <MicOff className="h-3 w-3 text-red-400" />
+          ) : (
+            <Mic className={cn('h-3 w-3', speaking ? 'text-emerald-400' : 'text-white/70')} />
+          )}
+          {speaking && (
+            <span className="flex h-3 items-end gap-0.5">
+              <span className="meeting-speaking-bar w-0.5 rounded-full bg-emerald-400" />
+              <span
+                className="meeting-speaking-bar w-0.5 rounded-full bg-emerald-400"
+                style={{ animationDelay: '180ms' }}
+              />
+              <span
+                className="meeting-speaking-bar w-0.5 rounded-full bg-emerald-400"
+                style={{ animationDelay: '360ms' }}
+              />
+            </span>
+          )}
+          <span className="max-w-40 truncate text-[11px] font-medium text-white/90">{name}</span>
+        </div>
+        <QualityBadge participant={participant} />
       </div>
     </div>
   );
@@ -282,6 +395,135 @@ function DockBtn({
     >
       {on ? onIcon : offIcon}
     </button>
+  );
+}
+
+/**
+ * Dock button for the panels and popovers (chat, participants, reactions,
+ * settings). Unlike `DockBtn` it is not a device on/off state, so "active" only
+ * means the thing it opens is currently open.
+ */
+function DockToggle({
+  active,
+  label,
+  badge,
+  className,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  label: string;
+  badge?: { text: string; tone: 'red' | 'amber' };
+  className?: string;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={label}
+      aria-label={label}
+      aria-pressed={active}
+      className={cn(
+        'relative flex size-11 items-center justify-center rounded-xl transition',
+        active ? 'bg-(--brand)/25 text-white' : 'text-white/70 hover:bg-white/10',
+        className,
+      )}
+    >
+      {children}
+      {badge && (
+        <span
+          className={cn(
+            'absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold',
+            badge.tone === 'red' ? 'bg-red-500 text-white' : 'bg-amber-400 text-amber-950',
+          )}
+        >
+          {badge.text}
+        </span>
+      )}
+    </button>
+  );
+}
+
+/**
+ * Labelled switch used inside the settings popover. A real checkbox under a
+ * styled track, so it is reachable by keyboard and announced as a toggle; the
+ * hint line carries the "why is this inert" explanation for unsupported
+ * browsers instead of leaving a dead control.
+ */
+function SwitchRow({
+  icon,
+  label,
+  hint,
+  checked,
+  pending,
+  disabled,
+  onChange,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  hint: string;
+  checked: boolean;
+  pending: boolean;
+  disabled: boolean;
+  onChange: (on: boolean) => void;
+}) {
+  return (
+    <label
+      className={cn(
+        'flex items-start gap-2.5',
+        disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
+      )}
+    >
+      <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-lg bg-white/[0.06] text-white/60">
+        {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : icon}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-[11px] font-medium text-white/85">{label}</span>
+        <span className="block text-[10px] text-white/40">{hint}</span>
+      </span>
+      <input
+        type="checkbox"
+        className="peer sr-only"
+        checked={checked}
+        disabled={disabled || pending}
+        onChange={(event) => onChange(event.target.checked)}
+      />
+      <span
+        aria-hidden
+        className={cn(
+          'mt-0.5 flex h-5 w-9 shrink-0 items-center rounded-full p-0.5 transition',
+          'peer-focus-visible:ring-2 peer-focus-visible:ring-(--brand)/70',
+          checked ? 'bg-(--brand)' : 'bg-white/15',
+        )}
+      >
+        <span
+          className={cn(
+            'size-4 rounded-full bg-white shadow transition-transform',
+            checked && 'translate-x-4',
+          )}
+        />
+      </span>
+    </label>
+  );
+}
+
+/** One caption line: speaker name, then the text (interim results greyed out). */
+function CaptionRow({
+  line,
+  isLocal,
+  youName,
+}: {
+  line: CaptionLine;
+  isLocal: boolean;
+  youName: string;
+}) {
+  return (
+    <li className="text-[13px] leading-snug">
+      <span className="mr-1.5 font-semibold text-[#7ba2ff]">{isLocal ? youName : line.name}</span>
+      <span className={cn(line.final ? 'text-white/90' : 'text-white/45 italic')}>{line.text}</span>
+    </li>
   );
 }
 
@@ -411,16 +653,31 @@ function ParticipantRow({
 }
 
 export function CustomConference(props: ConferenceProps) {
-  const { roomName, title, statusKey, elapsed, mode, linkCopied, onCopyLink, onLeave } = props;
-  const { t } = useTranslation();
-  const { localParticipant } = useLocalParticipant();
+  const {
+    roomName,
+    title,
+    statusKey,
+    elapsed,
+    mode,
+    linkCopied,
+    onCopyLink,
+    onLeave,
+    deviceChoices,
+    onDeviceChange,
+  } = props;
+  const { t, i18n } = useTranslation();
+  const { localParticipant, cameraTrack } = useLocalParticipant();
   const remotes = useParticipants();
   const speaking = useSpeakingParticipants();
   const connectionState = useConnectionState();
+  const isRecording = useIsRecording();
 
   const mic = useTrackToggle({ source: Track.Source.Microphone });
   const cam = useTrackToggle({ source: Track.Source.Camera });
   const share = useTrackToggle({ source: Track.Source.ScreenShare });
+
+  /** Only one dock popover is open at a time. */
+  const [dockMenu, setDockMenu] = useState<'reactions' | 'settings' | 'shortcuts' | null>(null);
 
   const [chatOpen, setChatOpen] = useState(false);
   const [participantsOpen, setParticipantsOpen] = useState(false);
@@ -522,6 +779,8 @@ export function CustomConference(props: ConferenceProps) {
   );
   const { send: sendHostCtrl } = useDataChannel('hostCtrl');
   const removeParticipant = useAction(api.meetingsActions.removeParticipant);
+  const muteParticipantTrack = useAction(api.meetingsActions.muteParticipantTrack);
+  const muteEveryone = useAction(api.meetingsActions.muteEveryone);
 
   useDataChannel('hostCtrl', (msg) => {
     // Only the host's commands are honored — role is read from the token
@@ -576,12 +835,102 @@ export function CustomConference(props: ConferenceProps) {
     }
   };
 
+  // Host actions are enforced by the LiveKit server (see `meetingsActions`); the
+  // data-channel message that follows is only there to tell the participant why
+  // their microphone or camera just went dark.
+  const handleMuteTrack = async (identity: string, source: 'microphone' | 'camera') => {
+    try {
+      await muteParticipantTrack({ roomName, identity, source, muted: true });
+      sendHostCommand(source === 'microphone' ? 'muteMic' : 'muteCam', identity);
+      toast.success(
+        source === 'microphone'
+          ? t('meetings.participantMuted')
+          : t('meetings.participantCamStopped'),
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('meetings.actionFailed'));
+    }
+  };
+
+  const handleAskUnmute = (identity: string) => {
+    sendHostCommand('askUnmute', identity);
+    toast.success(t('meetings.askUnmuteSent'));
+  };
+
+  const handleMuteEveryone = async () => {
+    try {
+      await muteEveryone({ roomName });
+      // '*' is the broadcast target the receiver below accepts.
+      sendHostCommand('muteMic', '*');
+      toast.success(t('meetings.muteAllDone'));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('meetings.actionFailed'));
+    }
+  };
+
   const handleRemove = async (identity: string) => {
     try {
       await removeParticipant({ roomName, identity });
       toast.success(t('meetings.removed'));
     } catch {
       toast.error(t('meetings.removedFailed', { defaultValue: 'Could not remove participant' }));
+    }
+  };
+
+  // ── Media effects, captions, cloud recording ───────────────────────────────
+  // Both WASM-backed features are probed only while the settings popover is
+  // open: a participant who never opens it never downloads MediaPipe's
+  // segmentation model or the Krisp filter.
+  const settingsOpen = dockMenu === 'settings';
+  /** `useLocalParticipant` hands back a publication; the processor needs the track. */
+  const localVideoTrack = cameraTrack?.track as LocalVideoTrack | undefined;
+  const effects = useVideoEffects(localVideoTrack);
+  const noise = useNoiseFilter(settingsOpen);
+
+  const [ccOn, setCcOn] = useState(false);
+  const captions = useLiveCaptions({
+    enabled: ccOn,
+    language: i18n.language,
+    micEnabled: mic.enabled,
+    localIdentity,
+    localName: localParticipant?.name || localIdentity,
+  });
+  const ccAvailable = captionsSupported();
+
+  // Cloud recording. The meeting row is the shared truth for "is it running" —
+  // every client subscribes to it, so the button state agrees across the call
+  // even when a second host started it.
+  const recordingSupport = useQuery(api.meetings.recordingConfigured, {});
+  const meetingRow = useQuery(api.meetings.getByRoomName, { roomName });
+  const startRecording = useAction(api.meetingsActions.startRecording);
+  const stopRecording = useAction(api.meetingsActions.stopRecording);
+  const [recordingBusy, setRecordingBusy] = useState(false);
+  const cloudRecording = Boolean(meetingRow?.egressId);
+  const recordingReady = recordingSupport?.configured !== false;
+
+  const toggleRecording = async () => {
+    if (recordingBusy) return;
+    if (recordingSupport && !recordingSupport.configured) {
+      toast.error(
+        recordingSupport.livekit ? t('meetings.recordNoStorage') : t('meetings.recordNoLivekit'),
+      );
+      return;
+    }
+    setRecordingBusy(true);
+    try {
+      if (cloudRecording) {
+        await stopRecording({ roomName });
+        toast.success(t('meetings.recordStopped'));
+      } else {
+        const result = await startRecording({ roomName });
+        if (!result.configured) toast.error(t('meetings.recordNoStorage'));
+        else if (result.alreadyRunning) toast(t('meetings.recordAlready'));
+        else toast.success(t('meetings.recordStarted'));
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('meetings.actionFailed'));
+    } finally {
+      setRecordingBusy(false);
     }
   };
 
@@ -613,6 +962,56 @@ export function CustomConference(props: ConferenceProps) {
 
   const handsCount = participants.filter((p) => hands[p.identity || p.sid]).length;
 
+  // ── Pin / spotlight ────────────────────────────────────────────────────────
+  const [pinnedId, setPinnedId] = useState<string | null>(null);
+  const togglePin = (identity: string) =>
+    setPinnedId((prev) => (prev === identity ? null : identity));
+
+  // Drop the pin if that participant leaves, otherwise the stage stays empty.
+  useEffect(() => {
+    if (!pinnedId) return;
+    if (!participants.some((p) => (p.identity || p.sid) === pinnedId)) setPinnedId(null);
+  }, [participants, pinnedId]);
+
+  // ── Sticky active speaker ──────────────────────────────────────────────────
+  // `useSpeakingParticipants` flips on every audio-level threshold crossing, so
+  // two people talking over each other made the stage ping-pong. A speaker now
+  // has to hold the floor for a moment before the stage follows.
+  const loudest = speaking[0]?.identity ?? '';
+  const [stickySpeaker, setStickySpeaker] = useState('');
+  useEffect(() => {
+    if (!loudest) return;
+    const timer = window.setTimeout(() => setStickySpeaker(loudest), 700);
+    return () => window.clearTimeout(timer);
+  }, [loudest]);
+
+  // ── Presence toasts ────────────────────────────────────────────────────────
+  // The first pass only records who is already here — joining a running meeting
+  // should not fire a toast per person.
+  const knownRef = useRef<Map<string, string> | null>(null);
+  useEffect(() => {
+    const current = new Map(
+      participants.map((p) => [p.identity || p.sid, p.name || p.identity || '']),
+    );
+    const known = knownRef.current;
+    knownRef.current = current;
+    if (!known) return;
+    for (const [id, name] of current) {
+      if (!known.has(id) && id !== localIdentity) {
+        toast(t('meetings.participantJoined', { name: name || id }), {
+          icon: <Users className="h-4 w-4 text-(--brand)" />,
+        });
+      }
+    }
+    for (const [id, name] of known) {
+      if (!current.has(id)) {
+        toast(t('meetings.participantLeft', { name: name || id }), {
+          icon: <Users className="h-4 w-4 text-white/50" />,
+        });
+      }
+    }
+  }, [participants, localIdentity, t]);
+
   const [layout, setLayout] = useState<'grid' | 'speaker'>('grid');
   const [isFullscreen, setIsFullscreen] = useState(false);
   useEffect(() => {
@@ -634,30 +1033,41 @@ export function CustomConference(props: ConferenceProps) {
   );
   const shareTrack = activeShare?.publication?.track;
 
-  // Speaker view: the active speaker (or first remote) takes the stage.
+  // Speaker view: the pinned tile wins, otherwise the sticky active speaker (or
+  // the first remote) takes the stage.
+  const pinnedParticipant = useMemo(
+    () => participants.find((p) => (p.identity || p.sid) === pinnedId) ?? null,
+    [participants, pinnedId],
+  );
+
   const focusParticipant = useMemo(() => {
-    if (layout !== 'speaker' || shareTrack || participants.length <= 1) return null;
-    const speaker =
-      speakingSet.size > 0 ? participants.find((p) => speakingSet.has(p.identity)) : null;
+    if (shareTrack) return null;
+    if (pinnedParticipant) return pinnedParticipant;
+    if (layout !== 'speaker' || participants.length <= 1) return null;
+    const speaker = stickySpeaker ? participants.find((p) => p.identity === stickySpeaker) : null;
     return (
       speaker ?? participants.find((p) => p.identity !== localIdentity) ?? participants[0] ?? null
     );
-  }, [layout, shareTrack, participants, speakingSet, localIdentity]);
+  }, [layout, shareTrack, pinnedParticipant, participants, stickySpeaker, localIdentity]);
 
   // ── Chat state ─────────────────────────────────────────────────────────────
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages, chatOpen]);
 
+  // Unread = messages that arrived since the panel was last open. Counting
+  // renders instead of messages used to show a "1" before anyone had typed.
+  const seenCount = useRef(0);
   useEffect(() => {
-    if (chatOpen) setUnread(0);
+    if (chatOpen) {
+      seenCount.current = chatMessages.length;
+      setUnread(0);
+      return;
+    }
+    setUnread(Math.max(0, chatMessages.length - seenCount.current));
   }, [chatOpen, chatMessages.length]);
 
-  useEffect(() => {
-    if (!chatOpen) setUnread((u) => u + 1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chatMessages.length]);
-
+  /** Send the draft. Swallows failures — chat is best-effort, not a receipt. */
   const submitChat = async () => {
     const text = chatDraft.trim();
     if (!text) return;
@@ -697,8 +1107,142 @@ export function CustomConference(props: ConferenceProps) {
     }
   };
 
+  // ── Keyboard shortcuts ─────────────────────────────────────────────────────
+  // Everything the listener needs lives in a ref, so the listener is attached
+  // once instead of on every render (and never fires against a stale toggle).
+  const actionsRef = useRef({
+    micEnabled: false,
+    toggleMic: () => {},
+    toggleCam: () => {},
+    toggleShare: () => {},
+    toggleHand: () => {},
+    toggleChat: () => {},
+    toggleParticipants: () => {},
+    toggleFullscreen: () => {},
+    toggleShortcuts: () => {},
+    toggleCaptions: () => {},
+    setMic: (_on: boolean) => {},
+  });
+  actionsRef.current = {
+    micEnabled: mic.enabled,
+    toggleMic: () => void toggleTrack(() => mic.toggle(), t('meetings.micDenied')),
+    toggleCam: () => void toggleTrack(() => cam.toggle(), t('meetings.camDenied')),
+    toggleShare: () => void toggleTrack(() => share.toggle(), t('meetings.shareDenied')),
+    toggleHand,
+    toggleChat: () => setChatOpen((open) => !open),
+    toggleParticipants: () => setParticipantsOpen((open) => !open),
+    toggleFullscreen,
+    toggleShortcuts: () => setDockMenu((menu) => (menu === 'shortcuts' ? null : 'shortcuts')),
+    toggleCaptions: () => setCcOn((on) => !on),
+    setMic: (on: boolean) => {
+      void localParticipant?.setMicrophoneEnabled(on);
+    },
+  };
+
+  useEffect(() => {
+    // Never hijack typing, and never steal Space/Enter from a focused control.
+    const isInteractive = (el: EventTarget | null) =>
+      el instanceof HTMLElement &&
+      (el.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON', 'A'].includes(el.tagName));
+
+    let pushingToTalk = false;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      if (isInteractive(event.target)) return;
+      const actions = actionsRef.current;
+
+      // Hold Space to talk — only meaningful while muted, and the mic goes back
+      // down on key-up (or if the window loses focus mid-sentence).
+      if (event.code === 'Space') {
+        event.preventDefault();
+        if (event.repeat || pushingToTalk || actions.micEnabled) return;
+        pushingToTalk = true;
+        actions.setMic(true);
+        return;
+      }
+
+      switch (event.key.toLowerCase()) {
+        case 'm':
+          actions.toggleMic();
+          break;
+        case 'v':
+          actions.toggleCam();
+          break;
+        case 's':
+          actions.toggleShare();
+          break;
+        case 'h':
+          actions.toggleHand();
+          break;
+        case 'c':
+          actions.toggleChat();
+          break;
+        case 'p':
+          actions.toggleParticipants();
+          break;
+        case 'f':
+          actions.toggleFullscreen();
+          break;
+        case 't':
+          actions.toggleCaptions();
+          break;
+        case '?':
+          actions.toggleShortcuts();
+          break;
+        default:
+          return;
+      }
+      event.preventDefault();
+    };
+
+    const releasePushToTalk = () => {
+      if (!pushingToTalk) return;
+      pushingToTalk = false;
+      actionsRef.current.setMic(false);
+    };
+    const onKeyUp = (event: KeyboardEvent) => {
+      if (event.code === 'Space') releasePushToTalk();
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('blur', releasePushToTalk);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener('blur', releasePushToTalk);
+      releasePushToTalk();
+    };
+  }, []);
+
+  // Escape closes whichever dock popover is open.
+  useEffect(() => {
+    if (!dockMenu) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setDockMenu(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [dockMenu]);
+
+  const shortcutRows = [
+    { keys: 'M', label: t('meetings.microphone') },
+    { keys: 'V', label: t('meetings.camera') },
+    { keys: 'S', label: t('meetings.share') },
+    { keys: 'H', label: t('meetings.raiseHand') },
+    { keys: 'C', label: t('meetings.chat') },
+    { keys: 'P', label: t('meetings.participants') },
+    { keys: 'F', label: t('meetings.fullscreen') },
+    { keys: 'T', label: t('meetings.cc.title') },
+    { keys: 'Space', label: t('meetings.pushToTalk') },
+  ];
+
   const n = participants.length;
-  const cols = n <= 1 ? 1 : n <= 4 ? 2 : n <= 9 ? 3 : 4;
+  // Square-ish grid so the tiles fill the stage instead of hugging a fixed
+  // column count (2 people side by side, 4 in a 2×2, 9 in a 3×3 …).
+  const cols = Math.min(4, Math.max(1, Math.ceil(Math.sqrt(n))));
+  const rows = Math.max(1, Math.ceil(n / cols));
   const youName = t('meetings.you', { defaultValue: 'You' });
   const others = participants.filter((p) => p.identity !== localIdentity);
 
@@ -730,6 +1274,9 @@ export function CustomConference(props: ConferenceProps) {
             handRaised={!!hands[p.identity || p.sid]}
             fallbackName={youName}
             reactions={tileReactions[p.identity || p.sid]}
+            pinned={pinnedId === (p.identity || p.sid)}
+            onTogglePin={() => togglePin(p.identity || p.sid)}
+            className="aspect-video"
           />
         </div>
       ))}
@@ -786,6 +1333,12 @@ export function CustomConference(props: ConferenceProps) {
         </div>
 
         <div className="ml-auto flex items-center gap-1.5">
+          {(isRecording || cloudRecording) && (
+            <span className="flex h-9 items-center gap-1.5 rounded-xl bg-red-500/15 px-2.5 text-[11px] font-semibold text-red-300 ring-1 ring-red-500/30">
+              <span className="size-2 animate-pulse rounded-full bg-red-400" />
+              {t('meetings.recording')}
+            </span>
+          )}
           {handsCount > 0 && (
             <button
               type="button"
@@ -797,17 +1350,23 @@ export function CustomConference(props: ConferenceProps) {
               {handsCount}
             </button>
           )}
-          {!shareTrack && (
-            <IconBtn
-              title={layout === 'grid' ? t('meetings.speakerView') : t('meetings.gridView')}
-              onClick={() => setLayout((l) => (l === 'grid' ? 'speaker' : 'grid'))}
-            >
-              {layout === 'grid' ? (
-                <Presentation className="h-4 w-4" />
-              ) : (
-                <LayoutGrid className="h-4 w-4" />
-              )}
+          {pinnedParticipant ? (
+            <IconBtn title={t('meetings.unpin')} onClick={() => setPinnedId(null)}>
+              <PinOff className="h-4 w-4 text-(--brand)" />
             </IconBtn>
+          ) : (
+            !shareTrack && (
+              <IconBtn
+                title={layout === 'grid' ? t('meetings.speakerView') : t('meetings.gridView')}
+                onClick={() => setLayout((l) => (l === 'grid' ? 'speaker' : 'grid'))}
+              >
+                {layout === 'grid' ? (
+                  <Presentation className="h-4 w-4" />
+                ) : (
+                  <LayoutGrid className="h-4 w-4" />
+                )}
+              </IconBtn>
+            )
           )}
           <IconBtn
             title={isFullscreen ? t('meetings.exitFullscreen') : t('meetings.fullscreen')}
@@ -825,19 +1384,11 @@ export function CustomConference(props: ConferenceProps) {
               <Link2 className="h-4 w-4" />
             )}
           </IconBtn>
-          <button
-            type="button"
-            onClick={onLeave}
-            className="ml-0.5 flex h-9 items-center gap-1.5 rounded-xl bg-red-500/90 px-3 text-xs font-semibold text-white shadow-lg shadow-red-500/30 transition hover:bg-red-500"
-          >
-            <PhoneOff className="h-3.5 w-3.5" />
-            {t('meetings.leave')}
-          </button>
         </div>
       </header>
 
       {/* ── Content area: stage + side panel ── */}
-      <div className="flex min-h-0 flex-1 overflow-hidden">
+      <div className="relative flex min-h-0 flex-1 overflow-hidden">
         {/* ── Stage ── */}
         <div className="flex min-h-0 flex-1 flex-col gap-4 px-4 pt-4 pb-28">
           {shareTrack && (
@@ -865,6 +1416,8 @@ export function CustomConference(props: ConferenceProps) {
                   handRaised={!!hands[focusParticipant.identity || focusParticipant.sid]}
                   fallbackName={youName}
                   reactions={tileReactions[focusParticipant.identity || focusParticipant.sid]}
+                  pinned={pinnedId === (focusParticipant.identity || focusParticipant.sid)}
+                  onTogglePin={() => togglePin(focusParticipant.identity || focusParticipant.sid)}
                   className="h-full"
                 />
               </div>
@@ -873,12 +1426,15 @@ export function CustomConference(props: ConferenceProps) {
           ) : (
             <div
               className={cn(
-                'mx-auto grid h-full w-full content-center gap-4',
-                n <= 1 && 'max-w-4xl',
-                n === 2 && 'max-w-5xl',
-                n >= 3 && 'max-w-[1400px]',
+                'mx-auto grid min-h-0 w-full flex-1 gap-4',
+                n <= 1 && 'max-w-5xl',
+                n === 2 && 'max-w-6xl',
+                n >= 3 && 'max-w-[1500px]',
               )}
-              style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+              style={{
+                gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+                gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
+              }}
             >
               {participants.map((p) => (
                 <MeetingTile
@@ -889,17 +1445,55 @@ export function CustomConference(props: ConferenceProps) {
                   handRaised={!!hands[p.identity || p.sid]}
                   fallbackName={youName}
                   reactions={tileReactions[p.identity || p.sid]}
+                  pinned={pinnedId === (p.identity || p.sid)}
+                  onTogglePin={n > 1 ? () => togglePin(p.identity || p.sid) : undefined}
+                  className="h-full"
                 />
               ))}
             </div>
           )}
+
+          {/* Waiting alone — the most common reason a meeting feels broken is
+              that nobody was given the link. */}
+          {n === 1 && !shareTrack && (
+            <div className="shrink-0 self-center rounded-2xl border border-white/10 bg-[#141824]/85 px-4 py-3 text-center shadow-xl backdrop-blur-xl">
+              <p className="text-sm font-semibold text-white/90">{t('meetings.alone')}</p>
+              <p className="mt-0.5 text-[11px] text-white/45">{t('meetings.aloneHint')}</p>
+              <button
+                type="button"
+                onClick={onCopyLink}
+                className="mt-2 inline-flex items-center gap-1.5 rounded-xl bg-(--brand)/25 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-(--brand)/40"
+              >
+                {linkCopied ? (
+                  <Check className="h-3.5 w-3.5 text-emerald-400" />
+                ) : (
+                  <Link2 className="h-3.5 w-3.5" />
+                )}
+                {linkCopied ? t('meetings.copied') : t('meetings.copyLink')}
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* ── Right panel (slides in from right) ── */}
+        {/* ── Right panel ── */}
+        {/* Wide screens: it takes its own column next to the stage. Narrow
+            screens: it floats over the stage, otherwise the video is squeezed
+            into a sliver. */}
+        {(chatOpen || participantsOpen) && (
+          <div
+            role="presentation"
+            onClick={() => {
+              setChatOpen(false);
+              setParticipantsOpen(false);
+            }}
+            className="absolute inset-0 z-30 bg-black/45 lg:hidden"
+          />
+        )}
         <div
           className={cn(
-            'flex shrink-0 flex-col gap-3 overflow-hidden transition-all duration-300 ease-in-out',
-            chatOpen || participantsOpen ? 'w-[340px] pl-3 pr-3 pt-3' : 'w-0',
+            'flex shrink-0 flex-col gap-3 overflow-hidden transition-[width] duration-300 ease-in-out',
+            'max-lg:absolute max-lg:inset-y-0 max-lg:right-0 max-lg:z-40 max-lg:pb-24',
+            chatOpen || participantsOpen ? 'w-[min(21.25rem,92vw)] px-3 pt-3' : 'w-0',
           )}
         >
           {chatOpen && (
@@ -989,9 +1583,7 @@ export function CustomConference(props: ConferenceProps) {
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
-                    if (!chatDraft.trim()) return;
-                    send(chatDraft.trim());
-                    setChatDraft('');
+                    void submitChat();
                   }}
                   className="flex items-center gap-2"
                 >
@@ -999,7 +1591,7 @@ export function CustomConference(props: ConferenceProps) {
                     type="text"
                     value={chatDraft}
                     onChange={(e) => setChatDraft(e.target.value)}
-                    placeholder={t('meetings.message', { defaultValue: 'Message...' })}
+                    placeholder={t('meetings.chatPlaceholder')}
                     className="flex-1 rounded-xl border border-white/10 bg-white/[0.06] px-3 py-2 text-xs text-white/85 placeholder:text-white/30 focus:border-(--brand)/50 focus:outline-none"
                   />
                   <button
@@ -1036,14 +1628,11 @@ export function CustomConference(props: ConferenceProps) {
                 <div className="px-3 pt-3">
                   <button
                     type="button"
-                    onClick={() => {
-                      const localP = participants.find((p) => p.identity === localIdentity);
-                      if (localP) sendHostCommand('mute-all', localP.identity);
-                    }}
+                    onClick={handleMuteEveryone}
                     className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.06] px-3 py-2 text-xs font-medium text-white/70 transition hover:bg-white/10 hover:text-white"
                   >
                     <MicOff className="h-3.5 w-3.5" />
-                    {t('meetings.muteAll', { defaultValue: 'Mute all' })}
+                    {t('meetings.muteAll')}
                   </button>
                 </div>
               )}
@@ -1055,9 +1644,9 @@ export function CustomConference(props: ConferenceProps) {
                     localIdentity={localIdentity}
                     hands={hands}
                     isHost={isHost}
-                    onMuteMic={(id) => sendHostCommand('muteMic', id)}
-                    onMuteCam={(id) => sendHostCommand('muteCam', id)}
-                    onAskUnmute={(id) => sendHostCommand('askUnmute', id)}
+                    onMuteMic={(id) => void handleMuteTrack(id, 'microphone')}
+                    onMuteCam={(id) => void handleMuteTrack(id, 'camera')}
+                    onAskUnmute={handleAskUnmute}
                     onRemove={handleRemove}
                     onToggleSelfMic={() => toggleTrack(() => mic.toggle(), t('meetings.micDenied'))}
                     onToggleSelfCam={() => toggleTrack(() => cam.toggle(), t('meetings.camDenied'))}
@@ -1093,51 +1682,151 @@ export function CustomConference(props: ConferenceProps) {
       )}
 
       {/* ── Control dock ── */}
-      <div className="absolute inset-x-0 bottom-0 z-10 flex justify-center px-3 pb-5">
+      <div className="absolute inset-x-0 bottom-0 z-50 flex flex-col items-center gap-2 px-3 pb-5">
+        {/* Popovers sit above the dock so the dock itself stays one row. */}
+        {dockMenu === 'reactions' && (
+          <div className="meeting-panel-in flex items-center gap-1 rounded-2xl border border-white/10 bg-[#141824]/95 px-2 py-1.5 shadow-2xl shadow-black/60 backdrop-blur-xl">
+            {REACTIONS.map((emoji) => (
+              <button
+                key={emoji}
+                type="button"
+                onClick={() => {
+                  void react(emoji);
+                  setDockMenu(null);
+                }}
+                className="rounded-xl px-2 py-1 text-xl transition hover:scale-125 hover:bg-white/10"
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
+        )}
+        {dockMenu === 'settings' && (
+          <div className="meeting-panel-in max-h-[70vh] w-[min(26rem,94vw)] overflow-y-auto rounded-2xl border border-white/10 bg-[#141824]/95 p-3 shadow-2xl shadow-black/60 backdrop-blur-xl">
+            <p className="mb-2 text-xs font-semibold text-white/85">{t('meetings.settings')}</p>
+            <DeviceSettings
+              choices={deviceChoices}
+              onChange={onDeviceChange}
+              tone="dark"
+              className="sm:grid-cols-3"
+            />
+
+            <div className="mt-3 border-t border-white/10 pt-3">
+              <SwitchRow
+                icon={<Waves className="h-3.5 w-3.5" />}
+                label={t('meetings.noiseFilter.title')}
+                hint={
+                  noise.supported === false
+                    ? t('meetings.noiseFilter.unsupported')
+                    : noise.failed
+                      ? t('meetings.noiseFilter.failed')
+                      : t('meetings.noiseFilter.hint')
+                }
+                checked={noise.enabled}
+                pending={noise.pending}
+                disabled={noise.supported === false}
+                onChange={(on) => void noise.toggle(on)}
+              />
+            </div>
+
+            <div className="mt-3 border-t border-white/10 pt-3">
+              <BackgroundPicker
+                effect={effects.effect}
+                pending={effects.pending}
+                supported={effects.supported}
+                failed={effects.failed}
+                hasCamera={Boolean(localVideoTrack)}
+                tone="dark"
+                onSelect={effects.setEffect}
+              />
+            </div>
+          </div>
+        )}
+        {dockMenu === 'shortcuts' && (
+          <div className="meeting-panel-in w-[min(20rem,92vw)] rounded-2xl border border-white/10 bg-[#141824]/95 p-3 shadow-2xl shadow-black/60 backdrop-blur-xl">
+            <p className="mb-2 text-xs font-semibold text-white/85">{t('meetings.shortcuts')}</p>
+            <ul className="grid gap-1">
+              {shortcutRows.map((row) => (
+                <li key={row.keys} className="flex items-center justify-between gap-3">
+                  <span className="truncate text-[11px] text-white/60">{row.label}</span>
+                  <kbd className="rounded-md border border-white/15 bg-white/[0.06] px-1.5 py-0.5 font-mono text-[10px] text-white/70">
+                    {row.keys}
+                  </kbd>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* ── Live captions ── */}
+        {ccOn && (
+          <div
+            aria-live="polite"
+            className="meeting-panel-in w-[min(48rem,96vw)] rounded-2xl border border-white/10 bg-black/70 px-3 py-2 shadow-2xl shadow-black/60 backdrop-blur-xl"
+          >
+            {captions.lines.length === 0 ? (
+              <p className="text-center text-[11px] text-white/45">
+                {!ccAvailable || captions.error === 'unsupported'
+                  ? t('meetings.cc.unsupported')
+                  : captions.error === 'denied'
+                    ? t('meetings.cc.denied')
+                    : mic.enabled
+                      ? t('meetings.cc.listening')
+                      : t('meetings.cc.muted')}
+              </p>
+            ) : (
+              <ul className="space-y-0.5">
+                {captions.lines.map((line) => (
+                  <CaptionRow
+                    key={`${line.identity}-${line.final ? line.at : 'interim'}`}
+                    line={line}
+                    isLocal={line.identity === localIdentity}
+                    youName={youName}
+                  />
+                ))}
+              </ul>
+            )}
+            <p className="mt-1 text-center text-[9px] text-white/30">{t('meetings.cc.notice')}</p>
+          </div>
+        )}
+
         <div className="flex max-w-full flex-wrap items-center justify-center gap-1.5 rounded-2xl bg-[#141824]/85 px-2.5 py-2 shadow-2xl shadow-black/60 backdrop-blur-xl">
           <DockBtn
             on={mic.enabled}
             onIcon={<Mic className="h-4.5 w-4.5" />}
             offIcon={<MicOff className="h-4.5 w-4.5" />}
-            label={mic.enabled ? t('meetings.micOn') : t('meetings.micOff')}
+            label={`${mic.enabled ? t('meetings.micOn') : t('meetings.micOff')} · M`}
             onClick={() => toggleTrack(() => mic.toggle(), t('meetings.micDenied'))}
           />
           <DockBtn
             on={cam.enabled}
             onIcon={<Video className="h-4.5 w-4.5" />}
             offIcon={<VideoOff className="h-4.5 w-4.5" />}
-            label={cam.enabled ? t('meetings.camOn') : t('meetings.camOff')}
+            label={`${cam.enabled ? t('meetings.camOn') : t('meetings.camOff')} · V`}
             onClick={() => toggleTrack(() => cam.toggle(), t('meetings.camDenied'))}
           />
           <DockBtn
             on={share.enabled}
             onIcon={<MonitorUp className="h-4.5 w-4.5" />}
             offIcon={<MonitorOff className="h-4.5 w-4.5" />}
-            label={t('meetings.share', { defaultValue: 'Share screen' })}
+            label={`${t('meetings.share')} · S`}
             onClick={() => toggleTrack(() => share.toggle(), t('meetings.shareDenied'))}
           />
 
           <div className="mx-1 h-7 w-px bg-white/10" />
 
-          <div className="flex items-center gap-0.5 rounded-xl bg-white/[0.06] px-1.5 py-1">
-            {REACTIONS.map((emoji) => (
-              <button
-                key={emoji}
-                type="button"
-                onClick={() => react(emoji)}
-                className="rounded-lg px-1 py-0.5 text-base transition hover:scale-125"
-              >
-                {emoji}
-              </button>
-            ))}
-          </div>
-
-          <div className="mx-1 h-7 w-px bg-white/10" />
+          <DockToggle
+            active={dockMenu === 'reactions'}
+            label={t('meetings.reactions')}
+            onClick={() => setDockMenu((menu) => (menu === 'reactions' ? null : 'reactions'))}
+          >
+            <Smile className="h-4.5 w-4.5" />
+          </DockToggle>
 
           <button
             type="button"
             onClick={toggleHand}
-            title={handRaised ? t('meetings.lowerHand') : t('meetings.raiseHand')}
+            title={`${handRaised ? t('meetings.lowerHand') : t('meetings.raiseHand')} · H`}
             className={cn(
               'flex size-11 items-center justify-center rounded-xl transition-all hover:scale-105',
               handRaised
@@ -1148,39 +1837,87 @@ export function CustomConference(props: ConferenceProps) {
             <Hand className="h-4.5 w-4.5" />
           </button>
 
-          <button
-            type="button"
-            onClick={() => setChatOpen((o) => !o)}
-            className={cn(
-              'relative flex size-11 items-center justify-center rounded-xl transition',
-              chatOpen ? 'bg-(--brand)/25 text-white' : 'text-white/70 hover:bg-white/10',
-            )}
-            title={t('meetings.chat', { defaultValue: 'Chat' })}
+          <DockToggle
+            active={chatOpen}
+            label={`${t('meetings.chat')} · C`}
+            badge={!chatOpen && unread > 0 ? { text: String(unread), tone: 'red' } : undefined}
+            onClick={() => setChatOpen((open) => !open)}
           >
             <MessageSquare className="h-4.5 w-4.5" />
-            {unread > 0 && !chatOpen && (
-              <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
-                {unread}
-              </span>
-            )}
-          </button>
+          </DockToggle>
 
-          <button
-            type="button"
-            onClick={() => setParticipantsOpen((o) => !o)}
-            className={cn(
-              'relative flex size-11 items-center justify-center rounded-xl transition',
-              participantsOpen ? 'bg-(--brand)/25 text-white' : 'text-white/70 hover:bg-white/10',
-            )}
-            title={t('meetings.participants', { defaultValue: 'Participants' })}
+          <DockToggle
+            active={participantsOpen}
+            label={`${t('meetings.participants')} · P`}
+            badge={
+              !participantsOpen && handsCount > 0
+                ? { text: String(handsCount), tone: 'amber' }
+                : undefined
+            }
+            onClick={() => setParticipantsOpen((open) => !open)}
           >
             <Users className="h-4.5 w-4.5" />
-            {handsCount > 0 && !participantsOpen && (
-              <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-400 px-1 text-[9px] font-bold text-amber-950">
-                {handsCount}
-              </span>
-            )}
-          </button>
+          </DockToggle>
+
+          <DockToggle
+            active={ccOn}
+            label={`${t('meetings.cc.title')} · T`}
+            onClick={() => setCcOn((on) => !on)}
+          >
+            {ccOn ? <Captions className="h-4.5 w-4.5" /> : <CaptionsOff className="h-4.5 w-4.5" />}
+          </DockToggle>
+
+          <div className="mx-1 h-7 w-px bg-white/10" />
+
+          {isHost && (
+            <button
+              type="button"
+              onClick={() => void toggleRecording()}
+              disabled={recordingBusy}
+              aria-pressed={cloudRecording}
+              title={
+                !recordingReady
+                  ? t('meetings.recordUnavailable')
+                  : cloudRecording
+                    ? t('meetings.recordStop')
+                    : t('meetings.recordStart')
+              }
+              className={cn(
+                'flex size-11 items-center justify-center rounded-xl transition',
+                recordingBusy && 'cursor-wait',
+                cloudRecording
+                  ? 'bg-red-500/85 text-white shadow-lg shadow-red-500/30 hover:bg-red-500'
+                  : recordingReady
+                    ? 'text-white/70 hover:bg-white/10'
+                    : 'text-white/30',
+              )}
+            >
+              {recordingBusy ? (
+                <Loader2 className="h-4.5 w-4.5 animate-spin" />
+              ) : cloudRecording ? (
+                <Square className="h-4 w-4 fill-current" />
+              ) : (
+                <Circle className="h-4.5 w-4.5" />
+              )}
+            </button>
+          )}
+
+          <DockToggle
+            active={dockMenu === 'settings'}
+            label={t('meetings.settings')}
+            onClick={() => setDockMenu((menu) => (menu === 'settings' ? null : 'settings'))}
+          >
+            <Settings className="h-4.5 w-4.5" />
+          </DockToggle>
+
+          <DockToggle
+            active={dockMenu === 'shortcuts'}
+            label={`${t('meetings.shortcuts')} · ?`}
+            className="hidden sm:flex"
+            onClick={() => setDockMenu((menu) => (menu === 'shortcuts' ? null : 'shortcuts'))}
+          >
+            <Keyboard className="h-4.5 w-4.5" />
+          </DockToggle>
 
           <button
             type="button"

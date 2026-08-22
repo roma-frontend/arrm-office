@@ -12,7 +12,7 @@
  * create a row the caller would not be allowed to create directly.
  */
 
-import { mutation, query } from './_generated/server';
+import { mutation, query, type MutationCtx } from './_generated/server';
 import { v } from 'convex/values';
 import type { Id } from './_generated/dataModel';
 import { getAuthCaller } from './lib/getAuthCaller';
@@ -46,6 +46,26 @@ export const livekitConfigured = query({
   handler: async () => {
     const url = process.env.LIVEKIT_URL ?? process.env.NEXT_PUBLIC_LIVEKIT_URL;
     return Boolean(url && process.env.LIVEKIT_API_KEY && process.env.LIVEKIT_API_SECRET);
+  },
+});
+
+/**
+ * Whether cloud recording can run: LiveKit Egress needs both the LiveKit
+ * credentials *and* an object-storage target, because the finished file is
+ * uploaded straight from LiveKit's infrastructure. Booleans only — no bucket
+ * names or keys leave the server.
+ */
+export const recordingConfigured = query({
+  args: {},
+  handler: async () => {
+    const url = process.env.LIVEKIT_URL ?? process.env.NEXT_PUBLIC_LIVEKIT_URL;
+    const livekit = Boolean(url && process.env.LIVEKIT_API_KEY && process.env.LIVEKIT_API_SECRET);
+    const storage = Boolean(
+      process.env.LIVEKIT_EGRESS_S3_BUCKET &&
+      process.env.LIVEKIT_EGRESS_S3_ACCESS_KEY &&
+      process.env.LIVEKIT_EGRESS_S3_SECRET,
+    );
+    return { configured: livekit && storage, livekit, storage };
   },
 });
 
@@ -170,6 +190,11 @@ export const register = mutation({
   },
 });
 
+/**
+ * Flips the meeting between scheduled → live → ended. Host-only: the status is
+ * what the calendar and the meeting list render, so a participant must not be
+ * able to end (or re-open) somebody else's meeting.
+ */
 export const setStatus = mutation({
   args: {
     roomName: v.string(),
@@ -187,7 +212,92 @@ export const setStatus = mutation({
     if (!isSuperadmin(caller) && caller.organizationId !== meeting.organizationId) {
       throw new Error('Access denied: different organization');
     }
+    // The client already calls this only on the host path (`MeetingRoomClient.tsx`
+    // guards its `onConnected`/`onDisconnected` handlers with `isHostFromRoom()`),
+    // but that is a UI convention — this is the server-side enforcement, so any
+    // org member calling the mutation directly cannot flip the status.
+    if (!isSuperadmin(caller) && meeting.hostUserId !== caller._id && caller.role !== 'admin') {
+      throw new Error('Only the host or an admin can change the meeting status');
+    }
     await ctx.db.patch(meeting._id, { status, updatedAt: Date.now() });
+    return { success: true };
+  },
+});
+
+/**
+ * Host authority for one room, resolved from the room name.
+ *
+ * Same formula as `getJoinToken` and `setStatus`: the meeting's own host, an org
+ * admin, or a superadmin. Recording is a host action, and it must stay one
+ * whichever entry point calls it.
+ */
+async function requireHostForRoom(ctx: MutationCtx, roomName: string) {
+  await assertModuleAccess(ctx, 'videoConferences');
+  const caller = await getAuthCaller(ctx);
+  if (!caller) throw new Error('Not authenticated');
+  const meeting = await ctx.db
+    .query('meetings')
+    .withIndex('by_room_name', (q) => q.eq('roomName', roomName))
+    .unique();
+  if (!meeting) throw new Error('Meeting not found');
+  if (!isSuperadmin(caller) && caller.organizationId !== meeting.organizationId) {
+    throw new Error('Access denied: different organization');
+  }
+  if (!isSuperadmin(caller) && meeting.hostUserId !== caller._id && caller.role !== 'admin') {
+    throw new Error('Only the host or an admin can control the recording');
+  }
+  return { caller, meeting };
+}
+
+/**
+ * Records that a cloud recording is running. Called by `startRecording` right
+ * after LiveKit accepted the Egress request, so every client watching
+ * `getByRoomName` sees the live state (and who started it) immediately.
+ */
+export const markRecordingStarted = mutation({
+  args: {
+    roomName: v.string(),
+    egressId: v.string(),
+    filepath: v.string(),
+  },
+  handler: async (ctx, { roomName, egressId, filepath }) => {
+    const { caller, meeting } = await requireHostForRoom(ctx, roomName);
+    const now = Date.now();
+    await ctx.db.patch(meeting._id, {
+      egressId,
+      recordingFilepath: filepath,
+      recordingStartedAt: now,
+      recordingStartedBy: caller._id,
+      updatedAt: now,
+    });
+    return { success: true };
+  },
+});
+
+/**
+ * Clears the running-recording state. `recordingFilepath` is deliberately kept:
+ * it is the only pointer to the object that Egress uploaded.
+ */
+export const markRecordingStopped = mutation({
+  args: {
+    roomName: v.string(),
+    recordingUrl: v.optional(v.string()),
+  },
+  handler: async (ctx, { roomName, recordingUrl }) => {
+    const { meeting } = await requireHostForRoom(ctx, roomName);
+    const now = Date.now();
+    await ctx.db.patch(meeting._id, {
+      egressId: undefined,
+      recordingStartedAt: undefined,
+      recordingStartedBy: undefined,
+      updatedAt: now,
+    });
+    if (recordingUrl && meeting.eventId) {
+      await ctx.db.patch(meeting.eventId, {
+        videoRecordingUrl: recordingUrl,
+        updatedAt: now,
+      });
+    }
     return { success: true };
   },
 });

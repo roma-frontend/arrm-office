@@ -152,8 +152,12 @@
 .prejoin-screen .prejoin-preview-card {
   border-color: rgba(255, 255, 255, 0.1) !important;
 }
-.prejoin-screen .border-t {
-  border-top-color: rgba(255, 255, 255, 0.1) !important;
+/* The join card is one frame with two panes, and every border it shows is one
+   we asked for with a token class (`border-(--border-default)`, the seam, the
+   device selects).  So instead of zeroing everything and restoring pieces,
+   zero only what carries no token of ours — that is LiveKit leakage. */
+.prejoin-screen .prejoin-card *:not([class*='border-(']):not([class*='ring-(']) {
+  border-color: transparent !important;
 }
 
 /* Global LiveKit resets — during the pre-join phase there is no .lk-room
@@ -348,4 +352,79 @@
 
 .lk-room .lk-button:active {
   transform: scale(0.96);
+}
+
+/* ── Reduced motion ────────────────────────────────────────────────────────
+   A meeting room is a long-lived screen: the hand badge and the speaking bars
+   loop forever, so for anyone who asked the OS for less motion they are not a
+   flourish but a permanent distraction (and a vestibular trigger). Cancel the
+   looping animations outright and collapse the one-shot ones to a plain fade,
+   keeping the information they carry: the hand badge and equalizer stay
+   visible, reactions still appear and still disappear on their own. */
+@media (prefers-reduced-motion: reduce) {
+  .meeting-hand-badge {
+    animation: none;
+    transform: none;
+  }
+
+  .meeting-speaking-bar {
+    animation: none;
+    /* Static bar at a readable height — the ring around the tile already
+       signals who is talking, this just needs to stop pulsing. */
+    transform: scaleY(0.7);
+    opacity: 0.9;
+  }
+
+  /* Reactions must still auto-dismiss (the React cleanup is driven by a
+     timer, but the tile would otherwise hold a fully opaque emoji for its
+     whole lifetime), so keep the duration and fade instead of flying. */
+  .meeting-tile-reaction {
+    animation: meeting-reaction-fade 2.6s ease-out forwards;
+  }
+
+  .meeting-reaction-cascade {
+    animation: meeting-reaction-fade 2.8s ease-out forwards;
+  }
+
+  @keyframes meeting-reaction-fade {
+    0% {
+      opacity: 0;
+    }
+    10%,
+    70% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+
+  .meeting-panel-in {
+    animation: meeting-panel-fade 160ms ease-out;
+  }
+
+  @keyframes meeting-panel-fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .lk-room .lk-button {
+    transition: none;
+  }
+
+  .lk-room .lk-button:active {
+    transform: none;
+  }
+
+  /* The status / recording chips pulse via Tailwind's `animate-pulse`, which
+     is decorative — the red dot and the label already say "live". Scoped to
+     the room so this does not reach into the rest of the app. Spinners keep
+     their animation: there, the motion *is* the message. */
+  .lk-room .animate-pulse {
+    animation: none;
+  }
 }

@@ -15,8 +15,7 @@ import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
-import { useShallow } from 'zustand/shallow';
-import type { User as UserType } from '@/store/useAuthStore';
+
 import { logoutAction } from '@/actions/auth';
 import { signOut } from 'next-auth/react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';

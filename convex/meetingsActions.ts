@@ -9,6 +9,10 @@
  *
  * Both actions are thin: they authenticate the caller, do the LiveKit HTTP
  * call, and delegate every database write to the mutations in `meetings.ts`.
+ *
+ * Recording (`startRecording` / `stopRecording`) follows the same shape: LiveKit
+ * Egress does the work server-side and uploads to our bucket, and the meeting row
+ * only tracks *that* it runs, since when, and by whom.
  */
 
 import { action, type ActionCtx } from './_generated/server';
@@ -22,8 +26,29 @@ const LIVEKIT_URL = process.env.LIVEKIT_URL ?? process.env.NEXT_PUBLIC_LIVEKIT_U
 const LIVEKIT_API_KEY = process.env.LIVEKIT_API_KEY;
 const LIVEKIT_API_SECRET = process.env.LIVEKIT_API_SECRET;
 
+/**
+ * Object storage for cloud recordings. LiveKit Egress uploads the finished file
+ * itself, so the credentials belong to the deployment env and never to a client.
+ * Any S3-compatible target works (AWS, Cloudflare R2, MinIO) — R2 and MinIO need
+ * `ENDPOINT`, and MinIO usually needs `FORCE_PATH_STYLE=true`.
+ */
+const EGRESS_S3 = {
+  bucket: process.env.LIVEKIT_EGRESS_S3_BUCKET,
+  region: process.env.LIVEKIT_EGRESS_S3_REGION,
+  accessKey: process.env.LIVEKIT_EGRESS_S3_ACCESS_KEY,
+  secret: process.env.LIVEKIT_EGRESS_S3_SECRET,
+  endpoint: process.env.LIVEKIT_EGRESS_S3_ENDPOINT,
+  forcePathStyle: process.env.LIVEKIT_EGRESS_S3_FORCE_PATH_STYLE === 'true',
+  /** Public base for the finished file, e.g. a CDN in front of the bucket. */
+  publicUrl: process.env.LIVEKIT_EGRESS_S3_PUBLIC_URL,
+};
+
 function livekitConfigured(): boolean {
   return Boolean(LIVEKIT_URL && LIVEKIT_API_KEY && LIVEKIT_API_SECRET);
+}
+
+function egressStorageConfigured(): boolean {
+  return Boolean(EGRESS_S3.bucket && EGRESS_S3.accessKey && EGRESS_S3.secret);
 }
 
 /** Minimal shape of the redacted user doc `getUserByEmail` returns. */
@@ -50,6 +75,9 @@ interface ActionMeeting {
   organizationId: Id<'organizations'>;
   hostUserId: Id<'users'>;
   mode: 'meeting' | 'webinar';
+  /** Present only while a cloud recording is running. */
+  egressId?: string;
+  recordingFilepath?: string;
 }
 
 /**
@@ -216,5 +244,263 @@ export const removeParticipant = action({
     await roomService.removeParticipant(roomName, identity);
 
     return { removed: true as const };
+  },
+});
+
+/**
+ * Host-only mute of a single participant's microphone or camera.
+ *
+ * Server-side on purpose: asking a client to mute itself over a data channel is
+ * cooperative — a modified client can ignore the message and keep publishing.
+ * `mutePublishedTrack` stops the track at the LiveKit server, so the mute holds
+ * whatever the participant's client does. Pass `muted: false` to unmute.
+ */
+export const muteParticipantTrack = action({
+  args: {
+    roomName: v.string(),
+    identity: v.string(),
+    source: v.union(v.literal('microphone'), v.literal('camera')),
+    muted: v.optional(v.boolean()),
+  },
+  handler: async (ctx, { roomName, identity, source, muted }) => {
+    const caller = await getActionCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+
+    if (!livekitConfigured()) {
+      throw new Error('Video calls are not configured yet');
+    }
+
+    const meeting = (await ctx.runQuery(api.meetings.getByRoomName, {
+      roomName,
+    })) as ActionMeeting | null;
+    if (!meeting) throw new Error('Meeting not found');
+
+    const isHost =
+      meeting.hostUserId === caller._id || caller.role === 'admin' || isSuperadmin(caller);
+    if (!isHost) throw new Error('Only the host can mute participants');
+
+    const { RoomServiceClient, TrackSource } = await import('livekit-server-sdk');
+    const roomService = new RoomServiceClient(LIVEKIT_URL!, LIVEKIT_API_KEY!, LIVEKIT_API_SECRET!);
+
+    const wantedSource = source === 'microphone' ? TrackSource.MICROPHONE : TrackSource.CAMERA;
+
+    // `getParticipant` throws once the participant has left the room — turn that
+    // into a message the host panel can show as-is.
+    const participant = await roomService.getParticipant(roomName, identity).catch(() => {
+      throw new Error('Participant is no longer in the room');
+    });
+
+    const tracks = participant.tracks.filter((track) => track.source === wantedSource);
+    for (const track of tracks) {
+      await roomService.mutePublishedTrack(roomName, identity, track.sid, muted ?? true);
+    }
+
+    return { muted: tracks.length };
+  },
+});
+
+/**
+ * Host-only "mute all" — silences every other participant's microphone.
+ *
+ * Same reasoning as `muteParticipantTrack`: a broadcast "please mute" over the
+ * data channel is advisory, this is not. The host's own tracks are skipped
+ * (participant identities are the Convex user id), already-muted tracks are left
+ * alone, and the mutes run through `Promise.allSettled` so one participant
+ * dropping out mid-call does not abort the rest.
+ */
+export const muteEveryone = action({
+  args: {
+    roomName: v.string(),
+  },
+  handler: async (ctx, { roomName }) => {
+    const caller = await getActionCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+
+    if (!livekitConfigured()) {
+      throw new Error('Video calls are not configured yet');
+    }
+
+    const meeting = (await ctx.runQuery(api.meetings.getByRoomName, {
+      roomName,
+    })) as ActionMeeting | null;
+    if (!meeting) throw new Error('Meeting not found');
+
+    const isHost =
+      meeting.hostUserId === caller._id || caller.role === 'admin' || isSuperadmin(caller);
+    if (!isHost) throw new Error('Only the host can mute participants');
+
+    const { RoomServiceClient, TrackSource } = await import('livekit-server-sdk');
+    const roomService = new RoomServiceClient(LIVEKIT_URL!, LIVEKIT_API_KEY!, LIVEKIT_API_SECRET!);
+
+    const participants = await roomService.listParticipants(roomName);
+    const results = await Promise.allSettled(
+      participants
+        .filter((participant) => participant.identity !== caller._id)
+        .flatMap((participant) =>
+          participant.tracks
+            .filter((track) => track.source === TrackSource.MICROPHONE && !track.muted)
+            .map((track) =>
+              roomService.mutePublishedTrack(roomName, participant.identity, track.sid, true),
+            ),
+        ),
+    );
+
+    return { muted: results.filter((result) => result.status === 'fulfilled').length };
+  },
+});
+
+// ── Cloud recording (LiveKit Egress) ────────────────────────────────────────
+// Room-composite egress: LiveKit runs a headless browser against its own
+// template, encodes the mixed room, and uploads one MP4 to our bucket. Nothing
+// is recorded in the participant's browser, so a recording survives the host
+// closing their laptop — and the only way to start it is this host-only action.
+
+/** Deterministic object key, so the row can point at the file before it exists. */
+function recordingFilepath(roomName: string): string {
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  return `recordings/${roomName}/${stamp}.mp4`;
+}
+
+/** Public URL of a finished recording — only when a public base is configured. */
+function recordingPublicUrl(filepath: string): string | null {
+  const base = EGRESS_S3.publicUrl?.replace(/\/+$/, '');
+  return base ? `${base}/${filepath}` : null;
+}
+
+/**
+ * Host-only start of a cloud recording.
+ *
+ * Returns `{ configured: false }` instead of throwing when the storage env is
+ * missing, so the dock can render a disabled button with a reason rather than a
+ * failing click. Re-entrancy is handled by asking LiveKit for the room's active
+ * egresses first: two hosts hitting the button must not produce two files.
+ */
+export const startRecording = action({
+  args: {
+    roomName: v.string(),
+  },
+  handler: async (ctx, { roomName }) => {
+    const caller = await getActionCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+
+    if (!livekitConfigured()) throw new Error('Video calls are not configured yet');
+    if (!egressStorageConfigured()) {
+      return { configured: false as const, egressId: null, alreadyRunning: false };
+    }
+
+    const meeting = (await ctx.runQuery(api.meetings.getByRoomName, {
+      roomName,
+    })) as ActionMeeting | null;
+    if (!meeting) throw new Error('Meeting not found');
+
+    const isHost =
+      meeting.hostUserId === caller._id || caller.role === 'admin' || isSuperadmin(caller);
+    if (!isHost) throw new Error('Only the host can record the meeting');
+
+    const { EgressClient, EncodedFileOutput, EncodedFileType, S3Upload } =
+      await import('livekit-server-sdk');
+    const egressClient = new EgressClient(LIVEKIT_URL!, LIVEKIT_API_KEY!, LIVEKIT_API_SECRET!);
+
+    // LiveKit is the source of truth for "is it running": our row can lag behind
+    // an egress that ended on its own (storage rejected the upload, room closed).
+    const active = await egressClient.listEgress({ roomName, active: true }).catch(() => []);
+    const running = active[0];
+    if (running) {
+      await ctx.runMutation(api.meetings.markRecordingStarted, {
+        roomName,
+        egressId: running.egressId,
+        filepath: meeting.recordingFilepath ?? '',
+      });
+      return { configured: true as const, egressId: running.egressId, alreadyRunning: true };
+    }
+
+    const filepath = recordingFilepath(roomName);
+    const output = new EncodedFileOutput({
+      fileType: EncodedFileType.MP4,
+      filepath,
+      output: {
+        case: 's3',
+        value: new S3Upload({
+          accessKey: EGRESS_S3.accessKey!,
+          secret: EGRESS_S3.secret!,
+          bucket: EGRESS_S3.bucket!,
+          region: EGRESS_S3.region ?? '',
+          endpoint: EGRESS_S3.endpoint ?? '',
+          forcePathStyle: EGRESS_S3.forcePathStyle,
+        }),
+      },
+    });
+
+    const info = await egressClient
+      .startRoomCompositeEgress(roomName, output, { layout: 'grid' })
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        throw new Error(`LiveKit: could not start the recording — ${msg}`);
+      });
+
+    await ctx.runMutation(api.meetings.markRecordingStarted, {
+      roomName,
+      egressId: info.egressId,
+      filepath,
+    });
+
+    return { configured: true as const, egressId: info.egressId, alreadyRunning: false };
+  },
+});
+
+/**
+ * Host-only stop. The file is still uploading when `stopEgress` returns (Egress
+ * goes ACTIVE → ENDING → COMPLETE), so the URL we attach to the event may 404
+ * for a few seconds; a LiveKit `egress_ended` webhook is the robust place to
+ * confirm it, and `recordingFilepath` on the row is what such a handler needs.
+ */
+export const stopRecording = action({
+  args: {
+    roomName: v.string(),
+  },
+  handler: async (ctx, { roomName }) => {
+    const caller = await getActionCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+
+    if (!livekitConfigured()) throw new Error('Video calls are not configured yet');
+
+    const meeting = (await ctx.runQuery(api.meetings.getByRoomName, {
+      roomName,
+    })) as ActionMeeting | null;
+    if (!meeting) throw new Error('Meeting not found');
+
+    const isHost =
+      meeting.hostUserId === caller._id || caller.role === 'admin' || isSuperadmin(caller);
+    if (!isHost) throw new Error('Only the host can stop the recording');
+
+    const { EgressClient } = await import('livekit-server-sdk');
+    const egressClient = new EgressClient(LIVEKIT_URL!, LIVEKIT_API_KEY!, LIVEKIT_API_SECRET!);
+
+    // Prefer the id we stored; fall back to whatever LiveKit says is running, so
+    // a lost/stale row can still be cleaned up from the UI.
+    let egressId = meeting.egressId;
+    if (!egressId) {
+      const active = await egressClient.listEgress({ roomName, active: true }).catch(() => []);
+      egressId = active[0]?.egressId;
+    }
+
+    if (egressId) {
+      await egressClient.stopEgress(egressId).catch((err: unknown) => {
+        // An egress that already ended is not an error worth blocking the UI on —
+        // the state still has to be cleared below.
+        const msg = err instanceof Error ? err.message : String(err);
+        if (!/not found|already ended|EGRESS_COMPLETE/i.test(msg)) {
+          throw new Error(`LiveKit: could not stop the recording — ${msg}`);
+        }
+      });
+    }
+
+    const url = meeting.recordingFilepath ? recordingPublicUrl(meeting.recordingFilepath) : null;
+    await ctx.runMutation(api.meetings.markRecordingStopped, {
+      roomName,
+      ...(url ? { recordingUrl: url } : {}),
+    });
+
+    return { stopped: Boolean(egressId), url };
   },
 });

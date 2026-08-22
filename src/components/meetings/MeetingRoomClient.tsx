@@ -16,14 +16,18 @@
  * room's organization (Phase 1; guest-by-link lands with the lobby in Phase 2).
  */
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { useAction, useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
-import { Room, type LocalVideoTrack } from 'livekit-client';
+import { Room, type LocalAudioTrack, type LocalVideoTrack } from 'livekit-client';
 import { LiveKitRoom, RoomAudioRenderer, usePreviewTracks } from '@livekit/components-react';
 import { CustomConference } from './CustomConference';
+import { DeviceSettings, MicMeter } from './DeviceSettings';
+import { BackgroundPicker } from './BackgroundPicker';
+import { useMeetingDevices, useMicLevel, type MeetingDeviceKind } from './useMeetingDevices';
+import { useVideoEffects } from './useVideoEffects';
 import type { LocalUserChoices } from '@livekit/components-core';
 import {
   Loader2,
@@ -97,9 +101,13 @@ export function MeetingRoomClient() {
   const [serverUrl, setServerUrl] = useState<string>();
   const [room, setRoom] = useState<Room>();
   const roomRef = useRef<Room | null>(null);
+  // Wall-clock second the call was joined; `elapsed` is the difference from it.
+  // (Storing `Date.now()` directly here printed the epoch in the header clock.)
+  const startedAtRef = useRef<number | null>(null);
   const [elapsed, setElapsed] = useState(0);
   const [linkCopied, setLinkCopied] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
+  const { choices, choose } = useMeetingDevices();
 
   // Prefill the name from the signed-in user once.
   useEffect(() => {
@@ -120,13 +128,27 @@ export function MeetingRoomClient() {
     /* device error — the join buttons still work; audio/video just stay off */
   }, []);
   const previewOptions = useMemo(
-    () => (joined ? { audio: false, video: false } : { audio: true, video: true }),
-    [joined],
+    () =>
+      joined
+        ? { audio: false, video: false }
+        : {
+            audio: choices.audioinput ? { deviceId: choices.audioinput } : true,
+            video: choices.videoinput ? { deviceId: choices.videoinput } : true,
+          },
+    [joined, choices.audioinput, choices.videoinput],
   );
   const previewTracks = usePreviewTracks(previewOptions, handlePreviewError);
   const previewVideo = previewTracks?.find((track) => track.kind === 'video') as
     | LocalVideoTrack
     | undefined;
+  const previewAudio = previewTracks?.find((track) => track.kind === 'audio') as
+    | LocalAudioTrack
+    | undefined;
+  const micLevel = useMicLevel(previewAudio, micOn && !joined);
+  // Background blur / virtual background on the *preview* track: what you see
+  // here is what the room will publish, because the choice is persisted and the
+  // in-call picker reads the same key.
+  const effects = useVideoEffects(joined ? undefined : previewVideo);
 
   // Keep preview toggles in step with the local tracks.
   useEffect(() => {
@@ -146,13 +168,12 @@ export function MeetingRoomClient() {
       setJoinError(null);
       try {
         const { token: jwt, url } = await getJoinToken({ roomName });
-        const choices: LocalUserChoices = {
+        const userChoices: LocalUserChoices = {
           username: displayName.trim() || user?.name || 'Participant',
           videoEnabled: withVideo && camOn,
           audioEnabled: micOn,
-          // No explicit device selection in Phase 1 — empty means "OS default".
-          videoDeviceId: '',
-          audioDeviceId: '',
+          videoDeviceId: choices.videoinput ?? '',
+          audioDeviceId: choices.audioinput ?? '',
         };
         // Hand the devices over to the Room: stop the pre-join preview first so
         // the camera is never double-held (LED flicker / NotReadableError).
@@ -160,14 +181,31 @@ export function MeetingRoomClient() {
 
         // The official LiveKit pattern: prepare the Room with the pre-join
         // choices, then hand the instance to <LiveKitRoom connect>.
-        const newRoom = new Room({ adaptiveStream: true, dynacast: true });
-        newRoom.localParticipant.setCameraEnabled(choices.videoEnabled);
-        newRoom.localParticipant.setMicrophoneEnabled(choices.audioEnabled);
+        // The capture defaults matter: without them the browser decides whether
+        // to run echo cancellation / noise suppression / auto gain, and Chrome
+        // silently skips them for some device profiles.
+        const newRoom = new Room({
+          adaptiveStream: true,
+          dynacast: true,
+          audioCaptureDefaults: {
+            deviceId: userChoices.audioDeviceId || undefined,
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+          videoCaptureDefaults: {
+            deviceId: userChoices.videoDeviceId || undefined,
+            resolution: { width: 1280, height: 720, frameRate: 30 },
+          },
+        });
+        newRoom.localParticipant.setCameraEnabled(userChoices.videoEnabled);
+        newRoom.localParticipant.setMicrophoneEnabled(userChoices.audioEnabled);
         roomRef.current = newRoom;
         setRoom(newRoom);
         setToken(jwt);
         setServerUrl(url);
-        setElapsed(Math.floor(Date.now() / 1000));
+        startedAtRef.current = Date.now();
+        setElapsed(0);
         setJoined(true);
       } catch (err) {
         setJoinError(err instanceof Error ? err.message : String(err));
@@ -176,7 +214,17 @@ export function MeetingRoomClient() {
         setJoining(false);
       }
     },
-    [roomName, getJoinToken, displayName, user?.name, micOn, camOn, previewTracks],
+    [
+      roomName,
+      getJoinToken,
+      displayName,
+      user?.name,
+      micOn,
+      camOn,
+      previewTracks,
+      choices.audioinput,
+      choices.videoinput,
+    ],
   );
 
   const handleDisconnect = useCallback(() => {
@@ -200,6 +248,15 @@ export function MeetingRoomClient() {
   }, []);
 
   const onConnected = useCallback(async () => {
+    // Output device cannot be set through RoomOptions — apply the remembered
+    // speaker once the room is up.
+    if (choices.audiooutput) {
+      try {
+        await roomRef.current?.switchActiveDevice('audiooutput', choices.audiooutput);
+      } catch {
+        /* the device may have been unplugged — stay on the default */
+      }
+    }
     if (isHostFromRoom()) {
       try {
         await setStatus({ roomName, status: 'live' });
@@ -207,7 +264,20 @@ export function MeetingRoomClient() {
         /* non-fatal */
       }
     }
-  }, [roomName, setStatus, isHostFromRoom]);
+  }, [roomName, setStatus, isHostFromRoom, choices.audiooutput]);
+
+  /** In-call device switch: remember it and move the live tracks over. */
+  const handleDeviceChange = useCallback(
+    (kind: MeetingDeviceKind, deviceId: string) => {
+      choose(kind, deviceId);
+      const active = roomRef.current;
+      if (!active || !deviceId) return;
+      void active.switchActiveDevice(kind, deviceId).catch(() => {
+        toast.error(t('meetings.actionFailed'));
+      });
+    },
+    [choose, t],
+  );
 
   const onDisconnected = useCallback(async () => {
     if (isHostFromRoom()) {
@@ -222,13 +292,19 @@ export function MeetingRoomClient() {
     setServerUrl(undefined);
     setRoom(undefined);
     roomRef.current = null;
+    startedAtRef.current = null;
     setElapsed(0);
   }, [roomName, setStatus, isHostFromRoom]);
 
-  // Elapsed timer while connected.
+  // Elapsed timer while connected — seconds since the join, not since epoch.
   useEffect(() => {
     if (!joined) return;
-    const interval = setInterval(() => setElapsed(Math.floor(Date.now() / 1000)), 1000);
+    const tick = () => {
+      const startedAt = startedAtRef.current;
+      setElapsed(startedAt ? Math.max(0, Math.floor((Date.now() - startedAt) / 1000)) : 0);
+    };
+    tick();
+    const interval = setInterval(tick, 1000);
     return () => clearInterval(interval);
   }, [joined]);
 
@@ -310,6 +386,8 @@ export function MeetingRoomClient() {
               linkCopied={linkCopied}
               onCopyLink={copyLink}
               onLeave={handleDisconnect}
+              deviceChoices={choices}
+              onDeviceChange={handleDeviceChange}
             />
             <RoomAudioRenderer />
           </LiveKitRoom>
@@ -343,96 +421,106 @@ export function MeetingRoomClient() {
             <Video className="h-4 w-4 text-(--brand)" />
           </div>
           <div className="min-w-0">
-            <h1 className="truncate text-sm font-semibold text-(--text-1)">{meetingTitle}</h1>
-            <p className="text-[11px] text-(--text-3)">
-              {meeting.event?.description || t('meetings.joinHint')}
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-(--text-3)">
+              {meeting.mode === 'webinar' ? t('meetings.webinar') : t('meetings.meeting')}
             </p>
+            <p className="truncate text-[11px] text-(--text-4)">{t('meetings.joinHint')}</p>
           </div>
         </div>
       </motion.div>
 
-      {/* Main content — two-column on large screens */}
+      {/* Main content — one card split into two panes rather than two floating
+          cards. A single frame cannot have a "left block higher than the right
+          one": both panes share the card's top and bottom edge, and the seam
+          between them is the divider. */}
       <div className="relative z-10 flex flex-1 items-center justify-center">
-        <div className="grid w-full max-w-5xl gap-6 lg:grid-cols-[1.3fr_1fr]">
-          {/* Preview card */}
-          <motion.div
-            initial={{ opacity: 0, x: -24 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.1, ease: 'easeOut' }}
-            className="order-2 lg:order-1"
-          >
-            <div className="prejoin-preview-card overflow-hidden rounded-2xl border border-(--border-default) bg-(--surface-1) shadow-lg backdrop-blur-xl">
-              <CameraPreview videoTrack={previewVideo} muted={!camOn} />
-              {/* Device toggles inside the preview card */}
-              <div className="flex items-center justify-center gap-3 border-t border-(--border-subtle) bg-(--surface-2) px-4 py-3">
-                <button
-                  type="button"
-                  onClick={() => setMicOn((v) => !v)}
-                  className={`flex size-11 items-center justify-center rounded-xl transition-all hover:scale-105 ${
-                    micOn
-                      ? 'bg-(--surface-3) text-(--text-1) hover:bg-(--brand-quiet)'
-                      : 'bg-(--danger-quiet) text-(--danger-text) hover:bg-(--danger-outline)'
-                  }`}
-                  title={micOn ? t('meetings.micOn') : t('meetings.micOff')}
-                >
-                  {micOn ? <Mic className="h-4.5 w-4.5" /> : <MicOff className="h-4.5 w-4.5" />}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCamOn((v) => !v)}
-                  className={`flex size-11 items-center justify-center rounded-xl transition-all hover:scale-105 ${
-                    camOn
-                      ? 'bg-(--surface-3) text-(--text-1) hover:bg-(--brand-quiet)'
-                      : 'bg-(--danger-quiet) text-(--danger-text) hover:bg-(--danger-outline)'
-                  }`}
-                  title={camOn ? t('meetings.camOn') : t('meetings.camOff')}
-                >
-                  {camOn ? <Video className="h-4.5 w-4.5" /> : <VideoOff className="h-4.5 w-4.5" />}
-                </button>
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.1, ease: 'easeOut' }}
+          className="w-full max-w-5xl"
+        >
+          <div className="prejoin-card grid overflow-hidden rounded-3xl border border-(--border-default) bg-(--surface-1) shadow-xl shadow-black/5 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+            {/* Preview pane */}
+            <div className="order-2 flex flex-col border-t border-(--border-default) p-4 sm:p-5 lg:order-1 lg:border-t-0">
+              {/* Mic / camera controls float on the video instead of sitting in
+                  their own band: the video stays the loudest thing in the pane
+                  and the pane keeps the height of its content, not of a stack
+                  of control rows. */}
+              <div className="relative">
+                <CameraPreview videoTrack={previewVideo} muted={!camOn} />
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-3">
+                  <MicMeter level={micLevel} compact />
+                  <div className="pointer-events-auto flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setMicOn((v) => !v)}
+                      aria-pressed={micOn}
+                      className={`flex size-10 items-center justify-center rounded-full backdrop-blur-md transition hover:scale-105 ${
+                        micOn
+                          ? 'bg-white/15 text-white hover:bg-white/25'
+                          : 'bg-red-500/90 text-white hover:bg-red-500'
+                      }`}
+                      title={micOn ? t('meetings.micOn') : t('meetings.micOff')}
+                    >
+                      {micOn ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCamOn((v) => !v)}
+                      aria-pressed={camOn}
+                      className={`flex size-10 items-center justify-center rounded-full backdrop-blur-md transition hover:scale-105 ${
+                        camOn
+                          ? 'bg-white/15 text-white hover:bg-white/25'
+                          : 'bg-red-500/90 text-white hover:bg-red-500'
+                      }`}
+                      title={camOn ? t('meetings.camOn') : t('meetings.camOff')}
+                    >
+                      {camOn ? <Video className="h-4 w-4" /> : <VideoOff className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  {/* Balances the meter on the left so the buttons stay centred. */}
+                  <span className="w-11 shrink-0" aria-hidden="true" />
+                </div>
+              </div>
+
+              {/* Device pickers and the background row, so nobody discovers a
+                  dead headset once the meeting has started. */}
+              <div className="mt-4 space-y-3.5">
+                <DeviceSettings
+                  choices={choices}
+                  onChange={choose}
+                  tone="canvas"
+                  className="sm:grid-cols-3"
+                />
+                <BackgroundPicker
+                  effect={effects.effect}
+                  pending={effects.pending}
+                  supported={effects.supported}
+                  failed={effects.failed}
+                  hasCamera={Boolean(previewVideo)}
+                  tone="canvas"
+                  onSelect={effects.setEffect}
+                />
               </div>
             </div>
-          </motion.div>
 
-          {/* Join card */}
-          <motion.div
-            initial={{ opacity: 0, x: 24 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.2, ease: 'easeOut' }}
-            className="order-1 flex flex-col justify-center lg:order-2"
-          >
-            <div className="rounded-2xl border border-(--border-default) bg-(--surface-1) p-6 shadow-lg sm:p-8">
-              <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.4, delay: 0.35, ease: 'easeOut' }}
-                className="mb-5 flex size-12 items-center justify-center rounded-2xl bg-(--brand-quiet)"
-              >
-                <Video className="h-6 w-6 text-(--brand)" />
-              </motion.div>
-              <motion.h2
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.4 }}
-                className="text-xl font-semibold text-(--text-1)"
-              >
+            {/* Join pane — tinted so the seam reads as one composition, and laid
+                out as a column so the security note can hold the bottom edge
+                however tall the preview pane turns out to be. */}
+            <div className="order-1 flex flex-col bg-(--surface-2)/45 p-6 sm:p-7 lg:order-2 lg:border-l lg:border-(--border-default)">
+              <div className="flex size-11 items-center justify-center rounded-2xl bg-(--brand-quiet)">
+                <Video className="h-5.5 w-5.5 text-(--brand)" />
+              </div>
+              <h2 className="mt-4 text-xl font-semibold leading-tight text-(--text-1)">
                 {meetingTitle}
-              </motion.h2>
-              <motion.p
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.45 }}
-                className="mt-1 text-sm text-(--text-3)"
-              >
+              </h2>
+              <p className="mt-1.5 text-sm leading-relaxed text-(--text-3)">
                 {meeting.event?.description || t('meetings.joinHint')}
-              </motion.p>
+              </p>
 
               {/* Name input */}
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.5 }}
-                className="mt-5"
-              >
+              <div className="mt-6">
                 <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-(--text-3)">
                   {t('meetings.name')}
                 </label>
@@ -445,7 +533,7 @@ export function MeetingRoomClient() {
                     placeholder={t('meetings.namePlaceholder')}
                   />
                 </div>
-              </motion.div>
+              </div>
 
               {/* Error */}
               {joinError && (
@@ -455,12 +543,7 @@ export function MeetingRoomClient() {
               )}
 
               {/* Join buttons */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.55 }}
-                className="mt-6 grid gap-2.5"
-              >
+              <div className="mt-5 grid gap-2.5">
                 <button
                   type="button"
                   disabled={joining}
@@ -478,26 +561,22 @@ export function MeetingRoomClient() {
                   type="button"
                   disabled={joining}
                   onClick={() => handleJoin(false)}
-                  className="flex items-center justify-center gap-2 rounded-xl border border-(--border-default) bg-(--surface-2) px-4 py-2.5 text-sm font-medium text-(--text-2) transition hover:bg-(--surface-3) disabled:opacity-50"
+                  className="flex items-center justify-center gap-2 rounded-xl border border-(--border-default) bg-(--surface-1) px-4 py-2.5 text-sm font-medium text-(--text-2) transition hover:bg-(--surface-3) disabled:opacity-50"
                 >
                   <Monitor className="h-4 w-4" />
                   {t('meetings.joinWithoutVideo')}
                 </button>
-              </motion.div>
+              </div>
 
-              {/* Security note */}
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.4, delay: 0.65 }}
-                className="mt-5 flex items-center justify-center gap-1.5 text-[11px] text-(--text-4)"
-              >
-                <ShieldCheck className="h-3.5 w-3.5" />
+              {/* Security note — `mt-auto` keeps it on the bottom edge so both
+                  panes finish on the same line. */}
+              <p className="mt-auto flex items-center gap-1.5 pt-6 text-[11px] text-(--text-4)">
+                <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
                 {t('meetings.secureNote')}
-              </motion.p>
+              </p>
             </div>
-          </motion.div>
-        </div>
+          </div>
+        </motion.div>
       </div>
     </div>
   );
