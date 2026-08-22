@@ -1833,7 +1833,11 @@
     "templateCustom": "Benutzerdefiniert",
     "addField": "Feld hinzufügen",
     "fieldLabel": "Feldbezeichnung",
-    "fieldType": "Feldtyp",
+    "fieldType": {
+      "text": "Text",
+      "date": "Datum",
+      "signature": "Unterschrift"
+    },
     "fieldRequired": "Pflichtfeld",
     "fieldPlaceholder": "Platzhaltertext",
     "removeField": "Feld entfernen",
@@ -1850,7 +1854,9 @@
     "updateError": "Dokument konnte nicht gespeichert werden",
     "acknowledge": "Zur Kenntnis genommen",
     "acknowledgedBadge": "Gelesen",
-    "acknowledgeError": "Kenntnisnahme konnte nicht bestätigt werden"
+    "acknowledgeError": "Kenntnisnahme konnte nicht bestätigt werden",
+    "enterPlaceholder": "Platzhaltertext eingeben",
+    "selectCategory": "Kategorie auswählen"
   },
   "documentCategories": {
     "policy": "Richtlinie",

@@ -1833,7 +1833,11 @@
     "templateCustom": "Custom",
     "addField": "Add Field",
     "fieldLabel": "Field Label",
-    "fieldType": "Field Type",
+    "fieldType": {
+      "text": "Text",
+      "date": "Date",
+      "signature": "Signature"
+    },
     "fieldRequired": "Required",
     "fieldPlaceholder": "Placeholder text",
     "removeField": "Remove Field",
@@ -1850,7 +1854,9 @@
     "updateError": "Could not save the document",
     "acknowledge": "I have read this",
     "acknowledgedBadge": "Read",
-    "acknowledgeError": "Could not confirm reading"
+    "acknowledgeError": "Could not confirm reading",
+    "enterPlaceholder": "Enter placeholder text",
+    "selectCategory": "Select category"
   },
   "documentCategories": {
     "policy": "Policy",

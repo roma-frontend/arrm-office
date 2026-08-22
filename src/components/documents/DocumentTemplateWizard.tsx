@@ -129,9 +129,12 @@ function SortableField({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="text">Text</SelectItem>
-                <SelectItem value="date">Date</SelectItem>
-                <SelectItem value="signature">Signature</SelectItem>
+                {' '}
+                <SelectItem value="text">{t('documents.fieldType.text', 'Text')}</SelectItem>
+                <SelectItem value="date">{t('documents.fieldType.date', 'Date')}</SelectItem>
+                <SelectItem value="signature">
+                  {t('documents.fieldType.signature', 'Signature')}
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -142,7 +145,7 @@ function SortableField({
             <Input
               value={field.placeholder || ''}
               onChange={(e) => onUpdate(index, { placeholder: e.target.value })}
-              placeholder="Enter placeholder text"
+              placeholder={t('documents.enterPlaceholder', 'Enter placeholder text')}
               className="text-sm"
             />
           </div>
@@ -401,7 +404,7 @@ export default function DocumentTemplateWizard({
                 <Label>{t('documents.templateCategory')}</Label>
                 <Select value={category} onValueChange={(v) => setCategory(v as TemplateCategory)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
+                    <SelectValue placeholder={t('documents.selectCategory', 'Select category')} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="nda">{t('documents.templateNDA', 'NDA')}</SelectItem>
@@ -498,9 +501,11 @@ export default function DocumentTemplateWizard({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="text">Text</SelectItem>
-                      <SelectItem value="date">Date</SelectItem>
-                      <SelectItem value="signature">Signature</SelectItem>
+                      <SelectItem value="text">{t('documents.fieldType.text', 'Text')}</SelectItem>
+                      <SelectItem value="date">{t('documents.fieldType.date', 'Date')}</SelectItem>
+                      <SelectItem value="signature">
+                        {t('documents.fieldType.signature', 'Signature')}
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

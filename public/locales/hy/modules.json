@@ -1833,7 +1833,11 @@
     "templateCustom": "Հատուկ",
     "addField": "Ավելացնել դաշտ",
     "fieldLabel": "Դաշտի պիտակ",
-    "fieldType": "Դաշտի տեսակ",
+    "fieldType": {
+      "text": "Տեքստ",
+      "date": "Ամսաթիվ",
+      "signature": "Ստորագրություն"
+    },
     "fieldRequired": "Պարտադիր",
     "fieldPlaceholder": "Փոխարինող տեքստ",
     "removeField": "Հեռացնել դաշտը",
@@ -1850,7 +1854,9 @@
     "updateError": "Չհաջողվեց պահել փաստաթուղթը",
     "acknowledge": "Ծանոթացել եմ",
     "acknowledgedBadge": "Ծանոթացած",
-    "acknowledgeError": "Չհաջողվեց հաստատել ծանոթացումը"
+    "acknowledgeError": "Չհաջողվեց հաստատել ծանոթացումը",
+    "enterPlaceholder": "Մուտքագրեք տեղապահ տեքստ",
+    "selectCategory": "Ընտրեք կատեգորիա"
   },
   "documentCategories": {
     "policy": "Քաղաքականություն",

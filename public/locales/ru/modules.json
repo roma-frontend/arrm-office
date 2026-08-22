@@ -1857,7 +1857,11 @@
     "templateCustom": "Пользовательский",
     "addField": "Добавить поле",
     "fieldLabel": "Метка поля",
-    "fieldType": "Тип поля",
+    "fieldType": {
+      "text": "Текст",
+      "date": "Дата",
+      "signature": "Подпись"
+    },
     "fieldRequired": "Обязательное",
     "fieldPlaceholder": "Текст-заполнитель",
     "removeField": "Удалить поле",
@@ -1874,7 +1878,9 @@
     "updateError": "Не удалось сохранить документ",
     "acknowledge": "Ознакомлен",
     "acknowledgedBadge": "Ознакомлен",
-    "acknowledgeError": "Не удалось подтвердить ознакомление"
+    "acknowledgeError": "Не удалось подтвердить ознакомление",
+    "enterPlaceholder": "Введите текст-заполнитель",
+    "selectCategory": "Выберите категорию"
   },
   "documentCategories": {
     "policy": "Политика",
