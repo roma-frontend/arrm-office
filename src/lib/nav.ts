@@ -366,6 +366,14 @@ export const navItems: NavEntry[] = [
         icon: ClipboardCheck,
         roles: ['superadmin', 'admin'],
       },
+      // Next to compliance rather than under Superadmin: `/superadmin/audit` is
+      // the cross-tenant view, this one is an org admin's own trail.
+      {
+        href: '/audit',
+        labelKey: 'nav.auditLog',
+        icon: ScrollText,
+        roles: ['superadmin', 'admin'],
+      },
     ],
   },
 

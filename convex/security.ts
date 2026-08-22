@@ -2,11 +2,20 @@ import { v } from 'convex/values';
 import { getAuthCaller } from './lib/getAuthCaller';
 import { mutation, query, type QueryCtx, type MutationCtx } from './_generated/server';
 import { paginationOptsValidator } from 'convex/server';
-import type { Id } from './_generated/dataModel';
+import type { Doc, Id } from './_generated/dataModel';
 import { isSuperadmin, SUPERADMIN_EMAIL } from './lib/auth';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits';
 import { notify } from './lib/notify';
 import { logger } from '../src/lib/logger';
+import {
+  buildAuditHaystack,
+  deriveAuditCategory,
+  deriveAuditSeverity,
+  AUDIT_CATEGORIES,
+  AUDIT_SEVERITIES,
+  type AuditCategory,
+  type AuditSeverity,
+} from '../src/lib/audit/actionMeta';
 
 /**
  * Helper: requires caller to be admin or superadmin.
@@ -717,5 +726,341 @@ export const secureToggleSetting = mutation({
         updatedAt: Date.now(),
       });
     }
+  },
+});
+
+// ── Organization audit trail (the `/audit` page) ───────────────────────────────
+/**
+ * `listAuditLogsPaginated` above takes the admin's id from the client and
+ * returns rows with no taxonomy; these two queries derive the caller from the
+ * session instead, and answer with exactly the shape the page renders.
+ *
+ * Category, severity and free-text search are computed, not indexed, so they
+ * are applied to each page after it is read. That makes a page shrink rather
+ * than the cursor break — `usePaginatedQuery` keeps asking for more, which is
+ * the correct behaviour for a log where a narrow filter may match one row in a
+ * thousand. Indexing them would mean backfilling ~40 writer modules.
+ */
+
+/** Actor fields the page shows; anything else about a user stays server-side. */
+interface AuditActor {
+  id: Id<'users'>;
+  name: string;
+  email: string;
+  avatarUrl?: string;
+  role?: string;
+  position?: string;
+}
+
+async function loadAuditActors(
+  ctx: QueryCtx,
+  userIds: readonly Id<'users'>[],
+): Promise<Map<Id<'users'>, AuditActor>> {
+  const unique = [...new Set(userIds)];
+  const users = await Promise.all(unique.map((id) => ctx.db.get(id)));
+  const map = new Map<Id<'users'>, AuditActor>();
+  for (const user of users) {
+    if (!user) continue;
+    map.set(user._id, {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      avatarUrl: user.avatarUrl,
+      role: user.role,
+      position: user.position,
+    });
+  }
+  return map;
+}
+
+/**
+ * Who may read the trail, and how much of it.
+ *
+ * A superadmin may pass an explicit `organizationId` to inspect one tenant, or
+ * omit it to read across all of them. An admin is pinned to their own org: the
+ * argument is ignored rather than rejected, so a stale URL cannot leak another
+ * tenant's log.
+ */
+async function resolveAuditScope(
+  ctx: QueryCtx,
+  requestedOrgId: Id<'organizations'> | undefined,
+): Promise<{ allowed: boolean; orgId: Id<'organizations'> | undefined }> {
+  const caller = await getAuthCaller(ctx);
+  if (!caller) return { allowed: false, orgId: undefined };
+
+  const isSuper = caller.role === 'superadmin' || isSuperadmin(caller);
+  if (isSuper) return { allowed: true, orgId: requestedOrgId };
+
+  if (caller.role !== 'admin') {
+    logger.warn('security.auditTrail: non-admin read blocked', { role: caller.role });
+    return { allowed: false, orgId: undefined };
+  }
+  // An admin without an org would otherwise fall through to the all-orgs scan.
+  if (!caller.organizationId) return { allowed: false, orgId: undefined };
+  return { allowed: true, orgId: caller.organizationId };
+}
+
+/** The window the `from`/`to` filters describe, as an index range. */
+function auditRangeQuery(
+  ctx: QueryCtx,
+  orgId: Id<'organizations'> | undefined,
+  from: number | undefined,
+  to: number | undefined,
+) {
+  if (!orgId) {
+    // All-orgs (superadmin) reads have no composite index to lean on.
+    return ctx.db.query('auditLogs').order('desc');
+  }
+  return ctx.db
+    .query('auditLogs')
+    .withIndex('by_org_created', (q) => {
+      const scoped = q.eq('organizationId', orgId);
+      if (from !== undefined && to !== undefined) {
+        return scoped.gte('createdAt', from).lte('createdAt', to);
+      }
+      if (from !== undefined) return scoped.gte('createdAt', from);
+      if (to !== undefined) return scoped.lte('createdAt', to);
+      return scoped;
+    })
+    .order('desc');
+}
+
+interface AuditFilters {
+  from?: number;
+  to?: number;
+  action?: string;
+  actorId?: Id<'users'>;
+  category?: string;
+  severity?: string;
+  search?: string;
+}
+
+/** Unknown values are dropped rather than matched, so a typo shows everything. */
+function narrowCategory(value: string | undefined): AuditCategory | undefined {
+  return AUDIT_CATEGORIES.includes(value as AuditCategory) ? (value as AuditCategory) : undefined;
+}
+
+function narrowSeverity(value: string | undefined): AuditSeverity | undefined {
+  return AUDIT_SEVERITIES.includes(value as AuditSeverity) ? (value as AuditSeverity) : undefined;
+}
+
+/** The row as the page consumes it: taxonomy resolved, actor joined. */
+function shapeAuditRow(row: Doc<'auditLogs'>, actor: AuditActor | undefined) {
+  return {
+    _id: row._id,
+    _creationTime: row._creationTime,
+    // `createdAt` is what writers set; `_creationTime` is the safety net for
+    // the handful of rows inserted before that column existed.
+    createdAt: row.createdAt ?? row._creationTime,
+    action: row.action,
+    target: row.target,
+    details: row.details,
+    ip: row.ip,
+    organizationId: row.organizationId,
+    category: deriveAuditCategory(row.action),
+    severity: deriveAuditSeverity(row.action, row.details),
+    actor: actor ?? null,
+  };
+}
+
+export type AuditTrailRow = ReturnType<typeof shapeAuditRow>;
+
+function auditRowMatches(row: AuditTrailRow, filters: AuditFilters): boolean {
+  const timestamp = row.createdAt;
+  if (filters.from !== undefined && timestamp < filters.from) return false;
+  if (filters.to !== undefined && timestamp > filters.to) return false;
+  if (filters.action && row.action !== filters.action) return false;
+  if (filters.actorId && row.actor?.id !== filters.actorId) return false;
+
+  const category = narrowCategory(filters.category);
+  if (category && row.category !== category) return false;
+  const severity = narrowSeverity(filters.severity);
+  if (severity && row.severity !== severity) return false;
+
+  const search = filters.search?.trim().toLowerCase();
+  if (search) {
+    const haystack = buildAuditHaystack([
+      row.action,
+      row.details,
+      row.target,
+      row.ip,
+      row.actor?.name,
+      row.actor?.email,
+      row.category,
+      row.severity,
+    ]);
+    // Every whitespace-separated word must appear: "ann login" should mean
+    // Ann's logins, not every row mentioning either.
+    if (!search.split(/\s+/).every((term) => haystack.includes(term))) return false;
+  }
+  return true;
+}
+
+const auditFilterArgs = {
+  from: v.optional(v.number()),
+  to: v.optional(v.number()),
+  action: v.optional(v.string()),
+  actorId: v.optional(v.id('users')),
+  category: v.optional(v.string()),
+  severity: v.optional(v.string()),
+  search: v.optional(v.string()),
+  /** Superadmin only — ignored for an org admin. */
+  organizationId: v.optional(v.id('organizations')),
+} as const;
+
+/**
+ * One page of the audit trail, newest first, with the actor joined.
+ *
+ * Returns an empty page instead of throwing when the caller may not read the
+ * log: the route already redirects non-admins, and a thrown error inside a
+ * paginated query surfaces as a broken list rather than an explanation.
+ */
+export const listAuditTrail = query({
+  args: { paginationOpts: paginationOptsValidator, ...auditFilterArgs },
+  handler: async (ctx, args) => {
+    const { paginationOpts, organizationId, ...filters } = args;
+    const { allowed, orgId } = await resolveAuditScope(ctx, organizationId);
+    if (!allowed) return { page: [], isDone: true, continueCursor: '' };
+
+    const result = await auditRangeQuery(ctx, orgId, filters.from, filters.to).paginate(
+      paginationOpts,
+    );
+    const actors = await loadAuditActors(
+      ctx,
+      result.page.map((row) => row.userId),
+    );
+
+    const page = result.page
+      .map((row) => shapeAuditRow(row, actors.get(row.userId)))
+      .filter((row) => auditRowMatches(row, filters));
+
+    return { ...result, page };
+  },
+});
+
+/**
+ * Counters, breakdowns and the filter dropdown options in one read.
+ *
+ * The window is capped at {@link DEFAULT_LIST_CAP} rows so a tenant with years
+ * of history cannot make the page time out; `capped` tells the client to say
+ * "over N events" instead of pretending the number is exact.
+ *
+ * `category` and `severity` are deliberately *not* applied here: the breakdown
+ * is what the filter chips count, so clicking "critical" must not collapse
+ * every other bucket to zero. Every other filter is applied, so the cards and
+ * the list always describe the same slice.
+ */
+export const getAuditTrailStats = query({
+  args: auditFilterArgs,
+  handler: async (ctx, args) => {
+    const { organizationId, ...filters } = args;
+    const { allowed, orgId } = await resolveAuditScope(ctx, organizationId);
+    const empty = {
+      allowed: false,
+      total: 0,
+      scanned: 0,
+      capped: false,
+      bySeverity: { critical: 0, warning: 0, info: 0 } as Record<AuditSeverity, number>,
+      byCategory: {} as Record<AuditCategory, number>,
+      uniqueActors: 0,
+      criticalLast24h: 0,
+      firstEventAt: null as number | null,
+      lastEventAt: null as number | null,
+      topActions: [] as { action: string; count: number }[],
+      topActors: [] as (AuditActor & { count: number })[],
+      daily: [] as { day: string; total: number; critical: number }[],
+      actionOptions: [] as string[],
+      actorOptions: [] as AuditActor[],
+    };
+    if (!allowed) return empty;
+
+    const rows = await auditRangeQuery(ctx, orgId, filters.from, filters.to).take(DEFAULT_LIST_CAP);
+    const actors = await loadAuditActors(
+      ctx,
+      rows.map((row) => row.userId),
+    );
+
+    // Breakdown-neutral: see the note above.
+    const countingFilters: AuditFilters = {
+      from: filters.from,
+      to: filters.to,
+      action: filters.action,
+      actorId: filters.actorId,
+      search: filters.search,
+    };
+    const matched = rows
+      .map((row) => shapeAuditRow(row, actors.get(row.userId)))
+      .filter((row) => auditRowMatches(row, countingFilters));
+
+    const bySeverity: Record<AuditSeverity, number> = { critical: 0, warning: 0, info: 0 };
+    const byCategory = Object.fromEntries(
+      AUDIT_CATEGORIES.map((category) => [category, 0]),
+    ) as Record<AuditCategory, number>;
+    const actionCounts = new Map<string, number>();
+    const actorCounts = new Map<Id<'users'>, number>();
+    const dayBuckets = new Map<string, { total: number; critical: number }>();
+    const dayAgo = Date.now() - 24 * 60 * 60 * 1000;
+    let criticalLast24h = 0;
+    let firstEventAt: number | null = null;
+    let lastEventAt: number | null = null;
+
+    for (const row of matched) {
+      bySeverity[row.severity] += 1;
+      byCategory[row.category] += 1;
+      actionCounts.set(row.action, (actionCounts.get(row.action) ?? 0) + 1);
+      if (row.actor) actorCounts.set(row.actor.id, (actorCounts.get(row.actor.id) ?? 0) + 1);
+
+      if (row.severity === 'critical' && row.createdAt >= dayAgo) criticalLast24h += 1;
+      if (firstEventAt === null || row.createdAt < firstEventAt) firstEventAt = row.createdAt;
+      if (lastEventAt === null || row.createdAt > lastEventAt) lastEventAt = row.createdAt;
+
+      // UTC days: the client labels them with the viewer's locale, and a shared
+      // bucket key is the only way two viewers see the same chart.
+      const day = new Date(row.createdAt).toISOString().slice(0, 10);
+      const bucket = dayBuckets.get(day) ?? { total: 0, critical: 0 };
+      bucket.total += 1;
+      if (row.severity === 'critical') bucket.critical += 1;
+      dayBuckets.set(day, bucket);
+    }
+
+    const topActions = [...actionCounts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([action, count]) => ({ action, count }));
+
+    const topActors = [...actorCounts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .flatMap(([id, count]) => {
+        const actor = actors.get(id);
+        return actor ? [{ ...actor, count }] : [];
+      });
+
+    return {
+      allowed: true,
+      total: matched.length,
+      scanned: rows.length,
+      capped: rows.length >= DEFAULT_LIST_CAP,
+      bySeverity,
+      byCategory,
+      uniqueActors: actorCounts.size,
+      criticalLast24h,
+      firstEventAt,
+      lastEventAt,
+      topActions,
+      topActors,
+      daily: [...dayBuckets.entries()]
+        .sort((a, b) => (a[0] < b[0] ? -1 : 1))
+        .map(([day, bucket]) => ({ day, ...bucket })),
+      // Dropdown options come from the same window, so every option a user can
+      // pick is guaranteed to match at least one row they are allowed to see.
+      actionOptions: [...actionCounts.keys()].sort((a, b) => a.localeCompare(b)),
+      actorOptions: [...actorCounts.keys()]
+        .flatMap((id) => {
+          const actor = actors.get(id);
+          return actor ? [actor] : [];
+        })
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    };
   },
 });

@@ -68,8 +68,11 @@ jest.mock('@/convex/_generated/api', () => ({
       getByOrganization: { _name: 'getByOrganization' },
       getMyAccessState: { _name: 'getMyAccessState' },
       listPendingCalendarAccessRequests: { _name: 'listPendingCalendarAccessRequests' },
+      listMyCalendarViewers: { _name: 'listMyCalendarViewers' },
       requestCalendarAccess: { _name: 'requestCalendarAccess' },
       respondToCalendarAccess: { _name: 'respondToCalendarAccess' },
+      rememberCalendarView: { _name: 'rememberCalendarView' },
+      revokeCalendarAccess: { _name: 'revokeCalendarAccess' },
       remove: { _name: 'remove' },
     },
     events: {
@@ -240,10 +243,13 @@ jest.mock('@/components/calendar/SharedCalendarDialog', () => ({
     open,
     people,
     organizationAccess,
+    availableCalendars,
+    viewers,
     onSelectMine,
     onSelectPerson,
     onRequestPerson,
     onSelectOrganization,
+    onRevokeViewer,
   }: any) =>
     open ? (
       <div data-testid="shared-calendar-dialog">
@@ -255,6 +261,24 @@ jest.mock('@/components/calendar/SharedCalendarDialog', () => ({
             organization option
           </button>
         )}
+        {(availableCalendars ?? []).map((entry: any) => (
+          <button
+            key={entry.userId}
+            data-testid={`shared-dialog-available-${entry.userId}`}
+            onClick={() => onSelectPerson(entry.userId)}
+          >
+            available {entry.name}
+          </button>
+        ))}
+        {(viewers ?? []).map((viewer: any) => (
+          <button
+            key={viewer._id}
+            data-testid={`shared-dialog-revoke-${viewer._id}`}
+            onClick={() => onRevokeViewer?.(viewer._id)}
+          >
+            revoke {viewer.viewerName}
+          </button>
+        ))}
         {(people ?? []).map((p: any) => (
           <div key={p._id}>
             <button
@@ -363,8 +387,9 @@ const EMPTY_QUERIES = {
   getCompanyEvents: [],
   listBookings: [],
   listRooms: [],
-  getMyAccessState: { organization: 'approved', people: [] },
+  getMyAccessState: { organization: 'approved', people: [], lastView: { type: 'mine' } },
   listPendingCalendarAccessRequests: [],
+  listMyCalendarViewers: [],
   getOvertimeForDateRange: [],
   getUsersByOrganizationId: [
     { _id: 'user-1', name: 'Current User' },
@@ -680,6 +705,88 @@ describe('CalendarClient', () => {
     // The X on the shared chip returns to the personal calendar.
     fireEvent.click(screen.getByLabelText('Back to my calendar'));
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+
+  /** The grant that makes "just pick it again" possible. */
+  const GRANTED_MAYA = {
+    userId: 'user-2',
+    name: 'Maya Chen',
+    department: 'Finance',
+    status: 'approved',
+    grantedAt: 1,
+    lastViewedAt: 2,
+  };
+
+  it('reopens the calendar that was viewed last without asking again', () => {
+    queryResults = {
+      ...queryResults,
+      getMyAccessState: {
+        organization: 'approved',
+        people: [GRANTED_MAYA],
+        lastView: { type: 'person', userId: 'user-2' },
+      },
+    };
+    render(<CalendarClient />);
+
+    // Straight into the colleague's calendar — no dialog, no fresh request.
+    expect(screen.getAllByText('Maya Chen').length).toBeGreaterThan(0);
+    expect(screen.queryByTestId('shared-calendar-dialog')).not.toBeInTheDocument();
+    expect(mutateCall('requestCalendarAccess')).toBeUndefined();
+  });
+
+  it('remembers a colleague opened from the granted list', async () => {
+    queryResults = {
+      ...queryResults,
+      getMyAccessState: {
+        organization: 'approved',
+        people: [GRANTED_MAYA],
+        lastView: { type: 'mine' },
+      },
+    };
+    render(<CalendarClient />);
+
+    fireEvent.click(screen.getByText('Shared calendar'));
+    fireEvent.click(screen.getByTestId('shared-dialog-available-user-2'));
+
+    await waitFor(() => {
+      expect(mutationCalls).toEqual(
+        expect.arrayContaining([
+          {
+            name: 'rememberCalendarView',
+            args: [{ organizationId: 'org-1', view: 'person', targetUserId: 'user-2' }],
+          },
+        ]),
+      );
+    });
+    expect(mutateCall('requestCalendarAccess')).toBeUndefined();
+  });
+
+  it('revokes a viewer listed in the shared dialog', async () => {
+    queryResults = {
+      ...queryResults,
+      listMyCalendarViewers: [
+        {
+          _id: 'access-1',
+          viewerId: 'user-3',
+          viewerName: 'Bob Smith',
+          scope: 'person',
+          accessLevel: 'full',
+          grantedAt: 1,
+        },
+      ],
+    };
+    render(<CalendarClient />);
+
+    fireEvent.click(screen.getByText('Shared calendar'));
+    fireEvent.click(screen.getByTestId('shared-dialog-revoke-access-1'));
+
+    await waitFor(() => {
+      expect(mutationCalls).toEqual(
+        expect.arrayContaining([
+          { name: 'revokeCalendarAccess', args: [{ accessId: 'access-1' }] },
+        ]),
+      );
+    });
   });
 
   function mutateCall(name: string) {

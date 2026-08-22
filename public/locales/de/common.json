@@ -146,7 +146,9 @@
     "selectOrganization": "Organisation auswählen",
     "welcome": "Willkommen",
     "chat.realtime": "Echtzeit-Chat",
-    "print": "Drucken"
+    "print": "Drucken",
+    "copied": "Kopiert",
+    "clear": "Leeren"
   },
   "nav": {
     "home": "Startseite",
@@ -246,6 +248,7 @@
     "onboarding": "Onboarding",
     "offboarding": "Offboarding",
     "compliance": "Compliance",
+    "auditLog": "Audit-Protokoll",
     "openMenu": "Menü öffnen",
     "userMenu": "Benutzermenü",
     "orgChart": "Organigramm",
@@ -2254,6 +2257,108 @@
     "translate": "Übersetzen",
     "undo": "Rückgängig",
     "failed": "Text konnte nicht umgeschrieben werden"
+  },
+  "audit": {
+    "title": "Audit-Protokoll",
+    "subtitle": "Wer hat was wann getan — jede protokollierte Aktion in Ihrem Arbeitsbereich",
+    "loadMore": "Weitere Ereignisse laden",
+    "allLoaded": "Alle {{count}} passenden Ereignisse geladen",
+    "empty": "Keine protokollierten Ereignisse in diesem Zeitraum",
+    "emptyFiltered": "Keine Ereignisse entsprechen diesen Filtern",
+    "emptySoFar": "In den bisher geladenen Ereignissen gibt es keine Treffer. Laden Sie weitere, um weiter zurück zu suchen.",
+    "accessDenied": "Das Audit-Protokoll ist für Ihr Konto nicht verfügbar",
+    "accessDeniedHint": "Nur Administratoren einer Organisation können deren Audit-Protokoll lesen.",
+    "view": {
+      "timeline": "Zeitachse",
+      "table": "Tabelle"
+    },
+    "range": {
+      "24h": "Letzte 24 Stunden",
+      "7d": "Letzte 7 Tage",
+      "30d": "Letzte 30 Tage",
+      "90d": "Letzte 90 Tage",
+      "all": "Gesamter Zeitraum"
+    },
+    "severity": {
+      "critical": "Kritisch",
+      "warning": "Warnung",
+      "info": "Info"
+    },
+    "categories": {
+      "auth": "Authentifizierung",
+      "people": "Personal",
+      "work": "Arbeit",
+      "finance": "Finanzen",
+      "admin": "Verwaltung",
+      "compliance": "Compliance",
+      "ai": "KI",
+      "system": "System"
+    },
+    "stats": {
+      "total": "Ereignisse",
+      "critical": "Kritisch",
+      "criticalRecent": "{{count}} in den letzten 24 Std.",
+      "criticalNoneRecent": "Keine in den letzten 24 Std.",
+      "warnings": "Warnungen",
+      "warningsHint": "Löschungen, Ablehnungen, Widerrufe",
+      "actors": "Aktive Benutzer",
+      "lastEvent": "Letztes Ereignis {{date}}",
+      "perDay": "Ereignisse pro Tag"
+    },
+    "filters": {
+      "searchPlaceholder": "Aktionen, Benutzer, IP, Details suchen…",
+      "allActions": "Alle Aktionen",
+      "allActors": "Alle Benutzer",
+      "clear": "Filter zurücksetzen ({{count}})",
+      "clearAll": "Alle Filter zurücksetzen"
+    },
+    "table": {
+      "time": "Zeit",
+      "actor": "Benutzer",
+      "action": "Aktion",
+      "category": "Kategorie",
+      "severity": "Schweregrad",
+      "details": "Details",
+      "ip": "IP"
+    },
+    "row": {
+      "unknownActor": "Unbekannter Benutzer",
+      "target": "an {{target}}"
+    },
+    "detail": {
+      "copyJson": "Als JSON kopieren",
+      "when": "Wann",
+      "summary": "Zusammenfassung",
+      "target": "Ziel",
+      "ip": "IP-Adresse",
+      "eventId": "Ereignis-ID",
+      "payload": "Rohdaten",
+      "filterActor": "Alle Ereignisse dieses Benutzers",
+      "filterAction": "Alle Ereignisse dieses Typs"
+    },
+    "export": {
+      "copyLink": "Link zu dieser Ansicht kopieren",
+      "csv": "CSV",
+      "json": "JSON",
+      "range": "Zeitraum",
+      "search": "Suche",
+      "exportedAt": "Exportiert",
+      "rows": "Zeilen",
+      "columns": {
+        "timestampIso": "Zeitstempel (UTC)",
+        "timestampLocal": "Zeitstempel (lokal)",
+        "actor": "Benutzer",
+        "actorEmail": "E-Mail",
+        "actorRole": "Rolle",
+        "action": "Aktion",
+        "actionKey": "Aktionsschlüssel",
+        "category": "Kategorie",
+        "severity": "Schweregrad",
+        "target": "Ziel",
+        "details": "Details",
+        "ip": "IP-Adresse"
+      }
+    }
   },
   "activityFeed": {
     "title": "Letzte Aktivitäten",

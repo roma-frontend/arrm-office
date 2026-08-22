@@ -174,6 +174,7 @@ const GROUPS: readonly MenuGroup[] = [
       { href: '/settings', labelKey: 'nav.settings', icon: Settings },
       { href: '/help', labelKey: 'nav.help', icon: HelpCircle },
       { href: '/compliance', labelKey: 'nav.compliance', icon: ClipboardCheck, roles: ADMINS },
+      { href: '/audit', labelKey: 'nav.auditLog', icon: ScrollText, roles: ADMINS },
       {
         href: '/admin/ai-governance',
         labelKey: 'nav.aiGovernance',

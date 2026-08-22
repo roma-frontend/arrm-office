@@ -232,6 +232,12 @@ export const drivers = {
     respondedAt: v.optional(v.number()),
     grantedAt: v.number(),
     expiresAt: v.optional(v.number()),
+    /**
+     * When the viewer last opened this calendar. Kept on the grant rather than
+     * in a preference blob so the picker can order "calendars you already have"
+     * by recency, and so revoking access takes the history with it.
+     */
+    lastViewedAt: v.optional(v.number()),
     isActive: v.boolean(),
   })
     .index('by_org', ['organizationId'])

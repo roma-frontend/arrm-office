@@ -7,6 +7,7 @@ import { useQuery } from 'convex/react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { api } from '@/convex/_generated/api';
 import { motion } from '@/lib/cssMotion';
+import { summarizeAuditDetails } from '@/lib/audit/detailSummary';
 import {
   Clock,
   UserPlus,
@@ -404,81 +405,12 @@ function formatAction(action: string): ActivityAction {
 }
 
 /**
- * Build a readable one-liner from an audit log's details JSON. Returns '' when
- * nothing user-facing can be extracted — the widget then shows just the title.
+ * Build a readable one-liner from an audit log's details JSON. Shared with the
+ * `/audit` page via `@/lib/audit/detailSummary` so both describe an event the
+ * same way; returns '' when nothing user-facing can be extracted.
  */
-const NOISY_DETAIL_KEYS = new Set([
-  'tokenId',
-  'periodId',
-  'taskId',
-  'userId',
-  'organizationId',
-  '_id',
-  'id',
-  'title',
-  'createdAt',
-  'updatedAt',
-  'expiresAt',
-  'startDate',
-  'endDate',
-  'passwordHash',
-  'avatarUrl',
-  'ip',
-]);
-
 function summarizeDetails(details: Record<string, unknown>, rawAction = '', t: TFunc): string {
-  // Temp-access tokens carry a human + email — surface those.
-  if (typeof details.tempName === 'string') {
-    const who = [details.tempName, typeof details.tempEmail === 'string' ? details.tempEmail : null]
-      .filter(Boolean)
-      .join(' · ');
-    return t('activityFeed.details.tempAccess', { who, defaultValue: 'Temp access: {{who}}' });
-  }
-  // Probation / review periods: duration is the user-facing bit.
-  if (typeof details.durationDays === 'number') {
-    const isProbation = rawAction.toLowerCase().includes('probation');
-    // A named period (e.g. "Q3 Review") is more useful than a generic label.
-    if (!isProbation && typeof details.periodName === 'string') {
-      return `${details.periodName} · ${details.durationDays} days`;
-    }
-    const key = isProbation
-      ? 'activityFeed.details.probationDays'
-      : 'activityFeed.details.reviewCycleDays';
-    const fallback = isProbation ? 'Probation · {{count}} days' : 'Review cycle · {{count}} days';
-    return t(key, { count: details.durationDays, defaultValue: fallback });
-  }
-  if (typeof details.messagesRead === 'number') {
-    return t('activityFeed.details.messagesRead', {
-      count: details.messagesRead,
-      defaultValue: 'Marked {{count}} messages as read',
-    });
-  }
-  if (Array.isArray(details.updatedFields) && details.updatedFields.length > 0) {
-    const shown = details.updatedFields.slice(0, 3).map(String).join(', ');
-    const rest = details.updatedFields.length - 3;
-    const more =
-      rest > 0
-        ? `, ${t('activityFeed.details.moreFields', {
-            count: rest,
-            defaultValue: '+{{count}} more',
-          })}`
-        : '';
-    return (
-      t('activityFeed.details.updatedFields', {
-        fields: shown,
-        defaultValue: 'Updated fields: {{fields}}',
-      }) + more
-    );
-  }
-  // Fallback: a few scalar values, skipping ids/timestamps.
-  const parts: string[] = [];
-  for (const [key, value] of Object.entries(details)) {
-    if (NOISY_DETAIL_KEYS.has(key)) continue;
-    if (typeof value === 'string' && value.length < 40) parts.push(value);
-    else if (typeof value === 'number') parts.push(String(value));
-    if (parts.length >= 3) break;
-  }
-  return parts.join(' · ');
+  return summarizeAuditDetails(details, rawAction, t);
 }
 
 function deriveSeverity(action: ActivityAction, rawAction: string): Activity['severity'] {

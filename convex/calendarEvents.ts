@@ -295,20 +295,61 @@ export const respondToEventInvite = mutation({
   },
 });
 
+/**
+ * Which calendar the viewer had open last, so returning to the page does not
+ * start from scratch. Stored as a user preference rather than in the URL because
+ * people reach the calendar from the sidebar, notifications and deep links
+ * alike, and all three should land on the same place.
+ */
+const LAST_VIEW_KEY = 'calendar_last_view';
+
+export type CalendarLastView =
+  | { type: 'mine' }
+  | { type: 'person'; userId: Id<'users'> }
+  | { type: 'organization' };
+
+async function readLastView(ctx: QueryCtx, userId: Id<'users'>): Promise<CalendarLastView> {
+  const row = await ctx.db
+    .query('userPreferences')
+    .withIndex('by_user_and_key', (q) => q.eq('userId', userId).eq('key', LAST_VIEW_KEY))
+    .first();
+  // The column is `v.any()`, so nothing about the shape is guaranteed — an old
+  // or hand-edited row must degrade to the personal calendar, never crash.
+  const value = row?.value as Partial<CalendarLastView> | undefined;
+  if (value?.type === 'organization') return { type: 'organization' };
+  if (value?.type === 'person' && typeof value.userId === 'string') {
+    return { type: 'person', userId: value.userId as Id<'users'> };
+  }
+  return { type: 'mine' };
+}
+
+/** True while the grant is an approved, live, unexpired one. */
+function isUsableGrant(grant: Doc<'calendarAccess'>): boolean {
+  return (
+    grant.isActive &&
+    grant.accessLevel !== 'none' &&
+    grant.status !== 'pending' &&
+    grant.status !== 'rejected' &&
+    (!grant.expiresAt || grant.expiresAt > Date.now())
+  );
+}
+
 export const getMyAccessState = query({
   args: { organizationId: v.id('organizations') },
   handler: async (ctx, { organizationId }) => {
     const caller = await getAuthCaller(ctx);
     if (!caller || (!isSuperadmin(caller) && caller.organizationId !== organizationId)) {
-      return { organization: 'none' as const, people: [] };
+      return { organization: 'none' as const, people: [], lastView: { type: 'mine' as const } };
     }
-    if (isSuperadmin(caller)) {
-      return { organization: 'approved' as const, people: [] };
-    }
+
+    // Org-wide viewing is implicit for the head and for superadmins; a single
+    // colleague's calendar is not — that always needs their own approval, so
+    // these callers still get their real person grants below rather than a
+    // blanket yes. Otherwise the picker would offer "View" on a calendar the
+    // events query refuses to open.
     const organizationDoc = await ctx.db.get(organizationId);
-    if (organizationDoc?.headUserId === caller._id) {
-      return { organization: 'approved' as const, people: [] };
-    }
+    const impliedOrganizationAccess =
+      isSuperadmin(caller) || organizationDoc?.headUserId === caller._id;
 
     const rows = await ctx.db
       .query('calendarAccess')
@@ -316,20 +357,48 @@ export const getMyAccessState = query({
         q.eq('viewerId', caller._id).eq('organizationId', organizationId),
       )
       .collect();
-    const active = rows.filter((row) => !row.expiresAt || row.expiresAt > Date.now());
-    const organization = active.find((row) => row.scope === 'organization');
-
-    return {
-      organization: organization?.isActive
+    const live = rows.filter((row) => !row.expiresAt || row.expiresAt > Date.now());
+    const organizationRow = live.find((row) => row.scope === 'organization');
+    const organization = impliedOrganizationAccess
+      ? ('approved' as const)
+      : organizationRow && isUsableGrant(organizationRow)
         ? ('approved' as const)
-        : (organization?.status ?? ('none' as const)),
-      people: active
+        : (organizationRow?.status ?? ('none' as const));
+
+    const people = await Promise.all(
+      live
         .filter((row) => row.scope !== 'organization')
-        .map((row) => ({
-          userId: row.ownerId,
-          status: row.isActive ? ('approved' as const) : (row.status ?? ('none' as const)),
-        })),
-    };
+        .map(async (row) => {
+          // The owner's name travels with the grant so the quick picker and the
+          // header chip do not depend on the org-wide user list, which is capped
+          // at 50 rows and would drop colleagues in a larger organization.
+          const owner = await ctx.db.get(row.ownerId);
+          return {
+            userId: row.ownerId,
+            name: owner?.name ?? 'Employee',
+            position: owner?.position,
+            department: owner?.department,
+            status: isUsableGrant(row) ? ('approved' as const) : (row.status ?? ('none' as const)),
+            grantedAt: row.grantedAt,
+            lastViewedAt: row.lastViewedAt,
+          };
+        }),
+    );
+
+    // Resolve the stored view against today's access instead of handing the
+    // client a target it would silently fail to open: a revoked colleague or a
+    // withdrawn org approval falls back to the viewer's own calendar.
+    const stored = await readLastView(ctx, caller._id);
+    const lastView: CalendarLastView =
+      stored.type === 'person'
+        ? people.some((entry) => entry.userId === stored.userId && entry.status === 'approved')
+          ? stored
+          : { type: 'mine' }
+        : stored.type === 'organization' && organization === 'approved'
+          ? stored
+          : { type: 'mine' };
+
+    return { organization, people, lastView };
   },
 });
 
@@ -470,6 +539,161 @@ export const respondToCalendarAccess = mutation({
         : 'Your calendar access request was declined',
       route: '/calendar',
       extra: { type: 'calendar_access_response', scope: access.scope, approved },
+    });
+    return { success: true };
+  },
+});
+
+/**
+ * Records which calendar the viewer is looking at, so the next visit reopens it.
+ *
+ * Writing this from the client on every switch is deliberate: the calendar is
+ * reached from the sidebar, from notifications and from deep links, and only the
+ * client knows which of those actually ended up on screen. The mutation refuses
+ * to remember a calendar the viewer cannot open, so a stale write can never
+ * become a way in.
+ */
+export const rememberCalendarView = mutation({
+  args: {
+    organizationId: v.id('organizations'),
+    view: v.union(v.literal('mine'), v.literal('person'), v.literal('organization')),
+    targetUserId: v.optional(v.id('users')),
+  },
+  handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    if (!isSuperadmin(caller) && caller.organizationId !== args.organizationId) {
+      throw new Error('Access denied: different organization');
+    }
+
+    let value: CalendarLastView = { type: 'mine' };
+    if (args.view === 'person' && args.targetUserId && args.targetUserId !== caller._id) {
+      const grant = await ctx.db
+        .query('calendarAccess')
+        .withIndex('by_owner_viewer', (q) =>
+          q.eq('ownerId', args.targetUserId!).eq('viewerId', caller._id),
+        )
+        .filter((q) => q.eq(q.field('scope'), 'person'))
+        .first();
+      if (!grant || !isUsableGrant(grant)) throw new Error('No access to this calendar');
+      // Recency lives on the grant so the picker can rank "calendars you
+      // already have" without a second table to keep in sync.
+      await ctx.db.patch(grant._id, { lastViewedAt: Date.now() });
+      value = { type: 'person', userId: args.targetUserId };
+    } else if (args.view === 'organization') {
+      const organizationDoc = await ctx.db.get(args.organizationId);
+      const implied = isSuperadmin(caller) || organizationDoc?.headUserId === caller._id;
+      if (!implied) {
+        const grants = await ctx.db
+          .query('calendarAccess')
+          .withIndex('by_viewer_org', (q) =>
+            q.eq('viewerId', caller._id).eq('organizationId', args.organizationId),
+          )
+          .collect();
+        const organizationGrant = grants.find(
+          (grant) => grant.scope === 'organization' && isUsableGrant(grant),
+        );
+        if (!organizationGrant) throw new Error('No access to the organization calendar');
+        await ctx.db.patch(organizationGrant._id, { lastViewedAt: Date.now() });
+      }
+      value = { type: 'organization' };
+    }
+
+    const existing = await ctx.db
+      .query('userPreferences')
+      .withIndex('by_user_and_key', (q) => q.eq('userId', caller._id).eq('key', LAST_VIEW_KEY))
+      .first();
+    const now = Date.now();
+    if (existing) {
+      await ctx.db.patch(existing._id, { value, updatedAt: now });
+    } else {
+      await ctx.db.insert('userPreferences', {
+        userId: caller._id,
+        key: LAST_VIEW_KEY,
+        value,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+    return { success: true };
+  },
+});
+
+/**
+ * Everyone the caller has let into their own calendar — the other side of the
+ * request flow, so a granted access is visible and revocable instead of being a
+ * one-way door the owner forgets about.
+ */
+export const listMyCalendarViewers = query({
+  args: { organizationId: v.id('organizations') },
+  handler: async (ctx, { organizationId }) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller || (!isSuperadmin(caller) && caller.organizationId !== organizationId)) return [];
+
+    const rows = await ctx.db
+      .query('calendarAccess')
+      .withIndex('by_owner', (q) => q.eq('ownerId', caller._id))
+      .collect();
+    const granted = rows.filter(
+      (row) => row.organizationId === organizationId && isUsableGrant(row),
+    );
+
+    const viewers = await Promise.all(
+      granted.map(async (row) => {
+        const viewer = await ctx.db.get(row.viewerId);
+        return {
+          _id: row._id,
+          viewerId: row.viewerId,
+          viewerName: viewer?.name ?? 'Employee',
+          viewerPosition: viewer?.position,
+          scope: row.scope ?? ('person' as const),
+          accessLevel: row.accessLevel,
+          grantedAt: row.grantedAt,
+          lastViewedAt: row.lastViewedAt,
+        };
+      }),
+    );
+    return viewers.sort((a, b) => b.grantedAt - a.grantedAt);
+  },
+});
+
+/**
+ * Takes back an access the owner granted earlier.
+ *
+ * The row is kept and marked rejected rather than deleted: `requestCalendarAccess`
+ * reuses the same (owner, viewer, scope) row, so keeping it means a later request
+ * lands on the owner's desk again instead of quietly resurrecting old access, and
+ * the audit of who once had a key survives.
+ */
+export const revokeCalendarAccess = mutation({
+  args: { accessId: v.id('calendarAccess') },
+  handler: async (ctx, { accessId }) => {
+    await assertModuleAccess(ctx, 'calendar');
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const access = await ctx.db.get(accessId);
+    if (!access) return { success: true };
+    if (!isSuperadmin(caller) && access.ownerId !== caller._id) {
+      throw new Error('Only the calendar owner can revoke this access');
+    }
+
+    await ctx.db.patch(accessId, {
+      isActive: false,
+      status: 'rejected',
+      respondedAt: Date.now(),
+      lastViewedAt: undefined,
+    });
+    await notify(ctx, {
+      organizationId: access.organizationId,
+      userId: access.viewerId,
+      type: 'status_change',
+      titleKey: 'notifications.titles.calendarAccessRevoked',
+      messageKey: 'notifications.messages.calendarAccessRevoked',
+      params: { ownerName: caller.name },
+      fallbackTitle: 'Calendar access revoked',
+      fallbackMessage: `${caller.name} revoked your access to their calendar`,
+      route: '/calendar',
+      extra: { type: 'calendar_access_revoked', scope: access.scope },
     });
     return { success: true };
   },
@@ -738,11 +962,7 @@ export const getByOrganization = query({
         )
         .collect();
       const approved = grants.some(
-        (grant) =>
-          grant.scope === 'organization' &&
-          grant.status === 'approved' &&
-          grant.isActive &&
-          (!grant.expiresAt || grant.expiresAt > Date.now()),
+        (grant) => grant.scope === 'organization' && isUsableGrant(grant),
       );
       visible = isHead || approved ? events : visible;
     } else if (args.view === 'person' && args.targetUserId) {
@@ -752,19 +972,11 @@ export const getByOrganization = query({
             event.createdBy === caller._id || (event.attendeeIds ?? []).includes(caller._id),
         );
       } else {
-        const organizationGrants = await ctx.db
-          .query('calendarAccess')
-          .withIndex('by_viewer_org', (q) =>
-            q.eq('viewerId', caller._id).eq('organizationId', args.organizationId),
-          )
-          .collect();
-        const organizationApproved = organizationGrants.some(
-          (grant) =>
-            grant.scope === 'organization' &&
-            grant.status === 'approved' &&
-            grant.isActive &&
-            (!grant.expiresAt || grant.expiresAt > Date.now()),
-        );
+        // One colleague's calendar needs that colleague's own approval — being
+        // the org head or holding an organization-wide grant does not stand in
+        // for it. Those callers open the organization view instead, and the
+        // picker only offers "View" once a person grant exists, so the two
+        // sides now agree on what an approval means.
         const grant = await ctx.db
           .query('calendarAccess')
           .withIndex('by_owner_viewer', (q) =>
@@ -772,18 +984,17 @@ export const getByOrganization = query({
           )
           .filter((q) => q.eq(q.field('scope'), 'person'))
           .first();
-        const approved =
-          organizationApproved ||
-          (grant?.status === 'approved' &&
-            grant.isActive &&
-            (!grant.expiresAt || grant.expiresAt > Date.now()));
-        visible = approved
-          ? events.filter(
-              (event) =>
-                event.createdBy === args.targetUserId ||
-                (event.attendeeIds ?? []).includes(args.targetUserId!),
-            )
-          : visible;
+        // Without access the answer is "nothing", not the caller's own events:
+        // showing your own agenda under someone else's name reads as a bug and
+        // hid the missing check here for as long as it existed.
+        visible =
+          grant && isUsableGrant(grant)
+            ? events.filter(
+                (event) =>
+                  event.createdBy === args.targetUserId ||
+                  (event.attendeeIds ?? []).includes(args.targetUserId!),
+              )
+            : [];
       }
     }
 

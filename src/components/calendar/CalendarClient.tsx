@@ -93,6 +93,8 @@ import {
   type PersonAccessStatus,
   type OrganizationAccessStatus,
   type ActiveView,
+  type AvailableCalendar,
+  type CalendarViewer,
 } from './SharedCalendarDialog';
 import { RoomAvailabilityStrip } from '@/components/rooms/RoomAvailabilityStrip';
 import { RoomBookingModal } from '@/components/rooms/RoomBookingModal';
@@ -964,6 +966,12 @@ export const CalendarClient = React.memo(function CalendarClient() {
   );
   const requestCalendarAccess = useMutation(api.calendarEvents.requestCalendarAccess);
   const respondToCalendarAccess = useMutation(api.calendarEvents.respondToCalendarAccess);
+  const rememberCalendarView = useMutation(api.calendarEvents.rememberCalendarView);
+  const revokeCalendarAccess = useMutation(api.calendarEvents.revokeCalendarAccess);
+  const calendarViewers = useQuery(
+    api.calendarEvents.listMyCalendarViewers,
+    mounted && calendarOrgId ? { organizationId: calendarOrgId } : 'skip',
+  );
   const calendarPeople = useQuery(
     api.users.getUsersByOrganizationId,
     mounted && calendarOrgId ? { organizationId: calendarOrgId } : 'skip',
@@ -976,7 +984,6 @@ export const CalendarClient = React.memo(function CalendarClient() {
       }>
     | undefined;
   const [selectedCalendarOwnerId, setSelectedCalendarOwnerId] = useState<string>('');
-  const organizationCalendarApproved = calendarAccess?.organization === 'approved';
   const lang = i18n.language || 'en';
   const dateFnsLocale = lang === 'ru' ? ru : lang === 'hy' ? hy : enUS;
 
@@ -984,16 +991,49 @@ export const CalendarClient = React.memo(function CalendarClient() {
   // Shared is opt-in: every role lands on its own calendar and the shared view
   // is only entered through the SharedCalendarDialog — either by opening a
   // colleague's calendar or, for an org-approved viewer, picking the whole
-  // organization. Nothing restores a stored scope, so nobody re-enters the
-  // shared calendar without asking for it again.
+  // organization. Which one you had open last is remembered server-side and
+  // restored below, so returning to a colleague costs one click instead of a
+  // fresh request. The server re-checks the grant before handing that view
+  // back, so a revoked calendar degrades to your own without an error.
   const [scope, setScope] = useState<CalendarScope>('mine');
   const [showSharedDialog, setShowSharedDialog] = useState(false);
+
+  /** Fire-and-forget: remembering a view must never delay opening it. */
+  const rememberView = useCallback(
+    (view: 'mine' | 'person' | 'organization', targetUserId?: string) => {
+      if (!calendarOrgId) return;
+      void rememberCalendarView({
+        organizationId: calendarOrgId,
+        view,
+        ...(view === 'person' && targetUserId ? { targetUserId: targetUserId as Id<'users'> } : {}),
+      }).catch((error) => logger.error('Remember calendar view failed', error));
+    },
+    [calendarOrgId, rememberCalendarView],
+  );
+
+  // Restore once per mount. The server already resolved the stored view against
+  // today's grants, so whatever arrives here is something the events query will
+  // actually open.
+  const restoredLastView = useRef(false);
+  useEffect(() => {
+    if (restoredLastView.current) return;
+    const stored = calendarAccess?.lastView;
+    if (!stored) return;
+    restoredLastView.current = true;
+    if (stored.type === 'person') {
+      setSelectedCalendarOwnerId(stored.userId);
+      setScope('mine');
+    } else if (stored.type === 'organization') {
+      setScope('team');
+    }
+  }, [calendarAccess?.lastView]);
 
   const selectOrganizationCalendar = useCallback(() => {
     if (calendarAccess?.organization !== 'approved') return;
     setSelectedCalendarOwnerId('');
     setScope('team');
-  }, [calendarAccess?.organization]);
+    rememberView('organization');
+  }, [calendarAccess?.organization, rememberView]);
 
   const handleAccessResponse = useCallback(
     async (accessId: Id<'calendarAccess'>, approved: boolean) => {
@@ -1016,12 +1056,27 @@ export const CalendarClient = React.memo(function CalendarClient() {
       if (!ownerId || ownerId === user?.id) {
         setSelectedCalendarOwnerId('');
         setScope('mine');
+        rememberView('mine');
         return;
       }
       setSelectedCalendarOwnerId(ownerId);
       setScope('mine');
+      rememberView('person', ownerId);
     },
-    [user?.id],
+    [user?.id, rememberView],
+  );
+
+  /** Takes back a colleague's access to the viewer's own calendar. */
+  const revokeViewerAccess = useCallback(
+    async (accessId: Id<'calendarAccess'>) => {
+      try {
+        await revokeCalendarAccess({ accessId });
+        toast.success(t('calendarShared.revoked', 'Access revoked'));
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : t('common.error', 'Error'));
+      }
+    },
+    [revokeCalendarAccess, t],
   );
 
   /** Sends a person-scope access request to the colleague picked in the dialog. */
@@ -1063,9 +1118,25 @@ export const CalendarClient = React.memo(function CalendarClient() {
     [deleteEventMutation, t],
   );
 
-  const selectedCalendarOwner = calendarPeople?.find(
-    (person) => person._id === selectedCalendarOwnerId,
-  );
+  // The org-wide user list is capped, and a restored grant may point at somebody
+  // outside it — the grant carries its owner's identity, so fall back to that
+  // instead of rendering a nameless calendar.
+  const selectedCalendarOwner = useMemo(() => {
+    if (!selectedCalendarOwnerId) return undefined;
+    const fromDirectory = calendarPeople?.find((person) => person._id === selectedCalendarOwnerId);
+    if (fromDirectory) return fromDirectory;
+    const fromGrant = calendarAccess?.people.find(
+      (entry) => entry.userId === selectedCalendarOwnerId,
+    );
+    return fromGrant
+      ? {
+          _id: fromGrant.userId,
+          name: fromGrant.name,
+          department: fromGrant.department,
+          position: fromGrant.position,
+        }
+      : undefined;
+  }, [calendarPeople, calendarAccess?.people, selectedCalendarOwnerId]);
   const viewer = useMemo(
     () => ({
       id: selectedCalendarOwner?._id ?? user?.id ?? '',
@@ -1102,6 +1173,37 @@ export const CalendarClient = React.memo(function CalendarClient() {
     return map;
   }, [calendarAccess?.people]);
   const sharedPeople = calendarPeople?.filter((person) => person._id !== user?.id) ?? [];
+
+  /**
+   * The calendars the viewer can already open, straight from the stored grants —
+   * this is what turns "request again" into "pick it again".
+   */
+  const availableCalendars = useMemo<AvailableCalendar[]>(
+    () =>
+      (calendarAccess?.people ?? [])
+        .filter((entry) => entry.status === 'approved')
+        .map((entry) => ({
+          userId: entry.userId,
+          name: entry.name,
+          position: entry.position,
+          grantedAt: entry.grantedAt,
+          lastViewedAt: entry.lastViewedAt,
+        })),
+    [calendarAccess?.people],
+  );
+  const myCalendarViewers = useMemo<CalendarViewer[]>(
+    () =>
+      (calendarViewers ?? []).map((row) => ({
+        _id: row._id,
+        viewerId: row.viewerId,
+        viewerName: row.viewerName,
+        viewerPosition: row.viewerPosition,
+        scope: row.scope,
+        grantedAt: row.grantedAt,
+        lastViewedAt: row.lastViewedAt,
+      })),
+    [calendarViewers],
+  );
 
   const DAYS_OF_WEEK = [
     t('weekdays.sun'),
@@ -2863,19 +2965,22 @@ export const CalendarClient = React.memo(function CalendarClient() {
         </div>
 
         {/* Shared calendar colleague picker — the opt-in door to other people's
-            calendars, grouped by department with per-person access states. */}
+            calendars: granted ones pinned on top, the directory below, plus the
+            list of who the viewer has let into their own calendar. */}
         <SharedCalendarDialog
           open={showSharedDialog}
           onClose={() => setShowSharedDialog(false)}
           people={sharedPeople}
           organizationAccess={organizationAccessStatus}
           personAccess={personAccessStatus}
-          orgGrantsPeople={organizationCalendarApproved}
+          availableCalendars={availableCalendars}
+          viewers={myCalendarViewers}
           activeView={activeView}
           onSelectMine={() => selectPersonCalendar(user?.id ?? '')}
           onSelectPerson={(ownerId) => selectPersonCalendar(ownerId)}
           onRequestPerson={(ownerId) => void requestPersonCalendar(ownerId)}
           onSelectOrganization={selectOrganizationCalendar}
+          onRevokeViewer={(accessId) => void revokeViewerAccess(accessId)}
         />
 
         {/* Leave Request Modal */}

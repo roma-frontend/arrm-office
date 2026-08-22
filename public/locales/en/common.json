@@ -146,7 +146,9 @@
     "selectOrganization": "Select an organization",
     "welcome": "Welcome",
     "chat.realtime": "Real-time chat",
-    "print": "Print"
+    "print": "Print",
+    "copied": "Copied",
+    "clear": "Clear"
   },
   "nav": {
     "home": "Home",
@@ -246,6 +248,7 @@
     "onboarding": "Onboarding",
     "offboarding": "Offboarding",
     "compliance": "Compliance",
+    "auditLog": "Audit Log",
     "orgChart": "Org Chart",
     "learning": "Learning",
     "openMenu": "Open menu",
@@ -2254,6 +2257,108 @@
     "translate": "Translate",
     "undo": "Undo",
     "failed": "Could not rewrite the text"
+  },
+  "audit": {
+    "title": "Audit log",
+    "subtitle": "Who did what, when — every audited action in your workspace",
+    "loadMore": "Load more events",
+    "allLoaded": "All {{count}} matching events loaded",
+    "empty": "No audited events in this period",
+    "emptyFiltered": "No events match these filters",
+    "emptySoFar": "Nothing matched in the events loaded so far. Keep loading to search further back.",
+    "accessDenied": "The audit log is not available for your account",
+    "accessDeniedHint": "Only administrators of an organization can read its audit trail.",
+    "view": {
+      "timeline": "Timeline",
+      "table": "Table"
+    },
+    "range": {
+      "24h": "Last 24 hours",
+      "7d": "Last 7 days",
+      "30d": "Last 30 days",
+      "90d": "Last 90 days",
+      "all": "All time"
+    },
+    "severity": {
+      "critical": "Critical",
+      "warning": "Warning",
+      "info": "Info"
+    },
+    "categories": {
+      "auth": "Authentication",
+      "people": "People",
+      "work": "Work",
+      "finance": "Finance",
+      "admin": "Administration",
+      "compliance": "Compliance",
+      "ai": "AI",
+      "system": "System"
+    },
+    "stats": {
+      "total": "Events",
+      "critical": "Critical",
+      "criticalRecent": "{{count}} in the last 24h",
+      "criticalNoneRecent": "None in the last 24h",
+      "warnings": "Warnings",
+      "warningsHint": "Deletions, rejections, revocations",
+      "actors": "Active users",
+      "lastEvent": "Last event {{date}}",
+      "perDay": "Events per day"
+    },
+    "filters": {
+      "searchPlaceholder": "Search actions, users, IP, details…",
+      "allActions": "All actions",
+      "allActors": "All users",
+      "clear": "Clear filters ({{count}})",
+      "clearAll": "Clear all filters"
+    },
+    "table": {
+      "time": "Time",
+      "actor": "User",
+      "action": "Action",
+      "category": "Category",
+      "severity": "Severity",
+      "details": "Details",
+      "ip": "IP"
+    },
+    "row": {
+      "unknownActor": "Unknown user",
+      "target": "on {{target}}"
+    },
+    "detail": {
+      "copyJson": "Copy as JSON",
+      "when": "When",
+      "summary": "Summary",
+      "target": "Target",
+      "ip": "IP address",
+      "eventId": "Event ID",
+      "payload": "Raw payload",
+      "filterActor": "All events by this user",
+      "filterAction": "All events of this type"
+    },
+    "export": {
+      "copyLink": "Copy link to this view",
+      "csv": "CSV",
+      "json": "JSON",
+      "range": "Range",
+      "search": "Search",
+      "exportedAt": "Exported",
+      "rows": "Rows",
+      "columns": {
+        "timestampIso": "Timestamp (UTC)",
+        "timestampLocal": "Timestamp (local)",
+        "actor": "User",
+        "actorEmail": "Email",
+        "actorRole": "Role",
+        "action": "Action",
+        "actionKey": "Action key",
+        "category": "Category",
+        "severity": "Severity",
+        "target": "Target",
+        "details": "Details",
+        "ip": "IP address"
+      }
+    }
   },
   "activityFeed": {
     "title": "Recent Activity",

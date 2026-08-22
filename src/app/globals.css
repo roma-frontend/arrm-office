@@ -539,21 +539,33 @@ html.light {
 }
 
 /* ── Dark-theme signature effects (ported from caron) ───────────────────────
-   Two rules make the graphite theme read as calm rather than flat:
+   Three things make the graphite theme read as calm rather than flat:
 
+   • a soft diagonal wash (canvas → card → canvas) behind the whole shell, so
+     the surfaces recede instead of sitting on flat near-black;
    • a soft radial glow pinned behind the top of the page — the one place the
      eye rests first. Caron paints it on `body`; here the app shell owns the
-     surface, so the glow lives on it via the ambient layer instead. The orbs
-     already drift there; this adds the wash beneath them.
+     surface, so the glow lives on it.
    • a glow on `:focus-visible`, so the keyboard ring is a light source rather
      than a hard outline on a dark surface.
    ─────────────────────────────────────────────────────────────────────────── */
-.dark .dashboard-ambient::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(ellipse 80% 60% at 50% -20%, rgb(44 140 213 / 18%), transparent);
-  pointer-events: none;
+/* Both live on the shell as *backgrounds*, not as an absolutely-positioned
+   pseudo-element layer. They used to be painted by `.dashboard-ambient::before`
+   / `::after`, and because `.dashboard-ambient` is a static div, those layers
+   were positioned against `html` and — being positioned boxes with `z-index:
+   auto` — painted *above* every static, non-positioned box in the shell. The
+   wash is opaque, so the three in-flow banners between the navbar and `<main>`
+   (maintenance, status update, notification) were covered by it: visible on the
+   light theme, blank strips on the dark one. `.app-main` (z-index: 1) and the
+   navbar / impersonation banner (z-40+) were lifted above it and so looked fine,
+   which is what made this read as "only that banner is broken".
+   A background cannot cover content and cannot swallow clicks, so this is the
+   same picture with none of the stacking or hit-testing hazard. The glow is
+   listed first: earlier background layers paint on top. */
+.dark .app-shell {
+  background-image:
+    radial-gradient(ellipse 80% 60% at 50% -20%, rgb(44 140 213 / 18%), transparent),
+    linear-gradient(135deg, var(--canvas) 0%, var(--surface-1) 50%, var(--canvas) 100%);
 }
 
 .dark *:focus-visible {
@@ -1614,22 +1626,14 @@ body {
   backdrop-filter: blur(18px) saturate(1);
 }
 
-/* Dark theme: give the dashboard the same ambient depth as the landing.
-   On a flat near-black canvas the drifting orbs read as bright blobs — the
-   glare that "sparkles". The landing looks calm because its background is a
-   soft gradient (canvas → card → canvas) the orbs melt into. Paint that
-   same gradient behind the orbs here; the orbs sit above it (later in DOM),
-   so they become atmosphere instead of spots. */
-.dark .dashboard-ambient::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, var(--canvas) 0%, var(--surface-1) 50%, var(--canvas) 100%);
-}
+/* Dark theme: the ambient wash that used to be painted here as
+   `.dashboard-ambient::before` now lives on `.dark .app-shell` as a background
+   layer — see the dark-theme signature effects near the top of this file. An
+   absolutely-positioned pseudo-element painted over the in-flow banners; a
+   background cannot.
 
-/* The same gradient, far more transparent, so the orbs are quieter than on
-   the sparse landing — the dashboard is denser and every extra percent of
-   saturation reads as noise against the panels. */
+   The orbs keep their reduced opacity so they stay atmosphere rather than
+   spots on the denser dashboard. */
 .dark .dashboard-ambient .ambient-orb {
   opacity: 0.6;
 }

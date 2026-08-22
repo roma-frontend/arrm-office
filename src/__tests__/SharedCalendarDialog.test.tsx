@@ -48,12 +48,20 @@ jest.mock('lucide-react', () => {
     Check: mkIcon('Check'),
     Clock3: mkIcon('Clock3'),
     Eye: mkIcon('Eye'),
+    History: mkIcon('History'),
     Search: mkIcon('Search'),
     Send: mkIcon('Send'),
+    ShieldCheck: mkIcon('ShieldCheck'),
+    Trash2: mkIcon('Trash2'),
     User: mkIcon('User'),
     Users: mkIcon('Users'),
   };
 });
+
+// Relative time is locale machinery, not behaviour under test here.
+jest.mock('@/lib/date-format', () => ({
+  formatRelativeTime: () => '2 days ago',
+}));
 
 import SharedCalendarDialog from '@/components/calendar/SharedCalendarDialog';
 
@@ -69,12 +77,14 @@ const baseProps = {
   people: PEOPLE,
   organizationAccess: 'none' as const,
   personAccess: {},
-  orgGrantsPeople: false,
+  availableCalendars: [],
+  viewers: [],
   activeView: { type: 'mine' } as const,
   onSelectMine: jest.fn(),
   onSelectPerson: jest.fn(),
   onRequestPerson: jest.fn(),
   onSelectOrganization: jest.fn(),
+  onRevokeViewer: jest.fn(),
 };
 
 beforeEach(() => {
@@ -127,13 +137,63 @@ describe('SharedCalendarDialog', () => {
     expect(screen.getAllByText('Request access').length).toBe(1);
   });
 
-  it('treats org-wide approval as access to every colleague', () => {
-    render(<SharedCalendarDialog {...baseProps} organizationAccess="approved" orgGrantsPeople />);
-    expect(screen.getAllByText('View').length).toBe(3);
-    expect(screen.queryByText('Request access')).not.toBeInTheDocument();
-    // The organization entry is offered to approved viewers.
+  it('keeps org-wide approval out of individual calendars', () => {
+    render(<SharedCalendarDialog {...baseProps} organizationAccess="approved" />);
+    // Org access opens the organization entry only — a colleague still has to
+    // approve their own calendar, which is what the events query enforces.
+    expect(screen.queryByText('View')).not.toBeInTheDocument();
+    expect(screen.getAllByText('Request access').length).toBe(3);
     fireEvent.click(screen.getByText('Entire organization'));
     expect(baseProps.onSelectOrganization).toHaveBeenCalled();
+  });
+
+  it('pins already-granted calendars on top, most recently opened first', () => {
+    render(
+      <SharedCalendarDialog
+        {...baseProps}
+        availableCalendars={[
+          { userId: 'u-2', name: 'Maya Chen', grantedAt: 10, lastViewedAt: 20 },
+          { userId: 'u-1', name: 'Anna Petrova', grantedAt: 5, lastViewedAt: 90 },
+        ]}
+      />,
+    );
+    expect(screen.getByText('Calendars you can open')).toBeInTheDocument();
+    const names = screen.getAllByText(/Anna Petrova|Maya Chen/).map((node) => node.textContent);
+    // Anna was opened later, so she leads; neither is repeated in a department.
+    expect(names).toEqual(['Anna Petrova', 'Maya Chen']);
+    expect(screen.queryByText('Finance')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getAllByText('View')[1]);
+    expect(baseProps.onSelectPerson).toHaveBeenCalledWith('u-2');
+  });
+
+  it('revokes access from the second tab', () => {
+    render(
+      <SharedCalendarDialog
+        {...baseProps}
+        viewers={[
+          {
+            _id: 'access-1' as never,
+            viewerId: 'u-9',
+            viewerName: 'Karen Movsisyan',
+            scope: 'person' as const,
+            grantedAt: 3,
+          },
+        ]}
+      />,
+    );
+    // The list is behind its own tab, so the picker stays the default view.
+    expect(screen.queryByText('Karen Movsisyan')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText('Who sees mine (1)'));
+    expect(screen.getByText('Karen Movsisyan')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Revoke'));
+    expect(baseProps.onRevokeViewer).toHaveBeenCalledWith('access-1');
+  });
+
+  it('tells the owner when nobody has access to their calendar', () => {
+    render(<SharedCalendarDialog {...baseProps} />);
+    fireEvent.click(screen.getByText('Who sees mine'));
+    expect(screen.getByText('Nobody can see your calendar yet.')).toBeInTheDocument();
   });
 
   it('hides the organization entry from viewers without approval', () => {
