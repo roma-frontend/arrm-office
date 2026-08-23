@@ -11,9 +11,12 @@
  * `onDone` is wired to the same close: after a task is deleted there is nothing
  * to return to, so the panel dismisses instead of navigating to `/tasks` — which
  * is where the user already is.
+ *
+ * Supports an internal edit mode: clicking Edit inside the detail view switches
+ * the sheet to the edit form without navigating away.
  */
 
-import React from 'react';
+import { useState, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { useTranslation } from 'react-i18next';
 
@@ -22,6 +25,15 @@ import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import type { Id } from '../../../convex/_generated/dataModel';
 
 const TaskDetailClient = dynamic(() => import('@/components/tasks/TaskDetailClient'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex min-h-64 items-center justify-center">
+      <ShieldLoader size="md" />
+    </div>
+  ),
+});
+
+const TaskEditClient = dynamic(() => import('@/components/tasks/TaskEditClient'), {
   ssr: false,
   loading: () => (
     <div className="flex min-h-64 items-center justify-center">
@@ -39,18 +51,51 @@ export interface TaskSheetProps {
   onEdit?: (taskId: Id<'tasks'>) => void;
 }
 
-export function TaskSheet({ taskId, onClose, taskTitle, onEdit }: TaskSheetProps) {
+export function TaskSheet({ taskId, onClose, taskTitle }: TaskSheetProps) {
   const { t } = useTranslation();
+  const [editingId, setEditingId] = useState<Id<'tasks'> | null>(null);
+
+  const handleEdit = useCallback(
+    (id: Id<'tasks'>) => {
+      setEditingId(id);
+    },
+    [],
+  );
+
+  const handleEditDone = useCallback(() => {
+    setEditingId(null);
+  }, []);
+
+  const editing = editingId !== null;
 
   return (
     <DetailSheet
       open={taskId !== null}
       onClose={onClose}
       size="xl"
-      title={taskTitle || t('nav.tasks', 'Tasks')}
+      title={
+        editing
+          ? t('tasksClient.editTask', 'Edit task')
+          : taskTitle || t('nav.tasks', 'Tasks')
+      }
       {...(taskId ? { deepLink: `/tasks/${taskId}` } : {})}
     >
-      {taskId && <TaskDetailClient key={taskId} taskId={taskId} onDone={onClose} onEdit={onEdit} />}
+      {editing ? (
+        <TaskEditClient
+          key={`edit-${editingId}`}
+          taskId={editingId}
+          onClose={handleEditDone}
+        />
+      ) : (
+        taskId && (
+          <TaskDetailClient
+            key={taskId}
+            taskId={taskId}
+            onDone={onClose}
+            onEdit={handleEdit}
+          />
+        )
+      )}
     </DetailSheet>
   );
 }
