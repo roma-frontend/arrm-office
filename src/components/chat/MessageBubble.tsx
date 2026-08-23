@@ -8,6 +8,7 @@ import { decodeSystemMessage } from '../../../convex/lib/systemMessage';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 import {
   Reply,
   Edit2,
@@ -606,6 +607,7 @@ export const MessageBubble = React.memo(function MessageBubble({
       );
     } catch (err) {
       logger.error('Reaction failed:', err);
+      toast.error('Failed to add reaction');
     }
   };
 

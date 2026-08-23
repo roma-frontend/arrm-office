@@ -592,24 +592,28 @@ function ParticipantRow({
           <Hand className="h-2.5 w-2.5 text-amber-950" />
         </span>
       )}
+      {/* Mic indicator — clickable only for self; for others it's read-only. */}
       <button
         type="button"
         onClick={() => (isSelf ? onToggleSelfMic?.() : undefined)}
+        disabled={!isSelf}
         className={cn(
           'shrink-0 rounded-md p-0.5 transition',
-          isSelf && 'cursor-pointer hover:bg-white/10',
+          isSelf ? 'cursor-pointer hover:bg-white/10' : 'cursor-default opacity-50',
           micMuted ? 'text-red-400' : 'text-white/50',
         )}
         title={isSelf ? (micMuted ? t('meetings.micOn') : t('meetings.micOff')) : undefined}
       >
         {micMuted ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
       </button>
+      {/* Camera indicator — clickable only for self; for others it's read-only. */}
       <button
         type="button"
         onClick={() => (isSelf ? onToggleSelfCam?.() : undefined)}
+        disabled={!isSelf}
         className={cn(
           'shrink-0 rounded-md p-0.5 transition',
-          isSelf && 'cursor-pointer hover:bg-white/10',
+          isSelf ? 'cursor-pointer hover:bg-white/10' : 'cursor-default opacity-50',
           camMuted ? 'text-red-400' : 'text-white/50',
         )}
         title={isSelf ? (camMuted ? t('meetings.camOn') : t('meetings.camOff')) : undefined}

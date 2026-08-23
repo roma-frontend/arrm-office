@@ -61,6 +61,8 @@ export interface TaskViewState {
   q: string;
   /** Only tasks past their deadline that are still open. */
   overdue: boolean;
+  /** 'all' shows every task; 'recurring' shows only recurring series. */
+  tab: 'all' | 'recurring';
 }
 
 export const DEFAULT_TASK_VIEW: TaskViewState = {
@@ -74,6 +76,7 @@ export const DEFAULT_TASK_VIEW: TaskViewState = {
   project: 'all',
   q: '',
   overdue: false,
+  tab: 'all',
 };
 
 function oneOf<T extends string>(raw: string | null, allowed: readonly T[], fallback: T): T {
@@ -108,6 +111,7 @@ export function encodeTaskView(state: TaskViewState): string {
   if (state.assignee !== d.assignee) params.set('assignee', state.assignee);
   if (state.project !== d.project) params.set('project', state.project);
   if (state.overdue) params.set('overdue', '1');
+  if (state.tab !== 'all') params.set('tab', state.tab);
   const q = state.q.trim().slice(0, MAX_QUERY_LENGTH);
   if (q !== '') params.set('q', q);
   return params.toString();
@@ -132,6 +136,7 @@ export function decodeTaskView(search: string | URLSearchParams): TaskViewState 
     project: idOrAll(params.get('project'), ['none']),
     q: (params.get('q') ?? '').trim().slice(0, MAX_QUERY_LENGTH),
     overdue: params.get('overdue') === '1' || params.get('overdue') === 'true',
+    tab: (params.get('tab') === 'recurring' ? 'recurring' : 'all') as 'all' | 'recurring',
   };
 }
 

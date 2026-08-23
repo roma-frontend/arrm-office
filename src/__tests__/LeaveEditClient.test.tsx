@@ -262,7 +262,7 @@ describe('LeaveEditClient — loading, guard and hydration', () => {
       type: 'sick',
       startDate: '2026-07-10',
       endDate: '2026-07-12',
-      days: 3,
+      days: 1, // Fri-only (Sat/Sun excluded)
       reason: 'Extended vacation',
     });
     expect(mockDraft.clearDraft).toHaveBeenCalled();

@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { X, Search, Users, MessageCircle, Check, Globe, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 import { useOrgSelectorStore } from '@/store/useOrgSelectorStore';
 import { useTranslation } from 'react-i18next';
 import type { Doc } from '@/convex/_generated/dataModel';
@@ -197,6 +198,7 @@ export function NewConversationModal({
       }
     } catch (err) {
       logger.error('Error creating conversation:', err);
+      toast.error('Failed to create conversation');
     } finally {
       setLoading(false);
     }

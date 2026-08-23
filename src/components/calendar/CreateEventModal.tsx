@@ -1214,11 +1214,11 @@ export function CreateEventModal({
                               type="button"
                               onClick={() => handlePickRoom(room)}
                               aria-pressed={isSelected}
-                              className={`flex w-full items-start gap-3 rounded-card border p-3 text-left transition-colors duration-140 ease-spark ${
+                              className={`flex w-full items-start gap-3 rounded-card border-2 p-3 text-left transition-all duration-140 ease-spark ${
                                 isSelected
-                                  ? 'border-(--brand) bg-(--brand-quiet)'
+                                  ? 'border-(--brand) bg-blue-50 dark:bg-blue-950/30 shadow-md ring-1 ring-(--brand)/30'
                                   : free && fits
-                                    ? 'border-(--border-subtle) bg-(--surface-2) hover:border-(--border-strong)'
+                                    ? 'border-(--border-subtle) bg-(--surface-2) hover:border-(--brand) hover:bg-blue-50/50 dark:hover:bg-blue-950/20'
                                     : 'border-(--border-subtle) bg-(--surface-2) opacity-70 hover:opacity-100'
                               }`}
                             >

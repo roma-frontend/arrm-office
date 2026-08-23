@@ -397,13 +397,30 @@ export const autoStartProbation = internalMutation({
         employee._id;
     }
 
+    // Probation is calculated from the employee's registration date, not from
+    // when the auto-start runs. If the admin backdated the hire, the probation
+    // window is counted from that date: when the 90-day window has already
+    // elapsed the period is skipped entirely, otherwise the remaining time is
+    // used as the duration (at least 1 day).
+    const hireDate = employee.createdAt ?? now;
+    const probationEndDate = hireDate + DEFAULT_PROBATION_DAYS * DAY;
+    const remainingMs = probationEndDate - now;
+    const remainingDays = Math.ceil(remainingMs / DAY);
+
+    // The hire date + standard period is in the past — probation has expired.
+    if (remainingDays <= 0) return;
+
+    const durationDays = Math.min(remainingDays, DEFAULT_PROBATION_DAYS);
+    const startDate = now;
+    const endDate = now + durationDays * DAY;
+
     const periodId = await ctx.db.insert('probationPeriods', {
       organizationId: employee.organizationId,
       employeeId: employee._id,
-      startDate: now,
-      endDate: now + DEFAULT_PROBATION_DAYS * DAY,
-      originalEndDate: now + DEFAULT_PROBATION_DAYS * DAY,
-      durationDays: DEFAULT_PROBATION_DAYS,
+      startDate,
+      endDate,
+      originalEndDate: endDate,
+      durationDays,
       status: 'active',
       remindersSent: [],
       extensions: [],
@@ -418,9 +435,9 @@ export const autoStartProbation = internalMutation({
       type: 'probation_started',
       titleKey: 'notifications.titles.probationStarted',
       messageKey: 'notifications.messages.probationStarted',
-      params: { employeeName: employee.name, days: DEFAULT_PROBATION_DAYS },
+      params: { employeeName: employee.name, days: durationDays },
       fallbackTitle: '📋 Probation period started',
-      fallbackMessage: `${employee.name} started a ${DEFAULT_PROBATION_DAYS}-day probation period.`,
+      fallbackMessage: `${employee.name} started a ${durationDays}-day probation period.`,
       relatedId: periodId,
       route: profileRoute(employee._id),
       createdAt: now,
@@ -431,7 +448,7 @@ export const autoStartProbation = internalMutation({
       userId: createdBy,
       action: 'probation_started_auto',
       target: employee._id,
-      details: JSON.stringify({ periodId, durationDays: DEFAULT_PROBATION_DAYS }),
+      details: JSON.stringify({ periodId, durationDays, hireDate, remainingDays }),
       createdAt: now,
     });
   },
@@ -463,7 +480,7 @@ export const sendProbationReminders = internalMutation({
       if (daysRemaining < 0) {
         await ctx.db.patch(period._id, {
           status: 'passed',
-          outcomeNote: 'Auto-passed: employment continued past the probation end date.',
+          outcomeNote: 'probation.autoPassed.employmentContinued',
           completedAt: now,
           updatedAt: now,
         });

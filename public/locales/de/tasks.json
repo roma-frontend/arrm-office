@@ -34,6 +34,7 @@
     "createNewTask": "Erstellen Sie eine neue Aufgabe, um zu beginnen",
     "noTasksAssigned": "Ihnen wurden noch keine Aufgaben zugewiesen",
     "recurring": "Wiederkehrend",
+    "recurringTask": "Wiederkehrende Aufgabe",
     "manageRecurring": "Verwalten",
     "task": "Aufgabe",
     "assignee": "Zuständiger",
@@ -172,7 +173,9 @@
     "overdueCount_other": "{{count}} überfällig",
     "removeFilter": "Filter „{{field}}“ entfernen",
     "sortAsc": "Aufsteigend — klicken für absteigend",
-    "sortDesc": "Absteigend — klicken für aufsteigend"
+    "sortDesc": "Absteigend — klicken für aufsteigend",
+    "allTasks": "Alle Aufgaben",
+    "recurringTasks": "↻ Wiederkehrend"
   },
   "taskStatus": {
     "pending": "Ausstehend",
@@ -289,6 +292,7 @@
     "pausedSection": "Pausiert ({{count}})",
     "pausedSectionHint": "Solange eine Serie pausiert ist, wird nichts erstellt. Bereits erstellte Aufgaben bleiben unberührt.",
     "noneActive": "Alle Serien sind pausiert.",
+    "active": "Aktiv",
     "pausedBadge": "Pausiert",
     "pause": "Pausieren",
     "resume": "Fortsetzen",
@@ -315,10 +319,15 @@
     "nextRun": "Nächste: {{date}}",
     "generatedCount": "{{count}} erstellt",
     "until": "bis {{date}}",
+    "frequency": {
+      "weekly": "Wöchentlich",
+      "monthly": "Monatlich"
+    },
     "rule": {
       "weekly": "Jede Woche am {{days}}",
       "monthly": "Monatlich am {{day}}."
-    }
+    },
+    "seriesCannotOpen": "Wiederkehrende Serien werden im Tab Wiederkehrende Aufgaben verwaltet."
   },
   "task": {
     "createTask": "Aufgabe erstellen",

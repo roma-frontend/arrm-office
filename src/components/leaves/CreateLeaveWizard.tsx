@@ -311,9 +311,15 @@ export function CreateLeaveWizard({ userId, onComplete, onCancel }: CreateLeaveW
     if (!start || !end) return 0;
     const startDate = new Date(start);
     const endDate = new Date(end);
-    const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays + 1;
+    if (endDate < startDate) return 1;
+    let count = 0;
+    const current = new Date(startDate);
+    while (current <= endDate) {
+      const day = current.getDay();
+      if (day !== 0 && day !== 6) count++;
+      current.setDate(current.getDate() + 1);
+    }
+    return Math.max(1, count);
   };
 
   if (user === undefined)

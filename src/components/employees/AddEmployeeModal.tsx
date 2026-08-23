@@ -500,7 +500,9 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
         await recordTaxIdVerification({
           userId: newUserId,
           status: taxIdVerifyStatus,
-        }).catch(() => {});
+        }).catch(() => {
+          toast.warning('Tax ID verification could not be saved');
+        });
       }
 
       // Persist the uploaded passport scan now that we have the user id.
@@ -512,7 +514,9 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
           fileName: passportScan.name,
           fileUrl: passportScan.url,
           fileSize: passportScan.size,
-        }).catch(() => {});
+        }).catch(() => {
+          toast.warning('Passport scan upload failed');
+        });
       }
 
       // Generate the bilingual hiring packet (Armenian + the chosen language).

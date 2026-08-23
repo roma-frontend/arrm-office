@@ -34,6 +34,9 @@
     "createNewTask": "Create a new task to get started",
     "noTasksAssigned": "No tasks assigned to you yet",
     "recurring": "Recurring",
+    "recurringTask": "Recurring task",
+    "allTasks": "All Tasks",
+    "recurringTasks": "🔁 Recurring",
     "manageRecurring": "Manage",
     "task": "Task",
     "assignee": "Assignee",
@@ -289,6 +292,7 @@
     "pausedSection": "Paused ({{count}})",
     "pausedSectionHint": "Nothing is created while a series is paused. Tasks it already created are untouched.",
     "noneActive": "Every series is paused.",
+    "active": "Active",
     "pausedBadge": "Paused",
     "pause": "Pause",
     "resume": "Resume",
@@ -298,6 +302,7 @@
     "resumed": "Series resumed",
     "deleted": "Series deleted. {{count}} task(s) it created were kept.",
     "actionFailed": "Could not update the series",
+    "seriesCannotOpen": "Recurring series are managed from the Recurring tasks tab.",
     "created": "Recurring task created",
     "createdWithNext": "Recurring task created. Next one: {{date}}",
     "updated": "Series updated",
@@ -315,6 +320,10 @@
     "nextRun": "Next: {{date}}",
     "generatedCount": "{{count}} created so far",
     "until": "until {{date}}",
+    "frequency": {
+      "weekly": "Weekly",
+      "monthly": "Monthly"
+    },
     "rule": {
       "weekly": "Every week on {{days}}",
       "monthly": "Monthly on day {{day}}"

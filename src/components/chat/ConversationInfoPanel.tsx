@@ -8,6 +8,7 @@ import { X, Plus, Search, Building2, ChevronDown } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '@/store/useAuthStore';
+import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
 
 interface Props {
@@ -100,6 +101,7 @@ export function ConversationInfoPanel({
       setShowAddMember(false);
     } catch (err) {
       logger.error('[handleAddMembers] Failed to add members:', err);
+      toast.error('Failed to add members');
     } finally {
       setAdding(false);
     }

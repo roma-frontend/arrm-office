@@ -227,7 +227,11 @@
       "confirmFailDesc": "Die Entscheidung wird im Audit-Log gespeichert. Starten Sie bei Bedarf den Austrittsprozess direkt.",
       "decisionToast": "Entscheidung gespeichert",
       "startOffboarding": "Austrittsprozess starten (letzter Arbeitstag in 14 Tagen)",
-      "startOffboardingHint": "Datum und Checkliste können im Offboarding-Bereich angepasst werden."
+      "startOffboardingHint": "Datum und Checkliste können im Offboarding-Bereich angepasst werden.",
+      "autoPassed": {
+        "hireDateChanged": "Automatisch bestanden: Einstellungsdatum geändert und 90-Tage-Frist bereits abgelaufen.",
+        "employmentContinued": "Automatisch bestanden: Beschäftigung nach Ablauf der Probezeit fortgesetzt."
+      }
     }
   },
   "employeesExtra": {

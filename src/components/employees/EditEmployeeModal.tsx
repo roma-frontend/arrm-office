@@ -643,7 +643,9 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
           fileName: passportScan.name,
           fileUrl: passportScan.url,
           fileSize: passportScan.size,
-        }).catch(() => {});
+        }).catch(() => {
+          toast.warning('Employee saved but passport scan upload failed');
+        });
       }
       toast.success(t('modals.editEmployee.updatedSuccess'));
       // Правки применены — черновик больше не нужен.

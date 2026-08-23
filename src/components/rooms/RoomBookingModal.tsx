@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useMutation, useQuery } from 'convex/react';
+import { useAction, useMutation, useQuery } from 'convex/react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import {
@@ -34,6 +34,7 @@ import { getInitials } from '@/lib/stringUtils';
 import { useAuthStore } from '@/store/useAuthStore';
 import { RoomModalShell } from './RoomModalShell';
 import type { RoomDoc } from './types';
+import { useWizardDraft } from '@/hooks/useWizardDraft';
 
 const DURATION_PRESETS = [30, 60, 90, 120];
 const MS_PER_MINUTE = 60_000;
@@ -93,6 +94,8 @@ export function RoomBookingModal({
   const { t } = useTranslation();
   const { user } = useAuthStore();
   const bookRoom = useMutation(api.meetingRooms.bookRoom);
+  const createEventFromBooking = useMutation(api.calendarEvents.createFromBooking);
+  const ensureRoomAction = useAction(api.meetingsActions.ensureRoom);
 
   const bookableRooms = useMemo(() => rooms.filter((room) => room.isActive), [rooms]);
 
@@ -175,6 +178,66 @@ export function RoomBookingModal({
   );
   const headcount = attendees.length + externalAttendees.length;
   const fits = room ? capacityFits(room.capacity, headcount) : true;
+
+  // ── Draft: form data survives accidental modal close ──────────────────────
+  const draftData = useMemo(
+    () => ({
+      roomId,
+      date,
+      startTime,
+      endTime,
+      title,
+      description,
+      attendees,
+      externalInput,
+      videoProvider,
+      videoUrl,
+    }),
+    [
+      roomId,
+      date,
+      startTime,
+      endTime,
+      title,
+      description,
+      attendees,
+      externalInput,
+      videoProvider,
+      videoUrl,
+    ],
+  );
+  const handleRestoreDraft = useCallback((d: typeof draftData) => {
+    if (d.roomId !== undefined) setRoomId(d.roomId);
+    if (d.date !== undefined) setDate(d.date);
+    if (d.startTime !== undefined) setStartTime(d.startTime);
+    if (d.endTime !== undefined) setEndTime(d.endTime);
+    if (d.title !== undefined) setTitle(d.title);
+    if (d.description !== undefined) setDescription(d.description);
+    if (d.externalInput !== undefined) setExternalInput(d.externalInput);
+    if (d.videoProvider !== undefined) setVideoProvider(d.videoProvider as typeof videoProvider);
+    if (d.videoUrl !== undefined) setVideoUrl(d.videoUrl);
+    if (Array.isArray(d.attendees)) setAttendees(d.attendees as typeof attendees);
+  }, []);
+  const draft = useWizardDraft({
+    key: `room-booking:${initialRoomId ?? 'new'}`,
+    enabled: open,
+    data: draftData,
+    step: 0,
+    defaults: {
+      roomId: initialRoomId ?? bookableRooms[0]?._id ?? null,
+      date: '',
+      startTime: '',
+      endTime: '',
+      title: '',
+      description: '',
+      attendees: [],
+      externalInput: '',
+      videoProvider: '',
+      videoUrl: '',
+    },
+    onRestore: handleRestoreDraft,
+  });
+  const { clearDraft } = draft;
 
   // Live availability for the chosen slot.
   const availability = useQuery(
@@ -259,7 +322,7 @@ export function RoomBookingModal({
     if (blockingReason || !room || !validRange) return;
     setSubmitting(true);
     try {
-      await bookRoom({
+      const bookingId = await bookRoom({
         roomId: room._id as Id<'meetingRooms'>,
         title: title.trim(),
         description: description.trim() || undefined,
@@ -275,7 +338,33 @@ export function RoomBookingModal({
           | undefined,
         videoUrl: videoUrl.trim() || undefined,
       });
+
+      // When LiveKit is selected, create a calendar event and a LiveKit room
+      // so the meeting link is available for participants.
+      if (videoProvider === 'livekit' && organizationId && bookingId) {
+        try {
+          const eventResult = await createEventFromBooking({
+            roomBookingId: bookingId as Id<'roomBookings'>,
+          });
+          if (!eventResult.alreadyExisted) {
+            const roomResult = await ensureRoomAction({
+              eventId: eventResult.eventId,
+              organizationId: organizationId as Id<'organizations'>,
+              mode: 'meeting',
+            });
+            if (roomResult.configured && roomResult.videoUrl) {
+              toast.success(
+                t('rooms.booking.livekitCreated', { defaultValue: 'LiveKit room created' }),
+              );
+            }
+          }
+        } catch (err) {
+          logger.warn('LiveKit room creation failed', err);
+        }
+      }
+
       toast.success(t('rooms.booking.booked', { room: room.name }));
+      clearDraft();
       onBooked?.(room._id);
       onClose();
     } catch (error) {

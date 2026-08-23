@@ -78,6 +78,21 @@ describe('calculateDays', () => {
   it('handles month boundaries', () => {
     expect(calculateDays('2024-01-31', '2024-02-02')).toBe(3);
   });
+
+  it('excludes weekends (Sat/Sun)', () => {
+    // Mon Jan 1 – Sun Jan 7 2024: 5 weekdays (Mon–Fri)
+    expect(calculateDays('2024-01-01', '2024-01-07')).toBe(5);
+  });
+
+  it('excludes a weekend in a 6-day span', () => {
+    // Wed Jan 3 – Mon Jan 8: Wed Thu Fri Mon = 4 weekdays
+    expect(calculateDays('2024-01-03', '2024-01-08')).toBe(4);
+  });
+
+  it('returns 1 when range is a single weekend day', () => {
+    // Saturday only → 0 working days → clamped to 1
+    expect(calculateDays('2024-01-06', '2024-01-06')).toBe(1);
+  });
 });
 
 describe('formatCurrency (types)', () => {

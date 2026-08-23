@@ -8,6 +8,7 @@ import { X, Palette } from 'lucide-react';
 import { CHAT_BACKGROUNDS, getBackgroundsByCategory } from '@/lib/chatBackgrounds';
 import { useTranslation } from 'react-i18next';
 import { logger } from '@/lib/logger';
+import { toast } from 'sonner';
 
 interface Props {
   userId: Id<'users'>;
@@ -40,6 +41,7 @@ export const BackgroundPicker = React.memo(function BackgroundPicker({
       await updateChatBackground({ userId, backgroundId: bgId });
     } catch (err) {
       logger.error('Failed to save chat background:', err);
+      toast.error('Failed to save background');
     }
   };
 

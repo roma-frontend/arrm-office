@@ -5,6 +5,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import type { Id } from '../../../convex/_generated/dataModel';
 import { decodeSystemMessage } from '../../../convex/lib/systemMessage';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { toast } from 'sonner';
 import {
   ContextMenu,
   ContextMenuContent,
@@ -257,6 +258,7 @@ export const ConversationList = React.memo(function ConversationList({
       await operation();
     } catch (error) {
       logger.error('Operation failed:', error);
+      toast.error('Operation failed');
     } finally {
       setLoadingOpId(null);
     }

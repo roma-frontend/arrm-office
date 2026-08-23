@@ -186,9 +186,17 @@ export default function ProjectDetailClient({
               <div
                 key={task._id}
                 className="flex items-center justify-between p-3 rounded-xl bg-(--card) border border-(--border) hover:shadow-sm cursor-pointer transition-all"
-                onClick={() =>
-                  setSelectedTask({ id: task._id, title: localizedTaskTitle(t, task) })
-                }
+                onClick={() => {
+                  if ((task as any).type === 'recurring') {
+                    // Navigate to tasks board — recurring tasks are best managed there
+                    router.push('/tasks');
+                  } else {
+                    setSelectedTask({
+                      id: task._id as Id<'tasks'>,
+                      title: localizedTaskTitle(t, task),
+                    });
+                  }
+                }}
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <div
@@ -209,9 +217,24 @@ export default function ProjectDetailClient({
                     </p>
                   </div>
                 </div>
-                <Badge variant="outline" className="text-xs shrink-0">
-                  {task.status}
-                </Badge>
+                <div className="flex items-center gap-2 shrink-0">
+                  {(task as any).type === 'recurring' && (
+                    <Badge variant="secondary" className="text-xs">
+                      🔁{' '}
+                      {String(
+                        t(`recurringTasks.frequency.${(task as any).frequency}`) ||
+                          (task as any).frequency,
+                      )}
+                    </Badge>
+                  )}
+                  <Badge variant="outline" className="text-xs">
+                    {String(
+                      t(
+                        `taskStatus.${task.status.replace('in_progress', 'inProgress').replace('review', 'inReview')}`,
+                      ) || task.status,
+                    )}
+                  </Badge>
+                </div>
               </div>
             ))}
           </div>

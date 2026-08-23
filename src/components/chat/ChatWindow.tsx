@@ -383,6 +383,7 @@ export const ChatWindow = React.memo(function ChatWindow({
       }
     } catch (err) {
       logger.error('Send failed:', err);
+      toast.error('Failed to send message');
     } finally {
       setSending(false);
     }

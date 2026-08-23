@@ -211,15 +211,4 @@ describe('CustomizeViewMenu', () => {
     fireEvent.click(screen.getByLabelText('Hide completed'));
     expect(setPrefs).toHaveBeenCalledWith({ hideCompleted: true });
   });
-
-  it('omits the recurring switch when there is no series to hide', () => {
-    renderMenu({ hasRecurring: false });
-    expect(screen.queryByLabelText('Recurring strip')).toBeNull();
-  });
-
-  it('offers the recurring switch when a series exists', () => {
-    renderMenu({ hasRecurring: true });
-    fireEvent.click(screen.getByLabelText('Recurring strip'));
-    expect(setPrefs).toHaveBeenCalledWith({ showRecurring: false });
-  });
 });

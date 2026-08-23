@@ -54,6 +54,7 @@ import {
   Package,
   PenTool,
   Receipt,
+  Repeat,
   Rocket,
   ScrollText,
   Settings,
@@ -157,12 +158,9 @@ export const navItems: NavEntry[] = [
     icon: CheckSquare,
     roles: ['superadmin', 'admin', 'supervisor', 'employee', 'driver'],
     children: [
-      { type: 'separator', labelKey: 'Work' },
-      { href: '/', labelKey: 'nav.home', icon: LayoutDashboard },
-      { href: '/chat', labelKey: 'nav.inbox', icon: MessageCircle },
       { href: '/tasks', labelKey: 'nav.myTasks', icon: CheckSquare },
+      { href: '/tasks?tab=recurring', labelKey: 'nav.recurringTasks', icon: Repeat },
       { href: '/projects', labelKey: 'nav.projects', icon: FolderKanban },
-      { type: 'separator', labelKey: 'Work' },
     ],
   },
 

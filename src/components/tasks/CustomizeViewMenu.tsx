@@ -30,8 +30,6 @@ export interface CustomizeViewMenuProps {
   toggleBoardColumn: (key: TaskBoardColumnKey) => void;
   reset: () => void;
   isDefault: boolean;
-  /** Hidden when there is no recurring series to show or hide. */
-  hasRecurring?: boolean;
   className?: string;
 }
 
@@ -51,7 +49,6 @@ export function CustomizeViewMenu({
   toggleBoardColumn,
   reset,
   isDefault,
-  hasRecurring = false,
   className,
 }: CustomizeViewMenuProps) {
   const { t } = useTranslation();
@@ -186,13 +183,7 @@ export function CustomizeViewMenu({
             checked={prefs.showStats}
             onChange={(v) => setPrefs({ showStats: v })}
           />
-          {hasRecurring && (
-            <ToggleRow
-              label={t('tasksClient.customize.showRecurring', 'Recurring strip')}
-              checked={prefs.showRecurring}
-              onChange={(v) => setPrefs({ showRecurring: v })}
-            />
-          )}
+
           <ToggleRow
             label={t('tasksClient.customize.hideCompleted', 'Hide completed')}
             hint={t('tasksClient.customize.hideCompletedHint', 'Keeps done work out of every view')}

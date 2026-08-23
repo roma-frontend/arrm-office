@@ -82,7 +82,13 @@ export const listProjects = query({
           .query('tasks')
           .withIndex('by_project', (q) => q.eq('projectId', project._id))
           .take(DEFAULT_LIST_CAP);
-        const taskCount = tasks.length;
+        // Include active recurring series linked to this project in the count.
+        const recurringSeries = await ctx.db
+          .query('recurringTasks')
+          .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
+          .take(DEFAULT_LIST_CAP);
+        const projectRecurring = recurringSeries.filter((r) => r.projectId === project._id);
+        const taskCount = tasks.length + projectRecurring.length;
         const completedTasks = tasks.filter((t) => t.status === 'completed').length;
 
         return {
@@ -126,16 +132,60 @@ export const getProject = query({
       .order('desc')
       .take(DEFAULT_LIST_CAP);
 
+    // Also get recurring tasks (series) linked to this project.
+    // Recurring tasks are stored in a separate table; the hourly sweep
+    // materialises them into `tasks` on each occurrence, but newly created
+    // series appear in `recurringTasks` immediately and must be visible here.
+    const recurringSeries = project.organizationId
+      ? await ctx.db
+          .query('recurringTasks')
+          .withIndex('by_org', (q) => q.eq('organizationId', project.organizationId!))
+          .order('desc')
+          .take(DEFAULT_LIST_CAP)
+      : [];
+    const projectRecurring = recurringSeries.filter((r) => r.projectId === projectId);
+
     const enrichedTasks = await Promise.all(
       tasks.map(async (task) => {
         const assignedTo = task.assignedTo ? await ctx.db.get(task.assignedTo) : null;
         return {
           ...task,
+          type: 'task' as const,
           assignedToUser: assignedTo
             ? { _id: assignedTo._id, name: assignedTo.name, avatarUrl: assignedTo.avatarUrl }
             : null,
         };
       }),
+    );
+
+    const enrichedRecurring = await Promise.all(
+      projectRecurring.map(async (series) => {
+        const assignedTo = await ctx.db.get(series.assignedTo);
+        return {
+          _id: series._id,
+          title: series.title,
+          description: series.description,
+          assignedTo: series.assignedTo,
+          assignedBy: series.assignedBy,
+          status: series.isActive ? ('in_progress' as const) : ('cancelled' as const),
+          priority: series.priority,
+          tags: series.tags,
+          projectId: series.projectId,
+          createdAt: series.createdAt,
+          updatedAt: series.updatedAt,
+          type: 'recurring' as const,
+          frequency: series.frequency,
+          isActive: series.isActive,
+          generatedCount: series.generatedCount ?? 0,
+          assignedToUser: assignedTo
+            ? { _id: assignedTo._id, name: assignedTo.name, avatarUrl: assignedTo.avatarUrl }
+            : null,
+        };
+      }),
+    );
+
+    const allTasks = [...enrichedTasks, ...enrichedRecurring].sort(
+      (a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0),
     );
 
     return {
@@ -147,15 +197,13 @@ export const getProject = query({
         name: m?.name ?? 'Unknown',
         avatarUrl: m?.avatarUrl ?? null,
       })),
-      tasks: enrichedTasks,
-      taskCount: enrichedTasks.length,
-      completedTasks: enrichedTasks.filter((t) => t.status === 'completed').length,
+      tasks: allTasks,
+      taskCount: allTasks.length,
+      completedTasks: allTasks.filter((t) => t.status === 'completed').length,
       progress:
-        enrichedTasks.length > 0
+        allTasks.length > 0
           ? Math.round(
-              (enrichedTasks.filter((t) => t.status === 'completed').length /
-                enrichedTasks.length) *
-                100,
+              (allTasks.filter((t) => t.status === 'completed').length / allTasks.length) * 100,
             )
           : 0,
     };

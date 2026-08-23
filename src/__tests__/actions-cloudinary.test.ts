@@ -40,7 +40,7 @@ const { uploader, config } = jest.requireMock('cloudinary').v2;
 const { getServerUser } = jest.requireMock('@/lib/server-auth');
 
 const TINY_PNG = 'data:image/png;base64,iVBORw0KGgo=';
-const BIG_PAYLOAD = 'A'.repeat(2 * 1024 * 1024); // > 1MB decoded
+const BIG_PAYLOAD = 'A'.repeat(8 * 1024 * 1024); // ~6MB decoded > 5MB avatar limit
 
 /** Every name `assertCloudinaryConfigured()` consults, so a clear is a real clear. */
 const CREDENTIAL_VARS = [
@@ -144,7 +144,7 @@ describe('uploadAvatarToCloudinary', () => {
   it('rejects an oversized payload', async () => {
     await expect(
       uploadAvatarToCloudinary(`data:image/png;base64,${BIG_PAYLOAD}`, 'u1'),
-    ).rejects.toThrow('exceeds the 1MB limit');
+    ).rejects.toThrow('exceeds the 5MB limit');
   });
 });
 

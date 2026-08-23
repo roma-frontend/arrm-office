@@ -86,7 +86,18 @@ export function calculateDays(start: string, end: string): number {
   const s = new Date(start);
   const e = new Date(end);
   if (e < s) return 1;
-  return Math.max(1, Math.ceil((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+
+  // Count only working days (Mon–Fri), excluding Saturday (6) and Sunday (0).
+  let count = 0;
+  const current = new Date(s);
+  while (current <= e) {
+    const dayOfWeek = current.getDay();
+    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+      count++;
+    }
+    current.setDate(current.getDate() + 1);
+  }
+  return Math.max(1, count);
 }
 
 export function formatCurrency(amount: number, lang: string = 'en'): string {

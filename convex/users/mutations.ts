@@ -484,7 +484,15 @@ export const updateUser = mutation({
     }
 
     // Dual-write: patch users table (backward compat) + sync profile fields to userProfiles
+    const prevCreatedAt = user.createdAt;
     await ctx.db.patch(userId, { ...updates, travelAllowance, travelAllowanceOverride });
+
+    // If the registration date (createdAt) was changed, recalculate the
+    // employee's probation period so it matches the new hire date.
+    if (updates.createdAt !== undefined && updates.createdAt !== prevCreatedAt) {
+      await recalculateProbationAfterDateChange(ctx, userId, updates.createdAt);
+    }
+
     const profileFields: Record<string, unknown> = {};
     if (updates.employeeType !== undefined) profileFields.employeeType = updates.employeeType;
     if (updates.department !== undefined) profileFields.department = updates.department;
@@ -1025,6 +1033,80 @@ export const secureDeleteUser = mutation({
     return userId;
   },
 });
+
+// ── Probation recalculation on date change ─────────────────────────────────
+
+const DAY = 86400000;
+const PROBATION_DAYS = 90;
+
+/**
+ * When an admin changes an employee's registration (hire) date the existing
+ * probation period must be recalculated to match the new 3-month window:
+ *
+ *  • hire date + 90 days already in the past → mark active probation passed
+ *  • hire date + 90 days still in the future → adjust the end date to the
+ *    new window; if a probation doesn't exist yet, start one
+ *  • no active probation and window expired → nothing to do
+ */
+async function recalculateProbationAfterDateChange(
+  ctx: MutationCtx,
+  employeeId: Id<'users'>,
+  newCreatedAt: number,
+): Promise<void> {
+  const now = Date.now();
+  const probationEnd = newCreatedAt + PROBATION_DAYS * DAY;
+  const remainingMs = probationEnd - now;
+  const remainingDays = Math.max(0, Math.ceil(remainingMs / DAY));
+
+  // Find any active probation for this employee
+  const active = await ctx.db
+    .query('probationPeriods')
+    .withIndex('by_employee', (q) => q.eq('employeeId', employeeId))
+    .filter((q) => q.eq(q.field('status'), 'active'))
+    .first();
+
+  if (remainingDays <= 0) {
+    // The 90-day window from the new hire date has already elapsed.
+    // Mark any active probation as passed.
+    if (active) {
+      await ctx.db.patch(active._id, {
+        status: 'passed',
+        outcomeNote: 'probation.autoPassed.hireDateChanged',
+        completedAt: now,
+        updatedAt: now,
+      });
+    }
+  } else if (active) {
+    // Window still open — adjust the end date to the new window.
+    const newEndDate = now + remainingDays * DAY;
+    if (newEndDate !== active.endDate) {
+      await ctx.db.patch(active._id, {
+        endDate: newEndDate,
+        // Keep the original end date for audit purposes
+        updatedAt: now,
+      });
+    }
+  } else {
+    // No active probation and the window is still open — start one.
+    const durationDays = Math.min(remainingDays, PROBATION_DAYS);
+    const startDate = now;
+    const endDate = now + durationDays * DAY;
+    await ctx.db.insert('probationPeriods', {
+      organizationId: (await ctx.db.get(employeeId))?.organizationId as any,
+      employeeId,
+      startDate,
+      endDate,
+      originalEndDate: endDate,
+      durationDays,
+      status: 'active',
+      remindersSent: [],
+      extensions: [],
+      createdBy: employeeId,
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // UPDATE CHAT BACKGROUND — user's own preference

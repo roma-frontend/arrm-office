@@ -56,6 +56,7 @@
   --n-400: #738bb4;
   --n-500: #5b7ba8;
   --n-550: #3d6196; /* muted text */
+  --n-550-ch: 61 97 150;
   --n-600: #2c4e7d;
   --n-650: #1e3a6e; /* secondary text */
   --n-ink: #0c1a2e; /* primary text — the darkest light-theme ink */
@@ -344,6 +345,21 @@
   --cyan-quiet: rgb(6 182 212 / 10%);
   --cyan-quiet-hover: rgb(6 182 212 / 15%);
   --cyan-outline: rgb(6 182 212 / 20%);
+
+  /* ── Label hues ─────────────────────────────────────────────────────────
+     Statuses and select-option chips an organization paints itself (see
+     `convex/lib/taskStatus.ts`) draw from nine colours. Seven already have a
+     `text`/`quiet`/`outline` triple above under a semantic name; violet and the
+     neutral did not, so they are completed here rather than reaching for a raw
+     primitive. `--n-*` are light-theme literals that `.dark` never re-points,
+     so a chip built from them would stay pale blue on graphite. */
+  --violet-text: var(--violet-600);
+  --violet-quiet: rgb(var(--violet-500-ch) / 10%);
+  --violet-outline: rgb(var(--violet-500-ch) / 20%);
+
+  --neutral-text: var(--n-550);
+  --neutral-quiet: rgb(var(--n-550-ch) / 10%);
+  --neutral-outline: rgb(var(--n-550-ch) / 22%);
 
   /* ── Charts ─────────────────────────────────────────────────────────────
      Categorical, ordered by how often a series is the "primary" one. Was
@@ -649,6 +665,17 @@
   --cyan-quiet: rgb(var(--cyan-400-ch) / 15%);
   --cyan-quiet-hover: rgb(var(--cyan-400-ch) / 22%);
   --cyan-outline: rgb(var(--cyan-400-ch) / 30%);
+
+  /* Label hues — the lighter 400 step and a wider wash, as every hue above
+     does on graphite. The neutral chip leaves the navy ramp entirely: on this
+     canvas "no colour" has to mean grey, or a gray status reads as a blue one. */
+  --violet-text: var(--violet-400);
+  --violet-quiet: rgb(var(--violet-400-ch) / 15%);
+  --violet-outline: rgb(var(--violet-400-ch) / 30%);
+
+  --neutral-text: var(--text-3);
+  --neutral-quiet: rgb(154 159 164 / 15%);
+  --neutral-outline: rgb(154 159 164 / 30%);
 
   --chart-1: var(--brand-text);
   --chart-2: #34d399;

@@ -33,7 +33,7 @@ const providerValidator = v.union(
 type Provider = 'lucky_carrot' | 'imid' | 'armsoft' | 'telegram';
 
 /** Credential fields that must never reach the client. */
-const SECRET_FIELDS = ['apiKey', 'clientSecret', 'apiPassword'] as const;
+const SECRET_FIELDS = ['apiKey', 'clientSecret', 'apiPassword', 'botToken'] as const;
 
 /**
  * Server-only cache fields. Unlike SECRET_FIELDS these are not user-editable,
@@ -242,6 +242,9 @@ export const saveIntegrationConfig = mutation({
       fieldMap: v.optional(v.string()),
       deactivateMissing: v.optional(v.boolean()),
       tokenPath: v.optional(v.string()),
+      // Telegram
+      botToken: v.optional(v.string()),
+      botUsername: v.optional(v.string()),
     }),
     /** Secret field names to erase. Sent when an admin removes a credential. */
     clearSecrets: v.optional(v.array(v.string())),

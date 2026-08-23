@@ -236,11 +236,12 @@ jest.mock('@/components/employees/PassportFields', () => ({
   ),
 }));
 
-const toast = { success: jest.fn(), error: jest.fn() };
+const toast = { success: jest.fn(), error: jest.fn(), warning: jest.fn() };
 jest.mock('sonner', () => ({
   toast: {
     success: (...a: any[]) => toast.success(...a),
     error: (...a: any[]) => toast.error(...a),
+    warning: (...a: any[]) => toast.warning(...a),
   },
 }));
 

@@ -1,5 +1,6 @@
 import { defineTable } from 'convex/server';
 import { v } from 'convex/values';
+import { taskColorValidator } from '../lib/taskStatus';
 
 export const projects = {
   projects: defineTable({
@@ -29,6 +30,22 @@ export const projects = {
     // Tags for categorization
     tags: v.optional(v.array(v.string())),
     templateId: v.optional(v.id('projectTemplates')),
+    /**
+     * ── A project is this product's ClickUp List ──
+     *
+     * Which is to say: the unit that owns its own columns, its own statuses and
+     * its own saved tabs. That is why these four live here rather than on a new
+     * "list" table — the concept already existed, and giving it the missing
+     * properties beats introducing a second container that means the same thing.
+     */
+    /** Overrides the organization's default status set for this project's tasks. */
+    statusSetId: v.optional(v.id('taskStatusSets')),
+    /** The tab that opens when somebody lands on the project. */
+    defaultViewId: v.optional(v.id('taskViews')),
+    /** From the bounded label palette, so a project chip works in both themes. */
+    color: v.optional(taskColorValidator),
+    /** A lucide icon name, chosen from a bounded list in the project editor. */
+    icon: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })

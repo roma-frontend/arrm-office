@@ -358,7 +358,11 @@ export default function NewIntegrationSettings() {
       setFormState({});
       setClearedSecrets({});
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : String(e));
+      const msg = e instanceof Error ? e.message : String(e);
+      // Convex validation errors start with 'ArgumentValidationError' —
+      // strip the technical prefix so the user sees a useful message.
+      const clean = msg.replace(/^ArgumentValidationError:\s*/i, '').slice(0, 200);
+      toast.error(clean || t('settings.saveFailed', 'Failed to save'));
     } finally {
       setSavingProvider(null);
     }

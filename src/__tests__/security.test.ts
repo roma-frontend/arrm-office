@@ -15,6 +15,9 @@ import {
   hashAPIKey,
   sanitizeObject,
   validateFile,
+  validateUploadPayload,
+  generateCSRFToken,
+  verifyCSRFToken,
   logSecurityEvent,
   SecurityEventType,
 } from '@/lib/security';
@@ -698,5 +701,191 @@ describe('validateFile - edge cases', () => {
     const file = new File(['test'], 'doc.jpg', { type: 'application/pdf' });
     const result = validateFile(file, 'document');
     expect(result.valid).toBe(false);
+  });
+});
+
+describe('generateCSRFToken', () => {
+  it('generates a token in token.signature format', () => {
+    const token = generateCSRFToken();
+    expect(token).toContain('.');
+    const [part, sig] = token.split('.');
+    expect(part!.length).toBe(64); // 32 bytes hex
+    expect(sig!.length).toBe(64); // sha256 hex
+  });
+
+  it('generates unique tokens', () => {
+    const t1 = generateCSRFToken();
+    const t2 = generateCSRFToken();
+    expect(t1).not.toBe(t2);
+  });
+});
+
+describe('verifyCSRFToken', () => {
+  it('accepts a valid token', () => {
+    const token = generateCSRFToken();
+    expect(verifyCSRFToken(token)).toBe(true);
+  });
+
+  it('rejects empty/falsy token', () => {
+    expect(verifyCSRFToken('')).toBe(false);
+    expect(verifyCSRFToken(null as any)).toBe(false);
+  });
+
+  it('rejects token without dot separator', () => {
+    expect(verifyCSRFToken('noseparator')).toBe(false);
+  });
+
+  it('rejects token with wrong signature', () => {
+    const [tokenPart] = generateCSRFToken().split('.');
+    const wrongSig = 'a'.repeat(64); // same length as real signature
+    expect(verifyCSRFToken(`${tokenPart}.${wrongSig}`)).toBe(false);
+  });
+
+  it('rejects non-string input', () => {
+    expect(verifyCSRFToken(123 as any)).toBe(false);
+  });
+});
+
+describe('validateUploadPayload', () => {
+  it('accepts a valid avatar payload', () => {
+    const result = validateUploadPayload({
+      fileName: 'photo.jpg',
+      mimeType: 'image/jpeg',
+      sizeBytes: 100_000,
+      kind: 'avatar',
+    });
+    expect(result.valid).toBe(true);
+  });
+
+  it('rejects oversized file', () => {
+    const result = validateUploadPayload({
+      fileName: 'big.jpg',
+      mimeType: 'image/jpeg',
+      sizeBytes: 10 * 1024 * 1024,
+      kind: 'avatar',
+    });
+    expect(result.valid).toBe(false);
+    expect(result.error).toContain('exceeds');
+  });
+
+  it('rejects missing MIME type', () => {
+    const result = validateUploadPayload({
+      fileName: 'photo.jpg',
+      sizeBytes: 100_000,
+      kind: 'avatar',
+    });
+    expect(result.valid).toBe(false);
+    expect(result.error).toContain('file type');
+  });
+
+  it('rejects path traversal in filename', () => {
+    const result = validateUploadPayload({
+      fileName: '../etc/passwd',
+      mimeType: 'image/jpeg',
+      sizeBytes: 100_000,
+      kind: 'avatar',
+    });
+    expect(result.valid).toBe(false);
+    expect(result.error).toContain('invalid characters');
+  });
+
+  it('rejects backslash in filename', () => {
+    const result = validateUploadPayload({
+      fileName: 'C:\\Users\\file.jpg',
+      mimeType: 'image/jpeg',
+      sizeBytes: 100_000,
+      kind: 'avatar',
+    });
+    expect(result.valid).toBe(false);
+  });
+
+  it('rejects unknown extension', () => {
+    const result = validateUploadPayload({
+      fileName: 'file.exe',
+      mimeType: 'application/octet-stream',
+      sizeBytes: 100_000,
+      kind: 'document',
+    });
+    expect(result.valid).toBe(false);
+  });
+
+  it('accepts a valid document payload', () => {
+    const result = validateUploadPayload({
+      fileName: 'report.pdf',
+      mimeType: 'application/pdf',
+      sizeBytes: 500_000,
+      kind: 'document',
+    });
+    expect(result.valid).toBe(true);
+  });
+
+  it('accepts chat payload with various types', () => {
+    const result = validateUploadPayload({
+      fileName: 'note.txt',
+      mimeType: 'text/plain',
+      sizeBytes: 1000,
+      kind: 'chat',
+    });
+    expect(result.valid).toBe(true);
+  });
+
+  it('rejects disallowed MIME type', () => {
+    const result = validateUploadPayload({
+      fileName: 'script.js',
+      mimeType: 'text/javascript',
+      sizeBytes: 100,
+      kind: 'chat',
+    });
+    expect(result.valid).toBe(false);
+  });
+});
+
+describe('logSecurityEvent - critical events', () => {
+  it('logs SQL_INJECTION_ATTEMPT as critical', () => {
+    expect(() =>
+      logSecurityEvent({
+        type: SecurityEventType.SQL_INJECTION_ATTEMPT,
+        ip: '10.0.0.1',
+        timestamp: Date.now(),
+      }),
+    ).not.toThrow();
+  });
+
+  it('logs XSS_ATTEMPT as critical', () => {
+    expect(() =>
+      logSecurityEvent({
+        type: SecurityEventType.XSS_ATTEMPT,
+        ip: '10.0.0.1',
+        timestamp: Date.now(),
+      }),
+    ).not.toThrow();
+  });
+
+  it('logs ACCOUNT_LOCKED as critical', () => {
+    expect(() =>
+      logSecurityEvent({
+        type: SecurityEventType.ACCOUNT_LOCKED,
+        ip: '10.0.0.1',
+        timestamp: Date.now(),
+      }),
+    ).not.toThrow();
+  });
+
+  it('logs non-critical events without error', () => {
+    expect(() =>
+      logSecurityEvent({
+        type: SecurityEventType.LOGIN_FAILURE,
+        ip: '10.0.0.1',
+        timestamp: Date.now(),
+      }),
+    ).not.toThrow();
+  });
+});
+
+describe('validatePassword - edge cases', () => {
+  it('rejects non-string input', () => {
+    const result = validatePassword(123 as any);
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain('Password must be a string');
   });
 });

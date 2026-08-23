@@ -289,10 +289,7 @@ export default function PayrollUpcomingBanner({ compact }: PayrollUpcomingBanner
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <Card className="relative overflow-hidden border-(--border)">
-        {/* Top gradient accent */}
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-(--brand) via-(--warning-solid) to-(--success-solid)" />
-
+      <Card className="relative overflow-hidden border-(--border) mt-2">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -326,27 +323,27 @@ export default function PayrollUpcomingBanner({ compact }: PayrollUpcomingBanner
         <CardContent className="pb-3">
           {/* Current period summary */}
           {data.current && (
-            <div className="mb-4 p-3 rounded-xl bg-gradient-to-r from-(--brand) to-(--purple) dark:from-(--brand) dark:to-(--purple) border border-(--brand-outline) dark:border-(--brand-outline)">
+            <div className="mb-4 p-3 rounded-xl bg-(--brand) dark:bg-(--brand) border border-(--brand-outline) dark:border-(--brand-outline)">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-(--brand-text)" />
-                  <span className="text-sm font-medium text-(--text-primary)">
+                  <Clock className="w-4 h-4 text-white/80" />
+                  <span className="text-sm font-medium text-white">
                     {t('payroll.currentRun', 'Current Period')}
                   </span>
                   <Badge
-                    variant={STATUS_BADGE[data.current.status] ?? 'secondary'}
-                    className="capitalize text-[10px]"
+                    variant="outline"
+                    className="capitalize text-[10px] border-white/30 text-white/90"
                   >
                     {data.current.status}
                   </Badge>
                 </div>
-                <div className="flex items-center gap-3 text-xs text-(--text-muted)">
+                <div className="flex items-center gap-3 text-xs text-white/70">
                   <span className="flex items-center gap-1">
-                    <DollarSign className="w-3 h-3" />
+                    <DollarSign className="w-3 h-3 text-white/70" />
                     {formatCurrency(data.current.totalGross, data.currency)}
                   </span>
                   <span className="flex items-center gap-1">
-                    <Users className="w-3 h-3" />
+                    <Users className="w-3 h-3 text-white/70" />
                     {data.current.employeeCount}
                   </span>
                 </div>

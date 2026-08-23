@@ -336,7 +336,7 @@ export const UPLOAD_POLICIES: Record<UploadKind, UploadPolicy> = {
   avatar: {
     mimeTypes: ALLOWED_IMAGE_TYPES,
     extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
-    maxBytes: 1 * 1024 * 1024,
+    maxBytes: 5 * 1024 * 1024,
   },
   signature: {
     mimeTypes: ['image/png', 'image/jpeg', 'image/webp'],

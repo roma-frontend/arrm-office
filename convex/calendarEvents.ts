@@ -1080,3 +1080,84 @@ export const remove = mutation({
     return { success: true, releasedRoom };
   },
 });
+
+// ── Create from room booking ───────────────────────────────────────────────
+
+/** Convert epoch ms to `yyyy-MM-dd` in the viewer's local zone. */
+function epochToDateStr(ms: number): string {
+  const d = new Date(ms);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/** Convert epoch ms to `HH:mm`. */
+function epochToTimeStr(ms: number): string {
+  const d = new Date(ms);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+/**
+ * Creates a calendar event from an existing room booking, linking the two
+ * together so the calendar can show the booking's data and a LiveKit room
+ * can be created via `meetings.ensureRoom`.
+ */
+export const createFromBooking = mutation({
+  args: {
+    roomBookingId: v.id('roomBookings'),
+  },
+  handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+
+    const booking = await ctx.db.get(args.roomBookingId);
+    if (!booking) throw new Error('Booking not found');
+
+    if (!isSuperadmin(caller) && caller.organizationId !== booking.organizationId) {
+      throw new Error('Access denied: different organization');
+    }
+
+    // Prevent duplicate calendar events for the same booking
+    const existing = await ctx.db
+      .query('calendarEvents')
+      .withIndex('by_room_booking', (q) => q.eq('roomBookingId', args.roomBookingId))
+      .first();
+    if (existing) return { eventId: existing._id, alreadyExisted: true as const };
+
+    const date = epochToDateStr(booking.startTime);
+    const startTime = epochToTimeStr(booking.startTime);
+    const endTime = epochToTimeStr(booking.endTime);
+
+    // Resolve attendee names for the calendar event
+    const attendeeNames: string[] = [];
+    const attendeeIds: Id<'users'>[] = [];
+    for (const id of booking.attendeeIds ?? []) {
+      const user = await ctx.db.get(id);
+      if (user) {
+        attendeeNames.push(user.name);
+        attendeeIds.push(id);
+      }
+    }
+
+    const now = Date.now();
+    const eventId = await ctx.db.insert('calendarEvents', {
+      organizationId: booking.organizationId,
+      createdBy: caller._id,
+      title: booking.title,
+      date,
+      startTime,
+      endTime,
+      allDay: false,
+      location: undefined,
+      description: booking.description,
+      category: 'meeting',
+      reminder: '15min',
+      attendees: attendeeNames,
+      attendeeIds,
+      roomId: booking.roomId,
+      roomBookingId: booking._id,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    return { eventId, alreadyExisted: false as const };
+  },
+});

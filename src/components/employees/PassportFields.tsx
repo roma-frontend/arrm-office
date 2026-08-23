@@ -120,7 +120,9 @@ export function PassportFields({
       // Persist when the employee already exists (edit flow) — but never claim
       // validity for a failed/unknown verification.
       if (userId && status !== 'error') {
-        await recordTaxIdVerification({ userId, status }).catch(() => {});
+        await recordTaxIdVerification({ userId, status }).catch(() => {
+          toast.warning('Tax ID verification could not be saved');
+        });
       }
     } catch {
       setTaxIdStatus('error');
