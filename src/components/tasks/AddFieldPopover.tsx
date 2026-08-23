@@ -257,19 +257,16 @@ function ConfigEditor({
   return null;
 }
 
-export function AddFieldPopover({
-  field,
-  onSubmit,
-  onArchive,
-  trigger,
-}: AddFieldPopoverProps) {
+export function AddFieldPopover({ field, onSubmit, onArchive, trigger }: AddFieldPopoverProps) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const editing = !!field;
 
   const [type, setType] = useState<TaskFieldType | null>(field?.type ?? null);
   const [name, setName] = useState(field?.name ?? '');
-  const [options, setOptions] = useState<TaskFieldOption[]>(field?.options ? [...field.options] : []);
+  const [options, setOptions] = useState<TaskFieldOption[]>(
+    field?.options ? [...field.options] : [],
+  );
   const [config, setConfig] = useState<TaskFieldConfig>(field?.config ? { ...field.config } : {});
   const [required, setRequired] = useState(!!field?.required);
   const [busy, setBusy] = useState(false);

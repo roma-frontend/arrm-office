@@ -1119,7 +1119,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
       } catch (error) {
         const message =
           typeof (error as { data?: unknown })?.data === 'string'
-            ? ((error as { data: string }).data)
+            ? (error as { data: string }).data
             : error instanceof Error
               ? error.message
               : t('common.error', 'Something went wrong');
@@ -2127,7 +2127,13 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
       )}
 
       {/* ═══ Content ═══ */}
-      <div className="flex-1 overflow-y-auto min-h-0">
+      {/* The grid needs one scroll box for both axes. A sticky header positions
+          itself against its nearest scrolling ancestor, so if the horizontal
+          scrolling happened inside the table instead, the header would scroll
+          away vertically. Every other view scrolls vertically only, as before. */}
+      <div
+        className={`flex-1 min-h-0 ${viewMode === 'table' ? 'overflow-auto' : 'overflow-y-auto'}`}
+      >
         {rawTasks === undefined ? (
           <div className="flex items-center justify-center py-20">
             <ShieldLoader size="lg" />
@@ -2229,6 +2235,48 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
           <div className="p-4 sm:p-6">
             <TimelineView tasks={tasks} onOpen={(task) => openTask(task)} />
           </div>
+        ) : viewMode === 'table' ? (
+          /* ═══ Table View — the ClickUp grid ═══ */
+          /* Handed the same `tasks` the list and the kanban get, so all three
+             views agree about what is on the board; the grid only differs in
+             what it lets you do to a row without opening it. */
+          <TaskTable
+            tasks={tasks}
+            statuses={statuses}
+            fields={fields}
+            users={cellUsers}
+            view={viewState}
+            layout={prefs.table}
+            density={prefs.density}
+            canEdit={canCreate}
+            lang={i18n.language}
+            projectName={projectNameOf}
+            onOpenTask={(taskId) => {
+              const task = tasks.find((candidate) => candidate._id === taskId);
+              if (task) openTask(task);
+            }}
+            onSetStatus={handleSetStatus}
+            onPatchTask={handlePatchTask}
+            onSetField={handleSetField}
+            onSort={toggleSort}
+            onResizeColumn={setColumnWidth}
+            onReorderColumns={setColumnOrder}
+            onAddTask={canCreate ? handleAddTask : undefined}
+            onBulkPatch={canManage ? handleBulkPatch : undefined}
+            onBulkDelete={canManage ? handleBulkDelete : undefined}
+            addColumnSlot={canManage ? <AddFieldPopover onSubmit={handleCreateField} /> : undefined}
+            emptyState={
+              <div className="py-20 text-center">
+                <p className="mb-3 text-4xl">📋</p>
+                <p className="font-medium text-(--text-secondary)">
+                  {t('tasksClient.noTasksFound')}
+                </p>
+                <p className="mt-1 text-sm text-(--text-muted)">
+                  {canManage ? t('tasksClient.createNewTask') : t('tasksClient.noTasksAssigned')}
+                </p>
+              </div>
+            }
+          />
         ) : (
           /* ═══ List View — ClickUp Design ═══ */
           <div className="flex flex-col min-h-0">

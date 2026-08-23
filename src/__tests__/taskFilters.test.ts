@@ -55,8 +55,12 @@ describe('matchesCondition', () => {
 
   // any_of / none_of
   it('any_of: matches when value is in list', () => {
-    expect(matchesCondition(task(), condition('status', 'any_of', ['in_progress', 'completed']))).toBe(true);
-    expect(matchesCondition(task(), condition('status', 'any_of', ['pending', 'completed']))).toBe(false);
+    expect(
+      matchesCondition(task(), condition('status', 'any_of', ['in_progress', 'completed'])),
+    ).toBe(true);
+    expect(matchesCondition(task(), condition('status', 'any_of', ['pending', 'completed']))).toBe(
+      false,
+    );
   });
 
   it('none_of: rejects when value is in list', () => {
@@ -78,35 +82,68 @@ describe('matchesCondition', () => {
 
   // gt / lt
   it('gt: greater than', () => {
-    expect(matchesCondition(task({ timeEstimateMinutes: 100 }), condition('timeEstimate', 'gt', ['50']))).toBe(true);
-    expect(matchesCondition(task({ timeEstimateMinutes: 100 }), condition('timeEstimate', 'gt', ['150']))).toBe(false);
+    expect(
+      matchesCondition(task({ timeEstimateMinutes: 100 }), condition('timeEstimate', 'gt', ['50'])),
+    ).toBe(true);
+    expect(
+      matchesCondition(
+        task({ timeEstimateMinutes: 100 }),
+        condition('timeEstimate', 'gt', ['150']),
+      ),
+    ).toBe(false);
   });
 
   it('lt: less than', () => {
-    expect(matchesCondition(task({ timeEstimateMinutes: 100 }), condition('timeEstimate', 'lt', ['150']))).toBe(true);
-    expect(matchesCondition(task({ timeEstimateMinutes: 100 }), condition('timeEstimate', 'lt', ['50']))).toBe(false);
+    expect(
+      matchesCondition(
+        task({ timeEstimateMinutes: 100 }),
+        condition('timeEstimate', 'lt', ['150']),
+      ),
+    ).toBe(true);
+    expect(
+      matchesCondition(task({ timeEstimateMinutes: 100 }), condition('timeEstimate', 'lt', ['50'])),
+    ).toBe(false);
   });
 
   // between
   it('between: value within range', () => {
     const now = Date.now();
-    expect(matchesCondition(task({ deadline: now }), condition('deadline', 'between', [String(now - 1000), String(now + 1000)]))).toBe(true);
-    expect(matchesCondition(task({ deadline: now }), condition('deadline', 'between', [String(now + 1000), String(now + 2000)]))).toBe(false);
+    expect(
+      matchesCondition(
+        task({ deadline: now }),
+        condition('deadline', 'between', [String(now - 1000), String(now + 1000)]),
+      ),
+    ).toBe(true);
+    expect(
+      matchesCondition(
+        task({ deadline: now }),
+        condition('deadline', 'between', [String(now + 1000), String(now + 2000)]),
+      ),
+    ).toBe(false);
   });
 
   it('between: bounds in reverse order still work', () => {
     const now = Date.now();
-    expect(matchesCondition(task({ deadline: now }), condition('deadline', 'between', [String(now + 1000), String(now - 1000)]))).toBe(true);
+    expect(
+      matchesCondition(
+        task({ deadline: now }),
+        condition('deadline', 'between', [String(now + 1000), String(now - 1000)]),
+      ),
+    ).toBe(true);
   });
 
   // is_set / is_not_set
   it('is_set: value present', () => {
     expect(matchesCondition(task(), condition('assignee', 'is_set', []))).toBe(true);
-    expect(matchesCondition(task({ assignedTo: undefined }), condition('assignee', 'is_set', []))).toBe(false);
+    expect(
+      matchesCondition(task({ assignedTo: undefined }), condition('assignee', 'is_set', [])),
+    ).toBe(false);
   });
 
   it('is_not_set: value absent', () => {
-    expect(matchesCondition(task({ assignedTo: undefined }), condition('assignee', 'is_not_set', []))).toBe(true);
+    expect(
+      matchesCondition(task({ assignedTo: undefined }), condition('assignee', 'is_not_set', [])),
+    ).toBe(true);
     expect(matchesCondition(task(), condition('assignee', 'is_not_set', []))).toBe(false);
   });
 
@@ -142,7 +179,9 @@ describe('matchesCondition', () => {
 
   // NaN handling
   it('gt/lt with non-numeric returns false', () => {
-    expect(matchesCondition(task({ timeEstimateMinutes: NaN }), condition('timeEstimate', 'gt', ['50']))).toBe(false);
+    expect(
+      matchesCondition(task({ timeEstimateMinutes: NaN }), condition('timeEstimate', 'gt', ['50'])),
+    ).toBe(false);
   });
 
   // empty field
@@ -245,7 +284,19 @@ describe('isMultiValueOp', () => {
 
 describe('FILTER_OP_LABELS', () => {
   it('has labels for all ops', () => {
-    const ops = ['is', 'is_not', 'any_of', 'none_of', 'contains', 'not_contains', 'gt', 'lt', 'between', 'is_set', 'is_not_set'] as const;
+    const ops = [
+      'is',
+      'is_not',
+      'any_of',
+      'none_of',
+      'contains',
+      'not_contains',
+      'gt',
+      'lt',
+      'between',
+      'is_set',
+      'is_not_set',
+    ] as const;
     for (const op of ops) {
       expect(FILTER_OP_LABELS[op]).toBeTruthy();
     }

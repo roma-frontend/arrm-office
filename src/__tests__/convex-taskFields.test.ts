@@ -24,13 +24,21 @@ jest.mock('../../convex/lib/taskConfig', () => ({
   listFieldsFor: jest.fn().mockResolvedValue([]),
   assertFieldCapacity: jest.fn(),
   uniqueFieldKey: jest.fn((_name: string, taken: string[]) => {
-    const base = _name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+    const base = _name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_|_$/g, '');
     let key = base;
     let i = 2;
-    while (taken.includes(key)) { key = `${base}_${i}`; i++; }
+    while (taken.includes(key)) {
+      key = `${base}_${i}`;
+      i++;
+    }
     return key;
   }),
-  nextFieldOrder: jest.fn((fields: any[]) => fields.reduce((max, f) => Math.max(max, f.order), -1) + 1),
+  nextFieldOrder: jest.fn(
+    (fields: any[]) => fields.reduce((max, f) => Math.max(max, f.order), -1) + 1,
+  ),
 }));
 
 jest.mock('../../convex/lib/taskCustomFields', () => {
@@ -47,7 +55,11 @@ jest.mock('../../convex/lib/taskCustomFields', () => {
     assertValidFieldDef: jest.fn(),
     fieldHasOptions: jest.fn(() => false),
     fieldTypeValidator: v.string(),
-    fieldOptionValidator: v.object({ id: v.string(), label: v.string(), color: v.optional(v.string()) }),
+    fieldOptionValidator: v.object({
+      id: v.string(),
+      label: v.string(),
+      color: v.optional(v.string()),
+    }),
     fieldConfigValidator: v.optional(v.any()),
   };
 });
@@ -144,15 +156,21 @@ describe('createField', () => {
     });
 
     expect(id).toBe('new_id');
-    expect(insert).toHaveBeenCalledWith('taskFields', expect.objectContaining({
-      name: 'Sprint Points',
-      type: 'number',
-      organizationId: ORG,
-      isActive: true,
-    }));
-    expect(insert).toHaveBeenCalledWith('auditLogs', expect.objectContaining({
-      action: 'task_field_created',
-    }));
+    expect(insert).toHaveBeenCalledWith(
+      'taskFields',
+      expect.objectContaining({
+        name: 'Sprint Points',
+        type: 'number',
+        organizationId: ORG,
+        isActive: true,
+      }),
+    );
+    expect(insert).toHaveBeenCalledWith(
+      'auditLogs',
+      expect.objectContaining({
+        action: 'task_field_created',
+      }),
+    );
   });
 
   it('assigns order based on existing fields', async () => {
@@ -175,9 +193,9 @@ describe('createField', () => {
       throw new Error('at most');
     });
 
-    await expect(
-      handlers.createField(ctx, { name: 'New', type: 'text' }),
-    ).rejects.toThrow('at most');
+    await expect(handlers.createField(ctx, { name: 'New', type: 'text' })).rejects.toThrow(
+      'at most',
+    );
   });
 });
 
@@ -192,9 +210,12 @@ describe('updateField', () => {
       name: 'Story Points',
     });
 
-    expect(patch).toHaveBeenCalledWith(FIELD_ID, expect.objectContaining({
-      name: 'Story Points',
-    }));
+    expect(patch).toHaveBeenCalledWith(
+      FIELD_ID,
+      expect.objectContaining({
+        name: 'Story Points',
+      }),
+    );
   });
 
   it('throws for non-existent field', async () => {
@@ -202,9 +223,9 @@ describe('updateField', () => {
     const { ctx } = makeCtx();
     ctx.db.get.mockResolvedValue(null);
 
-    await expect(
-      handlers.updateField(ctx, { fieldId: FIELD_ID, name: 'X' }),
-    ).rejects.toThrow('not found');
+    await expect(handlers.updateField(ctx, { fieldId: FIELD_ID, name: 'X' })).rejects.toThrow(
+      'not found',
+    );
   });
 
   it('updates type', async () => {
@@ -217,9 +238,12 @@ describe('updateField', () => {
       type: 'text',
     });
 
-    expect(patch).toHaveBeenCalledWith(FIELD_ID, expect.objectContaining({
-      type: 'text',
-    }));
+    expect(patch).toHaveBeenCalledWith(
+      FIELD_ID,
+      expect.objectContaining({
+        type: 'text',
+      }),
+    );
   });
 
   it('updates required flag', async () => {
@@ -232,9 +256,12 @@ describe('updateField', () => {
       required: true,
     });
 
-    expect(patch).toHaveBeenCalledWith(FIELD_ID, expect.objectContaining({
-      required: true,
-    }));
+    expect(patch).toHaveBeenCalledWith(
+      FIELD_ID,
+      expect.objectContaining({
+        required: true,
+      }),
+    );
   });
 });
 
@@ -246,9 +273,12 @@ describe('archiveField', () => {
 
     await handlers.archiveField(ctx, { fieldId: FIELD_ID });
 
-    expect(patch).toHaveBeenCalledWith(FIELD_ID, expect.objectContaining({
-      isActive: false,
-    }));
+    expect(patch).toHaveBeenCalledWith(
+      FIELD_ID,
+      expect.objectContaining({
+        isActive: false,
+      }),
+    );
   });
 
   it('throws for non-existent field', async () => {
@@ -256,9 +286,7 @@ describe('archiveField', () => {
     const { ctx } = makeCtx();
     ctx.db.get.mockResolvedValue(null);
 
-    await expect(
-      handlers.archiveField(ctx, { fieldId: FIELD_ID }),
-    ).rejects.toThrow('not found');
+    await expect(handlers.archiveField(ctx, { fieldId: FIELD_ID })).rejects.toThrow('not found');
   });
 });
 
@@ -266,10 +294,7 @@ describe('reorderFields', () => {
   it('reorders fields and returns count', async () => {
     mockStaffScope();
     const { ctx, patch } = makeCtx();
-    const fields = [
-      fieldDoc({ _id: 'f1', order: 0 }),
-      fieldDoc({ _id: 'f2', order: 1 }),
-    ];
+    const fields = [fieldDoc({ _id: 'f1', order: 0 }), fieldDoc({ _id: 'f2', order: 1 })];
     ctx.db.query().withIndex().take.mockResolvedValue(fields);
 
     const result = await handlers.reorderFields(ctx, {
@@ -282,10 +307,7 @@ describe('reorderFields', () => {
   it('reorders successfully', async () => {
     mockStaffScope();
     const { ctx, patch } = makeCtx();
-    const fields = [
-      fieldDoc({ _id: 'f1', order: 0 }),
-      fieldDoc({ _id: 'f2', order: 1 }),
-    ];
+    const fields = [fieldDoc({ _id: 'f1', order: 0 }), fieldDoc({ _id: 'f2', order: 1 })];
     ctx.db.query().withIndex().take.mockResolvedValue(fields);
 
     const result = await handlers.reorderFields(ctx, { fieldIds: ['f1', 'f2'] });

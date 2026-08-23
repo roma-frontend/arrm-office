@@ -248,13 +248,15 @@ export const tasks = {
      * Board status — same union as `tasks.status` so recurring tasks appear on
      * the kanban alongside regular ones. Defaults to 'in_progress' when absent.
      */
-    status: v.optional(v.union(
-      v.literal('pending'),
-      v.literal('in_progress'),
-      v.literal('review'),
-      v.literal('completed'),
-      v.literal('cancelled'),
-    )),
+    status: v.optional(
+      v.union(
+        v.literal('pending'),
+        v.literal('in_progress'),
+        v.literal('review'),
+        v.literal('completed'),
+        v.literal('cancelled'),
+      ),
+    ),
     /** `yyyy-MM-dd` of the occurrence last materialized — the double-run guard. */
     lastGeneratedKey: v.optional(v.string()),
     /** Running total, so the series can report what it has produced. */

@@ -103,9 +103,7 @@ function NameCell({
         // row's hover and selected backgrounds, or it paints a pale stripe over
         // whichever one the row is showing.
         'sticky left-0 z-[1] flex min-w-0 items-center gap-2 border-r border-(--border) pl-2 pr-3',
-        selected
-          ? 'bg-(--brand-quiet)'
-          : 'bg-(--card) group-hover/row:bg-(--background-subtle)',
+        selected ? 'bg-(--brand-quiet)' : 'bg-(--card) group-hover/row:bg-(--background-subtle)',
       )}
     >
       <input
@@ -168,7 +166,15 @@ function NameCell({
 }
 
 /** The cell for one column of one row. */
-function RowCell({ column, task, ctx }: { column: TaskColumn; task: TaskTableRow; ctx: TaskRowContext }) {
+function RowCell({
+  column,
+  task,
+  ctx,
+}: {
+  column: TaskColumn;
+  task: TaskTableRow;
+  ctx: TaskRowContext;
+}) {
   const { t } = useTranslation();
   const readOnly = !ctx.canEdit;
 

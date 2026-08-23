@@ -91,7 +91,8 @@ export function StatusSetEditor({
 
   const problem = useMemo(() => {
     if (!name.trim()) return t('tasksTable.statusSetNameRequired', 'Name the set');
-    if (rows.length < 2) return t('tasksTable.statusSetTooSmall', 'A set needs at least two statuses');
+    if (rows.length < 2)
+      return t('tasksTable.statusSetTooSmall', 'A set needs at least two statuses');
     if (rows.some((row) => !row.label.trim())) {
       return t('tasksTable.statusLabelRequired', 'Every status needs a label');
     }
@@ -174,10 +175,7 @@ export function StatusSetEditor({
               }}
               className="grid grid-cols-[1.5rem_1fr_7rem_9rem_1.75rem] items-center gap-1.5"
             >
-              <GripVertical
-                aria-hidden
-                className="h-3.5 w-3.5 cursor-grab text-(--text-muted)"
-              />
+              <GripVertical aria-hidden className="h-3.5 w-3.5 cursor-grab text-(--text-muted)" />
               <input
                 value={row.labelKey ? statusLabel(t, row) : row.label}
                 // A built-in status carries a `labelKey` and is translated; renaming

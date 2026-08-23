@@ -2,7 +2,13 @@
  * Tests for `@/lib/audit/auditExport` — CSV and JSON audit trail export.
  */
 import { describe, it, expect } from '@jest/globals';
-import { auditRowsToCsv, auditRowsToJson, auditExportFilename, type AuditExportRow, type AuditCsvLabels } from '@/lib/audit/auditExport';
+import {
+  auditRowsToCsv,
+  auditRowsToJson,
+  auditExportFilename,
+  type AuditExportRow,
+  type AuditCsvLabels,
+} from '@/lib/audit/auditExport';
 
 const LABELS: AuditCsvLabels = {
   timestampIso: 'Timestamp (UTC)',

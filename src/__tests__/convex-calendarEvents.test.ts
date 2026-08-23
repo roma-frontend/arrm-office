@@ -36,7 +36,8 @@ jest.mock('../../convex/meetingRooms', () => ({
 let handlers: Record<string, (ctx: any, args: any) => Promise<any>> = {};
 
 // Get the mock functions directly (created by jest.mock above)
-const getAuthCallerFn = jest.requireMock('../../convex/lib/getAuthCaller').getAuthCaller as jest.Mock;
+const getAuthCallerFn = jest.requireMock('../../convex/lib/getAuthCaller')
+  .getAuthCaller as jest.Mock;
 const isSuperadminFn = jest.requireMock('../../convex/lib/auth').isSuperadmin as jest.Mock;
 
 beforeEach(() => {
@@ -123,11 +124,14 @@ describe('create', () => {
     });
 
     expect(id).toBe('new_id');
-    expect(insert).toHaveBeenCalledWith('calendarEvents', expect.objectContaining({
-      title: 'Team Meeting',
-      organizationId: ORG,
-      createdBy: USER,
-    }));
+    expect(insert).toHaveBeenCalledWith(
+      'calendarEvents',
+      expect.objectContaining({
+        title: 'Team Meeting',
+        organizationId: ORG,
+        createdBy: USER,
+      }),
+    );
   });
 
   it('throws for empty title', async () => {
@@ -185,10 +189,13 @@ describe('create', () => {
       roomEndTime: now + 3600000,
     });
 
-    expect(insert).toHaveBeenCalledWith('calendarEvents', expect.objectContaining({
-      roomId: 'room-1',
-      roomBookingId: 'booking-1',
-    }));
+    expect(insert).toHaveBeenCalledWith(
+      'calendarEvents',
+      expect.objectContaining({
+        roomId: 'room-1',
+        roomBookingId: 'booking-1',
+      }),
+    );
   });
 });
 
@@ -209,10 +216,13 @@ describe('update', () => {
       reminder: '30min',
     });
 
-    expect(patch).toHaveBeenCalledWith(EVENT_ID, expect.objectContaining({
-      title: 'Updated Meeting',
-      date: '2026-08-26',
-    }));
+    expect(patch).toHaveBeenCalledWith(
+      EVENT_ID,
+      expect.objectContaining({
+        title: 'Updated Meeting',
+        date: '2026-08-26',
+      }),
+    );
   });
 
   it('throws for non-existent event', async () => {
@@ -315,14 +325,19 @@ describe('createFromBooking', () => {
 
     const result = await handlers.createFromBooking(ctx, { roomBookingId: 'booking-1' });
 
-    expect(result).toEqual(expect.objectContaining({
-      eventId: expect.anything(),
-    }));
-    expect(insert).toHaveBeenCalledWith('calendarEvents', expect.objectContaining({
-      title: 'Sprint Review',
-      roomId: 'room-1',
-      roomBookingId: 'booking-1',
-    }));
+    expect(result).toEqual(
+      expect.objectContaining({
+        eventId: expect.anything(),
+      }),
+    );
+    expect(insert).toHaveBeenCalledWith(
+      'calendarEvents',
+      expect.objectContaining({
+        title: 'Sprint Review',
+        roomId: 'room-1',
+        roomBookingId: 'booking-1',
+      }),
+    );
   });
 
   it('throws for non-existent booking', async () => {
@@ -330,8 +345,8 @@ describe('createFromBooking', () => {
     const { ctx } = makeCtx();
     ctx.db.get.mockResolvedValue(null);
 
-    await expect(
-      handlers.createFromBooking(ctx, { roomBookingId: 'unknown' }),
-    ).rejects.toThrow('not found');
+    await expect(handlers.createFromBooking(ctx, { roomBookingId: 'unknown' })).rejects.toThrow(
+      'not found',
+    );
   });
 });

@@ -79,11 +79,7 @@ describe('nextFieldOrder', () => {
   });
 
   it('returns max + 1', () => {
-    const existing = [
-      { order: 0 } as any,
-      { order: 5 } as any,
-      { order: 2 } as any,
-    ];
+    const existing = [{ order: 0 } as any, { order: 5 } as any, { order: 2 } as any];
     expect(nextFieldOrder(existing)).toBe(6);
   });
 
@@ -132,44 +128,32 @@ describe('assertRequiredFields', () => {
   });
 
   it('does not throw for filled required fields', () => {
-    const fields = [
-      { isActive: true, required: true, name: 'Sprint', _id: 'f1' },
-    ] as any[];
+    const fields = [{ isActive: true, required: true, name: 'Sprint', _id: 'f1' }] as any[];
     expect(() => assertRequiredFields(fields, { f1: 'Sprint 1' })).not.toThrow();
   });
 
   it('throws for missing required field (undefined)', () => {
-    const fields = [
-      { isActive: true, required: true, name: 'Sprint', _id: 'f1' },
-    ] as any[];
+    const fields = [{ isActive: true, required: true, name: 'Sprint', _id: 'f1' }] as any[];
     expect(() => assertRequiredFields(fields, {})).toThrow('required');
   });
 
   it('throws for missing required field (empty string)', () => {
-    const fields = [
-      { isActive: true, required: true, name: 'Sprint', _id: 'f1' },
-    ] as any[];
+    const fields = [{ isActive: true, required: true, name: 'Sprint', _id: 'f1' }] as any[];
     expect(() => assertRequiredFields(fields, { f1: '' })).toThrow('required');
   });
 
   it('throws for missing required field (empty array)', () => {
-    const fields = [
-      { isActive: true, required: true, name: 'Tags', _id: 'f1' },
-    ] as any[];
+    const fields = [{ isActive: true, required: true, name: 'Tags', _id: 'f1' }] as any[];
     expect(() => assertRequiredFields(fields, { f1: [] })).toThrow('required');
   });
 
   it('ignores inactive fields', () => {
-    const fields = [
-      { isActive: false, required: true, name: 'Old', _id: 'f1' },
-    ] as any[];
+    const fields = [{ isActive: false, required: true, name: 'Old', _id: 'f1' }] as any[];
     expect(() => assertRequiredFields(fields, {})).not.toThrow();
   });
 
   it('ignores non-required fields', () => {
-    const fields = [
-      { isActive: true, required: false, name: 'Optional', _id: 'f1' },
-    ] as any[];
+    const fields = [{ isActive: true, required: false, name: 'Optional', _id: 'f1' }] as any[];
     expect(() => assertRequiredFields(fields, {})).not.toThrow();
   });
 });

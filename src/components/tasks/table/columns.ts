@@ -18,7 +18,12 @@ import {
   fieldAlign,
   type TaskGridField,
 } from '@/lib/taskFieldTypes';
-import { customColumnId, customColumnKey, isCustomColumnKey, type TaskSortField } from '@/lib/taskViewState';
+import {
+  customColumnId,
+  customColumnKey,
+  isCustomColumnKey,
+  type TaskSortField,
+} from '@/lib/taskViewState';
 import type { TaskTableLayout } from '@/hooks/useTaskViewPreferences';
 
 /** The task's own columns, as opposed to whatever the organization added. */

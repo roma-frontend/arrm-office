@@ -22,11 +22,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Check, Trash2, X } from 'lucide-react';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { CHIP_BASE, taskColorClasses } from '@/lib/taskColors';
 import { statusLabel, priorityLabel, TASK_PRIORITIES, type TaskPriority } from '@/lib/taskLabels';

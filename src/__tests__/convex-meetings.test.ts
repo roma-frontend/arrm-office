@@ -33,7 +33,8 @@ jest.mock('../../convex/lib/notify', () => ({
 // ── Module under test ────────────────────────────────────────────────────────
 let handlers: Record<string, (ctx: any, args: any) => Promise<any>> = {};
 
-const getAuthCallerFn = jest.requireMock('../../convex/lib/getAuthCaller').getAuthCaller as jest.Mock;
+const getAuthCallerFn = jest.requireMock('../../convex/lib/getAuthCaller')
+  .getAuthCaller as jest.Mock;
 const isSuperadminFn = jest.requireMock('../../convex/lib/auth').isSuperadmin as jest.Mock;
 
 beforeEach(() => {
@@ -106,7 +107,19 @@ function makeCtx(dbOverrides: Record<string, jest.Mock> = {}) {
   const withIndex = jest.fn().mockReturnValue({ order, take, first, unique, collect });
   const query = jest.fn().mockReturnValue({ withIndex, order, take, first, unique, collect });
   const db = { get, insert, patch, delete: remove, query };
-  return { ctx: { db }, get, insert, patch, remove, query, withIndex, take, first, unique, collect };
+  return {
+    ctx: { db },
+    get,
+    insert,
+    patch,
+    remove,
+    query,
+    withIndex,
+    take,
+    first,
+    unique,
+    collect,
+  };
 }
 
 // ── Tests ────────────────────────────────────────────────────────────────────
@@ -125,17 +138,23 @@ describe('register', () => {
     });
 
     expect(result).toEqual({ success: true });
-    expect(insert).toHaveBeenCalledWith('meetings', expect.objectContaining({
-      eventId: EVENT_ID,
-      roomName: 'team-sync',
-      hostUserId: USER,
-      mode: 'meeting',
-      status: 'scheduled',
-    }));
-    expect(patch).toHaveBeenCalledWith(EVENT_ID, expect.objectContaining({
-      videoUrl: expect.any(String),
-      videoProvider: 'livekit',
-    }));
+    expect(insert).toHaveBeenCalledWith(
+      'meetings',
+      expect.objectContaining({
+        eventId: EVENT_ID,
+        roomName: 'team-sync',
+        hostUserId: USER,
+        mode: 'meeting',
+        status: 'scheduled',
+      }),
+    );
+    expect(patch).toHaveBeenCalledWith(
+      EVENT_ID,
+      expect.objectContaining({
+        videoUrl: expect.any(String),
+        videoProvider: 'livekit',
+      }),
+    );
   });
 
   it('updates existing meeting instead of creating new', async () => {
@@ -153,12 +172,18 @@ describe('register', () => {
     });
 
     expect(result).toEqual({ success: true });
-    expect(patch).toHaveBeenCalledWith(MEETING_ID, expect.objectContaining({
-      mode: 'webinar',
-    }));
-    expect(patch).toHaveBeenCalledWith(EVENT_ID, expect.objectContaining({
-      videoUrl: expect.any(String),
-    }));
+    expect(patch).toHaveBeenCalledWith(
+      MEETING_ID,
+      expect.objectContaining({
+        mode: 'webinar',
+      }),
+    );
+    expect(patch).toHaveBeenCalledWith(
+      EVENT_ID,
+      expect.objectContaining({
+        videoUrl: expect.any(String),
+      }),
+    );
   });
 
   it('throws for non-existent event', async () => {
@@ -234,15 +259,21 @@ describe('setStatus', () => {
     });
 
     expect(result).toEqual({ success: true });
-    expect(patch).toHaveBeenCalledWith(MEETING_ID, expect.objectContaining({
-      status: 'live',
-    }));
+    expect(patch).toHaveBeenCalledWith(
+      MEETING_ID,
+      expect.objectContaining({
+        status: 'live',
+      }),
+    );
   });
 
   it('sets meeting status to ended', async () => {
     mockCaller();
     const { ctx, patch } = makeCtx();
-    ctx.db.query().withIndex().unique.mockResolvedValue(meetingDoc({ status: 'live' }));
+    ctx.db
+      .query()
+      .withIndex()
+      .unique.mockResolvedValue(meetingDoc({ status: 'live' }));
 
     const result = await handlers.setStatus(ctx, {
       roomName: 'team-sync',
@@ -250,9 +281,12 @@ describe('setStatus', () => {
     });
 
     expect(result).toEqual({ success: true });
-    expect(patch).toHaveBeenCalledWith(MEETING_ID, expect.objectContaining({
-      status: 'ended',
-    }));
+    expect(patch).toHaveBeenCalledWith(
+      MEETING_ID,
+      expect.objectContaining({
+        status: 'ended',
+      }),
+    );
   });
 
   it('throws for non-existent meeting', async () => {
@@ -268,9 +302,10 @@ describe('setStatus', () => {
   it('allows admin to change any meeting status', async () => {
     mockCaller({ role: 'admin' });
     const { ctx, patch } = makeCtx();
-    ctx.db.query().withIndex().unique.mockResolvedValue(
-      meetingDoc({ hostUserId: 'other-user' }),
-    );
+    ctx.db
+      .query()
+      .withIndex()
+      .unique.mockResolvedValue(meetingDoc({ hostUserId: 'other-user' }));
 
     const result = await handlers.setStatus(ctx, {
       roomName: 'team-sync',
@@ -283,9 +318,10 @@ describe('setStatus', () => {
   it('allows admin to change status of any meeting', async () => {
     mockCaller({ role: 'admin' });
     const { ctx, patch } = makeCtx();
-    ctx.db.query().withIndex().unique.mockResolvedValue(
-      meetingDoc({ hostUserId: 'other-user' }),
-    );
+    ctx.db
+      .query()
+      .withIndex()
+      .unique.mockResolvedValue(meetingDoc({ hostUserId: 'other-user' }));
 
     const result = await handlers.setStatus(ctx, {
       roomName: 'team-sync',
@@ -312,8 +348,8 @@ describe('removeVideo', () => {
     const { ctx, patch } = makeCtx();
     ctx.db.query().withIndex().unique.mockResolvedValue(meetingDoc());
     ctx.db.get
-      .mockResolvedValueOnce(eventDoc())  // event lookup
-      .mockResolvedValueOnce(null);       // second lookup
+      .mockResolvedValueOnce(eventDoc()) // event lookup
+      .mockResolvedValueOnce(null); // second lookup
 
     const result = await handlers.removeVideo(ctx, { roomName: 'team-sync' });
 
@@ -325,8 +361,8 @@ describe('removeVideo', () => {
     const { ctx } = makeCtx();
     ctx.db.query().withIndex().unique.mockResolvedValue(null);
 
-    await expect(
-      handlers.removeVideo(ctx, { roomName: 'nonexistent' }),
-    ).rejects.toThrow('not found');
+    await expect(handlers.removeVideo(ctx, { roomName: 'nonexistent' })).rejects.toThrow(
+      'not found',
+    );
   });
 });

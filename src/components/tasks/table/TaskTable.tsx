@@ -212,10 +212,7 @@ function ColumnHeader({
         const from = event.dataTransfer.getData('text/plain');
         if (from) onDropColumn(from, column.key);
       }}
-      className={cn(
-        'relative flex min-w-0 items-center gap-1 px-2',
-        over && 'bg-(--brand-quiet)',
-      )}
+      className={cn('relative flex min-w-0 items-center gap-1 px-2', over && 'bg-(--brand-quiet)')}
     >
       <button
         type="button"

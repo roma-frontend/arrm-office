@@ -50,7 +50,13 @@ const PROJECT_ID = 'proj-1';
 const orgAccess = jest.requireMock('../../convex/lib/orgAccess') as Record<string, jest.Mock>;
 
 function mockStaffScope(overrides: Record<string, unknown> = {}) {
-  const scope = { organizationId: ORG, caller: callerDoc(), isStaff: true, isAdmin: false, ...overrides };
+  const scope = {
+    organizationId: ORG,
+    caller: callerDoc(),
+    isStaff: true,
+    isAdmin: false,
+    ...overrides,
+  };
   orgAccess.assertOrgStaff.mockResolvedValue(scope);
   orgAccess.assertOrgScope.mockResolvedValue(scope);
   orgAccess.resolveOrgScope.mockResolvedValue(scope);
@@ -109,13 +115,16 @@ describe('saveView', () => {
     });
 
     expect(id).toBe('new_id');
-    expect(insert).toHaveBeenCalledWith('taskViews', expect.objectContaining({
-      name: 'Payable Outstanding',
-      type: 'list',
-      visibility: 'private',
-      ownerId: USER,
-      organizationId: ORG,
-    }));
+    expect(insert).toHaveBeenCalledWith(
+      'taskViews',
+      expect.objectContaining({
+        name: 'Payable Outstanding',
+        type: 'list',
+        visibility: 'private',
+        ownerId: USER,
+        organizationId: ORG,
+      }),
+    );
   });
 
   it('defaults visibility to private', async () => {
@@ -128,9 +137,12 @@ describe('saveView', () => {
       state: {},
     });
 
-    expect(insert).toHaveBeenCalledWith('taskViews', expect.objectContaining({
-      visibility: 'private',
-    }));
+    expect(insert).toHaveBeenCalledWith(
+      'taskViews',
+      expect.objectContaining({
+        visibility: 'private',
+      }),
+    );
   });
 
   it('allows staff to create team views', async () => {
@@ -144,9 +156,12 @@ describe('saveView', () => {
       visibility: 'team',
     });
 
-    expect(insert).toHaveBeenCalledWith('taskViews', expect.objectContaining({
-      visibility: 'team',
-    }));
+    expect(insert).toHaveBeenCalledWith(
+      'taskViews',
+      expect.objectContaining({
+        visibility: 'team',
+      }),
+    );
   });
 
   it('rejects non-staff creating team views', async () => {
@@ -188,9 +203,12 @@ describe('updateView', () => {
       name: 'Renamed View',
     });
 
-    expect(patch).toHaveBeenCalledWith(VIEW_ID, expect.objectContaining({
-      name: 'Renamed View',
-    }));
+    expect(patch).toHaveBeenCalledWith(
+      VIEW_ID,
+      expect.objectContaining({
+        name: 'Renamed View',
+      }),
+    );
   });
 
   it('updates view state', async () => {
@@ -203,9 +221,12 @@ describe('updateView', () => {
       state: { view: 'kanban', group: 'status' },
     });
 
-    expect(patch).toHaveBeenCalledWith(VIEW_ID, expect.objectContaining({
-      state: { view: 'kanban', group: 'status' },
-    }));
+    expect(patch).toHaveBeenCalledWith(
+      VIEW_ID,
+      expect.objectContaining({
+        state: { view: 'kanban', group: 'status' },
+      }),
+    );
   });
 
   it('throws for non-existent view', async () => {
@@ -213,9 +234,9 @@ describe('updateView', () => {
     const { ctx } = makeCtx();
     ctx.db.get.mockResolvedValue(null);
 
-    await expect(
-      handlers.updateView(ctx, { viewId: VIEW_ID, name: 'New' }),
-    ).rejects.toThrow('not found');
+    await expect(handlers.updateView(ctx, { viewId: VIEW_ID, name: 'New' })).rejects.toThrow(
+      'not found',
+    );
   });
 
   it('rejects non-owner non-staff editing private view', async () => {
@@ -225,9 +246,9 @@ describe('updateView', () => {
     // scopeOwnsRecord returns true (same org), but canEditView still denies:
     // not owner + not staff + private view
 
-    await expect(
-      handlers.updateView(ctx, { viewId: VIEW_ID, name: 'Hacked' }),
-    ).rejects.toThrow('cannot change');
+    await expect(handlers.updateView(ctx, { viewId: VIEW_ID, name: 'Hacked' })).rejects.toThrow(
+      'cannot change',
+    );
   });
 
   it('allows staff to edit team views they do not own', async () => {
@@ -265,9 +286,12 @@ describe('deleteView', () => {
 
     await handlers.deleteView(ctx, { viewId: VIEW_ID });
 
-    expect(patch).toHaveBeenCalledWith(PROJECT_ID, expect.objectContaining({
-      defaultViewId: undefined,
-    }));
+    expect(patch).toHaveBeenCalledWith(
+      PROJECT_ID,
+      expect.objectContaining({
+        defaultViewId: undefined,
+      }),
+    );
     expect(remove).toHaveBeenCalledWith(VIEW_ID);
   });
 
@@ -304,9 +328,9 @@ describe('setDefaultView', () => {
     const { ctx } = makeCtx();
     ctx.db.get.mockResolvedValue(viewDoc({ visibility: 'private' }));
 
-    await expect(
-      handlers.setDefaultView(ctx, { viewId: VIEW_ID }),
-    ).rejects.toThrow('Share the view');
+    await expect(handlers.setDefaultView(ctx, { viewId: VIEW_ID })).rejects.toThrow(
+      'Share the view',
+    );
   });
 
   it('throws for non-existent view', async () => {
@@ -314,9 +338,7 @@ describe('setDefaultView', () => {
     const { ctx } = makeCtx();
     ctx.db.get.mockResolvedValue(null);
 
-    await expect(
-      handlers.setDefaultView(ctx, { viewId: VIEW_ID }),
-    ).rejects.toThrow('not found');
+    await expect(handlers.setDefaultView(ctx, { viewId: VIEW_ID })).rejects.toThrow('not found');
   });
 });
 
@@ -324,10 +346,7 @@ describe('reorderViews', () => {
   it('reorders views and returns count', async () => {
     mockStaffScope();
     const { ctx, patch } = makeCtx();
-    const views = [
-      viewDoc({ _id: 'v1', order: 0 }),
-      viewDoc({ _id: 'v2', order: 1 }),
-    ];
+    const views = [viewDoc({ _id: 'v1', order: 0 }), viewDoc({ _id: 'v2', order: 1 })];
     ctx.db.query().withIndex().take.mockResolvedValue(views);
 
     const result = await handlers.reorderViews(ctx, {

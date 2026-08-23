@@ -115,10 +115,7 @@ export function FilterBuilder({
 }: FilterBuilderProps) {
   const { t } = useTranslation();
 
-  const fieldById = useMemo(
-    () => new Map(fields.map((field) => [field._id, field])),
-    [fields],
-  );
+  const fieldById = useMemo(() => new Map(fields.map((field) => [field._id, field])), [fields]);
 
   const kindOf = (field: TaskFilterField): FilterValueKind => {
     if (isCustomColumnKey(field)) {
@@ -343,9 +340,7 @@ export function FilterBuilder({
         <div className="mt-2 flex items-center gap-2 border-t border-(--border) pt-2">
           <button
             type="button"
-            onClick={() =>
-              onChange([...filters, { field: 'status', op: 'is', values: [] }])
-            }
+            onClick={() => onChange([...filters, { field: 'status', op: 'is', values: [] }])}
             className="flex items-center gap-1 rounded-md px-1.5 py-1 text-xs text-(--brand-text) hover:bg-(--brand-quiet)"
           >
             <Plus aria-hidden className="h-3 w-3" />

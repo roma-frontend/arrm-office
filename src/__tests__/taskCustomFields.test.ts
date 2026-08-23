@@ -167,12 +167,18 @@ describe('ratingMaxOf', () => {
 
   it('falls back to default for invalid values', () => {
     expect(ratingMaxOf(makeField('rating', { config: { ratingMax: 0 } }))).toBe(DEFAULT_RATING_MAX);
-    expect(ratingMaxOf(makeField('rating', { config: { ratingMax: 15 } }))).toBe(DEFAULT_RATING_MAX);
-    expect(ratingMaxOf(makeField('rating', { config: { ratingMax: -1 } }))).toBe(DEFAULT_RATING_MAX);
+    expect(ratingMaxOf(makeField('rating', { config: { ratingMax: 15 } }))).toBe(
+      DEFAULT_RATING_MAX,
+    );
+    expect(ratingMaxOf(makeField('rating', { config: { ratingMax: -1 } }))).toBe(
+      DEFAULT_RATING_MAX,
+    );
   });
 
   it('falls back for non-integer', () => {
-    expect(ratingMaxOf(makeField('rating', { config: { ratingMax: 3.5 } }))).toBe(DEFAULT_RATING_MAX);
+    expect(ratingMaxOf(makeField('rating', { config: { ratingMax: 3.5 } }))).toBe(
+      DEFAULT_RATING_MAX,
+    );
   });
 });
 
@@ -206,10 +212,7 @@ describe('fieldKeyFromName', () => {
 
 describe('optionOf', () => {
   const field = makeField('select', {
-    options: [
-      makeOption('a', 'High', 0),
-      makeOption('b', 'Low', 1),
-    ],
+    options: [makeOption('a', 'High', 0), makeOption('b', 'Low', 1)],
   });
 
   it('returns option for matching id', () => {
@@ -302,10 +305,7 @@ describe('compareFieldValues', () => {
 
   it('sorts by option order for select', () => {
     const field = makeField('select', {
-      options: [
-        makeOption('a', 'Low', 0),
-        makeOption('b', 'High', 1),
-      ],
+      options: [makeOption('a', 'Low', 0), makeOption('b', 'High', 1)],
     });
     expect(compareFieldValues(field, 'a', 'b')).toBeLessThan(0);
   });
@@ -366,7 +366,9 @@ describe('validateFieldValue', () => {
   });
 
   it('rejects javascript: URL', () => {
-    expect(() => validateFieldValue(makeField('url'), 'javascript:alert(1)')).toThrow('http or https');
+    expect(() => validateFieldValue(makeField('url'), 'javascript:alert(1)')).toThrow(
+      'http or https',
+    );
   });
 
   // email
@@ -497,7 +499,9 @@ describe('validateFieldValue', () => {
   });
 
   it('rejects invalid user id', () => {
-    expect(() => validateFieldValue(makeField('user'), 'no spaces!')).toThrow('not a valid reference');
+    expect(() => validateFieldValue(makeField('user'), 'no spaces!')).toThrow(
+      'not a valid reference',
+    );
   });
 
   // users
@@ -526,40 +530,46 @@ describe('assertValidFieldDef', () => {
   });
 
   it('throws for select with no options', () => {
-    expect(() => assertValidFieldDef(makeField('select', { name: 'Category', options: [] }))).toThrow('at least one option');
+    expect(() =>
+      assertValidFieldDef(makeField('select', { name: 'Category', options: [] })),
+    ).toThrow('at least one option');
   });
 
   it('throws for duplicate option ids', () => {
     const opts = [makeOption('a', 'A', 0), makeOption('a', 'B', 1)];
-    expect(() => assertValidFieldDef(makeField('select', { name: 'Cat', options: opts }))).toThrow('Duplicate option id');
+    expect(() => assertValidFieldDef(makeField('select', { name: 'Cat', options: opts }))).toThrow(
+      'Duplicate option id',
+    );
   });
 
   it('throws for text field with options', () => {
     const opts = [makeOption('a', 'A', 0)];
-    expect(() => assertValidFieldDef(makeField('text', { name: 'Title', options: opts }))).toThrow('does not take options');
+    expect(() => assertValidFieldDef(makeField('text', { name: 'Title', options: opts }))).toThrow(
+      'does not take options',
+    );
   });
 
   it('throws for min > max', () => {
-    expect(() => assertValidFieldDef(
-      makeField('number', { name: 'Score', config: { min: 100, max: 0 } }),
-    )).toThrow('above its maximum');
+    expect(() =>
+      assertValidFieldDef(makeField('number', { name: 'Score', config: { min: 100, max: 0 } })),
+    ).toThrow('above its maximum');
   });
 
   it('throws for invalid precision', () => {
-    expect(() => assertValidFieldDef(
-      makeField('number', { name: 'Score', config: { precision: 15 } }),
-    )).toThrow('precision');
+    expect(() =>
+      assertValidFieldDef(makeField('number', { name: 'Score', config: { precision: 15 } })),
+    ).toThrow('precision');
   });
 
   it('throws for invalid ratingMax', () => {
-    expect(() => assertValidFieldDef(
-      makeField('rating', { name: 'Stars', config: { ratingMax: 15 } }),
-    )).toThrow('rating scale');
+    expect(() =>
+      assertValidFieldDef(makeField('rating', { name: 'Stars', config: { ratingMax: 15 } })),
+    ).toThrow('rating scale');
   });
 
   it('throws for invalid key format', () => {
-    expect(() => assertValidFieldDef(
-      makeField('text', { name: 'Title', key: 'UPPERCASE' }),
-    )).toThrow('Invalid field key');
+    expect(() =>
+      assertValidFieldDef(makeField('text', { name: 'Title', key: 'UPPERCASE' })),
+    ).toThrow('Invalid field key');
   });
 });

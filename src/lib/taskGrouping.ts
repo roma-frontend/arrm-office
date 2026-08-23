@@ -17,7 +17,11 @@ import {
   type TaskSortField,
 } from './taskViewState';
 import { compareFieldValues, type TaskGridField } from './taskFieldTypes';
-import { resolveStatus, type CanonicalTaskStatus, type TaskStatusDef } from '../../convex/lib/taskStatus';
+import {
+  resolveStatus,
+  type CanonicalTaskStatus,
+  type TaskStatusDef,
+} from '../../convex/lib/taskStatus';
 import { PRIORITY_META, type TaskPriority } from './taskLabels';
 
 /** What grouping and sorting need from a row. Structurally satisfied by the grid's task. */
@@ -250,7 +254,7 @@ export function compareTasks<T extends ArrangeableTask>(
       const left = name(a);
       const right = name(b);
       // Unassigned last, both directions — same reasoning as an absent deadline.
-      if (left === '' !== (right === '')) return left === '' ? 1 : -1;
+      if ((left === '') !== (right === '')) return left === '' ? 1 : -1;
       return left.localeCompare(right) || tie();
     }
 

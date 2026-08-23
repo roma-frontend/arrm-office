@@ -114,15 +114,21 @@ describe('createStatusSet', () => {
     });
 
     expect(id).toBe('new_id');
-    expect(insert).toHaveBeenCalledWith('taskStatusSets', expect.objectContaining({
-      name: 'My Set',
-      organizationId: ORG,
-      isDefault: expect.any(Boolean),
-    }));
+    expect(insert).toHaveBeenCalledWith(
+      'taskStatusSets',
+      expect.objectContaining({
+        name: 'My Set',
+        organizationId: ORG,
+        isDefault: expect.any(Boolean),
+      }),
+    );
     // Should also create an audit log
-    expect(insert).toHaveBeenCalledWith('auditLogs', expect.objectContaining({
-      action: 'task_status_set_created',
-    }));
+    expect(insert).toHaveBeenCalledWith(
+      'auditLogs',
+      expect.objectContaining({
+        action: 'task_status_set_created',
+      }),
+    );
   });
 
   it('first set becomes default automatically', async () => {
@@ -138,9 +144,12 @@ describe('createStatusSet', () => {
     });
 
     expect(id).toBe('new_id');
-    expect(insert).toHaveBeenCalledWith('taskStatusSets', expect.objectContaining({
-      isDefault: true,
-    }));
+    expect(insert).toHaveBeenCalledWith(
+      'taskStatusSets',
+      expect.objectContaining({
+        isDefault: true,
+      }),
+    );
   });
 
   it('makes set default when makeDefault=true and caller is admin', async () => {
@@ -163,8 +172,14 @@ describe('createStatusSet', () => {
       makeDefault: true,
     });
 
-    expect(patch).toHaveBeenCalledWith(existing[0]._id, expect.objectContaining({ isDefault: false }));
-    expect(insert).toHaveBeenCalledWith('taskStatusSets', expect.objectContaining({ isDefault: true }));
+    expect(patch).toHaveBeenCalledWith(
+      existing[0]._id,
+      expect.objectContaining({ isDefault: false }),
+    );
+    expect(insert).toHaveBeenCalledWith(
+      'taskStatusSets',
+      expect.objectContaining({ isDefault: true }),
+    );
   });
 });
 
@@ -187,9 +202,9 @@ describe('updateStatusSet', () => {
     const { ctx } = makeCtx();
     ctx.db.get.mockResolvedValue(null);
 
-    await expect(
-      handlers.updateStatusSet(ctx, { setId: SET_ID, name: 'New' }),
-    ).rejects.toThrow('not found');
+    await expect(handlers.updateStatusSet(ctx, { setId: SET_ID, name: 'New' })).rejects.toThrow(
+      'not found',
+    );
   });
 
   it('normalizes statuses and updates', async () => {
@@ -206,13 +221,16 @@ describe('updateStatusSet', () => {
       ],
     });
 
-    expect(patch).toHaveBeenCalledWith(SET_ID, expect.objectContaining({
-      statuses: expect.arrayContaining([
-        expect.objectContaining({ key: 'todo' }),
-        expect.objectContaining({ key: 'review' }),
-        expect.objectContaining({ key: 'done' }),
-      ]),
-    }));
+    expect(patch).toHaveBeenCalledWith(
+      SET_ID,
+      expect.objectContaining({
+        statuses: expect.arrayContaining([
+          expect.objectContaining({ key: 'todo' }),
+          expect.objectContaining({ key: 'review' }),
+          expect.objectContaining({ key: 'done' }),
+        ]),
+      }),
+    );
   });
 });
 
@@ -232,9 +250,7 @@ describe('deleteStatusSet', () => {
     const { ctx } = makeCtx();
     ctx.db.get.mockResolvedValue(null);
 
-    await expect(
-      handlers.deleteStatusSet(ctx, { setId: SET_ID }),
-    ).rejects.toThrow('not found');
+    await expect(handlers.deleteStatusSet(ctx, { setId: SET_ID })).rejects.toThrow('not found');
   });
 });
 
@@ -271,8 +287,6 @@ describe('setDefaultStatusSet', () => {
     const { ctx } = makeCtx();
     ctx.db.get.mockResolvedValue(null);
 
-    await expect(
-      handlers.setDefaultStatusSet(ctx, { setId: SET_ID }),
-    ).rejects.toThrow('not found');
+    await expect(handlers.setDefaultStatusSet(ctx, { setId: SET_ID })).rejects.toThrow('not found');
   });
 });

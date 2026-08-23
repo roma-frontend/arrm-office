@@ -2,11 +2,7 @@
  * Tests for `@/lib/taskGrouping` — board grouping and sorting logic.
  */
 import { describe, it, expect } from '@jest/globals';
-import {
-  groupTasks,
-  sortTasks,
-  type ArrangeableTask,
-} from '@/lib/taskGrouping';
+import { groupTasks, sortTasks, type ArrangeableTask } from '@/lib/taskGrouping';
 import { DEFAULT_STATUS_SET } from '../../convex/lib/taskStatus';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────

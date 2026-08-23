@@ -584,7 +584,11 @@ export const updateRecurringTaskStatus = mutation({
       userId: caller._id,
       action: 'recurring_task_status_changed',
       target: args.seriesId,
-      details: JSON.stringify({ title: series.title, from: series.status ?? 'in_progress', to: args.status }),
+      details: JSON.stringify({
+        title: series.title,
+        from: series.status ?? 'in_progress',
+        to: args.status,
+      }),
       createdAt: now,
     });
     return { success: true };

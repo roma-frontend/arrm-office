@@ -128,15 +128,21 @@ describe('startProbation', () => {
     });
 
     expect(id).toBe('new_id');
-    expect(insert).toHaveBeenCalledWith('probationPeriods', expect.objectContaining({
-      organizationId: ORG,
-      employeeId: EMPLOYEE_ID,
-      status: 'active',
-      durationDays: 90,
-    }));
-    expect(insert).toHaveBeenCalledWith('auditLogs', expect.objectContaining({
-      action: 'probation_started',
-    }));
+    expect(insert).toHaveBeenCalledWith(
+      'probationPeriods',
+      expect.objectContaining({
+        organizationId: ORG,
+        employeeId: EMPLOYEE_ID,
+        status: 'active',
+        durationDays: 90,
+      }),
+    );
+    expect(insert).toHaveBeenCalledWith(
+      'auditLogs',
+      expect.objectContaining({
+        action: 'probation_started',
+      }),
+    );
   });
 
   it('throws for non-existent employee', async () => {
@@ -165,7 +171,11 @@ describe('startProbation', () => {
     ctx.db.get.mockResolvedValue(employeeDoc());
 
     await expect(
-      handlers.startProbation(ctx, { organizationId: ORG, employeeId: EMPLOYEE_ID, durationDays: 200 }),
+      handlers.startProbation(ctx, {
+        organizationId: ORG,
+        employeeId: EMPLOYEE_ID,
+        durationDays: 200,
+      }),
     ).rejects.toThrow('between 1 and');
   });
 
@@ -175,7 +185,11 @@ describe('startProbation', () => {
     ctx.db.get.mockResolvedValue(employeeDoc());
 
     await expect(
-      handlers.startProbation(ctx, { organizationId: ORG, employeeId: EMPLOYEE_ID, durationDays: NaN }),
+      handlers.startProbation(ctx, {
+        organizationId: ORG,
+        employeeId: EMPLOYEE_ID,
+        durationDays: NaN,
+      }),
     ).rejects.toThrow();
   });
 });
@@ -184,9 +198,7 @@ describe('extendProbation', () => {
   it('extends an active probation period', async () => {
     mockAdminScope();
     const { ctx, patch } = makeCtx();
-    ctx.db.get
-      .mockResolvedValueOnce(probationDoc())
-      .mockResolvedValueOnce(employeeDoc());
+    ctx.db.get.mockResolvedValueOnce(probationDoc()).mockResolvedValueOnce(employeeDoc());
 
     await handlers.extendProbation(ctx, {
       probationId: PERIOD_ID,
@@ -194,13 +206,16 @@ describe('extendProbation', () => {
       reason: 'Project not complete',
     });
 
-    expect(patch).toHaveBeenCalledWith(PERIOD_ID, expect.objectContaining({
-      extensions: expect.arrayContaining([
-        expect.objectContaining({
-          reason: 'Project not complete',
-        }),
-      ]),
-    }));
+    expect(patch).toHaveBeenCalledWith(
+      PERIOD_ID,
+      expect.objectContaining({
+        extensions: expect.arrayContaining([
+          expect.objectContaining({
+            reason: 'Project not complete',
+          }),
+        ]),
+      }),
+    );
   });
 
   it('throws for non-existent probation', async () => {
@@ -229,11 +244,13 @@ describe('extendProbation', () => {
     const now = Date.now();
     // Started 150 days ago, extending by 40 = 190 total → exceeds cap
     ctx.db.get
-      .mockResolvedValueOnce(probationDoc({
-        startDate: now - 150 * DAY,
-        endDate: now + 30 * DAY,
-        durationDays: 180,
-      }))
+      .mockResolvedValueOnce(
+        probationDoc({
+          startDate: now - 150 * DAY,
+          endDate: now + 30 * DAY,
+          durationDays: 180,
+        }),
+      )
       .mockResolvedValueOnce(employeeDoc());
 
     await expect(
@@ -244,9 +261,7 @@ describe('extendProbation', () => {
   it('throws for invalid additionalDays (< 1)', async () => {
     mockAdminScope();
     const { ctx } = makeCtx();
-    ctx.db.get
-      .mockResolvedValueOnce(probationDoc())
-      .mockResolvedValueOnce(employeeDoc());
+    ctx.db.get.mockResolvedValueOnce(probationDoc()).mockResolvedValueOnce(employeeDoc());
 
     await expect(
       handlers.extendProbation(ctx, { probationId: PERIOD_ID, additionalDays: 0 }),
@@ -269,9 +284,12 @@ describe('completeProbation', () => {
       outcome: 'passed',
     });
 
-    expect(patch).toHaveBeenCalledWith(PERIOD_ID, expect.objectContaining({
-      status: 'passed',
-    }));
+    expect(patch).toHaveBeenCalledWith(
+      PERIOD_ID,
+      expect.objectContaining({
+        status: 'passed',
+      }),
+    );
   });
 
   it('throws for non-existent probation', async () => {

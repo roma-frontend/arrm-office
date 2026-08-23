@@ -63,10 +63,7 @@ function ColumnRow({
       }}
       className="flex items-center gap-1.5 rounded-md px-1 py-1 hover:bg-(--background-subtle)"
     >
-      <GripVertical
-        aria-hidden
-        className="h-3.5 w-3.5 shrink-0 cursor-grab text-(--text-muted)"
-      />
+      <GripVertical aria-hidden className="h-3.5 w-3.5 shrink-0 cursor-grab text-(--text-muted)" />
       {Icon && <Icon aria-hidden className="h-3.5 w-3.5 shrink-0 text-(--text-muted)" />}
       <span
         className={cn(
@@ -81,7 +78,9 @@ function ColumnRow({
         type="button"
         onClick={onToggle}
         title={hidden ? t('tasksTable.showColumn', 'Show') : t('tasksTable.hideColumn', 'Hide')}
-        aria-label={hidden ? t('tasksTable.showColumn', 'Show') : t('tasksTable.hideColumn', 'Hide')}
+        aria-label={
+          hidden ? t('tasksTable.showColumn', 'Show') : t('tasksTable.hideColumn', 'Hide')
+        }
         aria-pressed={!hidden}
         className="shrink-0 rounded p-1 text-(--text-muted) hover:bg-(--card) hover:text-(--text-primary)"
       >

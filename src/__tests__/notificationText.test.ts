@@ -2,7 +2,13 @@
  * Tests for `@/lib/notificationText` — notification text resolution.
  */
 import { describe, it, expect } from '@jest/globals';
-import { notificationTitle, notificationMessage, notificationSoundType, parseNotificationMeta, type NotificationTextSource } from '@/lib/notificationText';
+import {
+  notificationTitle,
+  notificationMessage,
+  notificationSoundType,
+  parseNotificationMeta,
+  type NotificationTextSource,
+} from '@/lib/notificationText';
 
 // Mock TFunction: returns key when found, else key itself (i18next default behavior)
 const t = ((key: string, opts?: Record<string, unknown>) => {
@@ -24,7 +30,9 @@ const source = (overrides: Partial<NotificationTextSource> = {}): NotificationTe
 
 describe('parseNotificationMeta', () => {
   it('parses valid JSON metadata', () => {
-    const meta = parseNotificationMeta(JSON.stringify({ titleKey: 'foo.bar', params: { name: 'Alice' } }));
+    const meta = parseNotificationMeta(
+      JSON.stringify({ titleKey: 'foo.bar', params: { name: 'Alice' } }),
+    );
     expect(meta.titleKey).toBe('foo.bar');
     expect(meta.params?.name).toBe('Alice');
   });
@@ -50,7 +58,9 @@ describe('parseNotificationMeta', () => {
 
 describe('notificationTitle', () => {
   it('uses stored titleKey from metadata when available', () => {
-    const n = source({ metadata: JSON.stringify({ titleKey: 'notifications.titles.leaveApproved' }) });
+    const n = source({
+      metadata: JSON.stringify({ titleKey: 'notifications.titles.leaveApproved' }),
+    });
     expect(notificationTitle(t, n)).toBe('Leave Approved');
   });
 
@@ -79,7 +89,9 @@ describe('notificationTitle', () => {
 
 describe('notificationMessage', () => {
   it('uses stored messageKey from metadata', () => {
-    const n = source({ metadata: JSON.stringify({ messageKey: 'notifications.messages.leaveApproved' }) });
+    const n = source({
+      metadata: JSON.stringify({ messageKey: 'notifications.messages.leaveApproved' }),
+    });
     expect(notificationMessage(t, n)).toBe('Your leave request has been approved.');
   });
 
@@ -91,12 +103,16 @@ describe('notificationMessage', () => {
 
 describe('notificationSoundType', () => {
   it('returns approved for calendar_access_response with approved=true', () => {
-    const n = source({ metadata: JSON.stringify({ type: 'calendar_access_response', approved: true }) });
+    const n = source({
+      metadata: JSON.stringify({ type: 'calendar_access_response', approved: true }),
+    });
     expect(notificationSoundType(n)).toBe('approved');
   });
 
   it('returns rejected for calendar_access_response with approved=false', () => {
-    const n = source({ metadata: JSON.stringify({ type: 'calendar_access_response', approved: false }) });
+    const n = source({
+      metadata: JSON.stringify({ type: 'calendar_access_response', approved: false }),
+    });
     expect(notificationSoundType(n)).toBe('rejected');
   });
 
