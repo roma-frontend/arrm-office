@@ -628,6 +628,7 @@
       "completed": "Abgeschlossen",
       "cancelled": "Abgebrochen"
     },
-    "unassigned": "Nicht zugewiesen"
+    "unassigned": "Nicht zugewiesen",
+    "recurringSeries": "Wiederkehrende Serien"
   }
 }

@@ -22,6 +22,7 @@ import {
   UNARY_FILTER_OPS,
   customColumnId,
   isCustomColumnKey,
+  isEffectiveCondition,
   type TaskFilterCondition,
   type TaskFilterOp,
 } from './taskViewState';
@@ -218,7 +219,12 @@ export function matchesFilters(
   filters: TaskFilterCondition[],
   fields?: Map<string, TaskFieldLike>,
 ): boolean {
-  return filters.every((condition) => matchesCondition(task, condition, fields));
+  // A condition still being built narrows nothing — see `isEffectiveCondition`.
+  // Checked here rather than at the call sites so the grid, the export and the
+  // saved view all agree about which conditions count.
+  return filters.every(
+    (condition) => !isEffectiveCondition(condition) || matchesCondition(task, condition, fields),
+  );
 }
 
 /** {@link matchesFilters} as a list operation, short-circuiting on an empty filter set. */
@@ -227,8 +233,9 @@ export function applyTaskFilters<T extends FilterableTask>(
   filters: TaskFilterCondition[],
   fields?: Map<string, TaskFieldLike>,
 ): T[] {
-  if (filters.length === 0) return tasks;
-  return tasks.filter((task) => matchesFilters(task, filters, fields));
+  const live = filters.filter(isEffectiveCondition);
+  if (live.length === 0) return tasks;
+  return tasks.filter((task) => matchesFilters(task, live, fields));
 }
 
 // ── Operator vocabulary ────────────────────────────────────────────────────

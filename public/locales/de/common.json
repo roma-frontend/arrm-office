@@ -148,7 +148,10 @@
     "chat.realtime": "Echtzeit-Chat",
     "print": "Drucken",
     "copied": "Kopiert",
-    "clear": "Leeren"
+    "clear": "Leeren",
+    "remove": "Entfernen",
+    "change": "Ändern",
+    "progress": "Fortschritt"
   },
   "nav": {
     "home": "Startseite",
@@ -1349,6 +1352,8 @@
       "taskCompleted": "\"{{taskTitle}}\" wurde von {{userName}} abgeschlossen",
       "taskSubmittedForReview": "\"{{taskTitle}}\" wurde von {{userName}} zur Überprüfung eingereicht",
       "taskAssigned": "Aufgabe \"{{taskTitle}}\" wurde Ihnen zugewiesen",
+      "taskStatusChanged": "{{userName}} hat den Status von \"{{taskTitle}}\" auf {{status}} geändert",
+      "tasksAssignedBulk": "{{assignerName}} hat Ihnen {{count}} Aufgabe(n) zugewiesen",
       "leaveRequestNew": "{{userName}} hat {{type}}-Urlaub beantragt ({{start}} – {{end}})",
       "leaveApproved": "Ihr {{type}}-Urlaub ({{start}} – {{end}}) wurde genehmigt",
       "leaveRejected": "Ihr {{type}}-Urlaub ({{start}} – {{end}}) wurde abgelehnt",
@@ -1550,6 +1555,8 @@
       "roomBooking": "{{bookingTitle}} · {{roomName}}",
       "roomBookingResponse": "{{bookingTitle}}",
       "taskAssigned": "📋 Aufgabe zugewiesen",
+      "taskStatusChanged": "🔄 Aufgabenstatus geändert",
+      "tasksAssigned": "📋 Aufgaben zugewiesen",
       "taskCreated": "📋 Neue Aufgabe erstellt",
       "seriesCommented": "💬 Kommentar zur wiederkehrenden Aufgabe",
       "meetingInvited": "📅 Sie sind eingeladen: „{{eventTitle}}“",

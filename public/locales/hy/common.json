@@ -148,7 +148,10 @@
     "chat.realtime": "Անմիջական չատ",
     "print": "Տպել",
     "copied": "Պատճենվեց",
-    "clear": "Մաքրել"
+    "clear": "Մաքրել",
+    "remove": "Հեռացնել",
+    "change": "Փոխել",
+    "progress": "Առաջընթաց"
   },
   "nav": {
     "home": "Գլխավոր",
@@ -1349,6 +1352,8 @@
       "taskCompleted": "\"{{taskTitle}}\" առաջադրանքը ավարտվել է {{userName}}-ի կողմից",
       "taskSubmittedForReview": "\"{{taskTitle}}\" առաջադրանքը ներկայացվել է վերանայման {{userName}}-ի կողմից",
       "taskAssigned": "«{{taskTitle}}» առաջադրանքը նշանակվել է ձեզ",
+      "taskStatusChanged": "{{userName}}-ը փոխեց «{{taskTitle}}» առաջադրանքի կարգավիճակը՝ {{status}}",
+      "tasksAssignedBulk": "{{assignerName}}-ը ձեզ նշանակեց {{count}} առաջադրանք",
       "leaveRequestNew": "{{userName}}-ի {{type}} հայտը ներկայացվել է ({{start}} – {{end}})",
       "leaveApproved": "Ձեր {{type}} հայտը ({{start}} – {{end}}) հաստատվել է",
       "leaveRejected": "Ձեր {{type}} հայտը ({{start}} – {{end}}) մերժվել է",
@@ -1550,6 +1555,8 @@
       "roomBooking": "{{bookingTitle}} · {{roomName}}",
       "roomBookingResponse": "{{bookingTitle}}",
       "taskAssigned": "📋 Առաջադրանք նշանակվեց",
+      "taskStatusChanged": "🔄 Առաջադրանքի կարգավիճակը փոխվեց",
+      "tasksAssigned": "📋 Առաջադրանքներ նշանակվեցին",
       "taskCreated": "📋 Ստեղծվեց նոր առաջադրանք",
       "seriesCommented": "💬 Մեկնաբանություն կրկնվող առաջադրանքին",
       "meetingInvited": "📅 Դուք հրավիրված եք՝ «{{eventTitle}}»",

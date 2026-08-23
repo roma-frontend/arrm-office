@@ -12,9 +12,15 @@ import { getAuthCaller, type AuthenticatedCaller } from './lib/getAuthCaller';
 import { notify } from './lib/notify';
 import { sanitizeTitle, sanitizeText } from './lib/sanitize';
 import { assertModuleAccess } from './lib/entitlements';
+import {
+  assertCanWriteTask as assertWritable,
+  canReadTask,
+  taskWriteRefusal as refusalFor,
+} from './lib/taskAccess';
 import { canonicalFor, firstOpenStatus, type CanonicalTaskStatus } from './lib/taskStatus';
 import {
   assertRequiredFields,
+  assertUsersInOrg,
   buildCustomFieldsPatch,
   listFieldsFor,
   resolveStatusSetForTask,
@@ -42,46 +48,16 @@ async function getOrgAdmins(ctx: QueryCtx, organizationId: Id<'organizations'> |
 /**
  * Why the caller may not write to a task, or `null` if they may.
  *
- * The people allowed are: the assignee and any co-assignee (doing the work), the
- * person who handed it over, staff, and the assignee's own supervisor — who may
- * legitimately touch a task they did not assign, because their report created it
- * for themselves.
- *
- * Returns a reason rather than throwing so a bulk edit can count what it skipped
- * instead of aborting on the first row somebody else owns.
+ * Lives in `lib/taskAccess.ts` because Phase 2's dependency, checklist and
+ * time-entry modules ask the same question. Re-exported here as a local alias so
+ * this file's call sites read as they always did.
  */
 async function taskWriteRefusal(
   ctx: QueryCtx,
   caller: AuthenticatedCaller,
   task: Doc<'tasks'>,
 ): Promise<'cross_org' | 'not_yours' | null> {
-  // Org boundary first: a caller from another organization must not touch this
-  // task, whatever their role or place in the reporting line. Legacy tasks
-  // without an organizationId stay reachable to any org.
-  if (
-    !isSuperadmin(caller) &&
-    caller.organizationId &&
-    task.organizationId &&
-    task.organizationId !== caller.organizationId
-  ) {
-    return 'cross_org';
-  }
-
-  const isStaff = caller.role === 'admin' || caller.role === 'supervisor' || isSuperadmin(caller);
-  // Co-assignees count as assignees. The list is absent on every task written
-  // before it existed, so this widens nothing until somebody adds one.
-  const isAssignee =
-    caller._id === task.assignedTo || (task.assigneeIds ?? []).includes(caller._id);
-  const isAssigner = caller._id === task.assignedBy;
-
-  let isSupervisorOfAssignee = false;
-  if (caller.role === 'supervisor' && !isAssignee && !isAssigner) {
-    const subordinates = await getSubordinateIds(ctx, caller._id, caller.organizationId);
-    isSupervisorOfAssignee = subordinates.includes(task.assignedTo);
-  }
-
-  if (!isStaff && !isAssignee && !isAssigner && !isSupervisorOfAssignee) return 'not_yours';
-  return null;
+  return refusalFor(ctx, caller, task);
 }
 
 /**
@@ -100,9 +76,7 @@ async function assertCanWriteTask(
   task: Doc<'tasks'>,
   denied: string,
 ): Promise<void> {
-  const refusal = await taskWriteRefusal(ctx, caller, task);
-  if (refusal === 'cross_org') throw new Error('Task belongs to another organization');
-  if (refusal === 'not_yours') throw new Error(denied);
+  await assertWritable(ctx, caller, task, denied);
 }
 
 /**
@@ -1513,6 +1487,18 @@ const MAX_BULK_TASKS = SMALL_LIST_CAP;
  */
 const MAX_WATCHER_NOTIFICATIONS = 50;
 
+/**
+ * How many co-assignees one task may carry.
+ *
+ * Twenty is generous for "who else is on this" and low enough that the avatar stack
+ * and the batch load behind it stay a fixed cost. A task that needs more people
+ * named on it is a project, and this codebase has those.
+ */
+const MAX_ASSIGNEES = 20;
+
+/** Watchers are capped where notifications are, so nobody follows a task in silence. */
+const MAX_WATCHERS = MAX_WATCHER_NOTIFICATIONS;
+
 const canonicalStatusValidator = v.union(
   v.literal('pending'),
   v.literal('in_progress'),
@@ -2236,14 +2222,7 @@ export const listSubtasks = query({
 
     const parent = await ctx.db.get(args.parentTaskId);
     if (!parent) return [];
-    if (
-      !isSuperadmin(caller) &&
-      caller.organizationId &&
-      parent.organizationId &&
-      parent.organizationId !== caller.organizationId
-    ) {
-      return [];
-    }
+    if (!canReadTask(caller, parent)) return [];
 
     const subtasks = await ctx.db
       .query('tasks')
@@ -2251,5 +2230,144 @@ export const listSubtasks = query({
       .take(SMALL_LIST_CAP);
 
     return enrichTasksWithUserData(ctx, subtasks.sort(compareOrderKeys));
+  },
+});
+
+// ── Co-assignees ───────────────────────────────────────────────────────────
+/**
+ * The people working on a task alongside the person responsible for it.
+ *
+ * `assignedTo` is deliberately left alone. Everything that decides *whose* task
+ * this is reads that one field — `getVisibleTasks`, the reporting-line handoffs,
+ * the performance and compliance reports — and a task with four assignees and no
+ * owner is a task none of them can answer for. So the list is additive: a
+ * co-assignee may write to the task (the rule lives in `lib/taskAccess.ts`) and is
+ * told when they are added, and nothing else about the task changes shape.
+ *
+ * Replaces the list rather than appending to it, because the picker sends what it
+ * shows. The diff computed here is only used to decide who to notify.
+ */
+export const setAssignees = mutation({
+  args: { taskId: v.id('tasks'), assigneeIds: v.array(v.id('users')) },
+  handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'tasks');
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+
+    const task = await ctx.db.get(args.taskId);
+    if (!task) throw new Error('Task not found');
+    await assertCanWriteTask(ctx, caller, task, 'You can only change assignees on your own tasks');
+
+    if (args.assigneeIds.length > MAX_ASSIGNEES) {
+      throw new ConvexError('That is more people than one task can hold');
+    }
+
+    // The responsible person is not a co-assignee of their own task. Keeping them
+    // out of the list means the avatar stack never shows them twice, and removing
+    // the last co-assignee can never read as unassigning the task.
+    const requested = [...new Set(args.assigneeIds)].filter((id) => id !== task.assignedTo);
+    const assigneeIds = await assertUsersInOrg(
+      ctx,
+      requested,
+      task.organizationId ?? caller.organizationId,
+    );
+
+    const before = new Set<string>(task.assigneeIds ?? []);
+    const after = new Set<string>(assigneeIds);
+    const added = assigneeIds.filter((id) => !before.has(id));
+    const removed = [...before].filter((id) => !after.has(id));
+    // Reordering the same people is not a change worth a write or a notification.
+    if (added.length === 0 && removed.length === 0) return { assigneeIds };
+
+    const now = Date.now();
+    await ctx.db.patch(args.taskId, { assigneeIds, updatedAt: now });
+
+    // The existing "assigned you a task" wording, on purpose: from the newcomer's
+    // side that is exactly what happened, and inventing a second phrasing would
+    // mean four locale files saying nearly the same thing. Nobody is told they were
+    // *removed* — being taken off a task is not news worth a notification, and the
+    // task simply stops appearing among theirs.
+    for (const userId of added.slice(0, MAX_ASSIGNEES)) {
+      if (userId === caller._id) continue;
+      await notify(ctx, {
+        organizationId: task.organizationId,
+        userId,
+        type: 'system',
+        titleKey: 'notifications.titles.taskAssigned',
+        messageKey: 'notifications.messages.taskAssignedBy',
+        params: { assignerName: caller.name ?? 'Someone', taskTitle: task.title },
+        fallbackTitle: '📋 Task Assigned',
+        fallbackMessage: `${caller.name ?? 'Someone'} added you to: "${task.title}"`,
+        relatedId: args.taskId,
+        route: '/tasks',
+        createdAt: now,
+      });
+    }
+
+    await ctx.db.insert('auditLogs', {
+      organizationId: task.organizationId,
+      userId: caller._id,
+      action: 'task_assignees_updated',
+      target: args.taskId,
+      details: JSON.stringify({ title: task.title, added, removed }),
+      createdAt: now,
+    });
+
+    return { assigneeIds };
+  },
+});
+
+// ── Watchers ───────────────────────────────────────────────────────────────
+/**
+ * Follow a task, or stop following it.
+ *
+ * Following your own way into a task needs only the right to *read* it: a
+ * supervisor who wants to hear how a report's work is going should not have to be
+ * able to edit it first. Putting somebody *else* on the list is a change to the
+ * task and needs write rights, because it signs them up for notifications.
+ *
+ * Idempotent both ways — two tabs sending "watch" leave one entry, and unwatching
+ * something you do not watch is not an error. {@link notifyWatchers} reads the
+ * list on every status change.
+ */
+export const setWatching = mutation({
+  args: {
+    taskId: v.id('tasks'),
+    watching: v.boolean(),
+    /** Defaults to the caller; another id is how staff put a colleague on a task. */
+    userId: v.optional(v.id('users')),
+  },
+  handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'tasks');
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+
+    const task = await ctx.db.get(args.taskId);
+    if (!task) throw new Error('Task not found');
+
+    const target = args.userId ?? caller._id;
+    if (target === caller._id) {
+      if (!canReadTask(caller, task)) throw new Error('Task belongs to another organization');
+    } else {
+      await assertCanWriteTask(ctx, caller, task, 'You can only change watchers on your own tasks');
+      await assertUsersInOrg(ctx, [target], task.organizationId ?? caller.organizationId);
+    }
+
+    const current = task.watcherIds ?? [];
+    const isWatching = current.includes(target);
+    if (args.watching === isWatching) return { watching: isWatching, watcherIds: current };
+
+    if (args.watching && current.length >= MAX_WATCHERS) {
+      throw new ConvexError('This task already has as many watchers as it can hold');
+    }
+
+    const watcherIds = args.watching ? [...current, target] : current.filter((id) => id !== target);
+
+    // `updatedAt` deliberately stays where it was. It drives "recently updated" on
+    // the board, and subscribing to a task is not work done on it — a bell click
+    // must not push a task above one somebody actually moved.
+    await ctx.db.patch(args.taskId, { watcherIds });
+
+    return { watching: args.watching, watcherIds };
   },
 });

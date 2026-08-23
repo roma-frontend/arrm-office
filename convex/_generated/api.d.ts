@@ -120,6 +120,7 @@ import type * as lib_resolveServiceAssignee from "../lib/resolveServiceAssignee.
 import type * as lib_sanitize from "../lib/sanitize.js";
 import type * as lib_sha256 from "../lib/sha256.js";
 import type * as lib_systemMessage from "../lib/systemMessage.js";
+import type * as lib_taskAccess from "../lib/taskAccess.js";
 import type * as lib_taskConfig from "../lib/taskConfig.js";
 import type * as lib_taskCustomFields from "../lib/taskCustomFields.js";
 import type * as lib_taskStatus from "../lib/taskStatus.js";
@@ -272,7 +273,9 @@ import type * as superadmin_user360 from "../superadmin/user360.js";
 import type * as supervisorRatings from "../supervisorRatings.js";
 import type * as surveys from "../surveys.js";
 import type * as taskFields from "../taskFields.js";
+import type * as taskRelations from "../taskRelations.js";
 import type * as taskStatuses from "../taskStatuses.js";
+import type * as taskTime from "../taskTime.js";
 import type * as taskViews from "../taskViews.js";
 import type * as tasks from "../tasks.js";
 import type * as telegram from "../telegram.js";
@@ -407,6 +410,7 @@ declare const fullApi: ApiFromModules<{
   "lib/sanitize": typeof lib_sanitize;
   "lib/sha256": typeof lib_sha256;
   "lib/systemMessage": typeof lib_systemMessage;
+  "lib/taskAccess": typeof lib_taskAccess;
   "lib/taskConfig": typeof lib_taskConfig;
   "lib/taskCustomFields": typeof lib_taskCustomFields;
   "lib/taskStatus": typeof lib_taskStatus;
@@ -559,7 +563,9 @@ declare const fullApi: ApiFromModules<{
   supervisorRatings: typeof supervisorRatings;
   surveys: typeof surveys;
   taskFields: typeof taskFields;
+  taskRelations: typeof taskRelations;
   taskStatuses: typeof taskStatuses;
+  taskTime: typeof taskTime;
   taskViews: typeof taskViews;
   tasks: typeof tasks;
   telegram: typeof telegram;

@@ -628,6 +628,7 @@
       "completed": "Завершён",
       "cancelled": "Отменён"
     },
-    "unassigned": "Не назначен"
+    "unassigned": "Не назначен",
+    "recurringSeries": "Повторяющиеся серии"
   }
 }

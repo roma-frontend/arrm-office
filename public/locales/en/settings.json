@@ -628,6 +628,7 @@
       "completed": "Completed",
       "cancelled": "Cancelled"
     },
-    "unassigned": "Unassigned"
+    "unassigned": "Unassigned",
+    "recurringSeries": "Recurring series"
   }
 }

@@ -127,6 +127,25 @@ export interface TaskFilterCondition {
 }
 
 /**
+ * Whether a condition is finished enough to narrow anything.
+ *
+ * The builder pushes every keystroke up so the board reacts live, which means a
+ * condition exists for a moment with an operator and no value yet. Treating that
+ * as a filter would empty the board between picking *is* and typing what it is —
+ * so a half-built condition is deliberately inert: it does not match, it does not
+ * count towards the badge, and it does not narrow. `between` needs both ends for
+ * the same reason.
+ *
+ * Lives here rather than in `taskFilters` because both that module and the badge
+ * in `taskViewState` need it, and this is the end of the import chain.
+ */
+export function isEffectiveCondition(condition: TaskFilterCondition): boolean {
+  if (UNARY_FILTER_OPS.includes(condition.op)) return true;
+  const needed = condition.op === 'between' ? 2 : 1;
+  return condition.values.filter((value) => value.trim() !== '').length >= needed;
+}
+
+/**
  * Caps on the filter list.
  *
  * The bound that matters is the URL's: a shared link has to survive being pasted
@@ -417,8 +436,10 @@ export function countActiveFilters(state: TaskViewState): number {
   if (state.overdue) count++;
   if (state.q.trim() !== '') count++;
   // Each builder condition is one more narrowing choice, so the "1 Filter" badge
-  // counts the same way whether the filter came from a dropdown or the builder.
-  count += state.filters.length;
+  // counts the same way whether the filter came from a dropdown or the builder —
+  // but only once it has a value, or adding a condition would claim to have
+  // narrowed the board before the user said what by.
+  count += state.filters.filter(isEffectiveCondition).length;
   return count;
 }
 

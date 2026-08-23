@@ -148,7 +148,10 @@
     "chat.realtime": "Чат в реальном времени",
     "print": "Печать",
     "copied": "Скопировано",
-    "clear": "Очистить"
+    "clear": "Очистить",
+    "remove": "Удалить",
+    "change": "Изменить",
+    "progress": "Прогресс"
   },
   "nav": {
     "home": "Главная",
@@ -1367,6 +1370,8 @@
       "taskCompleted": "\"{{taskTitle}}\" завершена пользователем {{userName}}",
       "taskSubmittedForReview": "\"{{taskTitle}}\" отправлена на проверку пользователем {{userName}}",
       "taskAssigned": "Задача \"{{taskTitle}}\" назначена вам",
+      "taskStatusChanged": "{{userName}} изменил статус задачи \"{{taskTitle}}\" на {{status}}",
+      "tasksAssignedBulk": "{{assignerName}} назначил вам задач: {{count}}",
       "leaveRequestNew": "{{userName}} запросил отпуск ({{type}}, {{start}} – {{end}})",
       "leaveApproved": "Ваш отпуск ({{type}}, {{start}} – {{end}}) одобрен",
       "leaveRejected": "Ваш отпуск ({{type}}, {{start}} – {{end}}) отклонён",
@@ -1568,6 +1573,8 @@
       "roomBooking": "{{bookingTitle}} · {{roomName}}",
       "roomBookingResponse": "{{bookingTitle}}",
       "taskAssigned": "📋 Назначена задача",
+      "taskStatusChanged": "🔄 Статус задачи изменён",
+      "tasksAssigned": "📋 Назначены задачи",
       "taskCreated": "📋 Создана новая задача",
       "seriesCommented": "💬 Комментарий к повторяющейся задаче",
       "meetingInvited": "📅 Вы приглашены: «{{eventTitle}}»",

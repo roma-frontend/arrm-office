@@ -628,6 +628,7 @@
       "completed": "Ավարտված",
       "cancelled": "Չեղարկված"
     },
-    "unassigned": "Չնշանակված"
+    "unassigned": "Չնշանակված",
+    "recurringSeries": "Կրկնվող շարքեր"
   }
 }

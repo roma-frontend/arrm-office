@@ -17,16 +17,8 @@ import { NewTaskSheet } from '@/components/tasks/NewTaskSheet';
 import { TaskSheet } from '@/components/tasks/TaskSheet';
 import { TaskEditSheet } from '@/components/tasks/TaskEditSheet';
 import { ProjectEditSheet } from '@/components/projects/ProjectEditSheet';
-import {
-  ArrowLeft,
-  Calendar,
-  Users,
-  CheckCircle2,
-  Clock,
-  Trash2,
-  Pencil,
-  Plus,
-} from 'lucide-react';
+import { ProjectTaskGrid } from '@/components/projects/ProjectTaskGrid';
+import { ArrowLeft, Calendar, Users, CheckCircle2, Trash2, Pencil, Plus } from 'lucide-react';
 
 type LabelStyle = { label: string; color: string };
 
@@ -69,6 +61,27 @@ export default function ProjectDetailClient({
   const [editingTask, setEditingTask] = useState<{ id: Id<'tasks'>; title: string } | null>(null);
 
   if (!project) return <ShieldLoader />;
+
+  /**
+   * What the viewer may do to the grid.
+   *
+   * The same split as the board: staff manage, an employee may still create and
+   * edit their own work (the server enforces which rows), a driver reads. Every
+   * write is checked again server-side — this only decides which affordances are
+   * worth drawing.
+   */
+  const canManage = userRole === 'admin' || userRole === 'supervisor' || userRole === 'superadmin';
+  const canEdit = canManage || userRole === 'employee';
+
+  /**
+   * `getProject` returns recurring series next to the tasks. The grid takes both
+   * and renders only the tasks; the strip below it renders only the series, so
+   * the narrowing happens once, here, with the query's own discriminant.
+   */
+  type ProjectEntry = NonNullable<typeof project>['tasks'][number];
+  const recurringSeries = project.tasks.filter(
+    (entry): entry is Extract<ProjectEntry, { type: 'recurring' }> => entry.type === 'recurring',
+  );
 
   const statusCfg = STATUS_CONFIG[project.status] ?? STATUS_FALLBACK;
   const priorityCfg = PRIORITY_CONFIG[project.priority] ?? PRIORITY_FALLBACK;
@@ -180,71 +193,48 @@ export default function ProjectDetailClient({
             <Plus className="w-4 h-4 mr-1" /> {t('projects.addTask', 'Add Task')}
           </Button>
         </div>
-        {project.tasks && project.tasks.length > 0 ? (
-          <div className="space-y-2">
-            {project.tasks.map((task) => (
-              <div
-                key={task._id}
-                className="flex items-center justify-between p-3 rounded-xl bg-(--card) border border-(--border) hover:shadow-sm cursor-pointer transition-all"
-                onClick={() => {
-                  if ((task as any).type === 'recurring') {
-                    // Navigate to tasks board — recurring tasks are best managed there
-                    router.push('/tasks');
-                  } else {
-                    setSelectedTask({
-                      id: task._id as Id<'tasks'>,
-                      title: localizedTaskTitle(t, task),
-                    });
-                  }
-                }}
+
+        {/* The board's grid, scoped to this project — ClickUp's "List" page. The
+            wizard button above it stays: a row typed into the grid is a title and
+            a status, and plenty of tasks want a description, a deadline and an
+            attachment before they are worth having. */}
+        <ProjectTaskGrid
+          projectId={project._id}
+          tasks={project.tasks}
+          viewerId={userId}
+          canEdit={canEdit}
+          canManage={canManage}
+          onOpenTask={(id, title) => setSelectedTask({ id: id as Id<'tasks'>, title })}
+        />
+
+        {/* Recurring series are not rows in the grid — a series lives in
+            `recurringTasks` and has no task document to edit — so they keep their
+            own strip, and clicking one goes to the tab that manages them. */}
+        {recurringSeries.length > 0 && (
+          <div className="mt-3 space-y-2">
+            <p className="text-xs font-medium uppercase tracking-wide text-(--text-muted)">
+              {t('projects.recurringSeries', 'Recurring series')}
+            </p>
+            {recurringSeries.map((series) => (
+              <button
+                key={series._id}
+                type="button"
+                onClick={() => router.push('/tasks?tab=recurring')}
+                className="flex w-full items-center justify-between gap-3 rounded-xl border border-(--border) bg-(--card) p-3 text-left transition-all hover:shadow-sm"
               >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div
-                    className={`w-2 h-2 rounded-full ${
-                      task.status === 'completed'
-                        ? 'bg-(--success-solid)'
-                        : task.status === 'in_progress'
-                          ? 'bg-(--brand)'
-                          : task.status === 'review'
-                            ? 'bg-(--warning-solid)'
-                            : 'bg-(--text-muted)'
-                    }`}
-                  />
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{localizedTaskTitle(t, task)}</p>
-                    <p className="text-xs text-(--text-muted)">
-                      {task.assignedToUser?.name ?? t('projects.unassigned', 'Unassigned')}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  {(task as any).type === 'recurring' && (
-                    <Badge variant="secondary" className="text-xs">
-                      🔁{' '}
-                      {String(
-                        t(`recurringTasks.frequency.${(task as any).frequency}`) ||
-                          (task as any).frequency,
-                      )}
-                    </Badge>
-                  )}
-                  <Badge variant="outline" className="text-xs">
-                    {String(
-                      t(
-                        `taskStatus.${task.status.replace('in_progress', 'inProgress').replace('review', 'inReview')}`,
-                      ) || task.status,
-                    )}
-                  </Badge>
-                </div>
-              </div>
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-medium">
+                    {localizedTaskTitle(t, series)}
+                  </span>
+                  <span className="block text-xs text-(--text-muted)">
+                    {series.assignedToUser?.name ?? t('projects.unassigned', 'Unassigned')}
+                  </span>
+                </span>
+                <Badge variant="secondary" className="shrink-0 text-xs">
+                  🔁 {String(t(`recurringTasks.frequency.${series.frequency}`) || series.frequency)}
+                </Badge>
+              </button>
             ))}
-          </div>
-        ) : (
-          <div className="text-center py-12 text-(--text-muted)">
-            <Clock className="w-12 h-12 mx-auto mb-3" />
-            <p>{t('projects.noTasks', 'No tasks yet')}</p>
-            <Button size="sm" className="mt-3" onClick={() => setNewTaskOpen(true)}>
-              {t('projects.addTask', 'Add Task')}
-            </Button>
           </div>
         )}
       </div>

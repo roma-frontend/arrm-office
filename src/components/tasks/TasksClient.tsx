@@ -3,7 +3,7 @@
 import { useState, useMemo, useRef, useTransition, useEffect, useCallback } from 'react';
 import { flushSync } from 'react-dom';
 import { useMainRef } from '@/hooks/useMainRef';
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery } from 'convex/react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
@@ -58,6 +58,7 @@ import {
   decodeTaskView,
   encodeTaskView,
   fromSavedView,
+  isEffectiveCondition,
   sameTaskView,
   taskViewLink,
   toSavedView,
@@ -79,17 +80,14 @@ import { TaskFilterChips, type TaskFilterChip } from './TaskFilterChips';
 // The grid and its toolbar are their own modules; this file wires them to the
 // board's state and to Convex. Nothing below is loaded by the kanban or the
 // timeline, which are deliberately untouched by any of it.
-import { TaskTable, type TaskRowPatch, type TaskSeed } from './table/TaskTable';
-import type { TaskCellUser } from './table/cells/cellChrome';
-import type { BulkPatch } from './BulkActionBar';
-import { ViewTabs, type SavedViewTab } from './ViewTabs';
+import { TaskTable } from './table/TaskTable';
+import { ViewTabs } from './ViewTabs';
 import { GroupBySelector } from './GroupBySelector';
 import { ColumnsMenu } from './ColumnsMenu';
 import { FilterBuilder } from './FilterBuilder';
-import { AddFieldPopover, type FieldDraft } from './AddFieldPopover';
+import { AddFieldPopover } from './AddFieldPopover';
 import { applyTaskFilters } from '@/lib/taskFilters';
-import type { TaskFieldLike, TaskFieldValue } from '@/lib/taskFieldTypes';
-import { DEFAULT_STATUS_SET } from '../../../convex/lib/taskStatus';
+import { useTaskGrid } from '@/hooks/useTaskGrid';
 
 // â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 type Status = 'pending' | 'in_progress' | 'review' | 'completed' | 'cancelled';
@@ -1026,253 +1024,50 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
     }
   }, [projectFilterValues, filterProject, patchView]);
 
-  // ── Board configuration ────────────────────────────────────────────────────
+  // ── Board configuration and grid writes ────────────────────────────────────
   /**
-   * Three queries that describe the board rather than its contents: the status
-   * set it uses, the columns it has, and the views saved on it.
+   * The grid's server side: the status set this board uses, the custom columns it
+   * has, the views saved on it, and every write a cell can make.
    *
-   * Kept out of `getVisibleTasks` on purpose. They change on a different clock —
-   * a column is added once a quarter, a task changes every minute — so folding
-   * them in would re-send the whole board's configuration with every status
-   * change, and Convex would have no way to tell that only the tasks moved.
+   * Shared with the project page through `useTaskGrid` rather than written twice,
+   * because both draw the same table and a cell edit has to mean the same thing
+   * on either. What stays here is the view state — on this page the view *is* the
+   * URL, which is what makes a board shareable, and a project page has no such
+   * requirement.
    */
-  const boardScope = useMemo(
-    () => (effectiveOrgId ? { organizationId: effectiveOrgId as Id<'organizations'> } : {}),
-    [effectiveOrgId],
-  );
-  const statusSet = useQuery(api.taskStatuses.resolveForProject, convexId ? boardScope : 'skip');
-  const fieldDefs = useQuery(api.taskFields.listFields, convexId ? boardScope : 'skip');
-  const savedViews = useQuery(api.taskViews.listViews, convexId ? boardScope : 'skip');
-
-  /**
-   * The board's statuses, with the built-in five as the fallback.
-   *
-   * The fallback is not just for the moment before the query lands: an
-   * organization that has never opened the status editor has no set at all, and
-   * `DEFAULT_STATUS_SET` is exactly what its tasks already carry.
-   */
-  const statuses = statusSet?.statuses ?? DEFAULT_STATUS_SET;
-  const fields = useMemo(() => fieldDefs ?? [], [fieldDefs]);
-  /** Custom fields by id, for the filter and sort comparators. */
-  const fieldMap = useMemo(
-    () => new Map<string, TaskFieldLike>(fields.map((field) => [field._id as string, field])),
-    [fields],
-  );
-
-  /** Assignee candidates for the grid's people cells, keyed as the cells expect. */
-  const cellUsers = useMemo<TaskCellUser[]>(() => {
-    const map = new Map<string, TaskCellUser>();
-    for (const task of rawTasksWithOptimistic ?? []) {
-      const user = task.assignedToUser;
-      if (!user?._id || map.has(user._id)) continue;
-      map.set(user._id, {
-        _id: user._id,
-        name: user.name || '?',
-        avatarUrl: user.avatarUrl ?? undefined,
-      });
-    }
-    return [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
-  }, [rawTasksWithOptimistic]);
-
-  /** Projects present on the board, for the filter builder's value list. */
-  const filterProjects = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const task of rawTasksWithOptimistic ?? []) {
-      if (task.projectId && task.projectName) map.set(task.projectId, task.projectName);
-    }
-    return [...map.entries()]
-      .map(([_id, name]) => ({ _id, name }))
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [rawTasksWithOptimistic]);
-
-  const projectNameOf = useCallback(
-    (projectId: string) =>
-      rawTasksWithOptimistic?.find((task) => task.projectId === projectId)?.projectName ??
-      undefined,
-    [rawTasksWithOptimistic],
-  );
-
-  // ── Table writes ───────────────────────────────────────────────────────────
-  const setTaskStatusFor = useMutation(api.tasks.setTaskStatus);
-  const writeTaskFields = useMutation(api.tasks.updateTaskFields);
-  const patchTasks = useMutation(api.tasks.bulkUpdateTasks);
-  const removeTasks = useMutation(api.tasks.bulkDeleteTasks);
-  const addField = useMutation(api.taskFields.createField);
-  const addTask = useMutation(api.tasks.createTask);
-  const storeView = useMutation(api.taskViews.saveView);
-  const changeView = useMutation(api.taskViews.updateView);
-  const dropView = useMutation(api.taskViews.deleteView);
-  const makeViewDefault = useMutation(api.taskViews.setDefaultView);
-
-  /**
-   * One place where a failed grid write becomes a message.
-   *
-   * Every cell in the table is a mutation, and a cell that silently refuses to
-   * change looks like a bug in the grid rather than a permission boundary. The
-   * server's `ConvexError` messages are written to be read by the person who hit
-   * them, so they are shown as-is.
-   */
-  const runWrite = useCallback(
-    async (action: () => Promise<unknown>) => {
-      try {
-        await action();
-      } catch (error) {
-        const message =
-          typeof (error as { data?: unknown })?.data === 'string'
-            ? (error as { data: string }).data
-            : error instanceof Error
-              ? error.message
-              : t('common.error', 'Something went wrong');
-        toast.error(message);
-      }
+  const {
+    statuses,
+    fields,
+    fieldMap,
+    savedViews,
+    viewTabs,
+    cellUsers,
+    filterProjects,
+    projectNameOf,
+    handleSetStatus,
+    handlePatchTask,
+    handleSetField,
+    handleAddTask,
+    handleBulkPatch,
+    handleBulkDelete,
+    handleCreateField,
+    createView,
+    updateViewState,
+    renameView,
+    removeView,
+    setDefaultView,
+  } = useTaskGrid(
+    {
+      ...(effectiveOrgId ? { organizationId: effectiveOrgId } : {}),
+      ...(convexId ? { viewerId: convexId } : {}),
+      enabled: !!convexId,
     },
-    [t],
-  );
-
-  /** Bulk writes skip rows the caller may not touch; saying so beats silence. */
-  const reportSkipped = useCallback(
-    (skipped: number) => {
-      if (skipped > 0) {
-        toast.error(
-          t('tasksTable.someSkipped', {
-            count: skipped,
-            defaultValue: '{{count}} task(s) were left unchanged — you cannot edit them',
-          }),
-        );
-      }
-    },
-    [t],
-  );
-
-  const handleSetStatus = useCallback(
-    (taskId: string, statusKey: string) => {
-      void runWrite(() => setTaskStatusFor({ taskId: taskId as Id<'tasks'>, statusKey }));
-    },
-    [runWrite, setTaskStatusFor],
-  );
-
-  /**
-   * A single row's built-in columns.
-   *
-   * Routed through `bulkUpdateTasks` with one id rather than `updateTask`: that
-   * mutation is admin/supervisor-only and cannot set an assignee at all, so a
-   * cell edit by the person the task belongs to would be refused for no reason a
-   * user could see.
-   */
-  const handlePatchTask = useCallback(
-    (taskId: string, patch: TaskRowPatch) => {
-      void runWrite(async () => {
-        const result = await patchTasks({
-          taskIds: [taskId as Id<'tasks'>],
-          patch: {
-            ...(patch.priority !== undefined ? { priority: patch.priority } : {}),
-            ...(patch.deadline !== undefined ? { deadline: patch.deadline } : {}),
-            ...(patch.assignedTo !== undefined
-              ? { assignedTo: patch.assignedTo as Id<'users'> }
-              : {}),
-          },
-        });
-        reportSkipped(result.skipped);
-      });
-    },
-    [runWrite, patchTasks, reportSkipped],
-  );
-
-  const handleSetField = useCallback(
-    (taskId: string, fieldId: string, value: TaskFieldValue | null) => {
-      void runWrite(() =>
-        writeTaskFields({ taskId: taskId as Id<'tasks'>, values: { [fieldId]: value } }),
-      );
-    },
-    [runWrite, writeTaskFields],
-  );
-
-  /**
-   * Inline creation, seeded by the section it was typed into.
-   *
-   * `createTask` predates custom statuses and columns and is called from the
-   * wizard, onboarding and recurring materialisation; widening its signature for
-   * a convenience only this grid needs would touch all of them. So the seed is
-   * applied as two follow-up writes on the id it returns.
-   */
-  const handleAddTask = useCallback(
-    async (title: string, seed: TaskSeed) => {
-      if (!convexId) return;
-      await runWrite(async () => {
-        const taskId = await addTask({
-          title,
-          assignedTo: (seed.assignedTo ?? convexId) as Id<'users'>,
-          priority: seed.priority ?? 'medium',
-          ...(seed.projectId ? { projectId: seed.projectId as Id<'projects'> } : {}),
-        });
-        if (seed.statusKey) await setTaskStatusFor({ taskId, statusKey: seed.statusKey });
-        if (seed.fieldValues && Object.keys(seed.fieldValues).length > 0) {
-          await writeTaskFields({ taskId, values: seed.fieldValues });
-        }
-      });
-    },
-    [convexId, runWrite, addTask, setTaskStatusFor, writeTaskFields],
-  );
-
-  const handleBulkPatch = useCallback(
-    (taskIds: string[], patch: BulkPatch) => {
-      void runWrite(async () => {
-        const result = await patchTasks({
-          taskIds: taskIds as Id<'tasks'>[],
-          patch: {
-            ...(patch.statusKey ? { statusKey: patch.statusKey } : {}),
-            ...(patch.priority ? { priority: patch.priority } : {}),
-            ...(patch.assignedTo ? { assignedTo: patch.assignedTo as Id<'users'> } : {}),
-          },
-        });
-        reportSkipped(result.skipped);
-      });
-    },
-    [runWrite, patchTasks, reportSkipped],
-  );
-
-  const handleBulkDelete = useCallback(
-    (taskIds: string[]) => {
-      void runWrite(async () => {
-        const result = await removeTasks({ taskIds: taskIds as Id<'tasks'>[] });
-        reportSkipped(result.skipped);
-      });
-    },
-    [runWrite, removeTasks, reportSkipped],
-  );
-
-  const handleCreateField = useCallback(
-    (draft: FieldDraft) => {
-      void runWrite(() =>
-        addField({
-          name: draft.name,
-          type: draft.type,
-          ...(draft.options ? { options: draft.options } : {}),
-          ...(draft.config ? { config: draft.config } : {}),
-          ...(draft.required ? { required: draft.required } : {}),
-          ...boardScope,
-        }),
-      );
-    },
-    [runWrite, addField, boardScope],
+    rawTasksWithOptimistic,
   );
 
   // ── Saved views ────────────────────────────────────────────────────────────
   /** `taskViews.type` names the modes differently: the kanban is a "board". */
   const savedViewType = viewMode === 'kanban' ? 'board' : viewMode;
-
-  const viewTabs = useMemo<SavedViewTab[]>(
-    () =>
-      (savedViews ?? []).map((view) => ({
-        _id: view._id,
-        name: view.name,
-        type: view.type,
-        visibility: view.visibility,
-        isDefault: view.isDefault,
-        canEdit: view.canEdit,
-      })),
-    [savedViews],
-  );
 
   const activeSavedView = savedViews?.find((view) => view._id === viewState.viewId);
   /** True once the board stops matching the tab it is showing under. */
@@ -1308,65 +1103,63 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
     if (preset) setViewState(fromSavedView(preset.state, preset._id));
   }, [savedViews]);
 
+  /**
+   * Saving the board as a tab, then showing it under that tab's name.
+   *
+   * The `viewId` is set only once the server has one, so a failed save leaves the
+   * board unsaved and visibly so, rather than pointing the URL at a view that
+   * does not exist.
+   */
   const handleCreateView = useCallback(
     (name: string, visibility: 'private' | 'team') => {
-      void runWrite(async () => {
-        const viewId = await storeView({
+      void (async () => {
+        const viewId = await createView({
           name,
           type: savedViewType,
           state: toSavedView(viewState),
           visibility,
-          ...boardScope,
         });
-        patchView({ viewId });
-      });
+        if (viewId) patchView({ viewId });
+      })();
     },
-    [runWrite, storeView, savedViewType, viewState, boardScope, patchView],
+    [createView, savedViewType, viewState, patchView],
   );
 
   const handleUpdateView = useCallback(
     (viewId: string) => {
-      void runWrite(() =>
-        changeView({
-          viewId: viewId as Id<'taskViews'>,
-          type: savedViewType,
-          state: toSavedView(viewState),
-        }),
-      );
+      updateViewState(viewId, savedViewType, toSavedView(viewState));
     },
-    [runWrite, changeView, savedViewType, viewState],
-  );
-
-  const handleRenameView = useCallback(
-    (viewId: string, name: string) => {
-      void runWrite(() => changeView({ viewId: viewId as Id<'taskViews'>, name }));
-    },
-    [runWrite, changeView],
+    [updateViewState, savedViewType, viewState],
   );
 
   const handleDeleteView = useCallback(
     (viewId: string) => {
-      void runWrite(async () => {
-        await dropView({ viewId: viewId as Id<'taskViews'> });
+      void (async () => {
+        await removeView(viewId);
         // The board keeps its filters — only the name it was showing under is
         // gone, and silently resetting the view on a delete would look like the
         // delete had done something else as well.
         setViewState((prev) => (prev.viewId === viewId ? { ...prev, viewId: '' } : prev));
-      });
+      })();
     },
-    [runWrite, dropView],
-  );
-
-  const handleSetDefaultView = useCallback(
-    (viewId: string) => {
-      void runWrite(() => makeViewDefault({ viewId: viewId as Id<'taskViews'> }));
-    },
-    [runWrite, makeViewDefault],
+    [removeView],
   );
 
   const setFilters = useCallback(
     (filters: TaskFilterCondition[]) => patchView({ filters }),
     [patchView],
+  );
+
+  /**
+   * Conditions that are actually narrowing, for the badge and the summary chip.
+   *
+   * Not `filters.length`: the builder pushes a condition up the moment its
+   * operator is chosen, so counting them all would say "1 Filter" about a row
+   * that has not been told what to filter by yet.
+   */
+  const activeConditions = useMemo(
+    () => viewState.filters.filter(isEffectiveCondition).length,
+    [viewState.filters],
   );
 
   // Filter + Sort
@@ -1525,6 +1318,12 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
       return [...map.entries()].map(([key, v]) => ({ key, label: v.label, tasks: v.tasks }));
     }
     // groupBy === 'assignee'
+    // Anything else — "none", or a custom field picked while the grid was open —
+    // becomes one section rather than falling through to people, which would be
+    // a heading that quietly says something the view was never asked for.
+    if (groupBy !== 'assignee') {
+      return [{ key: '__all__', label: t('tasksClient.allTasks', 'All Tasks'), tasks }];
+    }
     const map = new Map<string, { label: string; tasks: typeof tasks }>();
     tasks.forEach((tk) => {
       const key = tk.assignedToUser?._id ?? '__unassigned__';
@@ -1666,12 +1465,12 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
     // already read as sentences inside the Filter panel, and repeating them here
     // would push the dropdown chips off the row. Removing it clears the lot,
     // which is what "×" on a summary chip should do.
-    if (viewState.filters.length > 0) {
+    if (activeConditions > 0) {
       chips.push({
         key: 'conditions',
         field: t('tasksTable.filter', 'Filter'),
         value: t('tasksTable.filterCount', {
-          count: viewState.filters.length,
+          count: activeConditions,
           defaultValue: '{{count}} condition(s)',
         }),
       });
@@ -1684,7 +1483,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
     filterProject,
     filterOverdue,
     search,
-    viewState.filters,
+    activeConditions,
     employees,
     rawTasksWithOptimistic,
     t,
@@ -1932,9 +1731,9 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
             onSelect={selectView}
             onCreate={handleCreateView}
             onUpdate={handleUpdateView}
-            onRename={handleRenameView}
+            onRename={renameView}
             onDelete={handleDeleteView}
-            onSetDefault={handleSetDefaultView}
+            onSetDefault={setDefaultView}
           />
         </div>
       )}
@@ -1959,6 +1758,40 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
             </button>
           </div>
         )}
+
+        {/* ═══ Board controls ═══ */}
+        {/* Grouping and columns belong to the grid, so they appear with it: the
+            list and the kanban keep the compact dropdown below, which offers
+            exactly the four groupings they know how to draw. The filter builder
+            is here for every view, because `applyTaskFilters` runs in the shared
+            pipeline above — a filtered link means the same board in all of them. */}
+        <div className="flex min-w-0 items-center gap-0.5 shrink-0">
+          {viewMode === 'table' && (
+            <>
+              <GroupBySelector
+                value={groupBy}
+                fields={fields}
+                onChange={(group) => patchView({ group })}
+              />
+              <ColumnsMenu
+                fields={fields}
+                layout={prefs.table}
+                onToggle={toggleTableColumn}
+                onReorder={setColumnOrder}
+                onReset={reset}
+              />
+            </>
+          )}
+          <FilterBuilder
+            filters={viewState.filters}
+            fields={fields}
+            statuses={statuses}
+            users={cellUsers}
+            projects={filterProjects}
+            onChange={setFilters}
+            activeCount={activeConditions}
+          />
+        </div>
 
         <div className="flex items-center gap-1 ml-auto overflow-x-auto scrollbar-width-none">
           <CustomSelect
@@ -2006,18 +1839,23 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
               <ArrowDownWideNarrow className="h-3.5 w-3.5" aria-hidden="true" />
             )}
           </button>
-          <CustomSelect
-            value={groupBy}
-            onChange={(v) => patchView({ group: v as typeof groupBy })}
-            options={[
-              { value: 'status', label: t('tasksClient.group.status', 'Status') },
-              { value: 'priority', label: t('tasksClient.group.priority', 'Priority') },
-              { value: 'project', label: t('tasksClient.group.project', 'Project') },
-              { value: 'assignee', label: t('tasksClient.group.assignee', 'Assignee') },
-            ]}
-            triggerClassName="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-(--border) bg-(--background) text-xs text-(--text-secondary) hover:bg-(--background-subtle) transition-colors cursor-pointer shrink-0 whitespace-nowrap"
-            dropdownClassName="bg-(--card) border border-(--border) text-(--text-primary)"
-          />
+          {/* The grid has its own grouping control, which also offers custom
+              fields and "none". This one stays for the list and the kanban,
+              whose sections are built from these four and only these four. */}
+          {viewMode !== 'table' && (
+            <CustomSelect
+              value={groupBy}
+              onChange={(v) => patchView({ group: v as typeof groupBy })}
+              options={[
+                { value: 'status', label: t('tasksClient.group.status', 'Status') },
+                { value: 'priority', label: t('tasksClient.group.priority', 'Priority') },
+                { value: 'project', label: t('tasksClient.group.project', 'Project') },
+                { value: 'assignee', label: t('tasksClient.group.assignee', 'Assignee') },
+              ]}
+              triggerClassName="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-(--border) bg-(--background) text-xs text-(--text-secondary) hover:bg-(--background-subtle) transition-colors cursor-pointer shrink-0 whitespace-nowrap"
+              dropdownClassName="bg-(--card) border border-(--border) text-(--text-primary)"
+            />
+          )}
           {canManage && employees.length > 1 && (
             <CustomSelect
               value={filterEmployee}

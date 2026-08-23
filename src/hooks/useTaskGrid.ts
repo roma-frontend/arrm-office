@@ -354,7 +354,14 @@ export function useTaskGrid(scope: TaskGridScope, tasks: readonly GridSourceTask
         }
       });
     },
-    [runWrite, patchTasks, reportSkipped, partitionIds, updateRecurringTask, updateRecurringTaskStatus],
+    [
+      runWrite,
+      patchTasks,
+      reportSkipped,
+      partitionIds,
+      updateRecurringTask,
+      updateRecurringTaskStatus,
+    ],
   );
 
   const handleBulkDelete = useCallback(

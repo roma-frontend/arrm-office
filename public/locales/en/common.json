@@ -148,7 +148,10 @@
     "chat.realtime": "Real-time chat",
     "print": "Print",
     "copied": "Copied",
-    "clear": "Clear"
+    "clear": "Clear",
+    "remove": "Remove",
+    "change": "Change",
+    "progress": "Progress"
   },
   "nav": {
     "home": "Home",
@@ -1349,6 +1352,8 @@
       "taskCompleted": "\"{{taskTitle}}\" has been completed by {{userName}}",
       "taskSubmittedForReview": "\"{{taskTitle}}\" has been submitted for review by {{userName}}",
       "taskAssigned": "Task \"{{taskTitle}}\" has been assigned to you",
+      "taskStatusChanged": "{{userName}} changed the status of \"{{taskTitle}}\" to {{status}}",
+      "tasksAssignedBulk": "{{assignerName}} assigned {{count}} task(s) to you",
       "leaveRequestNew": "{{userName}} requested {{type}} leave ({{start}} – {{end}})",
       "leaveApproved": "Your {{type}} leave ({{start}} – {{end}}) has been approved",
       "leaveRejected": "Your {{type}} leave ({{start}} – {{end}}) has been rejected",
@@ -1550,6 +1555,8 @@
       "roomBooking": "{{bookingTitle}} · {{roomName}}",
       "roomBookingResponse": "{{bookingTitle}}",
       "taskAssigned": "📋 Task Assigned",
+      "taskStatusChanged": "🔄 Task Status Changed",
+      "tasksAssigned": "📋 Tasks Assigned",
       "taskCreated": "📋 New Task Created",
       "seriesCommented": "💬 Comment on recurring task",
       "meetingInvited": "📅 You're invited: \"{{eventTitle}}\"",

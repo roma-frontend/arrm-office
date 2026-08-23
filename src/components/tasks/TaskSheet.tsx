@@ -55,12 +55,9 @@ export function TaskSheet({ taskId, onClose, taskTitle }: TaskSheetProps) {
   const { t } = useTranslation();
   const [editingId, setEditingId] = useState<Id<'tasks'> | null>(null);
 
-  const handleEdit = useCallback(
-    (id: Id<'tasks'>) => {
-      setEditingId(id);
-    },
-    [],
-  );
+  const handleEdit = useCallback((id: Id<'tasks'>) => {
+    setEditingId(id);
+  }, []);
 
   const handleEditDone = useCallback(() => {
     setEditingId(null);
@@ -74,26 +71,15 @@ export function TaskSheet({ taskId, onClose, taskTitle }: TaskSheetProps) {
       onClose={onClose}
       size="xl"
       title={
-        editing
-          ? t('tasksClient.editTask', 'Edit task')
-          : taskTitle || t('nav.tasks', 'Tasks')
+        editing ? t('tasksClient.editTask', 'Edit task') : taskTitle || t('nav.tasks', 'Tasks')
       }
       {...(taskId ? { deepLink: `/tasks/${taskId}` } : {})}
     >
       {editing ? (
-        <TaskEditClient
-          key={`edit-${editingId}`}
-          taskId={editingId}
-          onClose={handleEditDone}
-        />
+        <TaskEditClient key={`edit-${editingId}`} taskId={editingId} onClose={handleEditDone} />
       ) : (
         taskId && (
-          <TaskDetailClient
-            key={taskId}
-            taskId={taskId}
-            onDone={onClose}
-            onEdit={handleEdit}
-          />
+          <TaskDetailClient key={taskId} taskId={taskId} onDone={onClose} onEdit={handleEdit} />
         )
       )}
     </DetailSheet>
