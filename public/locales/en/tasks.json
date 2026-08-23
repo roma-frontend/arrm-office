@@ -493,5 +493,11 @@
     "notFoundHint": "It may have been deleted, or the link is incorrect.",
     "backToTasks": "Back to tasks",
     "noPermission": "You do not have permission to create tasks"
+  },
+  "taskPanels": {
+    "watch": "Watch",
+    "watching": "Watching",
+    "collaborators": "Also working on this",
+    "partOf": "Subtask of"
   }
 }

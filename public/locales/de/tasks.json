@@ -493,5 +493,11 @@
     "notFoundHint": "Sie wurde möglicherweise gelöscht, oder der Link ist falsch.",
     "backToTasks": "Zurück zu den Aufgaben",
     "noPermission": "Sie haben keine Berechtigung, Aufgaben zu erstellen"
+  },
+  "taskPanels": {
+    "watch": "Beobachten",
+    "watching": "Beobachtung",
+    "collaborators": "Arbeiten auch daran",
+    "partOf": "Unteraufgabe von"
   }
 }
