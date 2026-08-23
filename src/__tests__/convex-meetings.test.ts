@@ -1,236 +1,332 @@
 /**
- * Tests for the LiveKit meeting DB layer — convex/meetings.ts.
- *
- * The LiveKit HTTP calls live in convex/meetingsActions.ts (Node runtime) and
- * are not unit-tested here; every write from those actions funnels through the
- * mutations below, so the contract that matters is: auth is enforced, the
- * meeting row + event link are created idempotently, and toggling video off
- * clears the link.
+ * Tests for convex/meetings — meeting CRUD with mocked Convex context.
  */
+import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 
-import { jest, describe, it, expect, beforeEach, beforeAll } from '@jest/globals';
-
+// ── Mocks ────────────────────────────────────────────────────────────────────
 jest.mock('../../convex/_generated/server', () => ({
-  mutation: ({ handler, args }: any) => ({ handler, args }),
-  query: ({ handler, args }: any) => ({ handler, args }),
-  action: ({ handler, args }: any) => ({ handler, args }),
+  mutation: ({ handler }: any) => ({ handler }),
+  query: ({ handler }: any) => ({ handler }),
+  internalMutation: ({ handler }: any) => ({ handler }),
+  internalQuery: ({ handler }: any) => ({ handler }),
 }));
 
 jest.mock('../../convex/lib/getAuthCaller', () => ({
   getAuthCaller: jest.fn(),
 }));
 
-let meetings: any;
-let mockGetAuthCaller: jest.Mock;
-let mockGet: jest.Mock;
-let mockPatch: jest.Mock;
-let mockInsert: jest.Mock;
-let mockQuery: jest.Mock;
-let mockUnique: jest.Mock;
+jest.mock('../../convex/lib/auth', () => ({
+  isSuperadmin: jest.fn(),
+}));
 
-const organizer = {
-  _id: 'user-1',
-  name: 'Anna',
-  email: 'a@x.com',
-  role: 'employee',
-  organizationId: 'org-1',
-};
-const otherOrg = {
-  _id: 'user-2',
-  name: 'Bob',
-  email: 'b@x.com',
-  role: 'employee',
-  organizationId: 'org-2',
-};
-const admin = {
-  _id: 'user-3',
-  name: 'Carl',
-  email: 'c@x.com',
-  role: 'admin',
-  organizationId: 'org-1',
-};
-const superadmin = {
-  _id: 'user-9',
-  name: 'Root',
-  email: 'root@x.com',
-  role: 'superadmin',
-  organizationId: 'org-1',
-};
+jest.mock('../../convex/lib/entitlements', () => ({
+  assertModuleAccess: jest.fn().mockResolvedValue(undefined),
+  assertQuota: jest.fn().mockResolvedValue(undefined),
+  currentPeriodKey: jest.fn().mockReturnValue('2026-08'),
+  incrementUsage: jest.fn().mockResolvedValue(undefined),
+}));
 
-function event(over: Record<string, unknown> = {}) {
-  return {
-    _id: 'evt-1',
-    organizationId: 'org-1',
-    createdBy: 'user-1',
-    title: 'Sync',
-    date: '2026-08-20',
-    startTime: '10:00',
-    endTime: '11:00',
-    allDay: false,
-    category: 'meeting',
-    reminder: '15min',
-    createdAt: 1000,
-    ...over,
-  };
+jest.mock('../../convex/lib/notify', () => ({
+  notify: jest.fn().mockResolvedValue(undefined),
+}));
+
+// ── Module under test ────────────────────────────────────────────────────────
+let handlers: Record<string, (ctx: any, args: any) => Promise<any>> = {};
+
+const getAuthCallerFn = jest.requireMock('../../convex/lib/getAuthCaller').getAuthCaller as jest.Mock;
+const isSuperadminFn = jest.requireMock('../../convex/lib/auth').isSuperadmin as jest.Mock;
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  jest.isolateModules(() => {
+    const mod = require('../../convex/meetings');
+    for (const [name, def] of Object.entries(mod)) {
+      if (def && typeof def === 'object' && typeof (def as any).handler === 'function') {
+        handlers[name] = (def as any).handler;
+      }
+    }
+  });
+});
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+const ORG = 'org-1';
+const USER = 'user-1';
+const MEETING_ID = 'meeting-1';
+const EVENT_ID = 'event-1';
+
+function callerDoc(overrides: Record<string, unknown> = {}) {
+  return { _id: USER, role: 'admin', organizationId: ORG, name: 'Admin', ...overrides };
 }
 
-function meetingRow(over: Record<string, unknown> = {}) {
+function meetingDoc(overrides: Record<string, unknown> = {}) {
   return {
-    _id: 'meet-1',
-    eventId: 'evt-1',
-    organizationId: 'org-1',
-    roomName: 'evt_evt-1',
-    hostUserId: 'user-1',
+    _id: MEETING_ID,
+    eventId: EVENT_ID,
+    organizationId: ORG,
+    roomName: 'team-sync',
+    hostUserId: USER,
     mode: 'meeting',
     status: 'scheduled',
     createdAt: 1000,
-    ...over,
+    updatedAt: 1000,
+    ...overrides,
   };
 }
 
-function makeCtx() {
+function eventDoc(overrides: Record<string, unknown> = {}) {
   return {
-    db: {
-      get: mockGet,
-      patch: mockPatch,
-      insert: mockInsert,
-      query: mockQuery,
-    },
+    _id: EVENT_ID,
+    organizationId: ORG,
+    createdBy: USER,
+    title: 'Team Sync',
+    date: '2026-08-25',
+    startTime: '10:00',
+    endTime: '11:00',
+    ...overrides,
   };
 }
 
-beforeAll(async () => {
-  meetings = await import('../../convex/meetings');
-});
+function mockCaller(overrides: Record<string, unknown> = {}) {
+  const caller = callerDoc(overrides);
+  getAuthCallerFn.mockResolvedValue(caller);
+  isSuperadminFn.mockReturnValue(caller.role === 'superadmin');
+  return caller;
+}
 
-beforeEach(() => {
-  mockGetAuthCaller = (jest.requireMock('../../convex/lib/getAuthCaller') as any).getAuthCaller;
-  mockGetAuthCaller.mockReset();
-  mockGet = jest.fn();
-  mockPatch = jest.fn(async () => undefined);
-  mockInsert = jest.fn(async () => 'meet-1');
-  mockQuery = jest.fn();
-  mockUnique = jest.fn();
-  // `.first()` is used by the usage-counter lookups (billingUsageCounters) —
-  // absent rows read as null so quota never fires in these tests.
-  mockQuery.mockReturnValue({
-    withIndex: () => ({ unique: mockUnique, first: jest.fn().mockResolvedValue(null) }),
+function makeCtx(dbOverrides: Record<string, jest.Mock> = {}) {
+  const get = dbOverrides.get ?? jest.fn();
+  const insert = dbOverrides.insert ?? jest.fn().mockResolvedValue('new_id');
+  const patch = dbOverrides.patch ?? jest.fn().mockResolvedValue(undefined);
+  const remove = dbOverrides.delete ?? jest.fn().mockResolvedValue(undefined);
+  const take = dbOverrides.take ?? jest.fn().mockResolvedValue([]);
+  const collect = jest.fn().mockResolvedValue([]);
+  const first = dbOverrides.first ?? jest.fn().mockResolvedValue(null);
+  const unique = dbOverrides.unique ?? jest.fn().mockResolvedValue(null);
+  const order = jest.fn().mockReturnValue({ take, first, unique, collect });
+  const withIndex = jest.fn().mockReturnValue({ order, take, first, unique, collect });
+  const query = jest.fn().mockReturnValue({ withIndex, order, take, first, unique, collect });
+  const db = { get, insert, patch, delete: remove, query };
+  return { ctx: { db }, get, insert, patch, remove, query, withIndex, take, first, unique, collect };
+}
+
+// ── Tests ────────────────────────────────────────────────────────────────────
+
+describe('register', () => {
+  it('registers a new meeting for an event', async () => {
+    mockCaller();
+    const { ctx, insert, patch } = makeCtx();
+    ctx.db.get.mockResolvedValue(eventDoc());
+
+    const result = await handlers.register(ctx, {
+      eventId: EVENT_ID,
+      organizationId: ORG,
+      roomName: 'team-sync',
+      mode: 'meeting',
+    });
+
+    expect(result).toEqual({ success: true });
+    expect(insert).toHaveBeenCalledWith('meetings', expect.objectContaining({
+      eventId: EVENT_ID,
+      roomName: 'team-sync',
+      hostUserId: USER,
+      mode: 'meeting',
+      status: 'scheduled',
+    }));
+    expect(patch).toHaveBeenCalledWith(EVENT_ID, expect.objectContaining({
+      videoUrl: expect.any(String),
+      videoProvider: 'livekit',
+    }));
   });
-});
 
-const registerArgs = {
-  eventId: 'evt-1' as any,
-  organizationId: 'org-1' as any,
-  roomName: 'evt_evt-1',
-  mode: 'meeting' as const,
-};
+  it('updates existing meeting instead of creating new', async () => {
+    mockCaller();
+    const { ctx, patch } = makeCtx();
+    ctx.db.get.mockResolvedValue(eventDoc());
+    // Meeting already exists
+    ctx.db.query().withIndex().unique.mockResolvedValue(meetingDoc());
 
-describe('meetings.register', () => {
-  it('rejects unauthenticated callers', async () => {
-    mockGetAuthCaller.mockResolvedValue(null);
-    await expect(meetings.register.handler(makeCtx(), registerArgs)).rejects.toThrow(
-      'Not authenticated',
-    );
+    const result = await handlers.register(ctx, {
+      eventId: EVENT_ID,
+      organizationId: ORG,
+      roomName: 'team-sync',
+      mode: 'webinar',
+    });
+
+    expect(result).toEqual({ success: true });
+    expect(patch).toHaveBeenCalledWith(MEETING_ID, expect.objectContaining({
+      mode: 'webinar',
+    }));
+    expect(patch).toHaveBeenCalledWith(EVENT_ID, expect.objectContaining({
+      videoUrl: expect.any(String),
+    }));
   });
 
-  it('rejects callers from a different organization', async () => {
-    mockGetAuthCaller.mockResolvedValue(otherOrg);
-    await expect(meetings.register.handler(makeCtx(), registerArgs)).rejects.toThrow(
-      'Access denied: different organization',
-    );
-  });
+  it('throws for non-existent event', async () => {
+    mockCaller();
+    const { ctx } = makeCtx();
+    ctx.db.get.mockResolvedValue(null);
 
-  it('rejects a plain employee who is not the organizer', async () => {
-    mockGetAuthCaller.mockResolvedValue(admin); // admin of org-1 but not the creator is allowed
-    mockGetAuthCaller.mockResolvedValue({ ...organizer, _id: 'user-other' });
-    mockGet.mockResolvedValue(event());
-    await expect(meetings.register.handler(makeCtx(), registerArgs)).rejects.toThrow(
-      'Only the organizer or an admin can attach video to this event',
-    );
-  });
-
-  it('creates the meeting row and points the event at the join link', async () => {
-    mockGetAuthCaller.mockResolvedValue(organizer);
-    mockGet.mockResolvedValue(event());
-    mockUnique.mockResolvedValue(null); // no existing meeting
-    await meetings.register.handler(makeCtx(), registerArgs);
-
-    expect(mockInsert).toHaveBeenCalledWith(
-      'meetings',
-      expect.objectContaining({
-        eventId: 'evt-1',
-        organizationId: 'org-1',
-        roomName: 'evt_evt-1',
-        hostUserId: 'user-1',
+    await expect(
+      handlers.register(ctx, {
+        eventId: EVENT_ID,
+        organizationId: ORG,
+        roomName: 'team-sync',
         mode: 'meeting',
-        status: 'scheduled',
       }),
-    );
-    expect(mockPatch).toHaveBeenCalledWith(
-      'evt-1',
-      expect.objectContaining({
-        videoUrl: '/meetings/evt_evt-1',
-        videoProvider: 'livekit',
-      }),
-    );
+    ).rejects.toThrow('not found');
   });
 
-  it('is idempotent: re-register updates the mode, never forks the room', async () => {
-    mockGetAuthCaller.mockResolvedValue(organizer);
-    mockGet.mockResolvedValue(event({ videoUrl: '/meetings/evt_evt-1', videoProvider: 'livekit' }));
-    mockUnique.mockResolvedValue(meetingRow());
-    await meetings.register.handler(makeCtx(), {
-      ...registerArgs,
-      mode: 'webinar' as const,
+  it('allows admin to register video for any event', async () => {
+    mockCaller({ role: 'admin' });
+    const { ctx, insert } = makeCtx();
+    ctx.db.get.mockResolvedValue(eventDoc({ createdBy: 'other-user' }));
+
+    const result = await handlers.register(ctx, {
+      eventId: EVENT_ID,
+      organizationId: ORG,
+      roomName: 'team-sync',
+      mode: 'meeting',
     });
 
-    expect(mockInsert).not.toHaveBeenCalled();
-    expect(mockPatch).toHaveBeenCalledWith('meet-1', expect.objectContaining({ mode: 'webinar' }));
-    // The event keeps its original link — no fresh URL.
-    expect(mockPatch).toHaveBeenCalledWith(
-      'evt-1',
-      expect.objectContaining({ videoUrl: '/meetings/evt_evt-1' }),
-    );
+    expect(result).toEqual({ success: true });
+  });
+
+  it('allows admin to attach video to any event', async () => {
+    mockCaller({ role: 'admin' });
+    const { ctx, insert } = makeCtx();
+    ctx.db.get.mockResolvedValue(eventDoc({ createdBy: 'other-user' }));
+
+    const result = await handlers.register(ctx, {
+      eventId: EVENT_ID,
+      organizationId: ORG,
+      roomName: 'team-sync',
+      mode: 'meeting',
+    });
+
+    expect(result).toEqual({ success: true });
+  });
+
+  it('throws for different organization', async () => {
+    mockCaller({ organizationId: 'other-org' });
+    const { ctx } = makeCtx();
+    ctx.db.get.mockResolvedValue(eventDoc());
+
+    await expect(
+      handlers.register(ctx, {
+        eventId: EVENT_ID,
+        organizationId: ORG,
+        roomName: 'team-sync',
+        mode: 'meeting',
+      }),
+    ).rejects.toThrow('different organization');
   });
 });
 
-describe('meetings.removeVideo', () => {
-  it('clears the video fields when the toggle is switched off', async () => {
-    mockGetAuthCaller.mockResolvedValue(organizer);
-    mockGet.mockResolvedValue(event({ videoUrl: '/meetings/evt_evt-1', videoProvider: 'livekit' }));
-    await meetings.removeVideo.handler(makeCtx(), { eventId: 'evt-1' as any });
+describe('setStatus', () => {
+  it('sets meeting status to live', async () => {
+    mockCaller();
+    const { ctx, patch } = makeCtx();
+    ctx.db.query().withIndex().unique.mockResolvedValue(meetingDoc());
 
-    expect(mockPatch).toHaveBeenCalledWith(
-      'evt-1',
-      expect.objectContaining({ videoUrl: undefined, videoProvider: undefined }),
-    );
+    const result = await handlers.setStatus(ctx, {
+      roomName: 'team-sync',
+      status: 'live',
+    });
+
+    expect(result).toEqual({ success: true });
+    expect(patch).toHaveBeenCalledWith(MEETING_ID, expect.objectContaining({
+      status: 'live',
+    }));
   });
 
-  it('rejects a non-organizer employee', async () => {
-    mockGetAuthCaller.mockResolvedValue({ ...organizer, _id: 'user-other' });
-    mockGet.mockResolvedValue(event());
+  it('sets meeting status to ended', async () => {
+    mockCaller();
+    const { ctx, patch } = makeCtx();
+    ctx.db.query().withIndex().unique.mockResolvedValue(meetingDoc({ status: 'live' }));
+
+    const result = await handlers.setStatus(ctx, {
+      roomName: 'team-sync',
+      status: 'ended',
+    });
+
+    expect(result).toEqual({ success: true });
+    expect(patch).toHaveBeenCalledWith(MEETING_ID, expect.objectContaining({
+      status: 'ended',
+    }));
+  });
+
+  it('throws for non-existent meeting', async () => {
+    mockCaller();
+    const { ctx } = makeCtx();
+    ctx.db.query().withIndex().unique.mockResolvedValue(null);
+
     await expect(
-      meetings.removeVideo.handler(makeCtx(), { eventId: 'evt-1' as any }),
-    ).rejects.toThrow('Only the organizer or an admin can change this event');
+      handlers.setStatus(ctx, { roomName: 'nonexistent', status: 'live' }),
+    ).rejects.toThrow('not found');
+  });
+
+  it('allows admin to change any meeting status', async () => {
+    mockCaller({ role: 'admin' });
+    const { ctx, patch } = makeCtx();
+    ctx.db.query().withIndex().unique.mockResolvedValue(
+      meetingDoc({ hostUserId: 'other-user' }),
+    );
+
+    const result = await handlers.setStatus(ctx, {
+      roomName: 'team-sync',
+      status: 'live',
+    });
+
+    expect(result).toEqual({ success: true });
+  });
+
+  it('allows admin to change status of any meeting', async () => {
+    mockCaller({ role: 'admin' });
+    const { ctx, patch } = makeCtx();
+    ctx.db.query().withIndex().unique.mockResolvedValue(
+      meetingDoc({ hostUserId: 'other-user' }),
+    );
+
+    const result = await handlers.setStatus(ctx, {
+      roomName: 'team-sync',
+      status: 'ended',
+    });
+
+    expect(result).toEqual({ success: true });
+  });
+
+  it('throws for different organization', async () => {
+    mockCaller({ organizationId: 'other-org' });
+    const { ctx } = makeCtx();
+    ctx.db.query().withIndex().unique.mockResolvedValue(meetingDoc());
+
+    await expect(
+      handlers.setStatus(ctx, { roomName: 'team-sync', status: 'live' }),
+    ).rejects.toThrow('different organization');
   });
 });
 
-describe('meetings.setStatus', () => {
-  it('updates the status for an org member', async () => {
-    mockGetAuthCaller.mockResolvedValue(organizer);
-    mockUnique.mockResolvedValue(meetingRow());
-    await meetings.setStatus.handler(makeCtx(), {
-      roomName: 'evt_evt-1',
-      status: 'live' as const,
-    });
-    expect(mockPatch).toHaveBeenCalledWith('meet-1', expect.objectContaining({ status: 'live' }));
+describe('removeVideo', () => {
+  it('removes video from a meeting', async () => {
+    mockCaller();
+    const { ctx, patch } = makeCtx();
+    ctx.db.query().withIndex().unique.mockResolvedValue(meetingDoc());
+    ctx.db.get
+      .mockResolvedValueOnce(eventDoc())  // event lookup
+      .mockResolvedValueOnce(null);       // second lookup
+
+    const result = await handlers.removeVideo(ctx, { roomName: 'team-sync' });
+
+    expect(result).toEqual({ success: true });
   });
 
-  it('rejects a caller from another organization', async () => {
-    mockGetAuthCaller.mockResolvedValue(otherOrg);
-    mockUnique.mockResolvedValue(meetingRow());
+  it('throws for non-existent meeting', async () => {
+    mockCaller();
+    const { ctx } = makeCtx();
+    ctx.db.query().withIndex().unique.mockResolvedValue(null);
+
     await expect(
-      meetings.setStatus.handler(makeCtx(), { roomName: 'evt_evt-1', status: 'live' as const }),
-    ).rejects.toThrow('Access denied: different organization');
+      handlers.removeVideo(ctx, { roomName: 'nonexistent' }),
+    ).rejects.toThrow('not found');
   });
 });

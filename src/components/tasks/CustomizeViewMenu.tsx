@@ -24,7 +24,7 @@ import {
 export interface CustomizeViewMenuProps {
   prefs: TaskViewPreferences;
   /** Which column set is worth showing first. */
-  viewMode: 'kanban' | 'list' | 'timeline';
+  viewMode: 'kanban' | 'list' | 'table' | 'timeline';
   setPrefs: (patch: Partial<TaskViewPreferences>) => void;
   toggleColumn: (key: keyof TaskListColumns) => void;
   toggleBoardColumn: (key: TaskBoardColumnKey) => void;

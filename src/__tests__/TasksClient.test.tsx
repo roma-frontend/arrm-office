@@ -67,6 +67,9 @@ jest.mock('@/hooks/useOptimisticActions', () => ({
   useOptimisticTaskStatus: () => ({
     updateOptimistic: jest.fn().mockResolvedValue(undefined),
   }),
+  useRecurringTaskStatus: () => ({
+    updateRecurringOptimistic: jest.fn().mockResolvedValue(undefined),
+  }),
 }));
 
 // ── dnd-kit mock (thin wrappers — we test filtering, not drag-and-drop) ─────

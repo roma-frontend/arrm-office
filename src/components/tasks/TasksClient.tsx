@@ -3,7 +3,7 @@
 import { useState, useMemo, useRef, useTransition, useEffect, useCallback } from 'react';
 import { flushSync } from 'react-dom';
 import { useMainRef } from '@/hooks/useMainRef';
-import { useQuery } from 'convex/react';
+import { useQuery, useMutation } from 'convex/react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
@@ -40,7 +40,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { toast } from 'sonner';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
-import { useOptimisticTaskStatus } from '@/hooks/useOptimisticActions';
+import { useOptimisticTaskStatus, useRecurringTaskStatus } from '@/hooks/useOptimisticActions';
 import { memo } from 'react';
 import {
   ArrowDownWideNarrow,
@@ -57,7 +57,12 @@ import {
   countActiveFilters,
   decodeTaskView,
   encodeTaskView,
+  fromSavedView,
+  sameTaskView,
   taskViewLink,
+  toSavedView,
+  type TaskFilterCondition,
+  type TaskGroupField,
   type TaskViewState,
 } from '@/lib/taskViewState';
 import { exportFileStem, tasksToCsv, tasksToMarkdown, type ExportTaskRow } from '@/lib/taskExport';
@@ -70,6 +75,21 @@ import { ShareViewMenu } from './ShareViewMenu';
 import { CustomizeViewMenu } from './CustomizeViewMenu';
 import { TaskStatsBar, type TaskStatItem } from './TaskStatsBar';
 import { TaskFilterChips, type TaskFilterChip } from './TaskFilterChips';
+// ── The table view ─────────────────────────────────────────────────────────
+// The grid and its toolbar are their own modules; this file wires them to the
+// board's state and to Convex. Nothing below is loaded by the kanban or the
+// timeline, which are deliberately untouched by any of it.
+import { TaskTable, type TaskRowPatch, type TaskSeed } from './table/TaskTable';
+import type { TaskCellUser } from './table/cells/cellChrome';
+import type { BulkPatch } from './BulkActionBar';
+import { ViewTabs, type SavedViewTab } from './ViewTabs';
+import { GroupBySelector } from './GroupBySelector';
+import { ColumnsMenu } from './ColumnsMenu';
+import { FilterBuilder } from './FilterBuilder';
+import { AddFieldPopover, type FieldDraft } from './AddFieldPopover';
+import { applyTaskFilters } from '@/lib/taskFilters';
+import type { TaskFieldLike, TaskFieldValue } from '@/lib/taskFieldTypes';
+import { DEFAULT_STATUS_SET } from '../../../convex/lib/taskStatus';
 
 // â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 type Status = 'pending' | 'in_progress' | 'review' | 'completed' | 'cancelled';
@@ -78,7 +98,7 @@ import TimelineView from './TimelineView';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 
-type ViewMode = 'kanban' | 'list' | 'timeline';
+type ViewMode = 'kanban' | 'list' | 'table' | 'timeline';
 
 interface TaskAttachment {
   name: string;
@@ -786,8 +806,17 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
   } = viewState;
 
   /** Layout choices are per person, not per link. */
-  const { prefs, setPrefs, toggleColumn, toggleBoardColumn, reset, isDefault } =
-    useTaskViewPreferences();
+  const {
+    prefs,
+    setPrefs,
+    toggleColumn,
+    toggleBoardColumn,
+    toggleTableColumn,
+    setColumnWidth,
+    setColumnOrder,
+    reset,
+    isDefault,
+  } = useTaskViewPreferences();
 
   const [showCreate, setShowCreate] = useState(false);
 
@@ -811,10 +840,21 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
    * keeps the page out of a Suspense boundary for the same reason.
    */
   const urlSynced = useRef(false);
+  /**
+   * True when the link that opened this page carried a view.
+   *
+   * Recorded rather than re-derived because a saved default view must not
+   * overwrite a pasted link — see the effect that applies it. By the time the
+   * views query resolves, `viewState` no longer says where it came from.
+   */
+  const urlProvidedView = useRef(false);
   useEffect(() => {
     urlSynced.current = true;
     const fromUrl = decodeTaskView(window.location.search);
-    if (encodeTaskView(fromUrl) !== '') setViewState(fromUrl);
+    if (encodeTaskView(fromUrl) !== '') {
+      urlProvidedView.current = true;
+      setViewState(fromUrl);
+    }
   }, []);
 
   useEffect(() => {
@@ -853,6 +893,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
     useSensor(TouchSensor, { activationConstraint: { delay: 1000, tolerance: 5 } }),
   );
   const { updateOptimistic } = useOptimisticTaskStatus();
+  const { updateRecurringOptimistic } = useRecurringTaskStatus();
   const [optimisticStatuses, setOptimisticStatuses] = useState<Map<string, Status>>(new Map());
 
   /**
@@ -1711,6 +1752,38 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
               const task = tasks.find((t) => t._id === active.id);
               if (!task || task.status === newStatus) {
                 setActiveTask(null);
+                return;
+              }
+              // Recurring tasks live in recurringTasks table — use dedicated mutation.
+              if ((task as TaskItem)._type === 'recurring') {
+                flushSync(() => {
+                  setOptimisticStatuses((prev) => {
+                    const next = new Map(prev);
+                    next.set(task._id as string, newStatus);
+                    return next;
+                  });
+                });
+                setActiveTask(null);
+                updateRecurringOptimistic(task._id as unknown as Id<'recurringTasks'>, newStatus)
+                  .then(() => {
+                    toast.success(
+                      t('tasks.status.moved', { status: t(STATUS_CONFIG[newStatus].labelKey) }),
+                      { duration: 2000 },
+                    );
+                    setOptimisticStatuses((prev) => {
+                      const next = new Map(prev);
+                      next.delete(task._id as string);
+                      return next;
+                    });
+                  })
+                  .catch(() => {
+                    toast.error(t('tasks.failedToUpdateStatus'));
+                    setOptimisticStatuses((prev) => {
+                      const next = new Map(prev);
+                      next.delete(task._id as string);
+                      return next;
+                    });
+                  });
                 return;
               }
               flushSync(() => {

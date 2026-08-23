@@ -17,6 +17,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { clampColumnWidth } from '@/lib/taskFieldTypes';
 
 const STORAGE_KEY = 'hr-tasks-view-prefs:v1';
 
@@ -29,6 +30,56 @@ export interface TaskListColumns {
   deadline: boolean;
   assignee: boolean;
   project: boolean;
+}
+
+/**
+ * The table view's columns, which — unlike the list's five — are not a fixed set:
+ * every custom field an organization invents is another one.
+ *
+ * So the shape is open, and the three parts are stored the way that survives new
+ * fields appearing:
+ *
+ *   - `hidden` lists what to switch **off**. Storing the visible set instead would
+ *     mean a field created tomorrow is invisible today's blob, and the person who
+ *     just created it would have to go find the Columns menu to see their own
+ *     column. Opt-out is the only direction that degrades correctly.
+ *   - `order` is a prefix, not a permutation. Keys it does not mention keep their
+ *     natural order behind the ones it does, so a reordered board does not need
+ *     rewriting every time the field list grows.
+ *   - `widths` is sparse: a key with no entry uses the type's default width.
+ */
+export interface TaskTableLayout {
+  hidden: string[];
+  order: string[];
+  widths: Record<string, number>;
+}
+
+export const DEFAULT_TASK_TABLE_LAYOUT: TaskTableLayout = { hidden: [], order: [], widths: {} };
+
+/** A column key as stored: the built-ins, or `cf:<fieldId>`. */
+const COLUMN_KEY_RE = /^(?:[a-z]+|cf:[A-Za-z0-9_-]{1,64})$/;
+
+function columnKeys(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set<string>();
+  for (const entry of value) {
+    if (typeof entry === 'string' && COLUMN_KEY_RE.test(entry)) seen.add(entry);
+  }
+  return [...seen];
+}
+
+function columnWidths(value: unknown): Record<string, number> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  const widths: Record<string, number> = {};
+  for (const [key, raw] of Object.entries(value as Record<string, unknown>)) {
+    // Clamped on read as well as on write: the bounds can tighten between
+    // builds, and a stored 4000px column would otherwise be unfixable without
+    // clearing storage.
+    if (COLUMN_KEY_RE.test(key) && typeof raw === 'number' && Number.isFinite(raw)) {
+      widths[key] = clampColumnWidth(raw);
+    }
+  }
+  return widths;
 }
 
 export type TaskBoardColumnKey = 'pending' | 'in_progress' | 'review' | 'completed' | 'cancelled';
@@ -46,6 +97,8 @@ export interface TaskViewPreferences {
   columns: TaskListColumns;
   /** Kanban lanes the user keeps on screen. At least one is always on. */
   board: Record<TaskBoardColumnKey, boolean>;
+  /** The table view's open-ended columns. See {@link TaskTableLayout}. */
+  table: TaskTableLayout;
   showStats: boolean;
   showRecurring: boolean;
   /** Hides done work everywhere without touching the status filter. */
@@ -62,6 +115,7 @@ export const DEFAULT_TASK_VIEW_PREFERENCES: TaskViewPreferences = {
     completed: true,
     cancelled: false,
   },
+  table: DEFAULT_TASK_TABLE_LAYOUT,
   showStats: true,
   showRecurring: true,
   hideCompleted: false,
@@ -89,6 +143,7 @@ export function parseTaskViewPreferences(raw: string | null): TaskViewPreference
   const source = parsed as Partial<TaskViewPreferences>;
   const columns = (source.columns ?? {}) as Partial<TaskListColumns>;
   const board = (source.board ?? {}) as Partial<Record<TaskBoardColumnKey, boolean>>;
+  const table = (source.table ?? {}) as Partial<TaskTableLayout>;
 
   const merged: TaskViewPreferences = {
     density: source.density === 'compact' ? 'compact' : 'comfortable',
@@ -105,6 +160,11 @@ export function parseTaskViewPreferences(raw: string | null): TaskViewPreference
       review: bool(board.review, d.board.review),
       completed: bool(board.completed, d.board.completed),
       cancelled: bool(board.cancelled, d.board.cancelled),
+    },
+    table: {
+      hidden: columnKeys(table.hidden),
+      order: columnKeys(table.order),
+      widths: columnWidths(table.widths),
     },
     showStats: bool(source.showStats, d.showStats),
     showRecurring: bool(source.showRecurring, d.showRecurring),
@@ -125,6 +185,12 @@ export interface UseTaskViewPreferences {
   setPrefs: (patch: Partial<TaskViewPreferences>) => void;
   toggleColumn: (key: keyof TaskListColumns) => void;
   toggleBoardColumn: (key: TaskBoardColumnKey) => void;
+  /** Switches a table column on or off. The name column is not passed here. */
+  toggleTableColumn: (key: string) => void;
+  /** Persists a resized table column. Clamped to the registry's bounds. */
+  setColumnWidth: (key: string, width: number) => void;
+  /** Records a new left-to-right order for the table's columns. */
+  setColumnOrder: (keys: string[]) => void;
   reset: () => void;
   isDefault: boolean;
 }
@@ -184,6 +250,44 @@ export function useTaskViewPreferences(): UseTaskViewPreferences {
     });
   }, []);
 
+  /** Patches the table layout in place, keeping the other two parts untouched. */
+  const patchTable = useCallback((change: (layout: TaskTableLayout) => TaskTableLayout) => {
+    setState((prev) => {
+      const next = { ...prev, table: change(prev.table) };
+      write(next);
+      return next;
+    });
+  }, []);
+
+  const toggleTableColumn = useCallback(
+    (key: string) => {
+      patchTable((layout) => ({
+        ...layout,
+        hidden: layout.hidden.includes(key)
+          ? layout.hidden.filter((entry) => entry !== key)
+          : [...layout.hidden, key],
+      }));
+    },
+    [patchTable],
+  );
+
+  const setColumnWidth = useCallback(
+    (key: string, width: number) => {
+      patchTable((layout) => ({
+        ...layout,
+        widths: { ...layout.widths, [key]: clampColumnWidth(width) },
+      }));
+    },
+    [patchTable],
+  );
+
+  const setColumnOrder = useCallback(
+    (keys: string[]) => {
+      patchTable((layout) => ({ ...layout, order: columnKeys(keys) }));
+    },
+    [patchTable],
+  );
+
   const reset = useCallback(() => {
     setState(DEFAULT_TASK_VIEW_PREFERENCES);
     write(DEFAULT_TASK_VIEW_PREFERENCES);
@@ -194,5 +298,16 @@ export function useTaskViewPreferences(): UseTaskViewPreferences {
     [prefs],
   );
 
-  return { prefs, hydrated, setPrefs, toggleColumn, toggleBoardColumn, reset, isDefault };
+  return {
+    prefs,
+    hydrated,
+    setPrefs,
+    toggleColumn,
+    toggleBoardColumn,
+    toggleTableColumn,
+    setColumnWidth,
+    setColumnOrder,
+    reset,
+    isDefault,
+  };
 }

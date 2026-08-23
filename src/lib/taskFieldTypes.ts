@@ -160,23 +160,45 @@ export function fieldAlignClass(type: TaskFieldType): string {
 }
 
 /**
- * Width bounds and defaults come from the registry, not from here.
+ * The registry, re-exported so a component has one import to reach for.
  *
- * They used to be duplicated in this file, which was wrong for the same reason
- * the rest of the registry is not: the server stores `taskFields.width` and
- * clamps it on write, so a second copy of the bounds is a column that jumps the
- * first time it renders.
+ * Width bounds are the reason this block exists: the server stores
+ * `taskFields.width` and clamps it on write, so a second copy of the bounds in
+ * this file — which is what used to be here — is a column that jumps the first
+ * time it renders. The rest are passed through for the same reason, one level up:
+ * a grid cell five directories deep should not be reaching across the repository
+ * root, and it should certainly not be keeping its own copy of `ratingMaxOf`.
  */
 export {
   MIN_COLUMN_WIDTH,
   MAX_COLUMN_WIDTH,
   clampColumnWidth,
   defaultFieldWidth,
+  FIELD_TYPE_META,
+  TASK_FIELD_TYPES,
+  fieldHasOptions,
+  compareFieldValues,
+  optionOf,
+  ratingMaxOf,
 } from '../../convex/lib/taskCustomFields';
 
-/** Whether the type is editable by typing, as opposed to picking or toggling. */ export function isTypedField(
-  type: TaskFieldType,
-): boolean {
+/**
+ * A custom field as a grid needs it: the registry's shape, plus the identity and
+ * the layout that only a stored `taskFields` row carries.
+ *
+ * Structural rather than `Doc<'taskFields'>` on purpose — the same cells then
+ * render a field loaded from Convex, one assembled in a test, and one the field
+ * editor has not saved yet.
+ */
+export interface TaskGridField extends TaskFieldLike {
+  _id: string;
+  width?: number;
+  order?: number;
+  isActive?: boolean;
+}
+
+/** Whether the type is editable by typing, as opposed to picking or toggling. */
+export function isTypedField(type: TaskFieldType): boolean {
   const kind = FIELD_CELL_KIND[type];
   return kind === 'text' || kind === 'longText' || kind === 'number';
 }

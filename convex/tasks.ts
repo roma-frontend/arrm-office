@@ -847,7 +847,8 @@ async function fetchAllTasksForStaff(
     : [];
   const recurringAsTasks = recurringSeries.map((r) => ({
     ...r,
-    status: r.isActive ? ('in_progress' as const) : ('cancelled' as const),
+    // Use the explicit status if set, otherwise derive from isActive.
+    status: r.status ?? (r.isActive ? ('in_progress' as const) : ('cancelled' as const)),
     deadline: undefined,
     completedAt: undefined,
     attachments: undefined,
@@ -964,7 +965,7 @@ export const getVisibleTasks = query({
       : [];
     const recurringAsTasks = recurringSeries.map((r) => ({
       ...r,
-      status: r.isActive ? ('in_progress' as const) : ('cancelled' as const),
+      status: r.status ?? (r.isActive ? ('in_progress' as const) : ('cancelled' as const)),
       deadline: undefined,
       completedAt: undefined,
       attachments: undefined,

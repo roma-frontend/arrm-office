@@ -421,6 +421,27 @@ export function useOptimisticTaskStatus() {
 }
 
 // -----------------------------------------------------------------------------
+// Recurring Tasks: Status Update
+// -----------------------------------------------------------------------------
+
+export function useRecurringTaskStatus() {
+  const updateRecurringStatus = useMutation(api.recurringTasks.updateRecurringTaskStatus);
+
+  const updateRecurringOptimistic = useCallback(
+    async (
+      seriesId: Id<'recurringTasks'>,
+      status: 'pending' | 'in_progress' | 'review' | 'completed' | 'cancelled',
+    ) => {
+      await updateRecurringStatus({ seriesId, status });
+      return true;
+    },
+    [updateRecurringStatus],
+  );
+
+  return { updateRecurringOptimistic };
+}
+
+// -----------------------------------------------------------------------------
 // Leaves: Optimistic Approve/Reject/Delete
 // -----------------------------------------------------------------------------
 

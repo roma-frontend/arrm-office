@@ -559,6 +559,39 @@ export const toggleRecurringTask = mutation({
 });
 
 /**
+ * Change the board status of a recurring series — same statuses as a regular
+ * task, so the series can appear in the kanban and be dragged between columns.
+ */
+export const updateRecurringTaskStatus = mutation({
+  args: {
+    seriesId: v.id('recurringTasks'),
+    status: v.union(
+      v.literal('pending'),
+      v.literal('in_progress'),
+      v.literal('review'),
+      v.literal('completed'),
+      v.literal('cancelled'),
+    ),
+  },
+  handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'tasks');
+    const { caller, series } = await requireOwnSeries(ctx, args.seriesId);
+    if (series.status === args.status) return { success: true };
+    const now = Date.now();
+    await ctx.db.patch(args.seriesId, { status: args.status, updatedAt: now });
+    await ctx.db.insert('auditLogs', {
+      organizationId: series.organizationId,
+      userId: caller._id,
+      action: 'recurring_task_status_changed',
+      target: args.seriesId,
+      details: JSON.stringify({ title: series.title, from: series.status ?? 'in_progress', to: args.status }),
+      createdAt: now,
+    });
+    return { success: true };
+  },
+});
+
+/**
  * Deletes the rule and stops future occurrences.
  *
  * Tasks it already produced stay, with `recurringTaskId` cleared so they do not
