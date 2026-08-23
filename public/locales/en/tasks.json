@@ -151,6 +151,7 @@
     },
     "board": "Board",
     "addTask": "Add task",
+    "table": "Table",
     "filter": "Filter",
     "sort": {
       "status": "Sort by Status",
@@ -176,6 +177,11 @@
     "removeFilter": "Remove {{field}} filter",
     "sortAsc": "Ascending — click for descending",
     "sortDesc": "Descending — click for ascending"
+  },
+  "tasksTable": {
+    "someSkipped": "{{count}} tasks skipped — select a project to see all",
+    "filter": "Filter",
+    "filterCount": "{{count}} Filters"
   },
   "taskStatus": {
     "pending": "Pending",

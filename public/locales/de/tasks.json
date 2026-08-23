@@ -149,6 +149,7 @@
     },
     "board": "Board",
     "addTask": "Aufgabe hinzufügen",
+    "table": "Tabelle",
     "filter": "Filter",
     "sort": {
       "status": "Nach Status sortieren",
@@ -176,6 +177,11 @@
     "sortDesc": "Absteigend — klicken für aufsteigend",
     "allTasks": "Alle Aufgaben",
     "recurringTasks": "↻ Wiederkehrend"
+  },
+  "tasksTable": {
+    "someSkipped": "{{count}} Aufgaben übersprungen — wählen Sie ein Projekt, um alle zu sehen",
+    "filter": "Filter",
+    "filterCount": "{{count}} Filter"
   },
   "taskStatus": {
     "pending": "Ausstehend",

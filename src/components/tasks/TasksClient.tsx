@@ -1026,6 +1026,349 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
     }
   }, [projectFilterValues, filterProject, patchView]);
 
+  // ── Board configuration ────────────────────────────────────────────────────
+  /**
+   * Three queries that describe the board rather than its contents: the status
+   * set it uses, the columns it has, and the views saved on it.
+   *
+   * Kept out of `getVisibleTasks` on purpose. They change on a different clock —
+   * a column is added once a quarter, a task changes every minute — so folding
+   * them in would re-send the whole board's configuration with every status
+   * change, and Convex would have no way to tell that only the tasks moved.
+   */
+  const boardScope = useMemo(
+    () => (effectiveOrgId ? { organizationId: effectiveOrgId as Id<'organizations'> } : {}),
+    [effectiveOrgId],
+  );
+  const statusSet = useQuery(api.taskStatuses.resolveForProject, convexId ? boardScope : 'skip');
+  const fieldDefs = useQuery(api.taskFields.listFields, convexId ? boardScope : 'skip');
+  const savedViews = useQuery(api.taskViews.listViews, convexId ? boardScope : 'skip');
+
+  /**
+   * The board's statuses, with the built-in five as the fallback.
+   *
+   * The fallback is not just for the moment before the query lands: an
+   * organization that has never opened the status editor has no set at all, and
+   * `DEFAULT_STATUS_SET` is exactly what its tasks already carry.
+   */
+  const statuses = statusSet?.statuses ?? DEFAULT_STATUS_SET;
+  const fields = useMemo(() => fieldDefs ?? [], [fieldDefs]);
+  /** Custom fields by id, for the filter and sort comparators. */
+  const fieldMap = useMemo(
+    () => new Map<string, TaskFieldLike>(fields.map((field) => [field._id as string, field])),
+    [fields],
+  );
+
+  /** Assignee candidates for the grid's people cells, keyed as the cells expect. */
+  const cellUsers = useMemo<TaskCellUser[]>(() => {
+    const map = new Map<string, TaskCellUser>();
+    for (const task of rawTasksWithOptimistic ?? []) {
+      const user = task.assignedToUser;
+      if (!user?._id || map.has(user._id)) continue;
+      map.set(user._id, {
+        _id: user._id,
+        name: user.name || '?',
+        avatarUrl: user.avatarUrl ?? undefined,
+      });
+    }
+    return [...map.values()].sort((a, b) => a.name.localeCompare(b.name));
+  }, [rawTasksWithOptimistic]);
+
+  /** Projects present on the board, for the filter builder's value list. */
+  const filterProjects = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const task of rawTasksWithOptimistic ?? []) {
+      if (task.projectId && task.projectName) map.set(task.projectId, task.projectName);
+    }
+    return [...map.entries()]
+      .map(([_id, name]) => ({ _id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [rawTasksWithOptimistic]);
+
+  const projectNameOf = useCallback(
+    (projectId: string) =>
+      rawTasksWithOptimistic?.find((task) => task.projectId === projectId)?.projectName ??
+      undefined,
+    [rawTasksWithOptimistic],
+  );
+
+  // ── Table writes ───────────────────────────────────────────────────────────
+  const setTaskStatusFor = useMutation(api.tasks.setTaskStatus);
+  const writeTaskFields = useMutation(api.tasks.updateTaskFields);
+  const patchTasks = useMutation(api.tasks.bulkUpdateTasks);
+  const removeTasks = useMutation(api.tasks.bulkDeleteTasks);
+  const addField = useMutation(api.taskFields.createField);
+  const addTask = useMutation(api.tasks.createTask);
+  const storeView = useMutation(api.taskViews.saveView);
+  const changeView = useMutation(api.taskViews.updateView);
+  const dropView = useMutation(api.taskViews.deleteView);
+  const makeViewDefault = useMutation(api.taskViews.setDefaultView);
+
+  /**
+   * One place where a failed grid write becomes a message.
+   *
+   * Every cell in the table is a mutation, and a cell that silently refuses to
+   * change looks like a bug in the grid rather than a permission boundary. The
+   * server's `ConvexError` messages are written to be read by the person who hit
+   * them, so they are shown as-is.
+   */
+  const runWrite = useCallback(
+    async (action: () => Promise<unknown>) => {
+      try {
+        await action();
+      } catch (error) {
+        const message =
+          typeof (error as { data?: unknown })?.data === 'string'
+            ? ((error as { data: string }).data)
+            : error instanceof Error
+              ? error.message
+              : t('common.error', 'Something went wrong');
+        toast.error(message);
+      }
+    },
+    [t],
+  );
+
+  /** Bulk writes skip rows the caller may not touch; saying so beats silence. */
+  const reportSkipped = useCallback(
+    (skipped: number) => {
+      if (skipped > 0) {
+        toast.error(
+          t('tasksTable.someSkipped', {
+            count: skipped,
+            defaultValue: '{{count}} task(s) were left unchanged — you cannot edit them',
+          }),
+        );
+      }
+    },
+    [t],
+  );
+
+  const handleSetStatus = useCallback(
+    (taskId: string, statusKey: string) => {
+      void runWrite(() => setTaskStatusFor({ taskId: taskId as Id<'tasks'>, statusKey }));
+    },
+    [runWrite, setTaskStatusFor],
+  );
+
+  /**
+   * A single row's built-in columns.
+   *
+   * Routed through `bulkUpdateTasks` with one id rather than `updateTask`: that
+   * mutation is admin/supervisor-only and cannot set an assignee at all, so a
+   * cell edit by the person the task belongs to would be refused for no reason a
+   * user could see.
+   */
+  const handlePatchTask = useCallback(
+    (taskId: string, patch: TaskRowPatch) => {
+      void runWrite(async () => {
+        const result = await patchTasks({
+          taskIds: [taskId as Id<'tasks'>],
+          patch: {
+            ...(patch.priority !== undefined ? { priority: patch.priority } : {}),
+            ...(patch.deadline !== undefined ? { deadline: patch.deadline } : {}),
+            ...(patch.assignedTo !== undefined
+              ? { assignedTo: patch.assignedTo as Id<'users'> }
+              : {}),
+          },
+        });
+        reportSkipped(result.skipped);
+      });
+    },
+    [runWrite, patchTasks, reportSkipped],
+  );
+
+  const handleSetField = useCallback(
+    (taskId: string, fieldId: string, value: TaskFieldValue | null) => {
+      void runWrite(() =>
+        writeTaskFields({ taskId: taskId as Id<'tasks'>, values: { [fieldId]: value } }),
+      );
+    },
+    [runWrite, writeTaskFields],
+  );
+
+  /**
+   * Inline creation, seeded by the section it was typed into.
+   *
+   * `createTask` predates custom statuses and columns and is called from the
+   * wizard, onboarding and recurring materialisation; widening its signature for
+   * a convenience only this grid needs would touch all of them. So the seed is
+   * applied as two follow-up writes on the id it returns.
+   */
+  const handleAddTask = useCallback(
+    async (title: string, seed: TaskSeed) => {
+      if (!convexId) return;
+      await runWrite(async () => {
+        const taskId = await addTask({
+          title,
+          assignedTo: (seed.assignedTo ?? convexId) as Id<'users'>,
+          priority: seed.priority ?? 'medium',
+          ...(seed.projectId ? { projectId: seed.projectId as Id<'projects'> } : {}),
+        });
+        if (seed.statusKey) await setTaskStatusFor({ taskId, statusKey: seed.statusKey });
+        if (seed.fieldValues && Object.keys(seed.fieldValues).length > 0) {
+          await writeTaskFields({ taskId, values: seed.fieldValues });
+        }
+      });
+    },
+    [convexId, runWrite, addTask, setTaskStatusFor, writeTaskFields],
+  );
+
+  const handleBulkPatch = useCallback(
+    (taskIds: string[], patch: BulkPatch) => {
+      void runWrite(async () => {
+        const result = await patchTasks({
+          taskIds: taskIds as Id<'tasks'>[],
+          patch: {
+            ...(patch.statusKey ? { statusKey: patch.statusKey } : {}),
+            ...(patch.priority ? { priority: patch.priority } : {}),
+            ...(patch.assignedTo ? { assignedTo: patch.assignedTo as Id<'users'> } : {}),
+          },
+        });
+        reportSkipped(result.skipped);
+      });
+    },
+    [runWrite, patchTasks, reportSkipped],
+  );
+
+  const handleBulkDelete = useCallback(
+    (taskIds: string[]) => {
+      void runWrite(async () => {
+        const result = await removeTasks({ taskIds: taskIds as Id<'tasks'>[] });
+        reportSkipped(result.skipped);
+      });
+    },
+    [runWrite, removeTasks, reportSkipped],
+  );
+
+  const handleCreateField = useCallback(
+    (draft: FieldDraft) => {
+      void runWrite(() =>
+        addField({
+          name: draft.name,
+          type: draft.type,
+          ...(draft.options ? { options: draft.options } : {}),
+          ...(draft.config ? { config: draft.config } : {}),
+          ...(draft.required ? { required: draft.required } : {}),
+          ...boardScope,
+        }),
+      );
+    },
+    [runWrite, addField, boardScope],
+  );
+
+  // ── Saved views ────────────────────────────────────────────────────────────
+  /** `taskViews.type` names the modes differently: the kanban is a "board". */
+  const savedViewType = viewMode === 'kanban' ? 'board' : viewMode;
+
+  const viewTabs = useMemo<SavedViewTab[]>(
+    () =>
+      (savedViews ?? []).map((view) => ({
+        _id: view._id,
+        name: view.name,
+        type: view.type,
+        visibility: view.visibility,
+        isDefault: view.isDefault,
+        canEdit: view.canEdit,
+      })),
+    [savedViews],
+  );
+
+  const activeSavedView = savedViews?.find((view) => view._id === viewState.viewId);
+  /** True once the board stops matching the tab it is showing under. */
+  const viewDirty =
+    !!activeSavedView &&
+    !sameTaskView(viewState, fromSavedView(activeSavedView.state, activeSavedView._id));
+
+  const selectView = useCallback(
+    (viewId: string) => {
+      if (viewId === '') {
+        patchView({ viewId: '' });
+        return;
+      }
+      const view = savedViews?.find((candidate) => candidate._id === viewId);
+      if (view) setViewState(fromSavedView(view.state, view._id));
+    },
+    [savedViews, patchView],
+  );
+
+  /**
+   * A default view is what the board opens as — unless the link says otherwise.
+   *
+   * A pasted link always wins. Otherwise sharing a filtered board with a
+   * colleague whose default is set would show them their own board and quietly
+   * lose whatever was being pointed at.
+   */
+  const defaultViewApplied = useRef(false);
+  useEffect(() => {
+    if (!urlSynced.current || defaultViewApplied.current || !savedViews) return;
+    defaultViewApplied.current = true;
+    if (urlProvidedView.current) return;
+    const preset = savedViews.find((view) => view.isDefault);
+    if (preset) setViewState(fromSavedView(preset.state, preset._id));
+  }, [savedViews]);
+
+  const handleCreateView = useCallback(
+    (name: string, visibility: 'private' | 'team') => {
+      void runWrite(async () => {
+        const viewId = await storeView({
+          name,
+          type: savedViewType,
+          state: toSavedView(viewState),
+          visibility,
+          ...boardScope,
+        });
+        patchView({ viewId });
+      });
+    },
+    [runWrite, storeView, savedViewType, viewState, boardScope, patchView],
+  );
+
+  const handleUpdateView = useCallback(
+    (viewId: string) => {
+      void runWrite(() =>
+        changeView({
+          viewId: viewId as Id<'taskViews'>,
+          type: savedViewType,
+          state: toSavedView(viewState),
+        }),
+      );
+    },
+    [runWrite, changeView, savedViewType, viewState],
+  );
+
+  const handleRenameView = useCallback(
+    (viewId: string, name: string) => {
+      void runWrite(() => changeView({ viewId: viewId as Id<'taskViews'>, name }));
+    },
+    [runWrite, changeView],
+  );
+
+  const handleDeleteView = useCallback(
+    (viewId: string) => {
+      void runWrite(async () => {
+        await dropView({ viewId: viewId as Id<'taskViews'> });
+        // The board keeps its filters — only the name it was showing under is
+        // gone, and silently resetting the view on a delete would look like the
+        // delete had done something else as well.
+        setViewState((prev) => (prev.viewId === viewId ? { ...prev, viewId: '' } : prev));
+      });
+    },
+    [runWrite, dropView],
+  );
+
+  const handleSetDefaultView = useCallback(
+    (viewId: string) => {
+      void runWrite(() => makeViewDefault({ viewId: viewId as Id<'taskViews'> }));
+    },
+    [runWrite, makeViewDefault],
+  );
+
+  const setFilters = useCallback(
+    (filters: TaskFilterCondition[]) => patchView({ filters }),
+    [patchView],
+  );
+
   // Filter + Sort
   const tasks = useMemo(() => {
     if (!rawTasksWithOptimistic) return [];
@@ -1059,6 +1402,14 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
         matchTab
       );
     });
+    /**
+     * The filter builder's conditions, ANDed onto the dropdowns above.
+     *
+     * Applied here rather than inside the table so every view narrows the same
+     * way: a link that says "urgent, overdue, Category = Rent" has to mean the
+     * same board whether the recipient opens it as a list, a kanban or a grid.
+     */
+    const narrowed = applyTaskFilters(filtered, viewState.filters, fieldMap);
     const priorityOrder: Record<Priority, number> = { urgent: 0, high: 1, medium: 2, low: 3 };
     const statusOrder: Record<Status, number> = {
       pending: 0,
@@ -1068,7 +1419,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
       cancelled: 4,
     };
     const dir = sortDir === 'asc' ? 1 : -1;
-    return [...filtered].sort((a, b) => {
+    return [...narrowed].sort((a, b) => {
       switch (sortBy) {
         case 'name':
           return dir * a.title.localeCompare(b.title);
@@ -1100,6 +1451,11 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
     filterEmployee,
     filterProject,
     filterOverdue,
+    // `tab` was read by `matchTab` but missing from this list, so switching to
+    // the recurring strip left the memo holding the previous filter result.
+    viewState.tab,
+    viewState.filters,
+    fieldMap,
     prefs.hideCompleted,
     sortBy,
     sortDir,
@@ -1306,6 +1662,20 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
     if (search.trim() !== '') {
       chips.push({ key: 'q', field: t('common.search', 'Search'), value: search.trim() });
     }
+    // One chip for the builder rather than one per condition: the conditions
+    // already read as sentences inside the Filter panel, and repeating them here
+    // would push the dropdown chips off the row. Removing it clears the lot,
+    // which is what "×" on a summary chip should do.
+    if (viewState.filters.length > 0) {
+      chips.push({
+        key: 'conditions',
+        field: t('tasksTable.filter', 'Filter'),
+        value: t('tasksTable.filterCount', {
+          count: viewState.filters.length,
+          defaultValue: '{{count}} condition(s)',
+        }),
+      });
+    }
     return chips;
   }, [
     filterStatus,
@@ -1314,6 +1684,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
     filterProject,
     filterOverdue,
     search,
+    viewState.filters,
     employees,
     rawTasksWithOptimistic,
     t,
@@ -1339,6 +1710,9 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
           break;
         case 'q':
           patchView({ q: '' });
+          break;
+        case 'conditions':
+          patchView({ filters: [] });
           break;
       }
     },
@@ -1507,6 +1881,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
         {[
           { key: 'list' as ViewMode, label: t('tasksClient.list') },
           { key: 'kanban' as ViewMode, label: t('tasksClient.board', 'Board') },
+          { key: 'table' as ViewMode, label: t('tasksClient.table', 'Table') },
           { key: 'timeline' as ViewMode, label: t('tasksClient.timeline', 'Timeline') },
         ].map((tab) => (
           <button
@@ -1541,6 +1916,28 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
           </button>
         ))}
       </div>
+
+      {/* ═══ Saved views ═══ */}
+      {/* A second row rather than more tabs above: the row above chooses how the
+          board is drawn, this one chooses which board — "Payable Outstanding" is
+          not a sibling of "Table". Hidden until there is a view to show, so the
+          strip does not cost a row of vertical space to say nothing. */}
+      {(viewTabs.length > 0 || viewMode === 'table') && (
+        <div className="shrink-0 px-4 sm:px-6">
+          <ViewTabs
+            views={viewTabs}
+            activeId={viewState.viewId}
+            dirty={viewDirty}
+            canShare={canManage}
+            onSelect={selectView}
+            onCreate={handleCreateView}
+            onUpdate={handleUpdateView}
+            onRename={handleRenameView}
+            onDelete={handleDeleteView}
+            onSetDefault={handleSetDefaultView}
+          />
+        </div>
+      )}
 
       {/* ═══ Action Bar ═══ */}
       <div className="flex items-center gap-2 px-4 sm:px-6 py-2 border-b border-(--border) shrink-0">
