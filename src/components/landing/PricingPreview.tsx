@@ -682,8 +682,6 @@ function PricingCard({
         `}
         style={{
           transition: 'transform 0.5s cubic-bezier(0.22, 1, 0.36, 1)',
-        }}
-        style={{
           borderColor: tier.popular ? tier.accentFrom : 'var(--landing-card-border)',
           borderWidth: tier.popular ? '2px' : '1px',
           backgroundColor: 'var(--landing-card-bg)',
