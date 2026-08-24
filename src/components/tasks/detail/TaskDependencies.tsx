@@ -76,10 +76,10 @@ export function TaskDependencies({ taskId, projectId, readOnly }: TaskDependenci
     () =>
       new Set<string>([
         String(taskId),
-        ...waitingOn.map((entry) => String(entry.task._id)),
-        ...blocking.map((entry) => String(entry.task._id)),
+        ...(graph?.waitingOn ?? []).map((entry) => String(entry.task._id)),
+        ...(graph?.blocking ?? []).map((entry) => String(entry.task._id)),
       ]),
-    [taskId, waitingOn, blocking],
+    [taskId, graph],
   );
 
   const options = useMemo(() => {

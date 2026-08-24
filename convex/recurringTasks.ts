@@ -26,6 +26,17 @@ import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { orgDayKey, addDays, orgDayStart, isDayKey } from './lib/orgDays';
 import { nextOccurrence, occursOnDay, validateRule, type RecurrenceRule } from './lib/recurrence';
 import { assertModuleAccess } from './lib/entitlements';
+import {
+  MAX_ASSIGNEES,
+  assertRequiredFields,
+  assertUsersInOrg,
+  buildCustomFieldsPatch,
+  listFieldsFor,
+  readCustomFields,
+  resolveStatusSet,
+} from './lib/taskConfig';
+import { canonicalFor, firstOpenStatus } from './lib/taskStatus';
+import type { TaskFieldValue } from './lib/taskCustomFields';
 
 const frequencyValidator = v.union(v.literal('weekly'), v.literal('monthly'));
 
@@ -63,6 +74,101 @@ function ruleOf(doc: {
  * Errors are `ConvexError` so the reason survives to the client: production
  * deployments replace the message of a plain `Error` with "Server Error".
  */
+/**
+ * The parts of a series that describe the task rather than the schedule.
+ *
+ * Checked against the board the occurrences will land on, and checked at write time
+ * rather than at materialization time. That is the whole point: the hourly sweep can
+ * only log and skip a recipe it cannot use, so a rule that is wrong produces nothing
+ * at 03:00 and nobody finds out until somebody asks where Monday's task went.
+ * Refusing here puts the error in front of the person who can still fix it.
+ */
+async function validateTemplate(
+  ctx: MutationCtx,
+  input: {
+    organizationId: Id<'organizations'>;
+    projectId?: Id<'projects'>;
+    assignedTo: Id<'users'>;
+    statusKey?: string;
+    assigneeIds?: Id<'users'>[];
+    customFields?: Record<string, unknown>;
+    /** Values already on the series, so a partial edit is judged on the result. */
+    existingCustomFields?: unknown;
+    timeEstimateMinutes?: number;
+    startOffsetDays?: number;
+  },
+): Promise<{
+  statusKey: string | undefined;
+  assigneeIds: Id<'users'>[] | undefined;
+  customFields: Record<string, TaskFieldValue> | undefined;
+  timeEstimateMinutes: number | undefined;
+  startOffsetDays: number | undefined;
+}> {
+  const { statuses } = await resolveStatusSet(ctx, input.organizationId, input.projectId);
+  if (input.statusKey && !statuses.some((status) => status.key === input.statusKey)) {
+    throw new ConvexError({ code: 'INVALID_STATUS', message: 'That status is not on this board' });
+  }
+
+  // Same rule as `tasks.createTask`: the responsible person is never also a
+  // co-assignee of their own task.
+  const requested = [...new Set(input.assigneeIds ?? [])].filter((id) => id !== input.assignedTo);
+  if (requested.length > MAX_ASSIGNEES) {
+    throw new ConvexError({
+      code: 'TOO_MANY_ASSIGNEES',
+      message: 'That is more people than one task can hold',
+    });
+  }
+  const assigneeIds =
+    requested.length > 0 ? await assertUsersInOrg(ctx, requested, input.organizationId) : undefined;
+
+  const fields = await listFieldsFor(ctx, input.organizationId, input.projectId);
+  const customFields =
+    input.customFields === undefined
+      ? undefined
+      : await buildCustomFieldsPatch(ctx, {
+          fields,
+          values: input.customFields,
+          organizationId: input.organizationId,
+        });
+  // A required column left blank on the rule is a task that fails its own board's
+  // validation every single period, so it is refused once here instead.
+  assertRequiredFields(
+    fields,
+    customFields ??
+      (readCustomFields(input.existingCustomFields) as Record<string, TaskFieldValue>),
+  );
+
+  if (
+    input.timeEstimateMinutes !== undefined &&
+    (!Number.isFinite(input.timeEstimateMinutes) || input.timeEstimateMinutes < 0)
+  ) {
+    throw new ConvexError({
+      code: 'INVALID_ESTIMATE',
+      message: 'The estimate must be a number of minutes, zero or more',
+    });
+  }
+  if (
+    input.startOffsetDays !== undefined &&
+    (!Number.isInteger(input.startOffsetDays) || input.startOffsetDays < 0)
+  ) {
+    throw new ConvexError({
+      code: 'INVALID_START_OFFSET',
+      message: 'The start offset must be a whole number of days, zero or more',
+    });
+  }
+
+  return {
+    statusKey: input.statusKey,
+    assigneeIds,
+    customFields: customFields && Object.keys(customFields).length > 0 ? customFields : undefined,
+    timeEstimateMinutes:
+      input.timeEstimateMinutes !== undefined && input.timeEstimateMinutes > 0
+        ? Math.round(input.timeEstimateMinutes)
+        : undefined,
+    startOffsetDays: input.startOffsetDays,
+  };
+}
+
 async function requireOwnSeries(ctx: MutationCtx, seriesId: Id<'recurringTasks'>) {
   const caller = await getAuthCaller(ctx);
   if (!caller) {
@@ -114,6 +220,18 @@ export const createRecurringTask = mutation({
         }),
       ),
     ),
+
+    /**
+     * ── What the occurrence will carry ──
+     *
+     * A series is a template, so anything a person can set when creating a one-off
+     * task belongs here too; see the comment on `recurringTasks` in the schema.
+     */
+    statusKey: v.optional(v.string()),
+    assigneeIds: v.optional(v.array(v.id('users'))),
+    customFields: v.optional(v.record(v.string(), v.any())),
+    timeEstimateMinutes: v.optional(v.number()),
+    startOffsetDays: v.optional(v.number()),
 
     frequency: frequencyValidator,
     daysOfWeek: v.optional(v.array(v.number())),
@@ -214,6 +332,17 @@ export const createRecurringTask = mutation({
       }
     }
 
+    const template = await validateTemplate(ctx, {
+      organizationId,
+      projectId: args.projectId,
+      assignedTo: args.assignedTo,
+      statusKey: args.statusKey,
+      assigneeIds: args.assigneeIds,
+      customFields: args.customFields,
+      timeEstimateMinutes: args.timeEstimateMinutes,
+      startOffsetDays: args.startOffsetDays,
+    });
+
     const now = Date.now();
     const seriesId = await ctx.db.insert('recurringTasks', {
       organizationId,
@@ -240,6 +369,7 @@ export const createRecurringTask = mutation({
       startDate: args.startDate,
       endDate: args.endDate,
       deadlineOffsetDays: args.deadlineOffsetDays,
+      ...template,
       isActive: true,
       generatedCount: 0,
       createdAt: now,
@@ -418,6 +548,11 @@ export const updateRecurringTask = mutation({
     startDate: v.optional(v.string()),
     endDate: v.optional(v.string()),
     deadlineOffsetDays: v.optional(v.number()),
+    statusKey: v.optional(v.string()),
+    assigneeIds: v.optional(v.array(v.id('users'))),
+    customFields: v.optional(v.record(v.string(), v.any())),
+    timeEstimateMinutes: v.optional(v.number()),
+    startOffsetDays: v.optional(v.number()),
     /** Full replacement list — the client sends what should be kept, minus removals. */
     attachments: v.optional(
       v.array(
@@ -486,6 +621,21 @@ export const updateRecurringTask = mutation({
       throw new ConvexError({ code: ruleError, message: ruleErrorMessage(ruleError) });
     }
 
+    // Judged on the result of the edit, not on what was sent: a series whose project
+    // moved has to satisfy the new board's required columns, and the values it already
+    // carries are what will be checked against them.
+    const template = await validateTemplate(ctx, {
+      organizationId: series.organizationId,
+      projectId: args.projectId !== undefined ? args.projectId : series.projectId,
+      assignedTo: args.assignedTo ?? series.assignedTo,
+      statusKey: args.statusKey,
+      assigneeIds: args.assigneeIds,
+      customFields: args.customFields,
+      existingCustomFields: series.customFields,
+      timeEstimateMinutes: args.timeEstimateMinutes,
+      startOffsetDays: args.startOffsetDays,
+    });
+
     const now = Date.now();
     await ctx.db.patch(args.seriesId, {
       title: args.title !== undefined ? sanitizeTitle(args.title) : series.title,
@@ -505,6 +655,21 @@ export const updateRecurringTask = mutation({
       startDate: merged.startDate,
       endDate: merged.endDate,
       deadlineOffsetDays: args.deadlineOffsetDays ?? series.deadlineOffsetDays,
+      // `undefined` from the client means "leave it alone" here, the same way the
+      // links above are treated -- clearing a co-assignee list is done by sending an
+      // empty one, which `validateTemplate` normalizes away.
+      statusKey: args.statusKey !== undefined ? template.statusKey : series.statusKey,
+      assigneeIds: args.assigneeIds !== undefined ? template.assigneeIds : series.assigneeIds,
+      customFields:
+        args.customFields !== undefined
+          ? template.customFields
+          : readCustomFields(series.customFields),
+      timeEstimateMinutes:
+        args.timeEstimateMinutes !== undefined
+          ? template.timeEstimateMinutes
+          : series.timeEstimateMinutes,
+      startOffsetDays:
+        args.startOffsetDays !== undefined ? template.startOffsetDays : series.startOffsetDays,
       attachments:
         args.attachments === undefined
           ? series.attachments
@@ -670,15 +835,50 @@ async function materializeIfDue(
   // End of the due day locally, so "due today" is not already overdue at 00:01.
   const deadline = isDayKey(dueDayKey) ? orgDayStart(dueDayKey) + 86_400_000 - 1 : undefined;
 
+  // Start of the working window, in the same day-key arithmetic as the deadline above.
+  // A zero offset means "starts the day it appears", which is the useful default.
+  const startOffset = series.startOffsetDays ?? 0;
+  const startDayKey = startOffset > 0 ? addDays(today, startOffset) : today;
+  const startDate = isDayKey(startDayKey) ? orgDayStart(startDayKey) : undefined;
+
+  // Resolved per occurrence, not stored on the series: the board's status set can be
+  // edited, or the project moved to another set, between two occurrences. A key that
+  // no longer exists falls back to the set's first open status rather than blocking
+  // the day's task.
+  const { statuses } = await resolveStatusSet(ctx, series.organizationId, series.projectId);
+  const openingKey =
+    series.statusKey && statuses.some((status) => status.key === series.statusKey)
+      ? series.statusKey
+      : firstOpenStatus(statuses).key;
+
+  // Co-assignees are re-checked the same way the main assignee is above: people leave,
+  // and a series should not name them on work filed after they did.
+  const coAssignees: Id<'users'>[] = [];
+  for (const userId of series.assigneeIds ?? []) {
+    if (userId === series.assignedTo) continue;
+    const user = await ctx.db.get(userId);
+    if (!user || user.isActive === false) continue;
+    if (user.organizationId !== series.organizationId) continue;
+    coAssignees.push(userId);
+  }
+
   const taskId = await ctx.db.insert('tasks', {
     organizationId: series.organizationId,
     title: series.title,
     description: series.description,
     assignedTo: series.assignedTo,
     assignedBy: series.assignedBy,
-    status: 'pending',
+    status: canonicalFor(openingKey, statuses),
+    statusKey: openingKey,
     priority: series.priority,
     deadline,
+    startDate,
+    assigneeIds: coAssignees.length > 0 ? coAssignees : undefined,
+    timeEstimateMinutes: series.timeEstimateMinutes,
+    // Copied as stored: the series' values were validated against the board's columns
+    // when the template was written, by the same `buildCustomFieldsPatch` a one-off
+    // task goes through.
+    customFields: readCustomFields(series.customFields),
     tags: series.tags,
     projectId: series.projectId,
     objectiveId: series.objectiveId,

@@ -383,13 +383,23 @@
         "priorityLabel": "Приоритет",
         "priorityPlaceholder": "Выберите приоритет",
         "deadlineLabel": "Срок выполнения",
-        "deadlineDescription": "Когда должно быть выполнено?"
+        "deadlineDescription": "Когда должно быть выполнено?",
+        "statusLabel": "Статус",
+        "statusPlaceholder": "Выберите статус",
+        "statusHint": "В какой колонке задача откроется",
+        "startDateLabel": "Дата начала",
+        "startDateHint": "Когда планируется начать работу",
+        "estimateLabel": "Оценка времени",
+        "estimateHint": "Минуты или 1h 30m — учтённое время сравнивается с оценкой",
+        "estimateInvalid": "Попробуйте 90, 1h 30m или 1:30"
       },
       "assignee": {
         "title": "Назначить",
         "description": "Кто должен выполнить эту задачу?",
         "assigneeLabel": "Исполнитель",
-        "assigneePlaceholder": "Выберите сотрудника"
+        "assigneePlaceholder": "Выберите сотрудника",
+        "coAssigneesLabel": "Кто ещё работает",
+        "coAssigneesHint": "Необязательно. Ответственным остаётся человек выше."
       },
       "repeat": {
         "title": "Повторение",
@@ -411,7 +421,18 @@
         "endDateLabel": "Окончание",
         "endDateHint": "Необязательно. Оставьте пустым, чтобы повторялось до остановки вручную.",
         "offsetLabel": "Дней на выполнение",
-        "offsetHint": "0 — срок в тот же день, когда задача появилась; 6 для недельной задачи — срок до конца недели."
+        "offsetHint": "0 — срок в тот же день, когда задача появилась; 6 для недельной задачи — срок до конца недели.",
+        "startOffsetLabel": "Дней до начала",
+        "startOffsetHint": "0 — работа начинается в день появления; 2 — дата начала ставится на два дня позже."
+      },
+      "fields": {
+        "title": "Детали",
+        "description": "Собственные колонки этой доски",
+        "none": "У этой доски нет дополнительных колонок",
+        "ratingHint": "От 0 до {{max}}",
+        "percentHint": "От 0 до 100",
+        "selectPlaceholder": "Выберите вариант",
+        "userPlaceholder": "Выберите человека"
       }
     },
     "toast": {
@@ -508,6 +529,51 @@
     "watch": "Наблюдать",
     "watching": "Наблюдение",
     "collaborators": "Также работают над этим",
-    "partOf": "Подзадача"
+    "partOf": "Подзадача",
+    "subtasks": "Подзадачи",
+    "doneOf": "{{done}} из {{total}} готово",
+    "noSubtasks": "Подзадач пока нет",
+    "removeSubtask": "Удалить подзадачу",
+    "subtaskPlaceholder": "Добавьте подзадачу и нажмите Enter",
+    "checklist": "Чек-лист",
+    "noChecklist": "В чек-листе пока ничего нет",
+    "checklistPlaceholder": "Добавьте пункт и нажмите Enter",
+    "toggleChecklistItem": "Отметить выполненным",
+    "removeChecklistItem": "Удалить пункт",
+    "dependencies": "Зависимости",
+    "addDependency": "Связать задачу",
+    "linkDirection": "Направление",
+    "waitingOn": "Ожидает",
+    "blocking": "Блокирует",
+    "searchTasks": "Поиск задач…",
+    "noTasksToLink": "Нет других задач для связи",
+    "noDependencies": "У задачи нет связей",
+    "noWaitingOn": "Ничто её не задерживает",
+    "noBlocking": "Ничего не задерживает",
+    "removeDependency": "Убрать связь",
+    "timeTracked": "Учёт времени",
+    "spentOfEstimate": "{{spent}} из {{estimate}}",
+    "startTimer": "Старт",
+    "stopTimer": "Стоп",
+    "timerElsewhere": "Ваш таймер запущен на «{{title}}» — запуск здесь остановит его",
+    "overEstimate": "{{over}} сверх оценки",
+    "noTimeLogged": "Время пока не отмечено",
+    "running": "идёт",
+    "removeEntry": "Удалить запись",
+    "duration": "Затраченное время",
+    "notePlaceholder": "Что было сделано (необязательно)",
+    "logTime": "Записать",
+    "addTime": "Указать время вручную",
+    "someone": "Кто-то",
+    "responsible": "Ответственный",
+    "removeAssignee": "Убрать {{name}}",
+    "addAssignee": "Добавить",
+    "searchPeople": "Поиск людей…",
+    "assigneeLimit": "Больше людей на одну задачу добавить нельзя",
+    "durationPlaceholder": "90, 1h 30m",
+    "blockedBy_one": "Заблокировано {{count}} незавершённой задачей",
+    "blockedBy_few": "Заблокировано {{count}} незавершёнными задачами",
+    "blockedBy_many": "Заблокировано {{count}} незавершёнными задачами",
+    "blockedBy_other": "Заблокировано {{count}} незавершёнными задачами"
   }
 }

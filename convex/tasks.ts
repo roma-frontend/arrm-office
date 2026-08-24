@@ -19,10 +19,12 @@ import {
 } from './lib/taskAccess';
 import { canonicalFor, firstOpenStatus, type CanonicalTaskStatus } from './lib/taskStatus';
 import {
+  MAX_ASSIGNEES,
   assertRequiredFields,
   assertUsersInOrg,
   buildCustomFieldsPatch,
   listFieldsFor,
+  resolveStatusSet,
   resolveStatusSetForTask,
 } from './lib/taskConfig';
 import {
@@ -306,6 +308,22 @@ export const createTask = mutation({
     // Goals ↔ Tasks linkage
     objectiveId: v.optional(v.id('objectives')),
     keyResultId: v.optional(v.id('keyResults')),
+    // ── Phase 2 fields, all optional so every existing caller still compiles ──
+    /** A status from the board's own set. Omitted means "the first open one". */
+    statusKey: v.optional(v.string()),
+    /** Co-assignees. The responsible person stays `assignedTo`. */
+    assigneeIds: v.optional(v.array(v.id('users'))),
+    startDate: v.optional(v.number()),
+    timeEstimateMinutes: v.optional(v.number()),
+    /**
+     * Custom column values, keyed by field id.
+     *
+     * Sent to `createTask` rather than written by a follow-up `updateTaskFields`
+     * because a required column must be able to refuse the task: a second mutation
+     * could only refuse it after the task already existed, leaving exactly the
+     * invalid row the `required` flag is there to prevent.
+     */
+    customFields: v.optional(v.record(v.string(), v.any())),
   },
   handler: async (ctx, args) => {
     await assertModuleAccess(ctx, 'tasks');
@@ -371,6 +389,48 @@ export const createTask = mutation({
       }
     }
 
+    // The board this task is being filed on decides what "new" means. A board whose
+    // first column is READY TO PAY must not receive a task called Pending, so the
+    // canonical status is derived from the chosen status rather than hard-coded.
+    const { statuses } = await resolveStatusSet(ctx, organizationId, args.projectId);
+    const opening = args.statusKey
+      ? statuses.find((status) => status.key === args.statusKey)
+      : firstOpenStatus(statuses);
+    if (!opening) throw new ConvexError('That status is not on this board');
+
+    // Co-assignees, held to the same rule as `setAssignees`: the responsible person
+    // is never also a co-assignee of their own task, so the avatar stack cannot
+    // show them twice and removing the last co-assignee cannot read as unassigning.
+    const requestedAssignees = [...new Set(args.assigneeIds ?? [])].filter(
+      (id) => id !== args.assignedTo,
+    );
+    if (requestedAssignees.length > MAX_ASSIGNEES) {
+      throw new ConvexError('That is more people than one task can hold');
+    }
+    const assigneeIds =
+      requestedAssignees.length > 0
+        ? await assertUsersInOrg(ctx, requestedAssignees, organizationId)
+        : undefined;
+
+    // Required columns are checked here, before the row exists. A follow-up
+    // `updateTaskFields` could only refuse afterwards, leaving the invalid task the
+    // `required` flag exists to prevent.
+    const fields = await listFieldsFor(ctx, organizationId, args.projectId);
+    const customFields =
+      args.customFields === undefined
+        ? undefined
+        : await buildCustomFieldsPatch(ctx, {
+            fields,
+            values: args.customFields,
+            organizationId,
+          });
+    assertRequiredFields(fields, customFields ?? {});
+
+    const estimate =
+      args.timeEstimateMinutes !== undefined && args.timeEstimateMinutes > 0
+        ? Math.round(args.timeEstimateMinutes)
+        : undefined;
+
     const now = Date.now();
     const taskId = await ctx.db.insert('tasks', {
       title: sanitizeTitle(args.title),
@@ -378,13 +438,18 @@ export const createTask = mutation({
       assignedTo: args.assignedTo,
       assignedBy: caller._id,
       organizationId,
-      status: 'pending',
+      status: canonicalFor(opening.key, statuses),
+      statusKey: opening.key,
       priority: args.priority,
       deadline: args.deadline,
+      startDate: args.startDate,
+      timeEstimateMinutes: estimate,
       tags: args.tags,
       projectId: args.projectId,
       objectiveId: args.objectiveId,
       keyResultId: args.keyResultId,
+      assigneeIds,
+      customFields,
       createdAt: now,
       updatedAt: now,
     });
@@ -1360,6 +1425,31 @@ export const getTask = query({
     );
     const commentAuthorMap = new Map(commentAuthors.map((a: Doc<'users'> | null) => [a?._id, a]));
 
+    // Co-assignees and watchers, resolved to names. Sent alongside the id lists
+    // rather than left to the client because the assignee picker is scoped to the
+    // caller's roster: an employee looking at this task must be able to read the
+    // names of the colleagues already on it without being able to list anybody new.
+    const collaboratorIds = [...new Set([...(task.assigneeIds ?? []), ...(task.watcherIds ?? [])])];
+    const collaborators = await Promise.all(collaboratorIds.map((id) => ctx.db.get(id)));
+    const collaboratorMap = new Map(
+      collaborators.filter((user) => user !== null).map((user) => [user._id, user]),
+    );
+    const slimCollaborators = (ids: Id<'users'>[] | undefined) =>
+      (ids ?? []).flatMap((id) => {
+        const user = collaboratorMap.get(id);
+        return user
+          ? [
+              {
+                _id: user._id,
+                name: user.name,
+                avatarUrl: user.avatarUrl ?? user.faceImageUrl ?? null,
+                position: user.position ?? null,
+                department: user.department ?? null,
+              },
+            ]
+          : [];
+      });
+
     return {
       ...task,
       assignedToUser: assignedTo
@@ -1386,6 +1476,8 @@ export const getTask = query({
       })),
       commentCount: comments.length,
       projectName: project?.name ?? null,
+      assigneeUsers: slimCollaborators(task.assigneeIds),
+      watcherUsers: slimCollaborators(task.watcherIds),
     };
   },
 });
@@ -1486,15 +1578,6 @@ const MAX_BULK_TASKS = SMALL_LIST_CAP;
  * and the rest see the change on the board like everyone else.
  */
 const MAX_WATCHER_NOTIFICATIONS = 50;
-
-/**
- * How many co-assignees one task may carry.
- *
- * Twenty is generous for "who else is on this" and low enough that the avatar stack
- * and the batch load behind it stay a fixed cost. A task that needs more people
- * named on it is a project, and this codebase has those.
- */
-const MAX_ASSIGNEES = 20;
 
 /** Watchers are capped where notifications are, so nobody follows a task in silence. */
 const MAX_WATCHERS = MAX_WATCHER_NOTIFICATIONS;

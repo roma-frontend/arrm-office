@@ -14,13 +14,35 @@ import {
   SelectStep,
   FileUploadStep,
 } from '@/components/ui/wizard-step-components';
-import { CheckSquare, User, AlertCircle, Tag, Paperclip, Target, Repeat } from 'lucide-react';
+import {
+  CheckSquare,
+  User,
+  AlertCircle,
+  Tag,
+  Paperclip,
+  Target,
+  Repeat,
+  Columns3,
+} from 'lucide-react';
 import { useMutation, useQuery } from 'convex/react';
 import { useOptimisticCreateTask } from '@/hooks/useOptimisticActions';
 import { api } from '@/convex/_generated/api';
 import { useWizardContext } from '@/components/ui/wizard';
 import { cn } from '@/lib/utils';
 import { getConvexErrorMessage } from '@/lib/error-handler';
+import {
+  WizardCoAssignees,
+  WizardCustomFields,
+  WizardScheduleFields,
+  WizardStatusField,
+  coAssigneesFrom,
+  wizardCustomFieldDefaults,
+  customFieldValuesFrom,
+  estimateMinutesFrom,
+  missingRequiredFields,
+  useTaskFields,
+  visibleFields,
+} from '@/components/tasks/CreateTaskFields';
 
 interface AttachmentData {
   url: string;
@@ -50,6 +72,12 @@ interface EditingSeries {
   startDate: string;
   endDate?: string;
   deadlineOffsetDays?: number;
+  /** The template the sweep stamps onto every occurrence; see `recurringTasks` in the schema. */
+  statusKey?: string;
+  assigneeIds?: Id<'users'>[];
+  customFields?: unknown;
+  timeEstimateMinutes?: number;
+  startOffsetDays?: number;
 }
 
 interface CreateTaskWizardProps {
@@ -207,6 +235,18 @@ const RepeatRuleFields = () => {
         placeholder="0"
         description={t('taskWizard.steps.repeat.offsetHint')}
       />
+      {/*
+        Offsets rather than dates, for the same reason the deadline above is one: the
+        rule has no single occurrence to count from. The absolute start date on the
+        schedule step is a one-off task's field and is ignored for a series.
+      */}
+      <TextInputStep
+        field="repeatStartOffsetDays"
+        label={t('taskWizard.steps.repeat.startOffsetLabel')}
+        type="number"
+        placeholder="0"
+        description={t('taskWizard.steps.repeat.startOffsetHint')}
+      />
     </div>
   );
 };
@@ -269,6 +309,13 @@ export function CreateTaskWizard({
   const isSelfAssignedOnly =
     userRole === 'employee' || (editingSeries && editingSeries.assignedTo === currentUserId);
 
+  // The board decides what a new task needs: its own statuses, and its own columns.
+  // Read once here and passed down, so the step that renders the columns and the
+  // submit that validates them are looking at the same list.
+  const boardOrgId = selectedOrgId ?? undefined;
+  const customFields = useTaskFields(projectId, boardOrgId);
+  const hasCustomFields = visibleFields(customFields).length > 0;
+
   const steps: WizardStep[] = [
     {
       id: 'details',
@@ -306,19 +353,22 @@ export function CreateTaskWizard({
             icon: <User className="w-5 h-5" />,
             validation: (data: Record<string, unknown>) => !!data.assigneeId,
             content: (
-              <SelectStep
-                field="assigneeId"
-                label={t('taskWizard.steps.assignee.assigneeLabel')}
-                options={
-                  availableEmployees?.map((emp) => ({
-                    value: emp._id,
-                    label: `${emp.name}${emp.position ? ` — ${emp.position}` : ''}${emp.department ? ` (${emp.department})` : ''}`,
-                  })) || []
-                }
-                placeholder={t('taskWizard.steps.assignee.assigneePlaceholder')}
-                defaultValue={assigneeId}
-                required
-              />
+              <div className="space-y-4">
+                <SelectStep
+                  field="assigneeId"
+                  label={t('taskWizard.steps.assignee.assigneeLabel')}
+                  options={
+                    availableEmployees?.map((emp) => ({
+                      value: emp._id,
+                      label: `${emp.name}${emp.position ? ` — ${emp.position}` : ''}${emp.department ? ` (${emp.department})` : ''}`,
+                    })) || []
+                  }
+                  placeholder={t('taskWizard.steps.assignee.assigneePlaceholder')}
+                  defaultValue={assigneeId}
+                  required
+                />
+                <WizardCoAssignees organizationId={boardOrgId} people={availableEmployees} />
+              </div>
             ),
           },
         ]),
@@ -341,15 +391,41 @@ export function CreateTaskWizard({
             placeholder={t('taskWizard.steps.priority.priorityPlaceholder')}
             defaultValue="medium"
           />
+          <WizardStatusField projectId={projectId} organizationId={boardOrgId} />
           <TextInputStep
             field="deadline"
             label={t('taskWizard.steps.priority.deadlineLabel')}
             type="date"
             description={t('taskWizard.steps.priority.deadlineDescription')}
           />
+          <WizardScheduleFields />
         </div>
       ),
     },
+    // Only on boards that actually have columns: a step that renders nothing is a
+    // click the user has to spend to learn there was nothing to do.
+    ...(hasCustomFields
+      ? [
+          {
+            id: 'fields' as const,
+            title: t('taskWizard.steps.fields.title', 'Details'),
+            description: t('taskWizard.steps.fields.description', "This board's own columns"),
+            icon: <Columns3 className="w-5 h-5" />,
+            // Required columns are refused here as well as on the server, so the
+            // wizard stops on the step holding the empty input rather than throwing
+            // the whole draft away behind a toast at the end.
+            validation: (data: Record<string, unknown>) =>
+              missingRequiredFields(data as Record<string, never>, customFields).length === 0,
+            content: (
+              <WizardCustomFields
+                projectId={projectId}
+                organizationId={boardOrgId}
+                people={availableEmployees}
+              />
+            ),
+          },
+        ]
+      : []),
     {
       id: 'repeat',
       title: t('taskWizard.steps.repeat.title'),
@@ -489,6 +565,19 @@ export function CreateTaskWizard({
         const endDate = data.repeatEndDate ? String(data.repeatEndDate) : undefined;
         const deadlineOffsetDays =
           Number.isFinite(offsetRaw) && offsetRaw > 0 ? offsetRaw : undefined;
+        const startOffsetRaw = Number(data.repeatStartOffsetDays);
+        const startOffsetDays =
+          Number.isFinite(startOffsetRaw) && startOffsetRaw > 0 ? startOffsetRaw : undefined;
+
+        // The template the sweep will stamp out. Sent on both paths, so editing a
+        // series and creating one leave the same rule behind.
+        const seriesTemplate = {
+          statusKey: data.statusKey ? String(data.statusKey) : undefined,
+          assigneeIds: coAssigneesFrom(data),
+          customFields: customFieldValuesFrom(data, customFields),
+          timeEstimateMinutes: estimateMinutesFrom(data),
+          startOffsetDays,
+        };
 
         // Files are part of the rule now: they travel with every occurrence the
         // sweep materializes, so the same briefing reaches each run of the task.
@@ -524,6 +613,7 @@ export function CreateTaskWizard({
               startDate,
               endDate,
               deadlineOffsetDays,
+              ...seriesTemplate,
               attachments,
             })
           : await createRecurringTask({
@@ -543,6 +633,7 @@ export function CreateTaskWizard({
               startDate,
               endDate,
               deadlineOffsetDays,
+              ...seriesTemplate,
               attachments,
             });
 
@@ -562,6 +653,8 @@ export function CreateTaskWizard({
         return;
       }
 
+      const coAssignees = coAssigneesFrom(data);
+
       const taskId = await createTask({
         assignedTo: (isSelfAssignedOnly ? currentUserId : String(data.assigneeId)) as Id<'users'>,
         assignedBy: currentUserId,
@@ -573,6 +666,11 @@ export function CreateTaskWizard({
         objectiveId,
         keyResultId,
         projectId,
+        statusKey: data.statusKey ? String(data.statusKey) : undefined,
+        assigneeIds: coAssignees,
+        startDate: data.startDate ? new Date(String(data.startDate)).getTime() : undefined,
+        timeEstimateMinutes: estimateMinutesFrom(data),
+        customFields: customFieldValuesFrom(data, customFields),
       });
 
       const attachmentsJson = data.attachments as string | undefined;
@@ -615,6 +713,19 @@ export function CreateTaskWizard({
         repeatDeadlineOffsetDays: editingSeries.deadlineOffsetDays
           ? String(editingSeries.deadlineOffsetDays)
           : '',
+        repeatStartOffsetDays: editingSeries.startOffsetDays
+          ? String(editingSeries.startOffsetDays)
+          : '',
+        timeEstimate: editingSeries.timeEstimateMinutes
+          ? String(editingSeries.timeEstimateMinutes)
+          : '',
+        // The rule's own values, back into the same `cf:<fieldId>` keys the fields step
+        // writes to, so an edit shows what is stored rather than an empty form.
+        ...wizardCustomFieldDefaults(editingSeries.customFields),
+        ...(editingSeries.statusKey ? { statusKey: editingSeries.statusKey } : {}),
+        ...(editingSeries.assigneeIds && editingSeries.assigneeIds.length > 0
+          ? { assigneeIds: editingSeries.assigneeIds as string[] }
+          : {}),
         tags: (editingSeries.tags ?? []).join(', '),
         attachments: JSON.stringify(editingSeries.attachments ?? []),
         ...(editingSeries.projectId ? { projectId: editingSeries.projectId } : {}),

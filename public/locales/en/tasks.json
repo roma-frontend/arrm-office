@@ -373,13 +373,23 @@
         "priorityLabel": "Priority",
         "priorityPlaceholder": "Select priority",
         "deadlineLabel": "Deadline",
-        "deadlineDescription": "When should it be completed?"
+        "deadlineDescription": "When should it be completed?",
+        "statusLabel": "Status",
+        "statusPlaceholder": "Select a status",
+        "statusHint": "Which column this task opens in",
+        "startDateLabel": "Start date",
+        "startDateHint": "When work on this is meant to begin",
+        "estimateLabel": "Time estimate",
+        "estimateHint": "Minutes, or 1h 30m — tracked time is compared against this",
+        "estimateInvalid": "Try 90, 1h 30m or 1:30"
       },
       "assignee": {
         "title": "Assign To",
         "description": "Who should complete this task?",
         "assigneeLabel": "Assignee",
-        "assigneePlaceholder": "Select employee"
+        "assigneePlaceholder": "Select employee",
+        "coAssigneesLabel": "Also working on it",
+        "coAssigneesHint": "Optional. The person above stays responsible for the task."
       },
       "repeat": {
         "title": "Repeat",
@@ -401,7 +411,18 @@
         "endDateLabel": "Ends on",
         "endDateHint": "Optional. Leave empty to keep repeating until you pause it.",
         "offsetLabel": "Days to complete",
-        "offsetHint": "0 means due the same day it appears; 6 on a weekly task means due by the end of the week."
+        "offsetHint": "0 means due the same day it appears; 6 on a weekly task means due by the end of the week.",
+        "startOffsetLabel": "Days before it starts",
+        "startOffsetHint": "0 means work starts the day it appears; 2 means the start date is set two days later."
+      },
+      "fields": {
+        "title": "Details",
+        "description": "This board's own columns",
+        "none": "This board has no extra columns",
+        "ratingHint": "0 to {{max}}",
+        "percentHint": "0 to 100",
+        "selectPlaceholder": "Choose one",
+        "userPlaceholder": "Choose a person"
       }
     },
     "toast": {
@@ -498,6 +519,49 @@
     "watch": "Watch",
     "watching": "Watching",
     "collaborators": "Also working on this",
-    "partOf": "Subtask of"
+    "partOf": "Subtask of",
+    "subtasks": "Subtasks",
+    "doneOf": "{{done}} of {{total}} done",
+    "noSubtasks": "No subtasks yet",
+    "removeSubtask": "Delete subtask",
+    "subtaskPlaceholder": "Add a subtask and press Enter",
+    "checklist": "Checklist",
+    "noChecklist": "Nothing on the checklist yet",
+    "checklistPlaceholder": "Add an item and press Enter",
+    "toggleChecklistItem": "Mark done",
+    "removeChecklistItem": "Delete item",
+    "dependencies": "Dependencies",
+    "addDependency": "Link task",
+    "linkDirection": "Direction",
+    "waitingOn": "Waiting on",
+    "blocking": "Blocking",
+    "searchTasks": "Search tasks…",
+    "noTasksToLink": "No other tasks to link",
+    "noDependencies": "This task stands alone",
+    "noWaitingOn": "Nothing is holding this up",
+    "noBlocking": "Not holding anything up",
+    "removeDependency": "Unlink task",
+    "timeTracked": "Time tracked",
+    "spentOfEstimate": "{{spent}} of {{estimate}}",
+    "startTimer": "Start",
+    "stopTimer": "Stop",
+    "timerElsewhere": "Your timer is running on “{{title}}” — starting here stops it",
+    "overEstimate": "{{over}} over the estimate",
+    "noTimeLogged": "No time logged yet",
+    "running": "running",
+    "removeEntry": "Delete entry",
+    "duration": "Time spent",
+    "notePlaceholder": "What was done (optional)",
+    "logTime": "Log",
+    "addTime": "Log time manually",
+    "someone": "Someone",
+    "responsible": "Responsible",
+    "removeAssignee": "Remove {{name}}",
+    "addAssignee": "Add",
+    "searchPeople": "Search people…",
+    "assigneeLimit": "That is as many people as one task can hold",
+    "durationPlaceholder": "90, 1h 30m",
+    "blockedBy_one": "Blocked by {{count}} unfinished task",
+    "blockedBy_other": "Blocked by {{count}} unfinished tasks"
   }
 }

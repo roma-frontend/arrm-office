@@ -341,6 +341,14 @@ export function useOptimisticCreateTask() {
       objectiveId?: Id<'objectives'>;
       keyResultId?: Id<'keyResults'>;
       projectId?: Id<'projects'>;
+      // Phase 2 fields. Optional, and passed straight through: the optimistic row
+      // below still shows `pending`, because the board's own opening status is
+      // resolved on the server and guessing it here would flicker the wrong chip.
+      statusKey?: string;
+      assigneeIds?: Id<'users'>[];
+      startDate?: number;
+      timeEstimateMinutes?: number;
+      customFields?: Record<string, unknown>;
     }) => {
       const now = Date.now();
       const optimisticTask: OptimisticTask = {

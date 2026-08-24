@@ -439,6 +439,11 @@ export function RecurringTasksClient({
                 startDate: editingSeries.startDate,
                 endDate: editingSeries.endDate,
                 deadlineOffsetDays: editingSeries.deadlineOffsetDays,
+                statusKey: editingSeries.statusKey,
+                assigneeIds: editingSeries.assigneeIds,
+                customFields: editingSeries.customFields,
+                timeEstimateMinutes: editingSeries.timeEstimateMinutes,
+                startOffsetDays: editingSeries.startOffsetDays,
               }}
               onComplete={() => setEditingId(null)}
               onCancel={() => setEditingId(null)}

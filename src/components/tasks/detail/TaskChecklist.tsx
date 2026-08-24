@@ -54,20 +54,19 @@ export function TaskChecklist({ taskId, readOnly }: TaskChecklistProps) {
   const removeItem = useMutation(api.taskRelations.removeChecklistItem);
   const reorderItems = useMutation(api.taskRelations.reorderChecklistItems);
 
-  const rows = stored ?? [];
-
   /**
    * Rows in the order to draw them: the local one where it covers a row, then
    * anything that arrived since — an item a colleague added mid-drag belongs at
    * the end, not missing.
    */
   const items = useMemo(() => {
+    const rows = stored ?? [];
     if (!localOrder) return rows;
     const byId = new Map(rows.map((row) => [String(row._id), row]));
     const known = new Set(localOrder);
     const ordered = localOrder.map((id) => byId.get(id)).filter((row) => row !== undefined);
     return [...ordered, ...rows.filter((row) => !known.has(String(row._id)))];
-  }, [rows, localOrder]);
+  }, [stored, localOrder]);
 
   const done = items.filter((item) => item.isDone).length;
   const percent = items.length === 0 ? 0 : Math.round((done / items.length) * 100);

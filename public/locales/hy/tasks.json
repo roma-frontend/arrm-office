@@ -373,13 +373,23 @@
         "priorityLabel": "Prioritet",
         "priorityPlaceholder": "Ընտրել առաջնահերթություն",
         "deadlineLabel": "Վերջնաժամկետ",
-        "deadlineDescription": "Երբ պետք է ավարտվի?"
+        "deadlineDescription": "Երբ պետք է ավարտվի?",
+        "statusLabel": "Կարգավիճակ",
+        "statusPlaceholder": "Ընտրեք կարգավիճակ",
+        "statusHint": "Ո՞ր սյունակում կբացվի խնդիրը",
+        "startDateLabel": "Մեկնարկի ամսաթիվ",
+        "startDateHint": "Երբ պետք է սկսվի աշխատանքը",
+        "estimateLabel": "Ժամանակի գնահատում",
+        "estimateHint": "Րոպեներ կամ 1h 30m — հաշվառված ժամանակը համեմատվում է սրա հետ",
+        "estimateInvalid": "Փորձեք 90, 1h 30m կամ 1:30"
       },
       "assignee": {
         "title": "Հանձնարարել",
         "description": "Ով պետք է կատարի այս խնդիրը:",
         "assigneeLabel": "Հանձնարարող",
-        "assigneePlaceholder": "Ընտրել աշխատակից"
+        "assigneePlaceholder": "Ընտրել աշխատակից",
+        "coAssigneesLabel": "Ո՞վ է նաև աշխատում",
+        "coAssigneesHint": "Ըստ ցանկության։ Պատասխանատուն մնում է վերևում նշված անձը։"
       },
       "repeat": {
         "title": "Կրկնություն",
@@ -401,7 +411,18 @@
         "endDateLabel": "Ավարտ",
         "endDateHint": "Ոչ պարտադիր։ Թողեք դատարկ, որպեսզի կրկնվի մինչև ձեռքով դադարեցնեք։",
         "offsetLabel": "Օրեր կատարման համար",
-        "offsetHint": "0 — վերջնաժամկետը հայտնվելու նույն օրը; շաբաթական առաջադրանքի համար 6 — մինչև շաբաթվա վերջ։"
+        "offsetHint": "0 — վերջնաժամկետը հայտնվելու նույն օրը; շաբաթական առաջադրանքի համար 6 — մինչև շաբաթվա վերջ։",
+        "startOffsetLabel": "Օրեր մինչև մեկնարկը",
+        "startOffsetHint": "0 — աշխատանքը սկսվում է հայտնվելու օրը․ 2 — մեկնարկի ամսաթիվը դրվում է երկու օր ուշ."
+      },
+      "fields": {
+        "title": "Մանրամասներ",
+        "description": "Այս տախտակի սեփական սյունակները",
+        "none": "Այս տախտակը լրացուցիչ սյունակներ չունի",
+        "ratingHint": "0-ից {{max}}",
+        "percentHint": "0-ից 100",
+        "selectPlaceholder": "Ընտրեք տարբերակ",
+        "userPlaceholder": "Ընտրեք անձ"
       }
     },
     "toast": {
@@ -498,6 +519,49 @@
     "watch": "Հետևել",
     "watching": "Հետևում է",
     "collaborators": "Նույնպես աշխատում են այս վրա",
-    "partOf": "Ենթախնդիր"
+    "partOf": "Ենթախնդիր",
+    "subtasks": "Ենթախնդիրներ",
+    "doneOf": "{{done}} / {{total}} պատրաստ է",
+    "noSubtasks": "Ենթախնդիրներ դեռ չկան",
+    "removeSubtask": "Ջնջել ենթախնդիրը",
+    "subtaskPlaceholder": "Ավելացրեք ենթախնդիր և սեղմեք Enter",
+    "checklist": "Ստուգաթերթ",
+    "noChecklist": "Ստուգաթերթում դեռ ոչինչ չկա",
+    "checklistPlaceholder": "Ավելացրեք կետ և սեղմեք Enter",
+    "toggleChecklistItem": "Նշել կատարված",
+    "removeChecklistItem": "Ջնջել կետը",
+    "dependencies": "Կախվածություններ",
+    "addDependency": "Կապել խնդիր",
+    "linkDirection": "Ուղղություն",
+    "waitingOn": "Սպասում է",
+    "blocking": "Արգելափակում է",
+    "searchTasks": "Որոնել խնդիրներ…",
+    "noTasksToLink": "Կապելու այլ խնդիրներ չկան",
+    "noDependencies": "Այս խնդիրը կապեր չունի",
+    "noWaitingOn": "Ոչինչ չի հետաձգում այն",
+    "noBlocking": "Ոչինչ չի արգելափակում",
+    "removeDependency": "Հեռացնել կապը",
+    "timeTracked": "Հաշվառված ժամանակ",
+    "spentOfEstimate": "{{spent}} / {{estimate}}",
+    "startTimer": "Սկսել",
+    "stopTimer": "Դադարեցնել",
+    "timerElsewhere": "Ձեր ժամաչափն աշխատում է «{{title}}»-ի վրա — այստեղ սկսելը կդադարեցնի այն",
+    "overEstimate": "{{over}} գնահատականից ավել",
+    "noTimeLogged": "Ժամանակ դեռ չի գրանցվել",
+    "running": "ընթացքում",
+    "removeEntry": "Ջնջել գրառումը",
+    "duration": "Ծախսված ժամանակ",
+    "notePlaceholder": "Ինչ է արվել (ըստ ցանկության)",
+    "logTime": "Գրանցել",
+    "addTime": "Գրանցել ժամանակը ձեռքով",
+    "someone": "Ինչ-որ մեկը",
+    "responsible": "Պատասխանատու",
+    "removeAssignee": "Հեռացնել {{name}}",
+    "addAssignee": "Ավելացնել",
+    "searchPeople": "Որոնել մարդկանց…",
+    "assigneeLimit": "Մեկ խնդիրն ավելի շատ մարդ չի կարող ունենալ",
+    "durationPlaceholder": "90, 1h 30m",
+    "blockedBy_one": "Արգելափակված է {{count}} անավարտ խնդրով",
+    "blockedBy_other": "Արգելափակված է {{count}} անավարտ խնդրով"
   }
 }

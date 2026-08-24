@@ -373,13 +373,23 @@
         "priorityLabel": "Priorität",
         "priorityPlaceholder": "Priorität auswählen",
         "deadlineLabel": "Frist",
-        "deadlineDescription": "Bis wann soll die Aufgabe erledigt sein?"
+        "deadlineDescription": "Bis wann soll die Aufgabe erledigt sein?",
+        "statusLabel": "Status",
+        "statusPlaceholder": "Status wählen",
+        "statusHint": "In welcher Spalte die Aufgabe startet",
+        "startDateLabel": "Startdatum",
+        "startDateHint": "Wann die Arbeit beginnen soll",
+        "estimateLabel": "Zeitschätzung",
+        "estimateHint": "Minuten oder 1h 30m — die erfasste Zeit wird damit verglichen",
+        "estimateInvalid": "Versuchen Sie 90, 1h 30m oder 1:30"
       },
       "assignee": {
         "title": "Zuweisen",
         "description": "Wer soll diese Aufgabe erledigen?",
         "assigneeLabel": "Zuständiger",
-        "assigneePlaceholder": "Mitarbeiter auswählen"
+        "assigneePlaceholder": "Mitarbeiter auswählen",
+        "coAssigneesLabel": "Wer noch mitarbeitet",
+        "coAssigneesHint": "Optional. Verantwortlich bleibt die Person oben."
       },
       "repeat": {
         "title": "Wiederholung",
@@ -401,7 +411,18 @@
         "endDateLabel": "Endet am",
         "endDateHint": "Optional. Leer lassen, damit es bis zum Pausieren wiederkehrt.",
         "offsetLabel": "Tage zur Erledigung",
-        "offsetHint": "0 bedeutet fällig am Tag des Erscheinens; 6 bei einer wöchentlichen Aufgabe bedeutet fällig zum Wochenende."
+        "offsetHint": "0 bedeutet fällig am Tag des Erscheinens; 6 bei einer wöchentlichen Aufgabe bedeutet fällig zum Wochenende.",
+        "startOffsetLabel": "Tage bis zum Start",
+        "startOffsetHint": "0 bedeutet, die Arbeit beginnt am Tag des Erscheinens; 2 setzt das Startdatum zwei Tage später."
+      },
+      "fields": {
+        "title": "Details",
+        "description": "Die eigenen Spalten dieses Boards",
+        "none": "Dieses Board hat keine zusätzlichen Spalten",
+        "ratingHint": "0 bis {{max}}",
+        "percentHint": "0 bis 100",
+        "selectPlaceholder": "Option wählen",
+        "userPlaceholder": "Person wählen"
       }
     },
     "toast": {
@@ -498,6 +519,49 @@
     "watch": "Beobachten",
     "watching": "Beobachtung",
     "collaborators": "Arbeiten auch daran",
-    "partOf": "Unteraufgabe von"
+    "partOf": "Unteraufgabe von",
+    "subtasks": "Unteraufgaben",
+    "doneOf": "{{done}} von {{total}} erledigt",
+    "noSubtasks": "Noch keine Unteraufgaben",
+    "removeSubtask": "Unteraufgabe löschen",
+    "subtaskPlaceholder": "Unteraufgabe eingeben und Enter drücken",
+    "checklist": "Checkliste",
+    "noChecklist": "Noch nichts auf der Checkliste",
+    "checklistPlaceholder": "Punkt eingeben und Enter drücken",
+    "toggleChecklistItem": "Als erledigt markieren",
+    "removeChecklistItem": "Punkt löschen",
+    "dependencies": "Abhängigkeiten",
+    "addDependency": "Aufgabe verknüpfen",
+    "linkDirection": "Richtung",
+    "waitingOn": "Wartet auf",
+    "blocking": "Blockiert",
+    "searchTasks": "Aufgaben suchen…",
+    "noTasksToLink": "Keine weiteren Aufgaben zum Verknüpfen",
+    "noDependencies": "Diese Aufgabe steht für sich",
+    "noWaitingOn": "Nichts hält sie auf",
+    "noBlocking": "Hält nichts auf",
+    "removeDependency": "Verknüpfung entfernen",
+    "timeTracked": "Erfasste Zeit",
+    "spentOfEstimate": "{{spent}} von {{estimate}}",
+    "startTimer": "Starten",
+    "stopTimer": "Stopp",
+    "timerElsewhere": "Ihr Timer läuft auf „{{title}}“ — hier zu starten stoppt ihn",
+    "overEstimate": "{{over}} über der Schätzung",
+    "noTimeLogged": "Noch keine Zeit erfasst",
+    "running": "läuft",
+    "removeEntry": "Eintrag löschen",
+    "duration": "Aufgewendete Zeit",
+    "notePlaceholder": "Was wurde getan (optional)",
+    "logTime": "Erfassen",
+    "addTime": "Zeit manuell erfassen",
+    "someone": "Jemand",
+    "responsible": "Verantwortlich",
+    "removeAssignee": "{{name}} entfernen",
+    "addAssignee": "Hinzufügen",
+    "searchPeople": "Personen suchen…",
+    "assigneeLimit": "Mehr Personen kann eine Aufgabe nicht aufnehmen",
+    "durationPlaceholder": "90, 1h 30m",
+    "blockedBy_one": "Blockiert durch {{count}} offene Aufgabe",
+    "blockedBy_other": "Blockiert durch {{count}} offene Aufgaben"
   }
 }

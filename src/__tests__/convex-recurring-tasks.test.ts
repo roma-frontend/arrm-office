@@ -641,3 +641,148 @@ describe('recurringTasks.updateRecurringTask attachments', () => {
     ]);
   });
 });
+
+// ── the template a series stamps onto every occurrence ───────────────────────
+
+describe('recurringTasks template fields', () => {
+  it('carries statusKey, estimate, custom fields and co-assignees onto the task', async () => {
+    const coAssignee = { _id: 'user-co', organizationId: ORG_A, isActive: true };
+    mockGet.mockImplementation(async (id: string) => (id === 'user-co' ? coAssignee : assigneeA));
+    const ctx = makeCtx({
+      recurringTasks: [
+        seriesDoc({
+          statusKey: 'review',
+          assigneeIds: ['user-co'],
+          customFields: { 'field-1': 'Acme' },
+          timeEstimateMinutes: 90,
+        }),
+      ],
+    });
+
+    await recurringTasks.generateDueRecurringTasks.handler(ctx, {});
+
+    expect(mockInsert).toHaveBeenCalledWith(
+      'tasks',
+      expect.objectContaining({
+        status: 'review',
+        statusKey: 'review',
+        assigneeIds: ['user-co'],
+        timeEstimateMinutes: 90,
+        customFields: { 'field-1': 'Acme' },
+      }),
+    );
+  });
+
+  it('falls back to the first open status when the stored key is gone', async () => {
+    mockGet.mockResolvedValue(assigneeA);
+    const ctx = makeCtx({ recurringTasks: [seriesDoc({ statusKey: 'awaiting-invoice' })] });
+
+    await recurringTasks.generateDueRecurringTasks.handler(ctx, {});
+
+    expect(mockInsert).toHaveBeenCalledWith(
+      'tasks',
+      expect.objectContaining({ status: 'pending', statusKey: 'pending' }),
+    );
+  });
+
+  it('drops a co-assignee who has left the organization', async () => {
+    mockGet.mockImplementation(async (id: string) =>
+      id === 'user-gone' ? { _id: 'user-gone', organizationId: ORG_B, isActive: true } : assigneeA,
+    );
+    const ctx = makeCtx({ recurringTasks: [seriesDoc({ assigneeIds: ['user-gone'] })] });
+
+    await recurringTasks.generateDueRecurringTasks.handler(ctx, {});
+
+    expect(mockInsert).toHaveBeenCalledWith(
+      'tasks',
+      expect.objectContaining({ assigneeIds: undefined }),
+    );
+  });
+
+  it('sets the start date from startOffsetDays, and to the same day without one', async () => {
+    mockGet.mockResolvedValue(assigneeA);
+
+    await recurringTasks.generateDueRecurringTasks.handler(
+      makeCtx({ recurringTasks: [seriesDoc()] }),
+      {},
+    );
+    const sameDay = mockInsert.mock.calls[0][1] as { startDate?: number };
+
+    mockInsert.mockClear();
+    await recurringTasks.generateDueRecurringTasks.handler(
+      makeCtx({ recurringTasks: [seriesDoc({ startOffsetDays: 2 })] }),
+      {},
+    );
+    const shifted = mockInsert.mock.calls[0][1] as { startDate?: number };
+
+    expect(sameDay.startDate).toBeGreaterThan(0);
+    expect(shifted.startDate).toBe((sameDay.startDate ?? 0) + 2 * 86_400_000);
+  });
+});
+
+describe('recurringTasks.createRecurringTask template validation', () => {
+  const baseArgs = {
+    title: 'Weekly report',
+    assignedTo: assigneeA._id,
+    priority: 'medium' as const,
+    frequency: 'weekly' as const,
+    daysOfWeek: [1],
+    startDate: '2026-01-01',
+  };
+
+  beforeEach(() => {
+    mockGetAuthCaller.mockResolvedValue(adminA);
+    mockIsSuperadmin.mockReturnValue(false);
+    // `inserted-1` is the series read back for the same-day sweep; null keeps that
+    // path out of these assertions.
+    mockGet.mockImplementation(async (id: string) => (id === assigneeA._id ? assigneeA : null));
+  });
+
+  it('refuses a status the board does not have', async () => {
+    await expect(
+      recurringTasks.createRecurringTask.handler(makeCtx(), {
+        ...baseArgs,
+        statusKey: 'awaiting-invoice',
+      }),
+    ).rejects.toThrow('not on this board');
+    expect(mockInsert).not.toHaveBeenCalled();
+  });
+
+  it('refuses a negative time estimate', async () => {
+    await expect(
+      recurringTasks.createRecurringTask.handler(makeCtx(), {
+        ...baseArgs,
+        timeEstimateMinutes: -5,
+      }),
+    ).rejects.toThrow('must be a number of minutes');
+    expect(mockInsert).not.toHaveBeenCalled();
+  });
+
+  it('refuses a fractional start offset', async () => {
+    await expect(
+      recurringTasks.createRecurringTask.handler(makeCtx(), {
+        ...baseArgs,
+        startOffsetDays: 1.5,
+      }),
+    ).rejects.toThrow('whole number of days');
+    expect(mockInsert).not.toHaveBeenCalled();
+  });
+
+  it('accepts a status the default set does have', async () => {
+    await recurringTasks.createRecurringTask.handler(makeCtx(), {
+      ...baseArgs,
+      statusKey: 'in_progress',
+      timeEstimateMinutes: 45,
+      startOffsetDays: 1,
+    });
+
+    expect(mockInsert).toHaveBeenCalledWith(
+      'recurringTasks',
+      expect.objectContaining({
+        statusKey: 'in_progress',
+        timeEstimateMinutes: 45,
+        startOffsetDays: 1,
+      }),
+    );
+  });
+});

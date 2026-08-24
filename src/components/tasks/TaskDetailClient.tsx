@@ -43,12 +43,21 @@ import {
   Target,
   ChevronRight,
   BarChart3,
+  Bell,
+  BellOff,
   FolderKanban,
+  Users,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { enUS, ru, hy } from 'date-fns/locale';
 import { logger } from '@/lib/logger';
 import { convexIdFromParam } from '@/lib/convexIds';
+import { getConvexErrorMessage } from '@/lib/error-handler';
+import { AssigneePicker } from '@/components/tasks/AssigneePicker';
+import { SubtaskList } from '@/components/tasks/detail/SubtaskList';
+import { TaskChecklist } from '@/components/tasks/detail/TaskChecklist';
+import { TaskDependencies } from '@/components/tasks/detail/TaskDependencies';
+import { TaskTimeTracker } from '@/components/tasks/detail/TaskTimeTracker';
 
 const StatusBadge = ({ status }: { status: string }) => {
   const { t } = useTranslation();
@@ -180,6 +189,13 @@ export default function TaskDetailClient({
   // Comments: fetched separately (ordered asc with authors) so the detail
   // page can list them and let anyone add to the discussion.
   const comments = useQuery(api.tasks.getTaskComments, taskId ? { taskId } : 'skip');
+  // Only for a subtask: the way back up. A subtask page with no link to its
+  // parent is a dead end, and the panel that would have shown the relationship
+  // (`SubtaskList`) is hidden here because nesting stops at one level.
+  const parentTask = useQuery(
+    api.tasks.getTask,
+    task?.parentTaskId ? { taskId: task.parentTaskId } : 'skip',
+  );
   const addComment = useMutation(api.tasks.addComment);
   const updateStatus = useMutation(api.tasks.updateTaskStatus);
   const [statusUpdating, setStatusUpdating] = useState(false);
@@ -189,6 +205,12 @@ export default function TaskDetailClient({
   const secureDeleteTask = useMutation(api.tasks.secureDeleteTask);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Phase 2 writes. Each is server-gated by the same rule as `updateTask`; the
+  // client only decides whether to *offer* the control.
+  const setAssignees = useMutation(api.tasks.setAssignees);
+  const setWatching = useMutation(api.tasks.setWatching);
+  const [collaboratorBusy, setCollaboratorBusy] = useState(false);
 
   const [_isUpdating, _setIsUpdating] = useState(false);
   const now = useNow();
@@ -266,6 +288,47 @@ export default function TaskDetailClient({
   const isAssignee = user?.id != null && task.assignedTo === (user.id as Id<'users'>);
   const canChangeStatus = canManage || isAssignee;
 
+  /**
+   * May the caller write to the task — the rule the Phase 2 panels are gated on.
+   *
+   * Mirrors `taskWriteRefusal` in `convex/lib/taskAccess.ts` as closely as the
+   * browser can: staff, the responsible person, a co-assignee, or whoever handed
+   * the task over. The one case it cannot see is "supervisor of the assignee",
+   * which needs the reporting line — so a supervisor outside `canManage` is shown
+   * read-only panels and the server would still accept their write. Erring that
+   * way round means a control that is offered always works.
+   */
+  const currentUserId = user?.id as Id<'users'> | undefined;
+  const isCoAssignee =
+    currentUserId !== undefined && (task.assigneeIds ?? []).includes(currentUserId);
+  const isAssigner = currentUserId !== undefined && task.assignedBy === currentUserId;
+  const canWriteTask = canManage || isAssignee || isCoAssignee || isAssigner;
+  const isWatching = currentUserId !== undefined && (task.watcherIds ?? []).includes(currentUserId);
+
+  const handleWatchToggle = async () => {
+    if (!taskId || collaboratorBusy) return;
+    setCollaboratorBusy(true);
+    try {
+      await setWatching({ taskId, watching: !isWatching });
+    } catch (error) {
+      toast.error(getConvexErrorMessage(error, t('common.error', 'Something went wrong')));
+    } finally {
+      setCollaboratorBusy(false);
+    }
+  };
+
+  const handleAssigneesChange = async (ids: string[]) => {
+    if (!taskId || collaboratorBusy) return;
+    setCollaboratorBusy(true);
+    try {
+      await setAssignees({ taskId, assigneeIds: ids as Id<'users'>[] });
+    } catch (error) {
+      toast.error(getConvexErrorMessage(error, t('common.error', 'Something went wrong')));
+    } finally {
+      setCollaboratorBusy(false);
+    }
+  };
+
   const handleStatusChange = async (status: string) => {
     if (!user?.id || !taskId || statusUpdating) return;
     setStatusUpdating(true);
@@ -302,25 +365,42 @@ export default function TaskDetailClient({
           </div>
         </div>
 
-        {canManage && (
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => (onEdit ? onEdit(taskId) : router.push(`/tasks/${taskId}/edit`))}
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setIsDeleteDialogOpen(true)}
-              aria-label={t('tasksClient.deleteTask')}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {/* Watching is not a permission — anyone who can open the task can
+              follow it, and following is how you stay informed about work you do
+              not own. */}
+          <Button
+            variant={isWatching ? 'default' : 'outline'}
+            size="sm"
+            disabled={collaboratorBusy}
+            onClick={() => void handleWatchToggle()}
+            className="gap-1.5"
+            aria-pressed={isWatching}
+          >
+            {isWatching ? <Bell className="h-4 w-4" /> : <BellOff className="h-4 w-4" />}
+            {isWatching ? t('taskPanels.watching', 'Watching') : t('taskPanels.watch', 'Watch')}
+          </Button>
+
+          {canManage && (
+            <>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => (onEdit ? onEdit(taskId) : router.push(`/tasks/${taskId}/edit`))}
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setIsDeleteDialogOpen(true)}
+                aria-label={t('tasksClient.deleteTask')}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -389,6 +469,24 @@ export default function TaskDetailClient({
                     </span>
                   </EmployeeHoverCard>
                 </div>
+              </div>
+            )}
+
+            {/* Co-assignees sit under the responsible person rather than beside
+                them, because the two are not interchangeable: `assignedTo` is who
+                answers for the task, and every report reads that field. */}
+            {(canWriteTask || (task.assigneeIds ?? []).length > 0) && (
+              <div className="space-y-1.5 border-t border-(--border) pt-3">
+                <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                  <Users className="h-3.5 w-3.5" />
+                  {t('taskPanels.collaborators', 'Also working on this')}
+                </span>
+                <AssigneePicker
+                  value={(task.assigneeIds ?? []) as string[]}
+                  onChange={(ids) => void handleAssigneesChange(ids)}
+                  known={task.assigneeUsers ?? []}
+                  disabled={!canWriteTask || collaboratorBusy}
+                />
               </div>
             )}
           </CardContent>
@@ -466,6 +564,48 @@ export default function TaskDetailClient({
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Phase 2 panels, in the order the work is usually read: what this task
+          breaks down into, the steps inside it, what it is waiting on, and how
+          long it has taken. All four are read-only for somebody who may not write
+          to the task — they still show, because knowing a task is blocked matters
+          to whoever is waiting on it. */}
+      {taskId && (
+        <div className="grid gap-6 lg:grid-cols-2">
+          {task.parentTaskId ? (
+            parentTask && (
+              <Card className="lg:col-span-2">
+                <CardContent className="flex items-center gap-2 py-4 text-sm">
+                  <span className="text-muted-foreground">
+                    {t('taskPanels.partOf', 'Subtask of')}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => router.push(`/tasks/${task.parentTaskId}`)}
+                    className="font-medium hover:underline hover:underline-offset-2"
+                  >
+                    {localizedTaskTitle(t, parentTask)}
+                  </button>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </CardContent>
+              </Card>
+            )
+          ) : (
+            <SubtaskList
+              taskId={taskId}
+              {...(task.projectId ? { projectId: task.projectId } : {})}
+              readOnly={!canWriteTask}
+            />
+          )}
+          <TaskChecklist taskId={taskId} readOnly={!canWriteTask} />
+          <TaskDependencies
+            taskId={taskId}
+            {...(task.projectId ? { projectId: task.projectId } : {})}
+            readOnly={!canWriteTask}
+          />
+          <TaskTimeTracker taskId={taskId} readOnly={!canWriteTask} />
+        </div>
       )}
 
       {taskId && (

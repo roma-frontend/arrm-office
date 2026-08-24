@@ -37,6 +37,19 @@ import {
 
 type AnyCtx = QueryCtx | MutationCtx;
 
+/**
+ * How many co-assignees one task may carry.
+ *
+ * Twenty is generous for "who else is on this" and low enough that the avatar stack
+ * and the batch load behind it stay a fixed cost. A task that needs more people named
+ * on it is a project, and this codebase has those.
+ *
+ * Lives here rather than in `tasks.ts` because a recurring series carries the same
+ * list and has to refuse it at the same size: a cap enforced in one place and guessed
+ * in the other is a series that files tasks the board would have rejected.
+ */
+export const MAX_ASSIGNEES = 20;
+
 // ── Statuses ───────────────────────────────────────────────────────────────
 export interface ResolvedStatusSet {
   statuses: TaskStatusDef[];
