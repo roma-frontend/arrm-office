@@ -376,16 +376,16 @@ export function SiteEditorChat({ userId, organizationId }: SiteEditorChatProps) 
 
         {/* Professional/Enterprise badge */}
         {isProfessionalOrHigher && (
-          <Card className="p-4 bg-linear-to-r bg-(--purple) bg-(--brand) dark:bg-(--purple) dark:bg-(--brand) border-(--purple-outline) dark:border-(--purple-outline)">
+          <Card className="p-4 bg-linear-to-r from-(--purple) to-(--brand) dark:from-(--purple) dark:to-(--brand) border-(--purple-outline) dark:border-(--purple-outline)">
             <div className="flex items-center gap-3">
-              <Crown className="h-5 w-5 text-(--purple-text) dark:text-(--purple-text)" />
+              <Crown className="h-5 w-5 text-white" />
               <div>
-                <h4 className="font-semibold">
+                <h4 className="font-semibold text-white">
                   {plan === 'professional'
                     ? t('aiSiteEditor.professionalPlan')
                     : t('aiSiteEditor.enterprisePlan')}
                 </h4>
-                <p className="text-sm">
+                <p className="text-sm text-white/80">
                   {t('aiSiteEditor.unlimited')} · {t('aiSiteEditor.aiAutoApplies')}
                 </p>
               </div>
