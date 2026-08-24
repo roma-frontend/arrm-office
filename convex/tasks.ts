@@ -953,9 +953,9 @@ export const getVisibleTasks = query({
     const subtreeIds = await getSubordinateIds(ctx, caller._id, caller.organizationId);
     const visibleIds = [caller._id, ...subtreeIds];
 
-    // Collect per person: tasks assigned to them and tasks they created. The
-    // caller's own lists get the full cap; deeper branches are capped tighter —
-    // the board renders a bounded list anyway.
+    // Collect per person: tasks assigned to them, tasks they created, and tasks
+    // where they are a co-assignee. The caller's own lists get the full cap;
+    // deeper branches are capped tighter — the board renders a bounded list anyway.
     const perPerson = await Promise.all(
       visibleIds.map((id) => {
         const cap = id === caller._id ? DEFAULT_LIST_CAP : SMALL_LIST_CAP;
@@ -970,6 +970,12 @@ export const getVisibleTasks = query({
             .withIndex('by_assigned_by', (q) => q.eq('assignedBy', id))
             .order('desc')
             .take(cap),
+          // Get all tasks and filter for co-assignees (tasks where this person is in assigneeIds)
+          ctx.db
+            .query('tasks')
+            .order('desc')
+            .take(cap)
+            .then((tasks) => tasks.filter((t) => t.assigneeIds?.includes(id))),
         ]);
       }),
     );
@@ -977,8 +983,8 @@ export const getVisibleTasks = query({
     // Merge + de-dupe, org-scoped, newest first.
     const seen = new Set<string>();
     const merged: Doc<'tasks'>[] = [];
-    for (const [assignedToTasks, assignedByTasks] of perPerson) {
-      for (const task of [...assignedToTasks, ...assignedByTasks]) {
+    for (const [assignedToTasks, assignedByTasks, coAssigneeTasks] of perPerson) {
+      for (const task of [...assignedToTasks, ...assignedByTasks, ...coAssigneeTasks]) {
         if (seen.has(task._id)) continue;
         seen.add(task._id);
         // A caller with an org only ever sees that org's tasks; an org-less

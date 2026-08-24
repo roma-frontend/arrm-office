@@ -463,14 +463,26 @@ export const listRecurringTasks = query({
     // Same visibility rule as the task board (`tasks.getVisibleTasks`): staff
     // (admin / superadmin) see the whole org; everyone else sees series that
     // touch the caller or their reporting subtree — a series is visible when
-    // its assignee or its author is one of those people.
+    // its assignee, co-assignees, or its author is one of those people.
     const staff = caller.role === 'admin' || isSuperadmin(caller);
     let visible: Doc<'recurringTasks'>[];
     if (staff) {
       visible = all;
     } else {
       const visibleUsers = await getVisibleUserIds(ctx, caller);
-      visible = all.filter((s) => visibleUsers.has(s.assignedTo) || visibleUsers.has(s.assignedBy));
+      visible = all.filter((s) => {
+        // Check primary assignee
+        if (visibleUsers.has(s.assignedTo)) return true;
+        // Check author
+        if (visibleUsers.has(s.assignedBy)) return true;
+        // Check co-assignees
+        if (s.assigneeIds) {
+          for (const assigneeId of s.assigneeIds) {
+            if (visibleUsers.has(assigneeId)) return true;
+          }
+        }
+        return false;
+      });
     }
 
     const scoped = args.includeInactive ? visible : visible.filter((s) => s.isActive);
@@ -512,11 +524,15 @@ export const getRecurringTaskOccurrences = query({
     if (!isSuperadmin(caller) && caller.organizationId !== series.organizationId) return [];
 
     // Same reporting-line rule as the series list: occurrences belong to the
-    // people connected to the rule (assignee / author), not to the org.
+    // people connected to the rule (assignee / author / co-assignees), not to the org.
     const staff = caller.role === 'admin' || isSuperadmin(caller);
     if (!staff) {
       const visibleUsers = await getVisibleUserIds(ctx, caller);
-      if (!visibleUsers.has(series.assignedTo) && !visibleUsers.has(series.assignedBy)) {
+      const hasAccess =
+        visibleUsers.has(series.assignedTo) ||
+        visibleUsers.has(series.assignedBy) ||
+        (series.assigneeIds?.some((id) => visibleUsers.has(id)) ?? false);
+      if (!hasAccess) {
         return [];
       }
     }

@@ -39,6 +39,53 @@ export function canReadTask(caller: AuthenticatedCaller, task: TaskLike): boolea
 }
 
 /**
+ * Can the caller see this task at all?
+ *
+ * This is the read-side visibility rule: a task is visible to a caller when:
+ * - Caller is admin/superadmin (sees their org or everything)
+ * - Caller is assignee or co-assignee (assignedTo or in assigneeIds)
+ * - Caller created the task (assignedBy)
+ * - Caller is a supervisor of anyone assigned (including co-assignees)
+ *
+ * Used by getVisibleTasks to decide what rows to include on the board.
+ */
+export async function isTaskVisibleToUser(
+  ctx: QueryCtx,
+  caller: AuthenticatedCaller,
+  task: TaskLike,
+): Promise<boolean> {
+  // Org boundary first
+  if (!canReadTask(caller, task)) return false;
+
+  // Staff (admin/superadmin) see all in their org scope
+  if (caller.role === 'admin' || isSuperadmin(caller)) return true;
+
+  // Non-staff: visible if caller is involved or supervises someone involved
+  const isAssignee =
+    caller._id === task.assignedTo || (task.assigneeIds ?? []).includes(caller._id);
+  const isAssigner = caller._id === task.assignedBy;
+
+  if (isAssignee || isAssigner) return true;
+
+  // Check if caller is a supervisor of anyone assigned (including co-assignees)
+  if (caller.role === 'supervisor') {
+    const subordinates = await getSubordinateIds(ctx, caller._id, caller.organizationId);
+
+    // Check if assignedTo is a subordinate
+    if (subordinates.includes(task.assignedTo)) return true;
+
+    // Check if any co-assignee is a subordinate
+    if (task.assigneeIds) {
+      for (const assigneeId of task.assigneeIds) {
+        if (subordinates.includes(assigneeId)) return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
  * Why the caller may not write to a task, or `null` if they may.
  *
  * The people allowed are: the assignee and any co-assignee (doing the work), the
