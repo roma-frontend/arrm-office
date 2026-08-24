@@ -3,6 +3,7 @@
 import { useSession } from 'next-auth/react';
 import { useEffect, useRef, useState } from 'react';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useAuthStoreHydrated } from '@/hooks/useAuthStoreHydrated';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Session } from 'next-auth';
@@ -134,6 +135,7 @@ async function createJwtSession(userData: {
 export function useAuthSync() {
   const { data: session, status } = useSession();
   const { login, logout, isAuthenticated } = useAuthStore();
+  const storeHydrated = useAuthStoreHydrated();
   const createOAuthUser = useMutation(api.users.auth.createOAuthUser);
   const sessionCreated = useRef(false);
   const lastSyncedUserRef = useRef<string | null>(null);
@@ -150,6 +152,15 @@ export function useAuthSync() {
   useEffect(() => {
     const syncAuth = async () => {
       if (status === 'loading') return;
+
+      // CRITICAL: Wait for the Zustand persist store to hydrate from
+      // localStorage before reading impersonation state. Without this gate,
+      // a page reload during impersonation fires the effect before
+      // hydration completes — `useAuthStore.getState().user` is still null,
+      // so `impersonation?.active` reads undefined (falsy), and the sync
+      // falls through to overwrite the impersonation JWT with the
+      // superadmin's identity, effectively ending the impersonation.
+      if (!storeHydrated) return;
 
       if (status === 'unauthenticated') {
         if (loggingOutRef.current) return;
@@ -262,10 +273,13 @@ export function useAuthSync() {
     };
 
     syncAuth();
-  }, [status, session, userEmail, createOAuthUser, isAuthenticated, login, logout]);
+  }, [status, session, userEmail, createOAuthUser, isAuthenticated, login, logout, storeHydrated]);
 
   useEffect(() => {
     if (!session?.user?.email) return;
+
+    // Wait for Zustand hydration — same rationale as the first effect.
+    if (!storeHydrated) return;
 
     // During impersonation the NextAuth session still belongs to the
     // superadmin while `currentUser` is the impersonated employee — their
@@ -360,7 +374,7 @@ export function useAuthSync() {
 
       setTimeout(createSession, 0);
     }
-  }, [currentUser, session?.user?.email, session?.user?.image, session?.user?.name]);
+  }, [currentUser, session?.user?.email, session?.user?.image, session?.user?.name, storeHydrated]);
 
   // Reactive logout: when user doc is deleted (revoke), currentUser becomes null
   useEffect(() => {

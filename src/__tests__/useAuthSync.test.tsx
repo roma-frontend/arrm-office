@@ -55,6 +55,10 @@ jest.mock('@/actions/auth', () => ({
   getSessionAction: jest.fn(),
 }));
 
+jest.mock('@/hooks/useAuthStoreHydrated', () => ({
+  useAuthStoreHydrated: jest.fn(() => true),
+}));
+
 jest.mock('@/lib/logger', () => ({
   logger: { error: jest.fn(), info: jest.fn(), warn: jest.fn() },
 }));

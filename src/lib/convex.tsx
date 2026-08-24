@@ -126,9 +126,30 @@ function useAuthForConvex() {
   // Also re-fetch when the user identity changes (e.g. impersonation) —
   // otherwise the Convex token still carries the previous user's identity
   // and every query resolves against the wrong org.
+  //
+  // BUG FIX: When only storeUserId changes (impersonation), isAuthenticated
+  // stays `true` → `setIsAuthenticated(true)` is a no-op → ConvexProviderWithAuth
+  // never re-calls `client.setAuth()` → the Convex client keeps the OLD token
+  // (superadmin's identity). We briefly set isAuthenticated to false so React
+  // sees a real state change and ConvexProviderWithAuth re-calls setAuth with
+  // the freshly-minted token.
+  const prevUserIdRef = useRef(storeUserId);
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- re-fetch the token after login/logout/impersonation
-    fetchAccessToken({ forceRefreshToken: true });
+    const idChanged = prevUserIdRef.current !== undefined && prevUserIdRef.current !== storeUserId;
+    prevUserIdRef.current = storeUserId;
+
+    if (idChanged && storeAuthenticated) {
+      // User identity switched (e.g. impersonation). Briefly flip to
+      // unauthenticated so ConvexProviderWithAuth clears the old token,
+      // then re-fetch and restore. This forces a full re-auth cycle.
+      setIsAuthenticated(false);
+      fetchAccessToken({ forceRefreshToken: true }).then(() => {
+        setIsAuthenticated(true);
+      });
+    } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- re-fetch the token after login/logout
+      fetchAccessToken({ forceRefreshToken: true });
+    }
   }, [storeAuthenticated, storeUserId, fetchAccessToken]);
 
   return useMemo(
