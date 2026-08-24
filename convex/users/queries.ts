@@ -461,7 +461,7 @@ export const getPendingApprovalUsers = query({
     const admin = await getAuthCaller(ctx);
     if (!admin) return [];
     if (admin.role !== 'admin' && !isSuperadmin(admin)) {
-      throw new Error('Only org admins can view pending users');
+      return [];
     }
 
     // Superadmin sees all pending users across all orgs
@@ -490,7 +490,7 @@ export const getAuditLogs = query({
     const admin = await getAuthCaller(ctx);
     if (!admin) return [];
     if (admin.role !== 'admin' && !isSuperadmin(admin)) {
-      throw new Error('Only org admins can view audit logs');
+      return [];
     }
 
     return await ctx.db

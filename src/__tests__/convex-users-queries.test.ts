@@ -540,12 +540,10 @@ describe('getPendingApprovalUsers', () => {
     expect(await queries.getPendingApprovalUsers.handler(h.ctx, {})).toEqual([]);
   });
 
-  it('throws for a non-admin caller', async () => {
+  it('returns [] for a non-admin caller', async () => {
     mockGetAuthCaller.mockResolvedValue(employeeA);
     const h = makeCtx();
-    await expect(queries.getPendingApprovalUsers.handler(h.ctx, {})).rejects.toThrow(
-      'Only org admins can view pending users',
-    );
+    expect(await queries.getPendingApprovalUsers.handler(h.ctx, {})).toEqual([]);
   });
 
   it('returns all unapproved users for a superadmin', async () => {
@@ -590,12 +588,10 @@ describe('getAuditLogs', () => {
     expect(await queries.getAuditLogs.handler(h.ctx, {})).toEqual([]);
   });
 
-  it('throws for a non-admin caller', async () => {
+  it('returns [] for a non-admin caller', async () => {
     mockGetAuthCaller.mockResolvedValue(employeeA);
     const h = makeCtx();
-    await expect(queries.getAuditLogs.handler(h.ctx, {})).rejects.toThrow(
-      'Only org admins can view audit logs',
-    );
+    expect(await queries.getAuditLogs.handler(h.ctx, {})).toEqual([]);
   });
 
   it('returns the org audit logs for an admin', async () => {

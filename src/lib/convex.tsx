@@ -135,7 +135,9 @@ function useAuthForConvex() {
   // the freshly-minted token.
   const prevUserIdRef = useRef(storeUserId);
   useEffect(() => {
-    const idChanged = prevUserIdRef.current !== undefined && prevUserIdRef.current !== storeUserId;
+    // Detect any change in user identity — including the initial hydration
+    // where storeUserId goes from undefined to the real user ID.
+    const idChanged = prevUserIdRef.current !== storeUserId;
     prevUserIdRef.current = storeUserId;
 
     if (idChanged && storeAuthenticated) {
