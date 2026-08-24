@@ -19,6 +19,10 @@ jest.mock('../../convex/lib/auth', () => ({
   requireAuthUserOrThrow: jest.fn(),
 }));
 
+jest.mock('../../convex/lib/getAuthCaller', () => ({
+  getAuthCaller: jest.fn(),
+}));
+
 jest.mock('../../convex/lib/notify', () => ({ notify: jest.fn() }));
 
 jest.mock('../../convex/lib/userProfile', () => ({ getProfile: jest.fn() }));
@@ -35,6 +39,7 @@ let emergency: any;
 let search: any;
 let user360: any;
 let mockRequireAuth: jest.Mock;
+let mockGetAuthCaller: jest.Mock;
 let mockNotify: jest.Mock;
 let mockGetProfile: jest.Mock;
 let mockGet: jest.Mock;
@@ -108,6 +113,7 @@ function makeCtx(tableRows: Record<string, unknown[]> = {}) {
 beforeAll(() => {
   jest.isolateModules(() => {
     mockRequireAuth = jest.requireMock('../../convex/lib/auth').requireAuthUserOrThrow;
+    mockGetAuthCaller = jest.requireMock('../../convex/lib/getAuthCaller').getAuthCaller;
     mockNotify = jest.requireMock('../../convex/lib/notify').notify;
     mockGetProfile = jest.requireMock('../../convex/lib/userProfile').getProfile;
     mockGet = jest.fn();
@@ -134,6 +140,7 @@ beforeAll(() => {
 beforeEach(() => {
   jest.clearAllMocks();
   mockRequireAuth.mockResolvedValue(superadmin);
+  mockGetAuthCaller.mockResolvedValue(superadmin);
   mockInsert.mockResolvedValue('inserted-1');
   mockRunQuery.mockResolvedValue({
     users: [],

@@ -2,6 +2,7 @@ import { v } from 'convex/values';
 import { query, mutation } from '../_generated/server';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { requireAuthUserOrThrow } from '../lib/auth';
+import { getAuthCaller } from '../lib/getAuthCaller';
 import { notify } from '../lib/notify';
 
 // ─── IMPERSONATION ───────────────────────────────────────────────────────────
@@ -168,8 +169,8 @@ export const endImpersonation = mutation({
 export const getActiveImpersonation = query({
   args: {},
   handler: async (ctx) => {
-    const caller = await requireAuthUserOrThrow(ctx);
-    if (caller.role !== 'superadmin') return null;
+    const caller = await getAuthCaller(ctx);
+    if (!caller || caller.role !== 'superadmin') return null;
 
     const now = Date.now();
     const sessions = await ctx.db
@@ -211,10 +212,8 @@ export const getImpersonationHistory = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const caller = await requireAuthUserOrThrow(ctx);
-    if (caller.role !== 'superadmin') {
-      throw new Error('Only superadmin can access impersonation history');
-    }
+    const caller = await getAuthCaller(ctx);
+    if (!caller || caller.role !== 'superadmin') return [];
 
     if (args.superadminId && args.superadminId !== caller._id) {
       throw new Error('Unauthorized');
