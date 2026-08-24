@@ -534,12 +534,7 @@ function DayCell({
       </span>
 
       {/* Event pills */}
-      {(hasLeaves ||
-        hasGoogle ||
-        hasDriver ||
-        hasCustom ||
-        hasRooms ||
-        hasCompany) && (
+      {(hasLeaves || hasGoogle || hasDriver || hasCustom || hasRooms || hasCompany) && (
         <div className="flex flex-col gap-0.5 mt-0.5">
           {/* Company event pills — first, because they concern everyone */}
           {companyEvents.slice(0, 1).map((evt, i) => {

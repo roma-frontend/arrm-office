@@ -1395,7 +1395,7 @@ export default function AssetsClient() {
                             whileHover={{ y: -4 }}
                             transition={{ duration: 0.2 }}
                             className="group bg-(--card)/60 dark:bg-(--card)/80 backdrop-blur-md border border-(--border) rounded-xl overflow-hidden hover:shadow-lg hover:border-(--primary)/30 hover:-translate-y-0.5 cursor-pointer"
-                             style={{ transition: 'all 0.3s cubic-bezier(0.22, 1, 0.36, 1)' }}
+                            style={{ transition: 'all 0.3s cubic-bezier(0.22, 1, 0.36, 1)' }}
                             onClick={() => setSelectedAsset(asset)}
                           >
                             <div className="p-5">

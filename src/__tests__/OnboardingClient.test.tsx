@@ -408,8 +408,36 @@ describe('OnboardingClient', () => {
     queryResults = {
       ...queryResults,
       listCourses: [
-        { _id: 'c-1', title: 'Security Training', category: 'Compliance', isMandatory: true, isPublished: true, lessonCount: 3, estimatedHours: 2, difficulty: 'beginner', creatorName: 'Admin', createdBy: 'u-1', organizationId: 'org-1', createdAt: Date.now(), updatedAt: Date.now() },
-        { _id: 'c-2', title: 'React Workshop', category: 'Engineering', isMandatory: false, isPublished: true, lessonCount: 5, estimatedHours: 4, difficulty: 'intermediate', creatorName: 'Admin', createdBy: 'u-1', organizationId: 'org-1', createdAt: Date.now(), updatedAt: Date.now() },
+        {
+          _id: 'c-1',
+          title: 'Security Training',
+          category: 'Compliance',
+          isMandatory: true,
+          isPublished: true,
+          lessonCount: 3,
+          estimatedHours: 2,
+          difficulty: 'beginner',
+          creatorName: 'Admin',
+          createdBy: 'u-1',
+          organizationId: 'org-1',
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        },
+        {
+          _id: 'c-2',
+          title: 'React Workshop',
+          category: 'Engineering',
+          isMandatory: false,
+          isPublished: true,
+          lessonCount: 5,
+          estimatedHours: 4,
+          difficulty: 'intermediate',
+          creatorName: 'Admin',
+          createdBy: 'u-1',
+          organizationId: 'org-1',
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        },
       ],
     };
 

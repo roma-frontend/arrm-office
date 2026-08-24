@@ -72,28 +72,48 @@ describe('CourseEditSheet', () => {
 
   it('renders nothing when course is null', () => {
     const { container } = render(
-      <CourseEditSheet open={true} onOpenChange={mockOnOpenChange} course={null} onSave={mockOnSave} />,
+      <CourseEditSheet
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        course={null}
+        onSave={mockOnSave}
+      />,
     );
     expect(container.innerHTML).toBe('');
   });
 
   it('renders nothing when closed', () => {
     const { container } = render(
-      <CourseEditSheet open={false} onOpenChange={mockOnOpenChange} course={mockCourse} onSave={mockOnSave} />,
+      <CourseEditSheet
+        open={false}
+        onOpenChange={mockOnOpenChange}
+        course={mockCourse}
+        onSave={mockOnSave}
+      />,
     );
     expect(container.querySelector('[data-testid="sheet"]')).toBeNull();
   });
 
   it('renders the sheet with course title when open', () => {
     render(
-      <CourseEditSheet open={true} onOpenChange={mockOnOpenChange} course={mockCourse} onSave={mockOnSave} />,
+      <CourseEditSheet
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        course={mockCourse}
+        onSave={mockOnSave}
+      />,
     );
     expect(screen.getByText('Edit Course')).toBeInTheDocument();
   });
 
   it('renders all form fields with course values', () => {
     render(
-      <CourseEditSheet open={true} onOpenChange={mockOnOpenChange} course={mockCourse} onSave={mockOnSave} />,
+      <CourseEditSheet
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        course={mockCourse}
+        onSave={mockOnSave}
+      />,
     );
 
     // Title field
@@ -119,7 +139,12 @@ describe('CourseEditSheet', () => {
 
   it('calls onSave with correct data on form submit', async () => {
     render(
-      <CourseEditSheet open={true} onOpenChange={mockOnOpenChange} course={mockCourse} onSave={mockOnSave} />,
+      <CourseEditSheet
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        course={mockCourse}
+        onSave={mockOnSave}
+      />,
     );
 
     const submitButton = screen.getByText('Save Changes');
@@ -141,7 +166,12 @@ describe('CourseEditSheet', () => {
 
   it('calls onOpenChange(false) when cancel is clicked', () => {
     render(
-      <CourseEditSheet open={true} onOpenChange={mockOnOpenChange} course={mockCourse} onSave={mockOnSave} />,
+      <CourseEditSheet
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        course={mockCourse}
+        onSave={mockOnSave}
+      />,
     );
 
     const cancelButton = screen.getByText('Cancel');
@@ -152,7 +182,12 @@ describe('CourseEditSheet', () => {
 
   it('renders difficulty select with correct options', () => {
     render(
-      <CourseEditSheet open={true} onOpenChange={mockOnOpenChange} course={mockCourse} onSave={mockOnSave} />,
+      <CourseEditSheet
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        course={mockCourse}
+        onSave={mockOnSave}
+      />,
     );
 
     expect(screen.getByText('Beginner')).toBeInTheDocument();
@@ -162,7 +197,12 @@ describe('CourseEditSheet', () => {
 
   it('renders mandatory and published checkboxes', () => {
     render(
-      <CourseEditSheet open={true} onOpenChange={mockOnOpenChange} course={mockCourse} onSave={mockOnSave} />,
+      <CourseEditSheet
+        open={true}
+        onOpenChange={mockOnOpenChange}
+        course={mockCourse}
+        onSave={mockOnSave}
+      />,
     );
 
     expect(screen.getByText('Mandatory Course')).toBeInTheDocument();

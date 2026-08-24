@@ -92,8 +92,6 @@ describe('CertificatesTab', () => {
     expect(screen.getByText('Download Certificate')).toBeInTheDocument();
   });
 
-
-
   it('renders multiple certificates', () => {
     render(
       <CertificatesTab

@@ -741,7 +741,8 @@ function StartOnboardingWizard({
         startDate: new Date(startDate || Date.now()).getTime(),
         buddyId: buddyId ? (buddyId as Id<'users'>) : undefined,
         managerId: managerId as Id<'users'>,
-        courseIds: selectedCourseIds.length > 0 ? (selectedCourseIds as Id<'courses'>[]) : undefined,
+        courseIds:
+          selectedCourseIds.length > 0 ? (selectedCourseIds as Id<'courses'>[]) : undefined,
       });
       toast.success(t('onboarding.wizard.success', 'Onboarding started!'));
       onClose();
@@ -871,7 +872,9 @@ function StartOnboardingWizard({
                           if (e.target.checked) {
                             setSelectedCourseIds([...selectedCourseIds, course._id]);
                           } else {
-                            setSelectedCourseIds(selectedCourseIds.filter((id) => id !== course._id));
+                            setSelectedCourseIds(
+                              selectedCourseIds.filter((id) => id !== course._id),
+                            );
                           }
                         }}
                         className="h-4 w-4 rounded border-(--border)"

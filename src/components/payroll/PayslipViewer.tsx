@@ -442,7 +442,7 @@ export default function PayslipViewer() {
               <div
                 key={payslip._id}
                 className="group bg-(--card)/70 dark:bg-(--card)/80 backdrop-blur-md border border-(--border) rounded-xl p-4 hover:shadow-md hover:border-(--brand-outline) hover:-translate-y-0.5 cursor-pointer"
-                 style={{ transition: 'all 0.3s cubic-bezier(0.22, 1, 0.36, 1)' }}
+                style={{ transition: 'all 0.3s cubic-bezier(0.22, 1, 0.36, 1)' }}
                 onClick={() =>
                   setSelectedPayslip(selectedPayslip?._id === payslip._id ? null : payslip)
                 }

@@ -294,9 +294,19 @@ function SortCaret({ active, dir }: { active: boolean; dir: 'asc' | 'desc' }) {
   );
 }
 
-function TaskCardContent({ task, isDragging = false, statuses }: { task: TaskItem; isDragging?: boolean; statuses?: readonly import('../../../convex/lib/taskStatus').TaskStatusDef[] }) {
+function TaskCardContent({
+  task,
+  isDragging = false,
+  statuses,
+}: {
+  task: TaskItem;
+  isDragging?: boolean;
+  statuses?: readonly import('../../../convex/lib/taskStatus').TaskStatusDef[];
+}) {
   const { t } = useTranslation();
-  const resolvedStatus = statuses ? resolveStatus({ status: task.status as any, statusKey: task.statusKey }, statuses) : null;
+  const resolvedStatus = statuses
+    ? resolveStatus({ status: task.status as any, statusKey: task.statusKey }, statuses)
+    : null;
   const statusCfg = STATUS_CONFIG[task.status as Status];
   const priorityCfg = PRIORITY_CONFIG[task.priority as Priority];
   return (
@@ -413,7 +423,15 @@ function TaskCardContent({ task, isDragging = false, statuses }: { task: TaskIte
   );
 }
 
-function DraggableTaskCard({ task, onOpen, statuses }: { task: TaskItem; onOpen: () => void; statuses?: readonly import('../../../convex/lib/taskStatus').TaskStatusDef[] }) {
+function DraggableTaskCard({
+  task,
+  onOpen,
+  statuses,
+}: {
+  task: TaskItem;
+  onOpen: () => void;
+  statuses?: readonly import('../../../convex/lib/taskStatus').TaskStatusDef[];
+}) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: task._id,
     data: {
@@ -493,7 +511,12 @@ function DroppableKanbanColumn({
         }`}
       >
         {tasks.map((task) => (
-          <DraggableTaskCard key={task._id} task={task} onOpen={() => onOpen(task)} statuses={statuses} />
+          <DraggableTaskCard
+            key={task._id}
+            task={task}
+            onOpen={() => onOpen(task)}
+            statuses={statuses}
+          />
         ))}
         {tasks.length === 0 && (
           <div
@@ -2289,7 +2312,18 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
                                         className={`w-2 h-2 rounded-full shrink-0 ${statusCfg.dot}`}
                                       />
                                       <span className={`text-xs font-medium ${statusCfg.color}`}>
-                                        {statuses ? statusLabel(t, resolveStatus({ status: task.status as any, statusKey: task.statusKey }, statuses)) : t(statusCfg.labelKey)}
+                                        {statuses
+                                          ? statusLabel(
+                                              t,
+                                              resolveStatus(
+                                                {
+                                                  status: task.status as any,
+                                                  statusKey: task.statusKey,
+                                                },
+                                                statuses,
+                                              ),
+                                            )
+                                          : t(statusCfg.labelKey)}
                                       </span>
                                     </div>
                                   </div>

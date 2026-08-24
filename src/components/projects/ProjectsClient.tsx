@@ -281,7 +281,7 @@ export default function ProjectsClient({ userId, userRole }: { userId: string; u
               <Card
                 key={project._id}
                 className="glass-panel shadow-sm cursor-pointer hover:shadow-lg hover:-translate-y-1"
-                 style={{ transition: 'all 0.3s cubic-bezier(0.22, 1, 0.36, 1)' }}
+                style={{ transition: 'all 0.3s cubic-bezier(0.22, 1, 0.36, 1)' }}
                 onClick={() => router.push(`/projects/${project._id}`)}
               >
                 <CardContent className="p-5">

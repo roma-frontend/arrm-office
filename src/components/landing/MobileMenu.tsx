@@ -698,7 +698,11 @@ export default function MobileMenu({ isOpen, onClose, activeSection = null }: Mo
                     'linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)',
                 }}
               />
-              <Rocket size={18} className="group-hover:-translate-y-0.5" style={{ transition: 'transform 0.2s cubic-bezier(0.22, 1, 0.36, 1)' }} />
+              <Rocket
+                size={18}
+                className="group-hover:-translate-y-0.5"
+                style={{ transition: 'transform 0.2s cubic-bezier(0.22, 1, 0.36, 1)' }}
+              />
               <span>{t('landing.getStartedFree', 'Get Started Free')}</span>
             </button>
           </Link>
