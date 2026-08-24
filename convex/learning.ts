@@ -575,7 +575,8 @@ export const updateLessonProgress = mutation({
     ).length;
 
     const totalLessons = allLessons.length;
-    const progressPercent = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+    const progressPercent =
+      totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
 
     // Update enrollment progress
     const enrollment = await ctx.db

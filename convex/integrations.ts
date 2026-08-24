@@ -2737,7 +2737,10 @@ async function syncArmsoft(
     notes.push(...res.notes);
   }
 
-  const message = [`ՀԾ Armsoft: ${created} created, ${updated} updated, ${skipped} skipped`, ...notes].join('; ');
+  const message = [
+    `ՀԾ Armsoft: ${created} created, ${updated} updated, ${skipped} skipped`,
+    ...notes,
+  ].join('; ');
   return {
     message,
     created,

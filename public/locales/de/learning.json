@@ -202,6 +202,9 @@
     "descriptionPlaceholder": "Geben Sie die Kursbeschreibung ein",
     "categoryPlaceholder": "z.B. HR & Compliance",
     "estimatedHoursPlaceholder": "z.B. 4",
-    "tagsPlaceholder": "Tags durch Kommas getrennt"
+    "tagsPlaceholder": "Tags durch Kommas getrennt",
+    "certificateOfCompletion": "Abschlusszertifikat",
+    "presentedTo": "Hiermit wird bestätigt, dass",
+    "hasCompleted": "erfolgreich abgeschlossen hat"
   }
 }

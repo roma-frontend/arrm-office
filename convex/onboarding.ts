@@ -659,10 +659,7 @@ export const startOnboarding = mutation({
         const existingEnrollment = await ctx.db
           .query('enrollments')
           .withIndex('by_user_course', (q) =>
-            q
-              .eq('organizationId', orgId)
-              .eq('userId', args.employeeId)
-              .eq('courseId', courseId),
+            q.eq('organizationId', orgId).eq('userId', args.employeeId).eq('courseId', courseId),
           )
           .first();
 

@@ -60,20 +60,25 @@ export function CourseEditSheet({ open, onOpenChange, course, onSave }: CourseEd
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    
+
     onSave({
       title: formData.get('title') as string,
       description: formData.get('description') as string,
       category: formData.get('category') as string,
       difficulty: formData.get('difficulty') as 'beginner' | 'intermediate' | 'advanced',
-      estimatedHours: formData.get('estimatedHours') ? Number(formData.get('estimatedHours')) : undefined,
+      estimatedHours: formData.get('estimatedHours')
+        ? Number(formData.get('estimatedHours'))
+        : undefined,
       isMandatory: formData.get('isMandatory') === 'on',
-      tags: formData.get('tags') as string
-        ? (formData.get('tags') as string).split(',').map((t: string) => t.trim()).filter(Boolean)
+      tags: (formData.get('tags') as string)
+        ? (formData.get('tags') as string)
+            .split(',')
+            .map((t: string) => t.trim())
+            .filter(Boolean)
         : [],
       isPublished: formData.get('isPublished') === 'on',
     });
-    
+
     onOpenChange(false);
   };
 

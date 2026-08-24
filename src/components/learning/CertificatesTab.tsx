@@ -87,9 +87,7 @@ function CertificateCard({ cert }: { cert: Certificate }) {
             <p className="text-slate-400 text-xs uppercase tracking-wider mb-1">
               {t('learning.presentedTo', 'This is to certify that')}
             </p>
-            <p className="text-white text-xl font-bold">
-              {user?.name ?? 'Employee'}
-            </p>
+            <p className="text-white text-xl font-bold">{user?.name ?? 'Employee'}</p>
           </div>
 
           {/* Course */}
@@ -97,15 +95,15 @@ function CertificateCard({ cert }: { cert: Certificate }) {
             <p className="text-slate-400 text-xs uppercase tracking-wider mb-1">
               {t('learning.hasCompleted', 'has successfully completed')}
             </p>
-            <p className="text-amber-300 text-lg font-semibold">
-              {cert.courseTitle}
-            </p>
+            <p className="text-amber-300 text-lg font-semibold">{cert.courseTitle}</p>
           </div>
 
           {/* Date & ID */}
           <div className="flex items-center justify-center gap-8 text-xs">
             <div>
-              <p className="text-slate-500 uppercase tracking-wider">{t('learning.issuedOn', 'Date')}</p>
+              <p className="text-slate-500 uppercase tracking-wider">
+                {t('learning.issuedOn', 'Date')}
+              </p>
               <p className="text-slate-300 font-medium mt-0.5">
                 {new Date(cert.issuedAt).toLocaleDateString('en-US', {
                   year: 'numeric',
@@ -116,10 +114,10 @@ function CertificateCard({ cert }: { cert: Certificate }) {
             </div>
             <div className="w-px h-8 bg-amber-500/20" />
             <div>
-              <p className="text-slate-500 uppercase tracking-wider">{t('learning.certificateId', 'ID')}</p>
-              <p className="text-slate-300 font-mono text-[10px] mt-0.5">
-                {cert.certificateId}
+              <p className="text-slate-500 uppercase tracking-wider">
+                {t('learning.certificateId', 'ID')}
               </p>
+              <p className="text-slate-300 font-mono text-[10px] mt-0.5">{cert.certificateId}</p>
             </div>
           </div>
 
@@ -135,12 +133,7 @@ function CertificateCard({ cert }: { cert: Certificate }) {
       </div>
 
       {/* Download button */}
-      <Button
-        size="sm"
-        variant="outline"
-        className="w-full gap-2"
-        onClick={handleDownload}
-      >
+      <Button size="sm" variant="outline" className="w-full gap-2" onClick={handleDownload}>
         <Download className="h-4 w-4" />
         {t('learning.downloadCertificate', 'Download Certificate')}
       </Button>
@@ -176,4 +169,3 @@ export function CertificatesTab({ certificates }: CertificatesTabProps) {
     </div>
   );
 }
-

@@ -202,6 +202,9 @@
     "descriptionPlaceholder": "Մուտքագրեք դասընթացի նկարագրությունը",
     "categoryPlaceholder": "օրինակ՝ HR և Համապատասխանություն",
     "estimatedHoursPlaceholder": "օրինակ՝ 4",
-    "tagsPlaceholder": "Պիտակներ կոմայով"
+    "tagsPlaceholder": "Պիտակներ կոմայով",
+    "certificateOfCompletion": "Ավարտման վկայական",
+    "presentedTo": "Ստորև հաստատվում է, որ",
+    "hasCompleted": "հաջողությամբ ավարտել է"
   }
 }
