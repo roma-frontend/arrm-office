@@ -175,9 +175,12 @@ function PlanCard({
 
   return (
     <div
-      className={`group relative flex flex-col transform-gpu transition-transform duration-300 ease-out ${
+      className={`group relative flex flex-col transform-gpu ${
         highlight ? 'sm:scale-[1.03] z-10' : 'hover:-translate-y-1'
       } ${isCurrent ? 'opacity-95' : ''}`}
+      style={{
+        transition: 'transform 0.3s cubic-bezier(0.22, 1, 0.36, 1)',
+      }}
     >
       {/* Floating status badge */}
       {(isCurrent || highlight || tier.popular) && (

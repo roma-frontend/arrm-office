@@ -284,7 +284,7 @@ export function TimeOffCalendar({
   const [markHolidays, setMarkHolidays] = useState(true);
   const [groupByDept, setGroupByDept] = useState(false);
   const [onlyWithLeave, setOnlyWithLeave] = useState(false);
-  const [showOvertime, setShowOvertime] = useState(true);
+  const [showOvertime, setShowOvertime] = useState(false);
   const [compact, setCompact] = useState(false);
   const [sortMode, setSortMode] = useState<'name' | 'days'>('name');
 

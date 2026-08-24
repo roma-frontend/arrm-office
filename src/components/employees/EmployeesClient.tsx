@@ -596,8 +596,9 @@ export function EmployeesClient() {
                           exit={{ opacity: 0, scale: 0.95 }}
                           transition={{ delay: i * 0.03 }}
                           onClick={() => openEmployee(emp._id, emp.name ?? '')}
-                          className="flex flex-col justify-between relative p-5 rounded-2xl border group cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
+                          className="flex flex-col justify-between relative p-5 rounded-2xl border group cursor-pointer hover:shadow-lg hover:-translate-y-0.5"
                           style={{
+                            transition: 'all 0.3s cubic-bezier(0.22, 1, 0.36, 1)',
                             background: 'var(--glass-surface)',
                             backdropFilter: 'blur(14px) saturate(1.05)',
                             WebkitBackdropFilter: 'blur(14px) saturate(1.05)',

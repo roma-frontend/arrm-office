@@ -342,14 +342,14 @@ export const getMyAccessState = query({
       return { organization: 'none' as const, people: [], lastView: { type: 'mine' as const } };
     }
 
-    // Org-wide viewing is implicit for the head and for superadmins; a single
+    // Org-wide viewing is implicit for the head, admins and superadmins; a single
     // colleague's calendar is not — that always needs their own approval, so
     // these callers still get their real person grants below rather than a
     // blanket yes. Otherwise the picker would offer "View" on a calendar the
     // events query refuses to open.
     const organizationDoc = await ctx.db.get(organizationId);
     const impliedOrganizationAccess =
-      isSuperadmin(caller) || organizationDoc?.headUserId === caller._id;
+      isSuperadmin(caller) || caller.role === 'admin' || organizationDoc?.headUserId === caller._id;
 
     const rows = await ctx.db
       .query('calendarAccess')

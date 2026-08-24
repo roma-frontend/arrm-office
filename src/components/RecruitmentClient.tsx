@@ -1465,25 +1465,25 @@ export default function RecruitmentClient() {
       <Tabs defaultValue="vacancies">
         <TabsList className="w-full my-4 gap-2 bg-transparent p-0 h-auto grid grid-cols-2 md:grid-cols-4">
           <TabsTrigger
-            className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] transition-all duration-200 shadow-sm font-medium flex items-center justify-center"
+            className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] transition-all duration-200 ease-out shadow-sm font-medium flex items-center justify-center"
             value="vacancies"
           >
             {t('recruitment.tabs.vacancies', 'Vacancies')}
           </TabsTrigger>
           <TabsTrigger
-            className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] transition-all duration-200 shadow-sm font-medium flex items-center justify-center"
+            className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] transition-all duration-200 ease-out shadow-sm font-medium flex items-center justify-center"
             value="candidates"
           >
             {t('recruitment.tabs.candidates', 'Candidates')}
           </TabsTrigger>
           <TabsTrigger
-            className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] transition-all duration-200 shadow-sm font-medium flex items-center justify-center"
+            className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] transition-all duration-200 ease-out shadow-sm font-medium flex items-center justify-center"
             value="pipeline"
           >
             {t('recruitment.tabs.pipeline', 'Pipeline')}
           </TabsTrigger>
           <TabsTrigger
-            className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] transition-all duration-200 shadow-sm font-medium flex items-center justify-center"
+            className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] transition-all duration-200 ease-out shadow-sm font-medium flex items-center justify-center"
             value="interviews"
           >
             {t('recruitment.tabs.interviews', 'My Interviews')}
@@ -1536,7 +1536,10 @@ export default function RecruitmentClient() {
               {vacancies.map((vac) => (
                 <Card
                   key={vac._id}
-                  className="glass-panel shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300"
+                  className="glass-panel shadow-sm hover:shadow-md hover:-translate-y-0.5"
+                  style={{
+                    transition: 'all 0.3s cubic-bezier(0.22, 1, 0.36, 1)',
+                  }}
                 >
                   <CardContent className="p-4">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -1705,7 +1708,10 @@ export default function RecruitmentClient() {
               {myInterviews.map((iv) => (
                 <Card
                   key={iv._id}
-                  className="glass-panel shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300"
+                  className="glass-panel shadow-sm hover:shadow-md hover:-translate-y-0.5"
+                  style={{
+                    transition: 'all 0.3s cubic-bezier(0.22, 1, 0.36, 1)',
+                  }}
                 >
                   <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div className="min-w-0">

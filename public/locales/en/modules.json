@@ -1583,6 +1583,7 @@
       "title": "Start Onboarding",
       "step1": "Employee",
       "step2": "Template",
+      "stepCourses": "Courses",
       "step3": "Details",
       "start": "Start",
       "success": "Onboarding started!"
@@ -1612,8 +1613,11 @@
       "department": "Department",
       "deptPlaceholder": "e.g. Engineering",
       "taskTitle": "Task title",
-      "dayPlaceholder": "Day"
+      "dayPlaceholder": "Day",
+      "coursesHint": "Select courses that the new hire must complete during onboarding.",
+      "noCourses": "No published courses available. Create courses in the Learning module first."
     },
+    "coursesSelected": "course(s) selected",
     "checkLater": "Check back later"
   },
   "compliance": {

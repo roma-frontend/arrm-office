@@ -227,8 +227,7 @@
         "desc": "Armenian ERP — HR & payroll data sync",
         "field": {
           "apiEndpoint": "API Endpoint",
-          "apiUsername": "Username",
-          "apiPassword": "Password"
+          "apiKey": "API Key"
         },
         "toggle": {
           "syncEmployees": "Sync employee directory",

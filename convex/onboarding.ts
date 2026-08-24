@@ -494,6 +494,7 @@ export const startOnboarding = mutation({
     startDate: v.number(),
     buddyId: v.optional(v.id('users')),
     managerId: v.id('users'),
+    courseIds: v.optional(v.array(v.id('courses'))),
   },
   handler: async (ctx, args) => {
     await assertModuleAccess(ctx, 'onboarding');
@@ -644,6 +645,40 @@ export const startOnboarding = mutation({
         status: 'pending',
         order: i,
       });
+    }
+
+    // Enroll employee in selected courses
+    if (args.courseIds && args.courseIds.length > 0) {
+      const now = Date.now();
+      for (const courseId of args.courseIds) {
+        // Verify course belongs to this organization
+        const course = await ctx.db.get(courseId);
+        if (!course || course.organizationId !== orgId) continue;
+
+        // Check if already enrolled
+        const existingEnrollment = await ctx.db
+          .query('enrollments')
+          .withIndex('by_user_course', (q) =>
+            q
+              .eq('organizationId', orgId)
+              .eq('userId', args.employeeId)
+              .eq('courseId', courseId),
+          )
+          .first();
+
+        if (!existingEnrollment) {
+          await ctx.db.insert('enrollments', {
+            organizationId: orgId,
+            userId: args.employeeId,
+            courseId,
+            status: 'not_started',
+            progress: 0,
+            enrolledBy: createdBy,
+            createdAt: now,
+            updatedAt: now,
+          });
+        }
+      }
     }
 
     // Send notifications to employee, buddy, and manager

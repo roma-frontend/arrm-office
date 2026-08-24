@@ -349,11 +349,12 @@ export default function SuperadminCreateOrgPage() {
                       onClick={() => updateField('plan', value)}
                       aria-pressed={selected}
                       className={[
-                        'relative text-left rounded-xl border bg-(--card) p-4 transition-all',
+                        'relative text-left rounded-xl border bg-(--card) p-4',
                         'hover:border-(--primary)/60 hover:shadow-md hover:-translate-y-0.5',
                         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--ring)',
                         selected ? `ring-2 shadow-md ${ringActive}` : 'border-(--border)',
                       ].join(' ')}
+                      style={{ transition: 'all 0.3s cubic-bezier(0.22, 1, 0.36, 1)' }}
                     >
                       {badge === 'popular' && (
                         <span className="absolute -top-2.5 right-3 rounded-full bg-(--badge-primary-bg) px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-(--badge-primary-text) border border-(--badge-primary-border)">

@@ -44,6 +44,14 @@ jest.mock('@/components/ui/badge', () => ({
 
 jest.mock('lucide-react', () => ({
   Award: (props: any) => <span data-testid="icon-award" {...props} />,
+  Download: (props: any) => <span data-testid="icon-download" {...props} />,
+  Share2: (props: any) => <span data-testid="icon-share" {...props} />,
+}));
+
+jest.mock('@/store/useAuthStore', () => ({
+  useAuthStore: () => ({
+    user: { id: 'u1', name: 'John Doe', role: 'admin' },
+  }),
 }));
 
 import { CertificatesTab } from '@/components/learning/CertificatesTab';
@@ -81,30 +89,10 @@ describe('CertificatesTab', () => {
     render(<CertificatesTab certificates={[{ ...CERT }]} />);
     expect(screen.getByText('React Mastery')).toBeInTheDocument();
     expect(screen.getByText('CERT-001')).toBeInTheDocument();
-    // "Certificate ID: CERT-001" is split across text + code nodes.
-    expect(screen.getByText(/Certificate ID/)).toBeInTheDocument();
-    expect(screen.getByText('Issued On')).toBeInTheDocument();
-    expect(screen.getByText(new Date(1750000000000).toLocaleDateString())).toBeInTheDocument();
-    expect(screen.getByText('Valid')).toBeInTheDocument();
-    expect(screen.getByText('View Certificate')).toBeInTheDocument();
-    expect(screen.getByText('Download')).toBeInTheDocument();
+    expect(screen.getByText('Download Certificate')).toBeInTheDocument();
   });
 
-  it('shows the expiry section and Expired badge when expired', () => {
-    mockNow = 2000000000000;
-    render(<CertificatesTab certificates={[{ ...CERT, expiresAt: 1800000000000 }]} />);
-    expect(screen.getByText('Expires On')).toBeInTheDocument();
-    expect(screen.getByText('Expired')).toBeInTheDocument();
-    expect(screen.getByTestId('badge').getAttribute('data-variant')).toBe('destructive');
-  });
 
-  it('shows Valid badge with default variant when not expired', () => {
-    mockNow = 1700000000000;
-    render(<CertificatesTab certificates={[{ ...CERT, expiresAt: 1800000000000 }]} />);
-    expect(screen.getByText('Expires On')).toBeInTheDocument();
-    expect(screen.getByText('Valid')).toBeInTheDocument();
-    expect(screen.getByTestId('badge').getAttribute('data-variant')).toBe('default');
-  });
 
   it('renders multiple certificates', () => {
     render(

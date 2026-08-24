@@ -493,7 +493,8 @@ export default function DocumentsClient() {
                   {templates.map((template) => (
                     <Card
                       key={template._id}
-                      className="glass-panel shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300"
+                      className="glass-panel shadow-sm hover:shadow-md hover:-translate-y-0.5"
+                       style={{ transition: 'all 0.3s cubic-bezier(0.22, 1, 0.36, 1)' }}
                     >
                       <CardContent className="pt-6">
                         <div className="flex items-start gap-3">
@@ -561,7 +562,8 @@ export default function DocumentsClient() {
               {filteredDocuments.map((doc) => (
                 <Card
                   key={doc._id}
-                  className="glass-panel shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
+                  className="glass-panel shadow-sm hover:shadow-md hover:-translate-y-0.5 cursor-pointer"
+                   style={{ transition: 'all 0.3s cubic-bezier(0.22, 1, 0.36, 1)' }}
                   onClick={() => router.push(`/documents/${doc._id}`)}
                 >
                   <CardContent className="pt-6">

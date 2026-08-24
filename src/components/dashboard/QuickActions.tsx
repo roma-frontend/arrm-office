@@ -209,7 +209,8 @@ export function QuickActions() {
                 <button
                   data-slot="quick-action"
                   onClick={() => handleAction(action.href)}
-                  className="group w-full h-full text-left rounded-xl border border-(--border) bg-(--card) p-3 transition-all duration-200 hover:border-(--primary)/30 hover:shadow-md hover:-translate-y-0.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--primary)/40 focus-visible:ring-offset-1"
+                  className="group w-full h-full text-left rounded-xl border border-(--border) bg-(--card) p-3 hover:border-(--primary)/30 hover:shadow-md hover:-translate-y-0.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--primary)/40 focus-visible:ring-offset-1"
+                   style={{ transition: 'all 0.2s cubic-bezier(0.22, 1, 0.36, 1)' }}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <span

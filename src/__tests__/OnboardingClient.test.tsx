@@ -44,6 +44,10 @@ jest.mock('@/convex/_generated/api', () => ({
       completeProgram: { _name: 'completeProgram' },
       startOnboarding: { _name: 'startOnboarding' },
       createTemplate: { _name: 'createTemplate' },
+      updateTemplate: { _name: 'updateTemplate' },
+    },
+    learning: {
+      listCourses: { _name: 'listCourses' },
     },
     users: {
       queries: {
@@ -373,7 +377,10 @@ describe('OnboardingClient', () => {
     // Step 2: template + start date
     fireEvent.click(next());
 
-    // Step 3: manager + buddy pickers, then Start
+    // Step 3: courses (optional, skip)
+    fireEvent.click(next());
+
+    // Step 4: manager + buddy pickers, then Start
     fireEvent.click(screen.getAllByTestId('user-picker')[0]);
     fireEvent.click(screen.getByText('Start'));
 
@@ -387,6 +394,59 @@ describe('OnboardingClient', () => {
                 organizationId: 'org-1',
                 employeeId: 'u-2',
                 managerId: 'u-2',
+              }),
+            ],
+          }),
+        ]),
+      );
+    });
+    expect(toast.success).toHaveBeenCalledWith('Onboarding started!');
+  });
+
+  it('passes selected courseIds when courses are picked in onboarding wizard', async () => {
+    // Provide mock courses
+    queryResults = {
+      ...queryResults,
+      listCourses: [
+        { _id: 'c-1', title: 'Security Training', category: 'Compliance', isMandatory: true, isPublished: true, lessonCount: 3, estimatedHours: 2, difficulty: 'beginner', creatorName: 'Admin', createdBy: 'u-1', organizationId: 'org-1', createdAt: Date.now(), updatedAt: Date.now() },
+        { _id: 'c-2', title: 'React Workshop', category: 'Engineering', isMandatory: false, isPublished: true, lessonCount: 5, estimatedHours: 4, difficulty: 'intermediate', creatorName: 'Admin', createdBy: 'u-1', organizationId: 'org-1', createdAt: Date.now(), updatedAt: Date.now() },
+      ],
+    };
+
+    render(<OnboardingClient />);
+    fireEvent.click(screen.getByText('Start Onboarding'));
+
+    // Step 1: pick employee
+    const next = () => screen.getByText('Next');
+    fireEvent.click(screen.getAllByTestId('user-picker')[0]);
+    fireEvent.click(next());
+
+    // Step 2: template + start date
+    fireEvent.click(next());
+
+    // Step 3: courses — select Security Training
+    expect(screen.getByText('Security Training')).toBeInTheDocument();
+    expect(screen.getByText('React Workshop')).toBeInTheDocument();
+    // Find the checkbox for the first course and click it
+    const checkboxes = screen.getAllByRole('checkbox');
+    fireEvent.click(checkboxes[0]);
+    fireEvent.click(next());
+
+    // Step 4: manager + buddy pickers, then Start
+    fireEvent.click(screen.getAllByTestId('user-picker')[0]);
+    fireEvent.click(screen.getByText('Start'));
+
+    await waitFor(() => {
+      expect(mutationCalls).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            name: 'startOnboarding',
+            args: [
+              expect.objectContaining({
+                organizationId: 'org-1',
+                employeeId: 'u-2',
+                managerId: 'u-2',
+                courseIds: ['c-1'],
               }),
             ],
           }),

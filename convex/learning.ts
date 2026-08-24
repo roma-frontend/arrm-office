@@ -553,7 +553,63 @@ export const updateLessonProgress = mutation({
       });
     }
 
-    return { success: true };
+    // ─── Recalculate enrollment progress ───────────────────────────────────
+    const allLessons = await ctx.db
+      .query('lessons')
+      .withIndex('by_course', (q) =>
+        q.eq('organizationId', args.organizationId).eq('courseId', args.courseId),
+      )
+      .take(DEFAULT_LIST_CAP);
+
+    const allLessonIds = new Set(allLessons.map((l) => l._id));
+
+    const allProgress = await ctx.db
+      .query('lessonProgress')
+      .withIndex('by_user_course', (q) =>
+        q.eq('organizationId', args.organizationId).eq('userId', requesterId),
+      )
+      .take(DEFAULT_LIST_CAP);
+
+    const completedLessons = allProgress.filter(
+      (p) => p.isCompleted && allLessonIds.has(p.lessonId),
+    ).length;
+
+    const totalLessons = allLessons.length;
+    const progressPercent = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+
+    // Update enrollment progress
+    const enrollment = await ctx.db
+      .query('enrollments')
+      .withIndex('by_user_course', (q) =>
+        q
+          .eq('organizationId', args.organizationId)
+          .eq('userId', requesterId)
+          .eq('courseId', args.courseId),
+      )
+      .first();
+
+    if (enrollment) {
+      const enrollmentPatch: Partial<Doc<'enrollments'>> = {
+        progress: progressPercent,
+        updatedAt: now,
+      };
+
+      // Auto-transition status
+      if (progressPercent > 0 && enrollment.status === 'not_started') {
+        enrollmentPatch.status = 'in_progress';
+        enrollmentPatch.startedAt = now;
+      }
+
+      // Auto-complete when all lessons done
+      if (progressPercent === 100 && enrollment.status !== 'completed') {
+        enrollmentPatch.status = 'completed';
+        enrollmentPatch.completedAt = now;
+      }
+
+      await ctx.db.patch(enrollment._id, enrollmentPatch);
+    }
+
+    return { success: true, progress: progressPercent };
   },
 });
 
@@ -928,5 +984,105 @@ export const getTeamLearningOverview = query({
       mandatoryCourses,
       completionRate,
     };
+  },
+});
+
+// ─── ENROLLMENT DETAILS (for stat card drills) ──────────────────────────────
+
+/** Detailed enrollment list for a stat card drill-down. */
+export const getEnrollmentDetails = query({
+  args: {
+    organizationId: v.id('organizations'),
+    filter: v.union(
+      v.literal('all'),
+      v.literal('completed'),
+      v.literal('in_progress'),
+      v.literal('not_started'),
+      v.literal('mandatory'),
+    ),
+  },
+  handler: async (ctx, args) => {
+    const { isSuperadmin } = await checkAccess(ctx, args.organizationId);
+    if (!isSuperadmin) throw new Error('Only admins can view enrollment details');
+
+    let enrollments = await ctx.db
+      .query('enrollments')
+      .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
+      .take(DEFAULT_LIST_CAP);
+
+    if (args.filter === 'completed') {
+      enrollments = enrollments.filter((e) => e.status === 'completed');
+    } else if (args.filter === 'in_progress') {
+      enrollments = enrollments.filter((e) => e.status === 'in_progress');
+    } else if (args.filter === 'not_started') {
+      enrollments = enrollments.filter((e) => e.status === 'not_started');
+    } else if (args.filter === 'mandatory') {
+      const mandatoryCourseIds = (
+        await ctx.db
+          .query('courses')
+          .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
+          .take(DEFAULT_LIST_CAP)
+      )
+        .filter((c) => c.isMandatory)
+        .map((c) => c._id);
+      enrollments = enrollments.filter((e) => mandatoryCourseIds.includes(e.courseId));
+    }
+
+    const enriched = await Promise.all(
+      enrollments.map(async (enrollment) => {
+        const user = await ctx.db.get(enrollment.userId);
+        const course = await ctx.db.get(enrollment.courseId);
+        return {
+          _id: enrollment._id,
+          userName: user?.name ?? 'Unknown',
+          userEmail: user?.email ?? '',
+          userDepartment: user?.department,
+          courseTitle: course?.title ?? 'Unknown',
+          courseIsMandatory: course?.isMandatory ?? false,
+          status: enrollment.status,
+          progress: enrollment.progress ?? 0,
+          enrolledAt: enrollment.createdAt,
+          startedAt: enrollment.startedAt,
+          completedAt: enrollment.completedAt,
+        };
+      }),
+    );
+
+    return enriched;
+  },
+});
+
+/** Course list with enrollment counts. */
+export const getCoursesWithCounts = query({
+  args: {
+    organizationId: v.id('organizations'),
+  },
+  handler: async (ctx, args) => {
+    const { isSuperadmin } = await checkAccess(ctx, args.organizationId);
+    if (!isSuperadmin) throw new Error('Only admins can view course details');
+
+    const courses = await ctx.db
+      .query('courses')
+      .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
+      .take(DEFAULT_LIST_CAP);
+
+    const allEnrollments = await ctx.db
+      .query('enrollments')
+      .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
+      .take(DEFAULT_LIST_CAP);
+
+    return courses.map((course) => {
+      const courseEnrollments = allEnrollments.filter((e) => e.courseId === course._id);
+      return {
+        _id: course._id,
+        title: course.title,
+        category: course.category,
+        isMandatory: course.isMandatory,
+        isPublished: course.isPublished,
+        enrollmentCount: courseEnrollments.length,
+        completedCount: courseEnrollments.filter((e) => e.status === 'completed').length,
+        inProgressCount: courseEnrollments.filter((e) => e.status === 'in_progress').length,
+      };
+    });
   },
 });

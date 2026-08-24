@@ -21,6 +21,7 @@ import { LessonFormDialog } from './LessonFormDialog';
 import { CreateCourseDialog } from './CreateCourseDialog';
 import { TeamOverview } from './TeamOverview';
 import { CertificatesTab } from './CertificatesTab';
+import { CourseEditSheet } from './CourseEditSheet';
 
 type CourseWithLessons = {
   _id: Id<'courses'>;
@@ -142,6 +143,14 @@ export default function LearningClient() {
     isPreview: false,
   });
 
+  // Course edit state
+  const [showEditCourse, setShowEditCourse] = useState(false);
+  const [editingCourse, setEditingCourse] = useState<CourseWithLessons | null>(null);
+
+  // Stats drill-down state
+  const [showStatsDetail, setShowStatsDetail] = useState(false);
+  const [statsFilter, setStatsFilter] = useState<'all' | 'completed' | 'in_progress' | 'not_started' | 'mandatory'>('all');
+
   // Fetch data
   const courses = useQuery(
     api.learning.listCourses,
@@ -167,6 +176,16 @@ export default function LearningClient() {
     effectiveOrgId && user?.id && isAdmin
       ? {
           organizationId: effectiveOrgId as Id<'organizations'>,
+        }
+      : 'skip',
+  );
+
+  const enrollmentDetails = useQuery(
+    api.learning.getEnrollmentDetails,
+    showStatsDetail && effectiveOrgId && user?.id && isAdmin
+      ? {
+          organizationId: effectiveOrgId as Id<'organizations'>,
+          filter: statsFilter,
         }
       : 'skip',
   );
@@ -201,6 +220,29 @@ export default function LearningClient() {
   const updateLessonMutation = useMutation(api.learning.updateLesson);
   const deleteLessonMutation = useMutation(api.learning.deleteLesson);
   const updateCourseMutation = useMutation(api.learning.updateCourse);
+
+  const handleEditCourse = (updates: {
+    title: string;
+    description: string;
+    category: string;
+    difficulty: 'beginner' | 'intermediate' | 'advanced';
+    estimatedHours: number | undefined;
+    isMandatory: boolean;
+    tags: string[];
+    isPublished: boolean;
+  }) => {
+    if (!editingCourse) return;
+    updateCourseMutation({
+      courseId: editingCourse._id,
+      ...updates,
+    }).then(() => {
+      toast.success(t('learning.courseUpdated', 'Course updated successfully'));
+      setShowEditCourse(false);
+      setEditingCourse(null);
+    }).catch(() => {
+      toast.error(t('learning.courseUpdateError', 'Failed to update course'));
+    });
+  };
   const submitQuizAttemptMutation = useMutation(api.learning.submitQuizAttempt);
 
   // Fetch quiz data when viewing a quiz lesson
@@ -579,7 +621,10 @@ export default function LearningClient() {
       {/* Stats Cards */}
       {isAdmin && teamOverview && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <Card>
+          <Card
+            className="cursor-pointer hover:border-(--primary)/50 hover:shadow-md transition-all duration-200 ease-out"
+            onClick={() => { setStatsFilter('all'); setShowStatsDetail(true); }}
+          >
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
                 <BookOpen className="h-5 w-5 text-muted-foreground" />
@@ -592,7 +637,10 @@ export default function LearningClient() {
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card
+            className="cursor-pointer hover:border-(--primary)/50 hover:shadow-md transition-all duration-200 ease-out"
+            onClick={() => { setStatsFilter('all'); setShowStatsDetail(true); }}
+          >
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
                 <Users className="h-5 w-5 text-muted-foreground" />
@@ -605,7 +653,10 @@ export default function LearningClient() {
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card
+            className="cursor-pointer hover:border-(--primary)/50 hover:shadow-md transition-all duration-200 ease-out"
+            onClick={() => { setStatsFilter('completed'); setShowStatsDetail(true); }}
+          >
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
                 <BarChart3 className="h-5 w-5 text-muted-foreground" />
@@ -618,7 +669,10 @@ export default function LearningClient() {
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card
+            className="cursor-pointer hover:border-(--primary)/50 hover:shadow-md transition-all duration-200 ease-out"
+            onClick={() => { setStatsFilter('mandatory'); setShowStatsDetail(true); }}
+          >
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
                 <Award className="h-5 w-5 text-muted-foreground" />
@@ -730,6 +784,10 @@ export default function LearningClient() {
           resetLessonForm();
           setShowCreateLesson(true);
         }}
+        onOpenEditCourse={(course) => {
+          setEditingCourse(course);
+          setShowEditCourse(true);
+        }}
         onOpenEditLesson={openEditLessonDialog}
         onDeleteLesson={handleDeleteLesson}
       />
@@ -791,6 +849,14 @@ export default function LearningClient() {
         }}
       />
 
+      {/* Edit Course Sheet */}
+      <CourseEditSheet
+        open={showEditCourse}
+        onOpenChange={setShowEditCourse}
+        course={editingCourse}
+        onSave={handleEditCourse}
+      />
+
       {/* Create Course Dialog */}
       <CreateCourseDialog
         open={showCreateCourse}
@@ -799,6 +865,131 @@ export default function LearningClient() {
         setForm={setCourseForm}
         onSubmit={handleCreateCourse}
       />
+
+      {/* Stats Detail Modal */}
+      {showStatsDetail && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setShowStatsDetail(false)}>
+          <div
+            className="bg-(--card) rounded-2xl border border-(--border) shadow-2xl w-full max-w-3xl max-h-[80vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between p-5 border-b border-(--border)">
+              <div>
+                <h2 className="text-lg font-bold text-(--text-primary)">
+                  {statsFilter === 'completed'
+                    ? t('learning.completedEnrollments', 'Completed Enrollments')
+                    : statsFilter === 'mandatory'
+                      ? t('learning.mandatoryCourses', 'Mandatory Courses')
+                      : t('learning.allEnrollments', 'All Enrollments')}
+                </h2>
+                <p className="text-sm text-(--text-muted)">
+                  {enrollmentDetails?.length ?? 0} {t('learning.records', 'records')}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowStatsDetail(false)}
+                className="p-2 rounded-lg hover:bg-(--background-subtle) transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+
+            {/* Filter tabs */}
+            <div className="flex gap-2 px-5 pt-4">
+              {([
+                { value: 'all', label: t('learning.filterAll', 'All') },
+                { value: 'completed', label: t('learning.filterCompleted', 'Completed') },
+                { value: 'in_progress', label: t('learning.filterInProgress', 'In Progress') },
+                { value: 'not_started', label: t('learning.filterNotStarted', 'Not Started') },
+                { value: 'mandatory', label: t('learning.filterMandatory', 'Mandatory') },
+              ] as const).map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setStatsFilter(opt.value)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    statsFilter === opt.value
+                      ? 'bg-(--brand) text-white'
+                      : 'bg-(--background-subtle) text-(--text-muted) hover:text-(--text-primary)'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Table */}
+            <div className="flex-1 overflow-auto p-5">
+              {!enrollmentDetails ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-(--brand)" />
+                </div>
+              ) : enrollmentDetails.length === 0 ? (
+                <div className="text-center py-12 text-(--text-muted)">
+                  {t('learning.noData', 'No data available')}
+                </div>
+              ) : (
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-(--border)">
+                      <th className="text-left py-2 px-3 text-xs font-semibold text-(--text-muted)">{t('learning.employee', 'Employee')}</th>
+                      <th className="text-left py-2 px-3 text-xs font-semibold text-(--text-muted)">{t('learning.course', 'Course')}</th>
+                      <th className="text-left py-2 px-3 text-xs font-semibold text-(--text-muted)">{t('common.status', 'Status')}</th>
+                      <th className="text-left py-2 px-3 text-xs font-semibold text-(--text-muted)">{t('learning.progress', 'Progress')}</th>
+                      <th className="text-left py-2 px-3 text-xs font-semibold text-(--text-muted)">{t('learning.enrolled', 'Enrolled')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {enrollmentDetails.map((row) => (
+                      <tr key={row._id} className="border-b border-(--border)/50 hover:bg-(--background-subtle)">
+                        <td className="py-2.5 px-3">
+                          <div>
+                            <p className="text-sm font-medium text-(--text-primary)">{row.userName}</p>
+                            <p className="text-xs text-(--text-muted)">{row.userEmail}</p>
+                          </div>
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-sm text-(--text-primary)">{row.courseTitle}</span>
+                            {row.courseIsMandatory && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-(--danger-quiet) text-(--danger-text) font-medium">{t('learning.mandatory', 'Required')}</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                            row.status === 'completed' ? 'bg-(--success-quiet) text-(--success-text)'
+                            : row.status === 'in_progress' ? 'bg-(--brand-quiet) text-(--brand-text)'
+                            : 'bg-(--background-subtle) text-(--text-muted)'
+                          }`}>
+                            {row.status === 'completed' ? t('learning.statusCompleted', 'Completed')
+                              : row.status === 'in_progress' ? t('learning.statusInProgress', 'In Progress')
+                              : t('learning.statusNotStarted', 'Not Started')}
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-16 h-1.5 bg-(--background-subtle) rounded-full overflow-hidden">
+                              <div
+                                className="h-full rounded-full bg-(--brand)"
+                                style={{ width: `${row.progress}%` }}
+                              />
+                            </div>
+                            <span className="text-xs text-(--text-muted)">{row.progress}%</span>
+                          </div>
+                        </td>
+                        <td className="py-2.5 px-3 text-xs text-(--text-muted)">
+                          {row.enrolledAt ? new Date(row.enrolledAt).toLocaleDateString() : '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

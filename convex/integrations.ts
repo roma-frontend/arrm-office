@@ -2638,8 +2638,8 @@ async function syncArmsoft(
   if (!config.apiEndpoint) {
     throw new Error('ՀԾ Armsoft: API endpoint required');
   }
-  if (!config.apiUsername || !config.apiPassword) {
-    throw new Error('ՀԾ Armsoft: username and password required');
+  if (!config.apiKey) {
+    throw new Error('ՀԾ Armsoft: API key required');
   }
   if (!config.syncEmployees && !config.syncPayroll) {
     return {
@@ -2654,8 +2654,9 @@ async function syncArmsoft(
 
   const base = assertSafeUrl(config.apiEndpoint as string, 'ՀԾ Armsoft API endpoint');
   const headers = {
-    Authorization: basicAuthHeader(config.apiUsername as string, config.apiPassword as string),
+    apiKey: config.apiKey as string,
     Accept: 'application/json',
+    'Accept-Language': 'en-US',
   };
 
   const notes: string[] = [];
@@ -2680,22 +2681,70 @@ async function syncArmsoft(
   }
 
   const url = assertSafeUrl(
-    joinUrl(base, (config.employeesPath as string) || '/api/hr/employees'),
+    joinUrl(base, (config.employeesPath as string) || '/v1/directories/employees/list'),
     'ՀԾ Armsoft employees URL',
   );
-  const outcome = await importEmployees(
-    ctx,
-    organizationId,
-    'armsoft',
-    config,
-    url,
-    headers,
-    'ՀԾ Armsoft',
-  );
 
+  // ArmSoft API requires POST with empty body for employee list
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        ...headers,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({}),
+      signal: AbortSignal.timeout(20_000),
+    });
+  } catch (e: unknown) {
+    const reason =
+      e && typeof e === 'object' && 'name' in e && (e as { name: string }).name === 'TimeoutError'
+        ? 'request timed out'
+        : 'network error';
+    throw new Error(`ՀԾ Armsoft: ${reason}`);
+  }
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => '');
+    throw new Error(`ՀԾ Armsoft API error (${response.status}): ${body.slice(0, 300)}`);
+  }
+
+  const payload = await response.json();
+  const rows = extractList(payload, config.employeesListKey as string | undefined);
+  const { employees, dropped } = normalizeEmployees(rows, config.fieldMap as string | undefined);
+
+  if (employees.length === 0) {
+    throw new Error(
+      `ՀԾ Armsoft: fetched ${rows.length} record(s) but none had a usable email — check the field mapping`,
+    );
+  }
+
+  let created = 0;
+  let updated = 0;
+  let skipped = dropped;
+
+  for (let i = 0; i < employees.length; i += UPSERT_BATCH_SIZE) {
+    const batch = employees.slice(i, i + UPSERT_BATCH_SIZE);
+    const res = await ctx.runMutation(internal.integrations.upsertEmployeeBatch, {
+      organizationId,
+      provider: 'armsoft',
+      employees: batch,
+    });
+    created += res.created;
+    updated += res.updated;
+    skipped += res.skipped;
+    notes.push(...res.notes);
+  }
+
+  const message = [`ՀԾ Armsoft: ${created} created, ${updated} updated, ${skipped} skipped`, ...notes].join('; ');
   return {
-    ...outcome,
-    message: [outcome.message, ...notes].join('; '),
+    message,
+    created,
+    updated,
+    deactivated: 0,
+    skipped,
+    details: notes.length ? JSON.stringify(notes.slice(0, 50)) : undefined,
   };
 }
 

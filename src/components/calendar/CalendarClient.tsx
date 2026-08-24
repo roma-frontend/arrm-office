@@ -447,7 +447,6 @@ function DayCell({
   customEvents,
   roomBookings,
   companyEvents,
-  overtimeEvents,
   onClick,
   onDoubleClick,
   onDropEvent,
@@ -461,7 +460,6 @@ function DayCell({
   customEvents: CalendarEvent[];
   roomBookings: RoomBookingDoc[];
   companyEvents: CompanyEvent[];
-  overtimeEvents: OvertimeRequest[];
   onClick: () => void;
   onDoubleClick: () => void;
   /** Drag & drop target — receives custom events dropped onto this day. */
@@ -477,15 +475,13 @@ function DayCell({
   const hasCustom = customEvents.length > 0 && isCurrentMonth;
   const hasRooms = roomBookings.length > 0 && isCurrentMonth;
   const hasCompany = companyEvents.length > 0 && isCurrentMonth;
-  const hasOvertime = overtimeEvents.length > 0 && isCurrentMonth;
   const totalItems =
     leaves.length +
     googleEvents.length +
     driverEvents.length +
     customEvents.length +
     roomBookings.length +
-    companyEvents.length +
-    overtimeEvents.length;
+    companyEvents.length;
 
   return (
     <button
@@ -543,8 +539,7 @@ function DayCell({
         hasDriver ||
         hasCustom ||
         hasRooms ||
-        hasCompany ||
-        hasOvertime) && (
+        hasCompany) && (
         <div className="flex flex-col gap-0.5 mt-0.5">
           {/* Company event pills — first, because they concern everyone */}
           {companyEvents.slice(0, 1).map((evt, i) => {
@@ -759,25 +754,7 @@ function DayCell({
               </div>
             );
           })}
-          {/* Overtime pills */}
-          {overtimeEvents.slice(0, 1).map((ot) => (
-            <div
-              key={`ot-${ot._id}`}
-              className="flex items-center gap-1 rounded-full px-1.5 py-0.5"
-              style={{ background: isSelected ? 'rgba(255,255,255,0.2)' : `${OVERTIME_COLOR}22` }}
-            >
-              <span
-                className="w-1.5 h-1.5 rounded-full shrink-0"
-                style={{ background: isSelected ? 'var(--n-0)' : OVERTIME_COLOR }}
-              />
-              <span
-                className="text-[9px] font-medium truncate hidden sm:block"
-                style={{ color: isSelected ? 'var(--n-0)' : OVERTIME_COLOR }}
-              >
-                {(ot.userName ?? '?').split(' ')[0]} OT
-              </span>
-            </div>
-          ))}
+
           {totalItems > 2 && (
             <span
               className={`text-[9px] pl-1 ${isSelected ? 'text-white/80' : 'text-(--text-muted)'}`}
@@ -1458,35 +1435,8 @@ export const CalendarClient = React.memo(function CalendarClient() {
   );
 
   // --- Overtime requests ---------------------------------------------------
-  const overtimeData = useQuery(
-    api.overtime.getOvertimeForDateRange,
-    mounted && calendarOrgId
-      ? {
-          startDate: format(startOfMonth(currentMonth), 'yyyy-MM-dd'),
-          endDate: format(endOfMonth(currentMonth), 'yyyy-MM-dd'),
-        }
-      : 'skip',
-  );
-  const overtimeRequests: OvertimeRequest[] = useMemo(() => overtimeData ?? [], [overtimeData]);
-
-  const scopedOvertime = useMemo(
-    () =>
-      filterForScope(overtimeRequests, scope, (req) => {
-        return req.userId === viewer.id;
-      }),
-    [overtimeRequests, scope, viewer],
-  );
-
-  const overtimeDateMap = useMemo(() => {
-    const map = new Map<string, OvertimeRequest[]>();
-    scopedOvertime
-      .filter((r) => r.status !== 'rejected')
-      .forEach((req) => {
-        if (!map.has(req.date)) map.set(req.date, []);
-        map.get(req.date)!.push(req);
-      });
-    return map;
-  }, [scopedOvertime]);
+  // Overtime is shown on the dedicated Overtime page, not the calendar.
+  const overtimeDateMap = useMemo(() => new Map<string, OvertimeRequest[]>(), []);
 
   const roomsData = useQuery(
     api.meetingRooms.listRooms,
@@ -2093,7 +2043,6 @@ export const CalendarClient = React.memo(function CalendarClient() {
                       const cEvents = customEventsMap.get(key) ?? [];
                       const rBookings = roomDateMap.get(key) ?? [];
                       const orgEvents = companyEventsMap.get(key) ?? [];
-                      const otEvents = overtimeDateMap.get(key) ?? [];
                       return (
                         <ContextMenu key={i}>
                           <ContextMenuTrigger>
@@ -2107,7 +2056,6 @@ export const CalendarClient = React.memo(function CalendarClient() {
                               customEvents={cEvents}
                               roomBookings={rBookings}
                               companyEvents={orgEvents}
-                              overtimeEvents={otEvents}
                               onClick={() => setSelectedDay(date)}
                               onDoubleClick={() => {
                                 setSelectedDay(date);
@@ -2133,8 +2081,7 @@ export const CalendarClient = React.memo(function CalendarClient() {
                                     dEvents.length +
                                     cEvents.length +
                                     rBookings.length +
-                                    orgEvents.length +
-                                    otEvents.length >
+                                    orgEvents.length >
                                   0
                                 ) {
                                   setShowDayDetails(true);
@@ -2397,53 +2344,6 @@ export const CalendarClient = React.memo(function CalendarClient() {
                           </motion.div>
                         );
                       })}
-
-                      {/* Overtime requests */}
-                      {(
-                        overtimeDateMap.get(format(selectedDay ?? new Date(), 'yyyy-MM-dd')) ?? []
-                      ).map((ot, i) => (
-                        <motion.div
-                          key={ot._id}
-                          initial={{ opacity: 0, y: 6 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: i * 0.04 }}
-                          className="flex items-start gap-2.5 p-2.5 rounded-lg border cursor-pointer transition-colors"
-                          style={{
-                            borderColor: `${OVERTIME_COLOR}55`,
-                            background: `${OVERTIME_COLOR}0f`,
-                          }}
-                        >
-                          <div
-                            className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                            style={{ background: `${OVERTIME_COLOR}1f`, color: OVERTIME_COLOR }}
-                          >
-                            <Clock className="w-4 h-4" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-semibold text-(--text-primary) truncate">
-                              {ot.userName}
-                            </p>
-                            <p className="text-xs truncate" style={{ color: OVERTIME_COLOR }}>
-                              {ot.startTime} – {ot.endTime} ({ot.estimatedHours}h)
-                            </p>
-                            <p className="text-[11px] text-(--text-muted) mt-0.5 truncate">
-                              {ot.reason}
-                            </p>
-                          </div>
-                          <Badge
-                            variant={
-                              ot.status === 'approved'
-                                ? 'success'
-                                : ot.status === 'rejected'
-                                  ? 'destructive'
-                                  : 'warning'
-                            }
-                            className="text-[10px]"
-                          >
-                            {ot.status}
-                          </Badge>
-                        </motion.div>
-                      ))}
 
                       {/* Leave requests */}
                       {selectedDayLeaves.map((leave, i) => (

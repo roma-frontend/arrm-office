@@ -517,7 +517,7 @@ export default function MobileMenu({ isOpen, onClose, activeSection = null }: Mo
                   {/* Arrow */}
                   <ArrowRight
                     size={16}
-                    className="relative opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all duration-300"
+                    className="relative opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all duration-300 ease-out"
                     style={{ color: item.accent }}
                   />
                 </a>
@@ -698,7 +698,7 @@ export default function MobileMenu({ isOpen, onClose, activeSection = null }: Mo
                     'linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)',
                 }}
               />
-              <Rocket size={18} className="group-hover:-translate-y-0.5 transition-transform" />
+              <Rocket size={18} className="group-hover:-translate-y-0.5" style={{ transition: 'transform 0.2s cubic-bezier(0.22, 1, 0.36, 1)' }} />
               <span>{t('landing.getStartedFree', 'Get Started Free')}</span>
             </button>
           </Link>

@@ -227,8 +227,7 @@
         "desc": "Armenisches ERP — HR- und Gehaltssync",
         "field": {
           "apiEndpoint": "API-Endpunkt",
-          "apiUsername": "Benutzername",
-          "apiPassword": "Passwort"
+          "apiKey": "API-Schlüssel"
         },
         "toggle": {
           "syncEmployees": "Mitarbeiterverzeichnis syncen",

@@ -227,8 +227,7 @@
         "desc": "Հայկական ERP — HR և աշխատավարձի սինխրոնիզացիա",
         "field": {
           "apiEndpoint": "API էնդփոինթ",
-          "apiUsername": "Օգտանուն",
-          "apiPassword": "Գաղտնաբառ"
+          "apiKey": "API բանալի"
         },
         "toggle": {
           "syncEmployees": "Աշխատակիցների սինխրոնիզացիա",

@@ -326,7 +326,8 @@ function PerspectiveCard({
 
   return (
     <Card
-      className={`group relative overflow-hidden border transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 ${config.lightBorder} ${config.darkBorder} ${config.lightBg} ${config.darkBg}`}
+      className={`group relative overflow-hidden border hover:shadow-lg hover:-translate-y-0.5 ${config.lightBorder} ${config.darkBorder} ${config.lightBg} ${config.darkBg}`}
+       style={{ transition: 'all 0.3s cubic-bezier(0.22, 1, 0.36, 1)' }}
     >
       {/* Gradient accent bar */}
       <div

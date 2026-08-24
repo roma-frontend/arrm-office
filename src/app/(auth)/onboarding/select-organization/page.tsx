@@ -440,11 +440,12 @@ function OrgCard({
   return (
     <article
       className={[
-        'group relative rounded-2xl border bg-(--card) p-4 sm:p-5 shadow-sm transition-all',
+        'group relative rounded-2xl border bg-(--card) p-4 sm:p-5 shadow-sm',
         isPending
           ? 'border-(--badge-warning-border) bg-(--badge-warning-bg)/30'
           : 'border-(--border) hover:border-(--primary)/50 hover:shadow-md hover:-translate-y-0.5',
       ].join(' ')}
+      style={{ transition: 'all 0.3s cubic-bezier(0.22, 1, 0.36, 1)' }}
     >
       <div className="flex items-center justify-between gap-4">
         {/* Left: logo + info */}

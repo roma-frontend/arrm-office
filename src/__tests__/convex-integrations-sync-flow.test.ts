@@ -73,6 +73,7 @@ function jsonResponse(body: unknown, status = 200) {
     ok: status >= 200 && status < 300,
     status,
     text: async () => JSON.stringify(body),
+    json: async () => body,
   } as unknown as Response;
 }
 
@@ -428,7 +429,7 @@ describe('syncLuckyCarrot import', () => {
 // ── Armsoft ──────────────────────────────────────────────────────────────────
 
 describe('syncArmsoft', () => {
-  it('requires an endpoint and credentials', async () => {
+  it('requires an endpoint and API key', async () => {
     handlers.assertCanSync = () => ({ userId: 'u1' });
     handlers.getIntegrationConfigInternal = () => ({
       _id: 'cfg-1',
@@ -440,7 +441,7 @@ describe('syncArmsoft', () => {
       provider: 'armsoft',
     });
     expect(res.success).toBe(false);
-    expect(String(res.error)).toMatch(/username and password/);
+    expect(String(res.error)).toMatch(/API key required/);
   });
 
   it('skips when neither employees nor payroll sync is enabled', async () => {
@@ -452,8 +453,7 @@ describe('syncArmsoft', () => {
         config: {
           isEnabled: true,
           apiEndpoint: 'https://arm.example',
-          apiUsername: 'u',
-          apiPassword: 'p',
+          apiKey: 'test-key',
         },
       }),
       setSyncState: () => {},
@@ -470,7 +470,7 @@ describe('syncArmsoft', () => {
     expect(logSync).toHaveBeenCalledWith(expect.objectContaining({ status: 'skipped' }));
   });
 
-  it('imports employees with HTTP Basic auth', async () => {
+  it('imports employees with API key auth', async () => {
     const fetchMock = jest.fn(async () =>
       jsonResponse({ data: [{ email: 'arm@x.com', name: 'Arm' }] }),
     );
@@ -484,8 +484,7 @@ describe('syncArmsoft', () => {
         config: {
           isEnabled: true,
           apiEndpoint: 'https://arm.example',
-          apiUsername: 'user',
-          apiPassword: 'pass',
+          apiKey: 'test-api-key-123',
           syncEmployees: true,
         },
       }),
@@ -505,10 +504,10 @@ describe('syncArmsoft', () => {
     });
 
     expect(res.success).toBe(true);
-    // Authorization header must be present and Basic-encoded.
+    // apiKey header must be present.
     const init = fetchMock.mock.calls[0][1] as RequestInit;
     const headers = init.headers as Record<string, string>;
-    expect(headers.Authorization).toMatch(/^Basic /);
+    expect(headers.apiKey).toBe('test-api-key-123');
     expect(upsertArgs[0].provider).toBe('armsoft');
   });
 
@@ -520,8 +519,7 @@ describe('syncArmsoft', () => {
         config: {
           isEnabled: true,
           apiEndpoint: 'https://arm.example',
-          apiUsername: 'u',
-          apiPassword: 'p',
+          apiKey: 'test-key',
           syncEmployees: true,
           syncPayroll: true,
         },
@@ -874,8 +872,7 @@ describe('runScheduledSyncs', () => {
       config: {
         isEnabled: true,
         apiEndpoint: 'https://arm.example',
-        apiUsername: 'u',
-        apiPassword: 'p',
+        apiKey: 'arm-key',
         syncEmployees: true,
       },
     };

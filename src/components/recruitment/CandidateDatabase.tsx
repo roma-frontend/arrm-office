@@ -117,7 +117,10 @@ function CandidateCard({ candidate, onClick }: CandidateCardProps) {
 
   return (
     <Card
-      className="glass-panel shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 cursor-pointer group relative overflow-hidden"
+      className="glass-panel shadow-sm hover:shadow-lg hover:-translate-y-0.5 cursor-pointer group relative overflow-hidden"
+      style={{
+        transition: 'all 0.3s cubic-bezier(0.22, 1, 0.36, 1)',
+      }}
       onClick={onClick}
     >
       <CardContent className="p-4">

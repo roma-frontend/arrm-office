@@ -1583,6 +1583,7 @@
       "title": "Onboarding starten",
       "step1": "Mitarbeiter",
       "step2": "Vorlage",
+      "stepCourses": "Kurse",
       "step3": "Details",
       "start": "Starten",
       "success": "Onboarding gestartet!"
@@ -1612,8 +1613,11 @@
       "department": "Abteilung",
       "deptPlaceholder": "z.B. Entwicklung",
       "taskTitle": "Aufgabentitel",
-      "dayPlaceholder": "Tag"
+      "dayPlaceholder": "Tag",
+      "coursesHint": "Wählen Sie Kurse aus, die der neue Mitarbeiter während des Onboardings absolvieren muss.",
+      "noCourses": "Keine veröffentlichten Kurse verfügbar. Erstellen Sie zuerst Kurse im Lernmodul."
     },
+    "coursesSelected": "Kurs(e) ausgewählt",
     "checkLater": "Später erneut prüfen"
   },
   "compliance": {

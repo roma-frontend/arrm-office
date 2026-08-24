@@ -1025,7 +1025,8 @@ function MemberCard({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay }}
-      className="group relative overflow-hidden rounded-2xl border border-(--border) transition-all duration-200 hover:-translate-y-0.5 hover:border-(--primary)/45 hover:shadow-lg"
+      className="group relative overflow-hidden rounded-2xl border border-(--border) hover:-translate-y-0.5 hover:border-(--primary)/45 hover:shadow-lg"
+       style={{ transition: 'all 0.2s cubic-bezier(0.22, 1, 0.36, 1)' }}
       style={{ background: 'var(--card)' }}
     >
       {/* Role stripe: colour-codes the row without adding another badge. */}

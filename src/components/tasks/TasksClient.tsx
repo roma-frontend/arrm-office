@@ -11,6 +11,8 @@ import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { CreateTaskWizard } from './CreateTaskWizard';
 import { ProjectBadge } from './ProjectBadge';
 import { localizedTaskTitle, type TitledTask } from '@/lib/taskTitle';
+import { resolveStatus } from '../../../convex/lib/taskStatus';
+import { statusLabel } from '@/lib/taskLabels';
 import { TaskSheet } from './TaskSheet';
 import {
   Sheet,
@@ -117,6 +119,7 @@ interface TaskItem {
   titleKey?: string | null;
   description?: string;
   status: Status;
+  statusKey?: string | null;
   priority: Priority;
   deadline?: number;
   tags?: string[];
@@ -291,8 +294,9 @@ function SortCaret({ active, dir }: { active: boolean; dir: 'asc' | 'desc' }) {
   );
 }
 
-function TaskCardContent({ task, isDragging = false }: { task: TaskItem; isDragging?: boolean }) {
+function TaskCardContent({ task, isDragging = false, statuses }: { task: TaskItem; isDragging?: boolean; statuses?: readonly import('../../../convex/lib/taskStatus').TaskStatusDef[] }) {
   const { t } = useTranslation();
+  const resolvedStatus = statuses ? resolveStatus({ status: task.status as any, statusKey: task.statusKey }, statuses) : null;
   const statusCfg = STATUS_CONFIG[task.status as Status];
   const priorityCfg = PRIORITY_CONFIG[task.priority as Priority];
   return (
@@ -327,7 +331,7 @@ function TaskCardContent({ task, isDragging = false }: { task: TaskItem; isDragg
         <span
           className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusCfg.bg} ${statusCfg.color}`}
         >
-          {t(statusCfg.labelKey)}
+          {resolvedStatus ? statusLabel(t, resolvedStatus) : t(statusCfg.labelKey)}
         </span>
       </div>
       <p
@@ -409,7 +413,7 @@ function TaskCardContent({ task, isDragging = false }: { task: TaskItem; isDragg
   );
 }
 
-function DraggableTaskCard({ task, onOpen }: { task: TaskItem; onOpen: () => void }) {
+function DraggableTaskCard({ task, onOpen, statuses }: { task: TaskItem; onOpen: () => void; statuses?: readonly import('../../../convex/lib/taskStatus').TaskStatusDef[] }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: task._id,
     data: {
@@ -430,7 +434,7 @@ function DraggableTaskCard({ task, onOpen }: { task: TaskItem; onOpen: () => voi
         onOpen();
       }}
     >
-      <TaskCardContent task={task} isDragging={isDragging} />
+      <TaskCardContent task={task} isDragging={isDragging} statuses={statuses} />
 
       {/* Drag overlay - visible on hover */}
       <div className="absolute inset-0 rounded-2xl bg-(--background)/40 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex items-center justify-center pointer-events-none">
@@ -458,10 +462,12 @@ function DroppableKanbanColumn({
   status,
   tasks,
   onOpen,
+  statuses,
 }: {
   status: Status;
   tasks: TaskItem[];
   onOpen: (t: TaskItem) => void;
+  statuses?: readonly import('../../../convex/lib/taskStatus').TaskStatusDef[];
 }) {
   const cfg = STATUS_CONFIG[status];
   const { t } = useTranslation();
@@ -487,7 +493,7 @@ function DroppableKanbanColumn({
         }`}
       >
         {tasks.map((task) => (
-          <DraggableTaskCard key={task._id} task={task} onOpen={() => onOpen(task)} />
+          <DraggableTaskCard key={task._id} task={task} onOpen={() => onOpen(task)} statuses={statuses} />
         ))}
         {tasks.length === 0 && (
           <div
@@ -2065,6 +2071,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
                   status={status}
                   tasks={tasksByStatus[status]}
                   onOpen={(task) => openTask(task)}
+                  statuses={statuses}
                 />
               ))}
             </div>
@@ -2282,7 +2289,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
                                         className={`w-2 h-2 rounded-full shrink-0 ${statusCfg.dot}`}
                                       />
                                       <span className={`text-xs font-medium ${statusCfg.color}`}>
-                                        {t(statusCfg.labelKey)}
+                                        {statuses ? statusLabel(t, resolveStatus({ status: task.status as any, statusKey: task.statusKey }, statuses)) : t(statusCfg.labelKey)}
                                       </span>
                                     </div>
                                   </div>

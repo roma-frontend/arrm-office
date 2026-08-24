@@ -56,7 +56,7 @@ const MAPPING_FIELDS = [
     key: 'employeesPath',
     label: 'Employees endpoint path',
     type: 'text',
-    placeholder: '/api/v1/employees',
+    placeholder: '/v1/directories/employees/list',
   },
   {
     key: 'employeesListKey',
@@ -170,10 +170,9 @@ const PROVIDERS = [
         key: 'apiEndpoint',
         label: 'API Endpoint',
         type: 'text',
-        placeholder: 'https://api.armsoft.am/v1',
+        placeholder: 'https://api.armsoft.am/accountant',
       },
-      { key: 'apiUsername', label: 'Username', type: 'text', placeholder: 'org_admin' },
-      { key: 'apiPassword', label: 'Password', type: 'password', placeholder: '••••••••' },
+      { key: 'apiKey', label: 'API Key', type: 'password', placeholder: '••••••••' },
     ],
     toggles: [
       { key: 'syncEmployees', label: 'Sync employee directory' },

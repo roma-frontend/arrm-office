@@ -227,8 +227,7 @@
         "desc": "Армянская ERP — синхронизация HR и зарплаты",
         "field": {
           "apiEndpoint": "API эндпоинт",
-          "apiUsername": "Имя пользователя",
-          "apiPassword": "Пароль"
+          "apiKey": "API ключ"
         },
         "toggle": {
           "syncEmployees": "Синхронизация сотрудников",

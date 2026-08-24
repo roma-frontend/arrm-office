@@ -136,9 +136,10 @@ export function ToolDock() {
           }}
           className={cn(
             'flex flex-col items-center gap-2 rounded-xl border border-(--border) bg-(--card) p-3 text-center',
-            'transition-all duration-200 ease-out group-hover:-translate-y-1 group-hover:border-(--primary)/35 group-hover:shadow-lg',
+            'group-hover:-translate-y-1 group-hover:border-(--primary)/35 group-hover:shadow-lg',
             'focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/25',
           )}
+          style={{ transition: 'all 0.2s cubic-bezier(0.22, 1, 0.36, 1)' }}
         >
           <span className="relative">
             <span

@@ -45,6 +45,7 @@ import {
   Pencil,
   ChevronRight,
   ChevronLeft,
+  BookOpen,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { EmployeeHoverCard } from '@/components/employees/EmployeeHoverCard';
@@ -713,9 +714,17 @@ function StartOnboardingWizard({
 
   const startOnboarding = useMutation(api.onboarding.startOnboarding);
 
+  // Fetch available courses for onboarding
+  const courses = useQuery(
+    api.learning.listCourses,
+    orgId ? { organizationId: orgId, includeUnpublished: false } : 'skip',
+  );
+  const [selectedCourseIds, setSelectedCourseIds] = useState<string[]>([]);
+
   const steps = [
     { id: 'employee', title: t('onboarding.wizard.step1', 'Employee') },
     { id: 'template', title: t('onboarding.wizard.step2', 'Template') },
+    { id: 'courses', title: t('onboarding.wizard.stepCourses', 'Courses') },
     { id: 'details', title: t('onboarding.wizard.step3', 'Details') },
   ];
 
@@ -732,6 +741,7 @@ function StartOnboardingWizard({
         startDate: new Date(startDate || Date.now()).getTime(),
         buddyId: buddyId ? (buddyId as Id<'users'>) : undefined,
         managerId: managerId as Id<'users'>,
+        courseIds: selectedCourseIds.length > 0 ? (selectedCourseIds as Id<'courses'>[]) : undefined,
       });
       toast.success(t('onboarding.wizard.success', 'Onboarding started!'));
       onClose();
@@ -827,6 +837,68 @@ function StartOnboardingWizard({
             </div>
           )}
           {step === 2 && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                {t(
+                  'onboarding.fields.coursesHint',
+                  'Select courses that the new hire must complete during onboarding.',
+                )}
+              </p>
+              {!courses ? (
+                <p className="text-sm text-muted-foreground">Loading courses...</p>
+              ) : courses.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  {t(
+                    'onboarding.fields.noCourses',
+                    'No published courses available. Create courses in the Learning module first.',
+                  )}
+                </p>
+              ) : (
+                <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                  {courses.map((course) => (
+                    <label
+                      key={course._id}
+                      className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                        selectedCourseIds.includes(course._id)
+                          ? 'border-(--brand) bg-(--brand-quiet)'
+                          : 'border-(--border) hover:bg-muted/50'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedCourseIds.includes(course._id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedCourseIds([...selectedCourseIds, course._id]);
+                          } else {
+                            setSelectedCourseIds(selectedCourseIds.filter((id) => id !== course._id));
+                          }
+                        }}
+                        className="h-4 w-4 rounded border-(--border)"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{course.title}</p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <span>{course.category}</span>
+                          {course.isMandatory && (
+                            <Badge variant="destructive" className="text-[10px]">
+                              {t('learning.mandatory', 'Mandatory')}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              )}
+              {selectedCourseIds.length > 0 && (
+                <p className="text-xs text-(--brand-text)">
+                  {selectedCourseIds.length} {t('onboarding.coursesSelected', 'course(s) selected')}
+                </p>
+              )}
+            </div>
+          )}
+          {step === 3 && (
             <div className="space-y-5">
               <UserPicker
                 organizationId={orgId}

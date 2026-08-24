@@ -131,7 +131,7 @@ export default function SuccessClient() {
 
         {/* CTA */}
         <Link href="/register">
-          <button className="group w-full py-4 rounded-2xl bg-linear-to-r from-(--brand) to-(--purple) text-white font-bold text-lg shadow-xl shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-[1.02] transition-all duration-300 flex items-center justify-center gap-3">
+          <button className="group w-full py-4 rounded-2xl bg-linear-to-r from-(--brand) to-(--purple) text-white font-bold text-lg shadow-xl shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-[1.02] transition-all duration-300 ease-out flex items-center justify-center gap-3">
             {t('checkout.createAccount')}
             <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
           </button>

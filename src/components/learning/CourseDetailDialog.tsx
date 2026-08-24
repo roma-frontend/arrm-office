@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { Id } from '../../../convex/_generated/dataModel';
 import { Button } from '@/components/ui/button';
@@ -12,7 +14,7 @@ import {
   SheetBody,
   SheetFooter,
 } from '@/components/ui/sheet';
-import { Plus, ChevronRight, Video, FileText, HelpCircle } from 'lucide-react';
+import { Plus, ChevronRight, Video, FileText, HelpCircle, Play } from 'lucide-react';
 import { EmployeeHoverCard } from '@/components/employees/EmployeeHoverCard';
 
 type CourseWithLessons = {
@@ -62,6 +64,7 @@ interface CourseDetailDialogProps {
   isEnrolled: boolean;
   onEnroll: (courseId: Id<'courses'>) => void;
   onPublishCourse: () => void;
+  onOpenEditCourse: (course: CourseWithLessons) => void;
   onOpenLessonPlayer: (course: CourseWithLessons, lessons: Lesson[], index: number) => void;
   onOpenCreateLesson: () => void;
   onOpenEditLesson: (lesson: Lesson) => void;
@@ -93,16 +96,31 @@ export function CourseDetailDialog({
   isEnrolled,
   onEnroll,
   onPublishCourse,
+  onOpenEditCourse,
   onOpenLessonPlayer,
   onOpenCreateLesson,
   onOpenEditLesson,
   onDeleteLesson,
 }: CourseDetailDialogProps) {
   const { t } = useTranslation();
+  const [previewLesson, setPreviewLesson] = useState<Lesson | null>(null);
+
+  const getEmbedUrl = (url: string): string => {
+    if (!url) return url;
+    const youtubeMatch = url.match(
+      /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([\w-]{11})/,
+    );
+    if (youtubeMatch) {
+      return `https://www.youtube.com/embed/${youtubeMatch[1]}?autoplay=1&mute=1`;
+    }
+    // For direct video URLs, return as-is
+    return url;
+  };
 
   if (!course) return null;
 
   return (
+    <>
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" size="lg" closeLabel={t('common.close', 'Close')}>
         <SheetHeader>
@@ -185,23 +203,39 @@ export function CourseDetailDialog({
                         </div>
                       </div>
                     </div>
-                    {isAdmin ? (
-                      <div className="flex items-center gap-1">
-                        <Button size="sm" variant="ghost" onClick={() => onOpenEditLesson(lesson)}>
-                          {t('common.edit', 'Edit')}
-                        </Button>
+                    <div className="flex items-center gap-1">
+                      {lesson.contentType === 'video' && lesson.videoUrl && (
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => onDeleteLesson(lesson._id)}
+                          className="gap-1 text-(--brand-text)"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPreviewLesson(lesson);
+                          }}
                         >
-                          {t('common.delete', 'Delete')}
+                          <Play className="h-3 w-3" />
+                          {t('learning.preview', 'Preview')}
                         </Button>
-                      </div>
-                    ) : (
-                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                    )}
+                      )}
+                      {isAdmin ? (
+                        <>
+                          <Button size="sm" variant="ghost" onClick={() => onOpenEditLesson(lesson)}>
+                            {t('common.edit', 'Edit')}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => onDeleteLesson(lesson._id)}
+                          >
+                            {t('common.delete', 'Delete')}
+                          </Button>
+                        </>
+                      ) : (
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </div>
                   </div>
                 );
               })
@@ -216,6 +250,11 @@ export function CourseDetailDialog({
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               {t('common.close', 'Close')}
             </Button>
+            {isAdmin && (
+              <Button variant="outline" onClick={() => onOpenEditCourse(course)}>
+                {t('common.edit', 'Edit')}
+              </Button>
+            )}
             {isAdmin &&
               courseWithLessons?.lessons &&
               courseWithLessons.lessons.length > 0 &&
@@ -231,6 +270,46 @@ export function CourseDetailDialog({
           </SheetFooter>
         </SheetBody>
       </SheetContent>
+
     </Sheet>
+
+      {/* Video Preview Modal — rendered via portal to escape the Sheet's stacking context */}
+      {previewLesson && createPortal(
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onClick={() => setPreviewLesson(null)}
+        >
+          <div
+            className="relative bg-(--card) rounded-2xl border border-(--border) shadow-2xl overflow-hidden w-full max-w-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-(--border)">
+              <div className="flex items-center gap-2">
+                <Play className="h-4 w-4 text-(--brand-text)" />
+                <span className="font-medium text-sm text-(--text-primary)">{previewLesson.title}</span>
+              </div>
+              <button
+                onClick={() => setPreviewLesson(null)}
+                className="p-1 rounded-lg hover:bg-(--background-subtle) transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            {/* Video */}
+            <div className="aspect-video bg-black">
+              <iframe
+                src={getEmbedUrl(previewLesson.videoUrl ?? '')}
+                className="w-full h-full"
+                allow="autoplay; encrypted-media"
+                allowFullScreen
+                title={previewLesson.title}
+              />
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )}
+    </>
   );
 }

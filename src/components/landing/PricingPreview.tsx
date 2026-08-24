@@ -677,9 +677,12 @@ function PricingCard({
 
       {/* Main card */}
       <div
-        className={`relative h-full rounded-3xl flex flex-col overflow-hidden backdrop-blur-xl transition-transform duration-500
+        className={`relative h-full rounded-3xl flex flex-col overflow-hidden backdrop-blur-xl
           ${hovered ? '-translate-y-2' : 'translate-y-0'}
         `}
+        style={{
+          transition: 'transform 0.5s cubic-bezier(0.22, 1, 0.36, 1)',
+        }}
         style={{
           borderColor: tier.popular ? tier.accentFrom : 'var(--landing-card-border)',
           borderWidth: tier.popular ? '2px' : '1px',
