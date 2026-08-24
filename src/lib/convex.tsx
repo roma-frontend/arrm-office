@@ -147,7 +147,6 @@ function useAuthForConvex() {
         setIsAuthenticated(true);
       });
     } else {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- re-fetch the token after login/logout
       fetchAccessToken({ forceRefreshToken: true });
     }
   }, [storeAuthenticated, storeUserId, fetchAccessToken]);
