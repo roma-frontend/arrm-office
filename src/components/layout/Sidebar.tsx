@@ -872,7 +872,7 @@ export function Sidebar() {
           <div
             className={cn(
               'min-w-0 flex-1',
-              collapsed ? 'opacity-0 w-0 invisible' : 'opacity-100 w-auto visible',
+              collapsed ? 'hidden opacity-0 w-0 invisible' : 'block opacity-100 w-auto visible',
             )}
             style={{
               transition: collapsed
