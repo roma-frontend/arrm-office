@@ -18,6 +18,7 @@ import type { Id } from '../../convex/_generated/dataModel';
 const modules = {
   './_generated/api.ts': () => import('../../convex/_generated/api'),
   './tasks.ts': () => import('../../convex/tasks'),
+  './recurringTasks.ts': () => import('../../convex/recurringTasks'),
   './reporting.ts': () => import('../../convex/reporting'),
   './lib/auth.ts': () => import('../../convex/lib/auth'),
   './lib/limits.ts': () => import('../../convex/lib/limits'),
@@ -476,6 +477,68 @@ describe('getVisibleTasks', () => {
     const ids = res.map((t) => t._id);
     expect(ids).toContain(foreignTaskId);
     expect(ids).not.toContain(acmeTaskId);
+  });
+  it('does not leak recurring tasks from other branches for non-staff callers', async () => {
+    const c = await seed();
+    // Insert recurring series: one for the employee, one for the peer,
+    // one for a foreign user in another org.
+    const ownSeries = await c.t.run(async (ctx) => {
+      const now = Date.now();
+      return ctx.db.insert('recurringTasks', {
+        organizationId: c.organizationId,
+        title: 'Own recurring',
+        assignedTo: c.employeeId,
+        assignedBy: c.supervisorId,
+        priority: 'medium',
+        frequency: 'weekly',
+        daysOfWeek: [1],
+        startDate: '2026-01-01',
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+      } as never);
+    });
+    const peerSeries = await c.t.run(async (ctx) => {
+      const now = Date.now();
+      return ctx.db.insert('recurringTasks', {
+        organizationId: c.organizationId,
+        title: 'Peer recurring',
+        assignedTo: c.peerId,
+        assignedBy: c.supervisorId,
+        priority: 'medium',
+        frequency: 'weekly',
+        daysOfWeek: [2],
+        startDate: '2026-01-01',
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+      } as never);
+    });
+    const foreignSeries = await c.t.run(async (ctx) => {
+      const now = Date.now();
+      return ctx.db.insert('recurringTasks', {
+        organizationId: c.otherOrgId,
+        title: 'Foreign recurring',
+        assignedTo: c.foreignId,
+        assignedBy: c.foreignId,
+        priority: 'medium',
+        frequency: 'weekly',
+        daysOfWeek: [3],
+        startDate: '2026-01-01',
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+      } as never);
+    });
+
+    // Employee should only see their own recurring series, not the peer's
+    const res = await c.t
+      .withIdentity({ email: 'employee@acme.test' })
+      .query(api.tasks.getVisibleTasks, {});
+    const ids = res.map((t) => t._id);
+    expect(ids).toContain(ownSeries);
+    expect(ids).not.toContain(peerSeries);
+    expect(ids).not.toContain(foreignSeries);
   });
 });
 

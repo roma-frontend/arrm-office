@@ -1000,7 +1000,9 @@ export const getVisibleTasks = query({
     merged.sort((a, b) => b.createdAt - a.createdAt);
 
     // Also include recurring task series from the caller's org so the board
-    // shows them alongside regular tasks.
+    // shows them alongside regular tasks. Apply the same reporting-line
+    // visibility as regular tasks: only series connected to the caller or
+    // someone in their subtree (assignee, author, or co-assignee).
     const recurringSeries = caller.organizationId
       ? await ctx.db
           .query('recurringTasks')
@@ -1008,7 +1010,18 @@ export const getVisibleTasks = query({
           .order('desc')
           .take(SMALL_LIST_CAP)
       : [];
-    const recurringAsTasks = recurringSeries.map((r) => ({
+    const visibleUserSet = new Set(visibleIds);
+    const visibleRecurring = recurringSeries.filter((r) => {
+      if (visibleUserSet.has(r.assignedTo)) return true;
+      if (visibleUserSet.has(r.assignedBy)) return true;
+      if (r.assigneeIds) {
+        for (const aid of r.assigneeIds) {
+          if (visibleUserSet.has(aid)) return true;
+        }
+      }
+      return false;
+    });
+    const recurringAsTasks = visibleRecurring.map((r) => ({
       ...r,
       status: r.status ?? (r.isActive ? ('in_progress' as const) : ('cancelled' as const)),
       deadline: undefined,
