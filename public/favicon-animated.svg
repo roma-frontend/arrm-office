@@ -25,13 +25,13 @@
       .rotate-dot { animation: rotate 3s linear infinite; }
     </style>
     <linearGradient id="mainGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" class="gradient-stop1" />
-      <stop offset="100%" class="gradient-stop2" />
+      <stop offset="0%" class="gradient-stop1" stop-color="#1d73b0" />
+      <stop offset="100%" class="gradient-stop2" stop-color="#2c8cd5" />
     </linearGradient>
   </defs>
 
   <!-- Background -->
-  <rect width="256" height="256" class="bg-dark" rx="48"/>
+  <rect width="256" height="256" class="bg-dark" rx="48" fill="#ffffff"/>
 
   <!-- Animated Gradient Circle -->
   <circle cx="128" cy="128" r="110" fill="url(#mainGradient)" opacity="0.1" class="pulse-circle"/>
@@ -40,7 +40,7 @@
   <circle cx="128" cy="128" r="95" fill="none" stroke="url(#mainGradient)" stroke-width="2" opacity="0.4" class="pulse-circle"/>
 
   <!-- HR Text -->
-  <text x="128" y="148" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="96" font-weight="700" text-anchor="middle" class="text-light" letter-spacing="-2">
+  <text x="128" y="148" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="96" font-weight="700" text-anchor="middle" class="text-light" fill="#0c1a2e" letter-spacing="-2">
     HR
   </text>
 

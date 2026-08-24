@@ -15,19 +15,19 @@
       }
     </style>
     <linearGradient id="grad16" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" class="gradient-stop1" />
-      <stop offset="100%" class="gradient-stop2" />
+      <stop offset="0%" class="gradient-stop1" stop-color="#1d73b0" />
+      <stop offset="100%" class="gradient-stop2" stop-color="#2c8cd5" />
     </linearGradient>
   </defs>
 
   <!-- Background -->
-  <rect width="256" height="256" class="bg-dark" rx="16"/>
+  <rect width="256" height="256" class="bg-dark" rx="16" fill="#ffffff"/>
 
   <!-- Gradient accent -->
   <circle cx="128" cy="128" r="75" fill="url(#grad16)" opacity="0.15"/>
 
   <!-- HR Text - minimal for 16x16 -->
-  <text x="128" y="148" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="60" font-weight="700" text-anchor="middle" class="text-light" letter-spacing="-1">
+  <text x="128" y="148" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="60" font-weight="700" text-anchor="middle" class="text-light" fill="#0c1a2e" letter-spacing="-1">
     HR
   </text>
 </svg>
