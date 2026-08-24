@@ -217,6 +217,20 @@ export function useAuthSync() {
       }
 
       if (status === 'authenticated' && session?.user && userEmail !== session.user.email) {
+        // When the superadmin is impersonating an employee, the NextAuth
+        // session still carries the superadmin's email/role. Syncing it would
+        // overwrite the impersonation JWT (`hr-auth-token`) with the superadmin's
+        // own JWT, effectively ending the impersonation and restoring full
+        // superadmin access — which defeats the whole point.
+        const impersonating = useAuthStore.getState().user?.impersonation?.active;
+        if (impersonating) {
+          // Keep `userEmail` pointing at the impersonated user so the
+          // `getCurrentUser` watcher and revoke/delete watcher stay active.
+          const impersonatedEmail = useAuthStore.getState().user?.email;
+          if (impersonatedEmail) setUserEmail(impersonatedEmail);
+          return;
+        }
+
         try {
           const finalName = extractUserName(session);
           const userEmailValue = session.user.email!;
@@ -252,6 +266,18 @@ export function useAuthSync() {
 
   useEffect(() => {
     if (!session?.user?.email) return;
+
+    // During impersonation the NextAuth session still belongs to the
+    // superadmin while `currentUser` is the impersonated employee — their
+    // emails never match. Syncing would overwrite the impersonation JWT with
+    // the superadmin's identity, ending the impersonation prematurely.
+    const impersonating = useAuthStore.getState().user?.impersonation?.active;
+    if (impersonating) {
+      // Track the impersonated user's email so the revoke/delete watcher
+      // stays active, but skip the OAuth session bridge entirely.
+      lastSyncedUserRef.current = useAuthStore.getState().user?.email ?? null;
+      return;
+    }
 
     if (lastSyncedUserRef.current === session.user.email) return;
 

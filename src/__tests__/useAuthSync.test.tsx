@@ -224,6 +224,54 @@ describe('useAuthSync', () => {
     expect(result.current.currentUser).toBeTruthy();
   });
 
+  it('does not overwrite the impersonation JWT when NextAuth session belongs to superadmin', async () => {
+    // Simulate: superadmin (OAuth) impersonates employee.
+    // NextAuth session still carries the superadmin's email.
+    (useSession as jest.Mock).mockReturnValue({
+      data: { user: { email: 'superadmin@example.com', name: 'Admin' } },
+      status: 'authenticated',
+    });
+    // Zustand store already holds the impersonated employee's identity
+    // (set by ImpersonationClient.tsx after the impersonation API responded).
+    mockIsAuthenticated.mockReturnValue(true);
+    const storeState = {
+      login: mockLogin,
+      logout: mockLogout,
+      isAuthenticated: true,
+      user: {
+        id: 'employee-1',
+        email: 'employee@example.com',
+        name: 'Employee',
+        role: 'employee',
+        impersonation: {
+          active: true,
+          sessionId: 'imp-1',
+          expiresAt: Date.now() + 3600_000,
+          superadminName: 'Admin',
+          superadminEmail: 'superadmin@example.com',
+        },
+      },
+    };
+    const origGetState = (useAuthStore as unknown as { getState: jest.Mock }).getState;
+    (useAuthStore as unknown as { getState: jest.Mock }).getState = jest.fn(() => storeState);
+
+    try {
+      renderHook(() => useAuthSync());
+
+      // Wait for the first effect to settle.
+      await waitFor(() => {});
+
+      // The OAuth session bridge must NOT have been called — doing so would
+      // overwrite the impersonation JWT with the superadmin's own JWT.
+      expect(global.fetch).not.toHaveBeenCalledWith('/api/auth/oauth-session', expect.anything());
+      // login() must not be called with the superadmin's data either.
+      expect(mockLogin).not.toHaveBeenCalled();
+    } finally {
+      (useAuthStore as unknown as { getState: jest.Mock }).getState = origGetState;
+      mockIsAuthenticated.mockReturnValue(false);
+    }
+  });
+
   it('force-logs-out and redirects when the current user doc is deleted (revoke)', async () => {
     // Start unauthenticated with a valid JWT: the store hydrates and userEmail
     // is set. currentUser is present, so the logout watcher is armed.
