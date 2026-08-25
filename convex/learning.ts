@@ -608,6 +608,31 @@ export const updateLessonProgress = mutation({
       }
 
       await ctx.db.patch(enrollment._id, enrollmentPatch);
+
+      // Auto-issue certificate on course completion
+      if (progressPercent === 100 && enrollment.status !== 'completed') {
+        const existingCert = await ctx.db
+          .query('certificates')
+          .withIndex('by_user_course', (q) =>
+            q
+              .eq('organizationId', args.organizationId)
+              .eq('userId', requesterId)
+              .eq('courseId', args.courseId),
+          )
+          .first();
+
+        if (!existingCert) {
+          const certId = `CERT-${args.organizationId}-${requesterId}-${args.courseId}-${now}`;
+          await ctx.db.insert('certificates', {
+            organizationId: args.organizationId,
+            userId: requesterId,
+            courseId: args.courseId,
+            certificateId: certId,
+            issuedAt: now,
+            createdAt: now,
+          });
+        }
+      }
     }
 
     return { success: true, progress: progressPercent };
