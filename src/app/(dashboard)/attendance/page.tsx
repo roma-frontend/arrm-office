@@ -118,23 +118,27 @@ export default function AttendancePage() {
   const selectedOrgId = useSelectedOrganization();
   const lang = i18n.language || 'en';
   const dateFnsLocale = lang === 'ru' ? ru : lang === 'hy' ? hy : enUS;
+  const isAdminOrSupervisor = user?.role === 'admin' || user?.role === 'supervisor';
+  const isSuperadmin = user?.role === 'superadmin';
+  const _isEmployee = user?.role === 'employee';
+  // Org-wide attendance views are for admins and superadmins only; a
+  // supervisor keeps the rating tab (their subtree is resolved server-side).
+  const canViewAllAttendance = user?.role === 'admin' || isSuperadmin;
+  const isStaff = isAdminOrSupervisor || isSuperadmin;
+
   const [selectedEmployee, setSelectedEmployee] = useState<{
     id: Id<'users'>;
     name: string;
   } | null>(null);
   const [detailRecord, setDetailRecord] = useState<AttendanceRecord | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<Tab>('today');
+  const [activeTab, setActiveTab] = useState<Tab>(canViewAllAttendance ? 'today' : 'rating');
   const [drawerEmployee, setDrawerEmployee] = useState<EmployeeInfo | null>(null);
   const [empSearch, setEmpSearch] = useState('');
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
-
-  const isAdminOrSupervisor = user?.role === 'admin' || user?.role === 'supervisor';
-  const isSuperadmin = user?.role === 'superadmin';
-  const _isEmployee = user?.role === 'employee';
 
   // For superadmin, use selectedOrgId if available
   const _effectiveOrgId = isSuperadmin && selectedOrgId ? selectedOrgId : user?.organizationId;
@@ -143,38 +147,33 @@ export default function AttendancePage() {
   // Use user?.id as dependency so queries only run after localStorage hydration
   const todaySummary = useQuery(
     getTodaySummaryApi,
-    user?.id && (isAdminOrSupervisor || isSuperadmin)
-      ? { adminId: user.id as Id<'users'> }
-      : 'skip',
+    user?.id && canViewAllAttendance ? { adminId: user.id as Id<'users'> } : 'skip',
   );
   const _currentlyAtWork = useQuery(
     getCurrentlyAtWorkApi,
-    user?.id && (isAdminOrSupervisor || isSuperadmin)
-      ? { adminId: user.id as Id<'users'> }
-      : 'skip',
+    user?.id && canViewAllAttendance ? { adminId: user.id as Id<'users'> } : 'skip',
   );
   const todayAllAttendance = useQuery(
     getTodayAllAttendanceApi,
-    user?.id && (isAdminOrSupervisor || isSuperadmin)
-      ? { adminId: user.id as Id<'users'> }
-      : 'skip',
+    user?.id && canViewAllAttendance ? { adminId: user.id as Id<'users'> } : 'skip',
   );
-  const needsRating = useQuery(
-    getNeedsRatingApi,
-    user?.id && (isAdminOrSupervisor || isSuperadmin) ? {} : 'skip',
-  );
+  const needsRating = useQuery(getNeedsRatingApi, user?.id && isStaff ? {} : 'skip');
 
   const allEmployeesOverview = useQuery(
     api.timeTracking.getAllEmployeesAttendanceOverview,
-    user?.id && (isAdminOrSupervisor || isSuperadmin)
+    user?.id && canViewAllAttendance
       ? { adminId: user.id as Id<'users'>, month: selectedMonth }
       : 'skip',
   );
 
   const tabs = [
-    { id: 'today' as const, label: t('timePeriods.today'), icon: Clock },
-    { id: 'all' as const, label: t('attendance.allEmployees'), icon: Users },
-    { id: 'rating' as const, label: t('attendance.rating'), icon: Star },
+    ...(canViewAllAttendance
+      ? [
+          { id: 'today' as const, label: t('timePeriods.today'), icon: Clock },
+          { id: 'all' as const, label: t('attendance.allEmployees'), icon: Users },
+        ]
+      : []),
+    ...(isStaff ? [{ id: 'rating' as const, label: t('attendance.rating'), icon: Star }] : []),
   ];
 
   const MONTHS: string[] = [
@@ -212,14 +211,10 @@ export default function AttendancePage() {
         <div className="sticky top-0 z-10 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 mb-4 bg-(--background)/95 backdrop-blur supports-[backdrop-filter]:bg-(--background)/60 border-b border-(--border)">
           <div>
             <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-(--text-primary)">
-              {isAdminOrSupervisor
-                ? t('attendance.attendanceManagement')
-                : t('attendance.myAttendance')}
+              {isStaff ? t('attendance.attendanceManagement') : t('attendance.myAttendance')}
             </h2>
             <p className="text-(--text-muted) text-sm mt-1">
-              {isAdminOrSupervisor
-                ? t('attendance.monitorEmployeeAttendance')
-                : t('attendance.trackWorkHours')}
+              {isStaff ? t('attendance.monitorEmployeeAttendance') : t('attendance.trackWorkHours')}
             </p>
           </div>
         </div>
@@ -233,14 +228,14 @@ export default function AttendancePage() {
         </div>
 
         {/* Employee: full attendance dashboard */}
-        {!isAdminOrSupervisor && (
+        {!isStaff && (
           <div>
             <AttendanceDashboard />
           </div>
         )}
 
         {/* Tabs for Admin/Supervisor */}
-        {isAdminOrSupervisor && (
+        {isStaff && (
           <div>
             <div
               className="flex gap-1 p-1 rounded-xl w-fit"

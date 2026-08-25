@@ -8,7 +8,7 @@ import { creditBalance, resolveRecognitionSettings } from './lib/points';
 import { getAuthCaller } from './lib/getAuthCaller';
 import { hasCapability, hasOrgWideReach } from './lib/capabilities';
 import { assertModuleAccess } from './lib/entitlements';
-import { isAncestorOf } from './lib/reportingLine';
+import { isAncestorOf, getSubordinateIds } from './lib/reportingLine';
 import { canAccessUser } from './lib/rbac';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -73,6 +73,35 @@ async function mayReadAttendance(ctx: QueryCtx, userId: Id<'users'>): Promise<bo
   const caller = await getAuthCaller(ctx);
   if (!caller) return false;
   return canAccessUser(ctx, caller._id, userId);
+}
+
+/**
+ * Who is looking at org-wide attendance? The role comes from the
+ * *authenticated caller*, never from a client-supplied id — the old
+ * `args.adminId` check read the role of whatever id the client sent, so any
+ * employee could read the whole org's attendance by passing an admin's id.
+ *
+ * - admin → org-wide within their organization
+ * - superadmin → everything
+ * - supervisor → own reporting subtree only
+ * - everyone else → null (no access; queries degrade to empty data)
+ */
+async function resolveAttendanceScope(
+  ctx: QueryCtx,
+): Promise<{ orgToFilter: Id<'organizations'> | null; subtreeIds: Id<'users'>[] | null } | null> {
+  const caller = await getAuthCaller(ctx);
+  if (!caller) return null;
+  if (caller.role === 'admin' || isSuperadmin(caller)) {
+    return {
+      orgToFilter: isSuperadmin(caller) ? null : (caller.organizationId ?? null),
+      subtreeIds: null,
+    };
+  }
+  if (caller.role === 'supervisor' && caller.organizationId) {
+    const subtree = await getSubordinateIds(ctx, caller._id, caller.organizationId);
+    return { orgToFilter: caller.organizationId, subtreeIds: subtree };
+  }
+  return null;
 }
 
 // Armenia timezone offset: UTC+4
@@ -357,13 +386,14 @@ export const getUserHistory = query({
 // ── Get All Employees Currently At Work ──────────────────────────────────
 export const getCurrentlyAtWork = query({
   args: {
+    /** @deprecated kept for API compatibility — the caller's own identity is used. */
     adminId: v.id('users'),
   },
   handler: async (ctx, args) => {
-    const admin = await ctx.db.get(args.adminId);
-    if (!admin || (admin.role !== 'admin' && admin.role !== 'supervisor' && !isSuperadmin(admin))) {
-      throw new Error('Only admins/supervisors can view attendance');
-    }
+    void args;
+    const scope = await resolveAttendanceScope(ctx);
+    if (!scope) return [];
+    const { orgToFilter, subtreeIds } = scope;
 
     const today = getTodayDate();
     const records = await ctx.db
@@ -373,10 +403,6 @@ export const getCurrentlyAtWork = query({
 
     const atWork = records.filter((r) => r.status === 'checked_in');
 
-    // Filter by organization if admin (not superadmin)
-    const callerIsSuperadmin = isSuperadmin(admin);
-    const orgToFilter = callerIsSuperadmin ? null : admin.organizationId;
-
     const withUsers = await Promise.all(
       atWork.map(async (record) => {
         const user = await ctx.db.get(record.userId);
@@ -384,6 +410,9 @@ export const getCurrentlyAtWork = query({
 
         // Skip if org doesn't match
         if (orgToFilter && user.organizationId !== orgToFilter) return null;
+
+        // Supervisors see only their reporting subtree
+        if (subtreeIds && !subtreeIds.includes(record.userId)) return null;
 
         // Skip superadmins - they should not appear in employee attendance lists
         if (user.role === 'superadmin') return null;
@@ -419,23 +448,20 @@ export const getRecentAttendance = query({
 // ── Get Today's Full Attendance (all who checked in/out) ─────────────────
 export const getTodayAllAttendance = query({
   args: {
+    /** @deprecated kept for API compatibility — the caller's own identity is used. */
     adminId: v.id('users'),
   },
   handler: async (ctx, args) => {
-    const admin = await ctx.db.get(args.adminId);
-    if (!admin || (admin.role !== 'admin' && admin.role !== 'supervisor' && !isSuperadmin(admin))) {
-      throw new Error('Only admins/supervisors can view attendance');
-    }
+    void args;
+    const scope = await resolveAttendanceScope(ctx);
+    if (!scope) return [];
+    const { orgToFilter, subtreeIds } = scope;
 
     const today = getTodayDate();
     const records = await ctx.db
       .query('timeTracking')
       .withIndex('by_date', (q) => q.eq('date', today))
       .take(DEFAULT_LIST_CAP);
-
-    // Filter by organization if admin (not superadmin)
-    const callerIsSuperadmin = isSuperadmin(admin);
-    const orgToFilter = callerIsSuperadmin ? null : admin.organizationId;
 
     const withUsers = await Promise.all(
       records.map(async (record) => {
@@ -444,6 +470,9 @@ export const getTodayAllAttendance = query({
 
         // Skip if org doesn't match
         if (orgToFilter && user.organizationId !== orgToFilter) return null;
+
+        // Supervisors see only their reporting subtree
+        if (subtreeIds && !subtreeIds.includes(record.userId)) return null;
 
         // Skip superadmins - they should not appear in employee attendance lists
         if (user.role === 'superadmin') return null;
@@ -472,11 +501,13 @@ export const getTodayAllAttendance = query({
 // ── Get Today's Attendance Summary ───────────────────────────────────────
 export const getTodayAttendanceSummary = query({
   args: {
+    /** @deprecated kept for API compatibility — the caller's own identity is used. */
     adminId: v.id('users'),
   },
   handler: async (ctx, args) => {
-    const admin = await ctx.db.get(args.adminId);
-    if (!admin)
+    void args;
+    const scope = await resolveAttendanceScope(ctx);
+    if (!scope) {
       return {
         totalActive: 0,
         checkedIn: 0,
@@ -486,19 +517,14 @@ export const getTodayAttendanceSummary = query({
         absent: 0,
         attendanceRate: '0',
       };
-    if (admin.role !== 'admin' && admin.role !== 'supervisor' && !isSuperadmin(admin)) {
-      throw new Error('Only admins/supervisors can view attendance');
     }
+    const { orgToFilter, subtreeIds } = scope;
 
     const today = getTodayDate();
     const records = await ctx.db
       .query('timeTracking')
       .withIndex('by_date', (q) => q.eq('date', today))
       .take(DEFAULT_LIST_CAP);
-
-    // Filter by organization if admin (not superadmin)
-    const callerIsSuperadmin = isSuperadmin(admin);
-    const orgToFilter = callerIsSuperadmin ? null : admin.organizationId;
 
     // Scope user list by org when possible; else capped full-table read.
     const totalEmployees = orgToFilter
@@ -513,6 +539,11 @@ export const getTodayAttendanceSummary = query({
     // Filter by org if admin
     if (orgToFilter) {
       activeEmployees = activeEmployees.filter((u) => u.organizationId === orgToFilter);
+    }
+
+    // Supervisors only count their reporting subtree
+    if (subtreeIds) {
+      activeEmployees = activeEmployees.filter((u) => subtreeIds.includes(u._id));
     }
 
     // Filter records by org if admin
@@ -594,17 +625,15 @@ export const getMonthlyStats = query({
 // ── Admin: Get all employees with attendance for a date range ─────────────
 export const getAllEmployeesAttendanceOverview = query({
   args: {
+    /** @deprecated kept for API compatibility — the caller's own identity is used. */
     adminId: v.id('users'),
     month: v.string(), // "2026-02"
   },
   handler: async (ctx, args) => {
-    const admin = await ctx.db.get(args.adminId);
-    if (!admin || (admin.role !== 'admin' && admin.role !== 'supervisor' && !isSuperadmin(admin))) {
-      throw new Error('Only admins/supervisors can view attendance');
-    }
-
-    const callerIsSuperadmin = isSuperadmin(admin);
-    const orgToFilter = callerIsSuperadmin ? null : admin.organizationId;
+    void args.adminId;
+    const scope = await resolveAttendanceScope(ctx);
+    if (!scope) return [];
+    const { orgToFilter, subtreeIds } = scope;
 
     const users = orgToFilter
       ? await ctx.db
@@ -618,6 +647,11 @@ export const getAllEmployeesAttendanceOverview = query({
     // Filter by organization if admin
     if (orgToFilter) {
       activeUsers = activeUsers.filter((u) => u.organizationId === orgToFilter);
+    }
+
+    // Supervisors see only their reporting subtree
+    if (subtreeIds) {
+      activeUsers = activeUsers.filter((u) => subtreeIds.includes(u._id));
     }
 
     const results = await Promise.all(
