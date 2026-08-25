@@ -194,7 +194,7 @@ export const navItems: NavEntry[] = [
     href: '/recruitment',
     labelKey: 'nav.talent',
     icon: Briefcase,
-    roles: ['superadmin', 'admin', 'supervisor'],
+    roles: ['superadmin', 'admin', 'supervisor', 'employee'],
     children: [
       { href: '/recruitment', labelKey: 'nav.recruitment', icon: Briefcase },
       { href: '/onboarding', labelKey: 'nav.onboarding', icon: Rocket },
