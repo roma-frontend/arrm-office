@@ -72,6 +72,8 @@ export interface SettlementInput {
   workingDays?: number;
   /** Employee exempt from the funded pension (Armenia: born before 1974). */
   pensionExempt?: boolean;
+  /** Employee participates in Armenia's mandatory health insurance. */
+  healthInsured?: boolean;
 }
 
 export interface SettlementBreakdown {
@@ -111,6 +113,7 @@ export function calculateSettlement(input: SettlementInput): SettlementBreakdown
     country: input.country,
     baseSalary: totalGross,
     pensionExempt: input.pensionExempt ?? false,
+    healthInsured: input.healthInsured ?? false,
   });
 
   return {

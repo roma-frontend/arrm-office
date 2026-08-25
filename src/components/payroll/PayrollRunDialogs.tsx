@@ -258,7 +258,12 @@ export function CreatePayrollRunDialog({
       onOpenChange(false);
       setResetKey((k) => k + 1);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('payroll.errorCreatingRun'));
+      const message = error instanceof Error ? error.message : t('payroll.errorCreatingRun');
+      if (message === 'Payroll run for this period already exists') {
+        toast.error(t('payroll.runExists'));
+      } else {
+        toast.error(message);
+      }
     } finally {
       setSubmitting(false);
     }

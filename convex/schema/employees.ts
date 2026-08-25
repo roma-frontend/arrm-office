@@ -76,6 +76,13 @@ export const employees = {
     birthYear: v.optional(v.number()),
     /** Manual override of the pension exemption derived from birthYear/dateOfBirth. */
     pensionExempt: v.optional(v.boolean()),
+    /**
+     * Whether the employee participates in Armenia's mandatory health insurance system.
+     * When true, health insurance contributions are deducted per the tiered schedule:
+     * 0 AMD (< 200k gross), 4,800 AMD (200k-500k), 10,800 AMD (> 500k).
+     * The employee marks this themselves during registration.
+     */
+    healthInsured: v.optional(v.boolean()),
     /** Last SRC (ՀՎՀՀ) taxpayer-verification status. */
     taxIdStatus: v.optional(
       v.union(

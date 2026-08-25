@@ -53,6 +53,12 @@ export interface Contribution {
    * `pensionExempt: true`, such contributions are skipped entirely.
    */
   pensionExemptible?: boolean;
+  /**
+   * Tiered fixed amounts: array of {min, max, amount} for contributions like
+   * Armenia health insurance where the fixed amount depends on gross brackets.
+   * When present, `fixedAmount` and `rate` are ignored.
+   */
+  tiers?: { min?: number; max?: number; amount: number }[];
 }
 
 export interface CountryTaxRule {
@@ -107,6 +113,15 @@ export const TAX_RULES: Record<CountryCode, CountryTaxRule> = {
       },
       { name: 'Military stamp duty (low)', fixedAmount: 1000, maxGross: 1000000, field: 'other' },
       { name: 'Military stamp duty (high)', fixedAmount: 15000, minGross: 1000000, field: 'other' },
+      {
+        name: 'Health insurance',
+        tiers: [
+          { max: 200000, amount: 0 },
+          { min: 200000, max: 500000, amount: 4800 },
+          { min: 500000, amount: 10800 },
+        ],
+        field: 'healthInsurance',
+      },
     ],
     employerContributions: [],
   },

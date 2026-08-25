@@ -92,6 +92,8 @@ export const getSettlementPreview = query({
       severanceGross: severanceGross ?? 0,
       workingDays: workingDaysPerMonth,
       pensionExempt,
+      healthInsured:
+        salaryDoc?.healthInsured ?? profile?.healthInsured ?? employee.healthInsured ?? false,
     });
 
     const rule = getTaxRule(country);

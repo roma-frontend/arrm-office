@@ -78,6 +78,10 @@ export const users = {
     birthYear: v.optional(v.number()),
     /** Manual override of the pension exemption derived from birthYear/dateOfBirth. */
     pensionExempt: v.optional(v.boolean()),
+    /**
+     * Whether the employee participates in Armenia's mandatory health insurance system.
+     */
+    healthInsured: v.optional(v.boolean()),
     language: v.optional(v.string()),
     timezone: v.optional(v.string()),
     dateFormat: v.optional(v.string()),

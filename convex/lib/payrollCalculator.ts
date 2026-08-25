@@ -46,6 +46,11 @@ export interface PayrollInput {
    * 1974). Skips contributions marked `pensionExemptible` in the rule.
    */
   pensionExempt?: boolean;
+  /**
+   * Employee participates in Armenia's mandatory health insurance system.
+   * When false/undefined, health insurance contributions are skipped.
+   */
+  healthInsured?: boolean;
   /** Overtime pay multiplier from overtimeSettings (default 1.5; 0 = comp leave). */
   overtimeMultiplier?: number;
 }
@@ -85,6 +90,8 @@ function calculateOvertimePay(hours: number, hourlyRate: number, multiplier: num
  *    never below 0;
  *  - `minGross`/`maxGross` — tier gates: the contribution only applies while
  *    gross > minGross (strictly above) and gross <= maxGross (at or below).
+ *  - `tiers` — array of {min?, max?, amount} for tiered fixed amounts
+ *    (e.g. Armenia health insurance: 0/<200k, 4800/200k-500k, 10800/>500k).
  */
 function computeContribution(grossSalary: number, c: Contribution): number {
   // No pay → no deductions (e.g. a zero-days leave payout must not attract a
@@ -92,6 +99,19 @@ function computeContribution(grossSalary: number, c: Contribution): number {
   if (grossSalary <= 0) return 0;
   if (c.minGross !== undefined && grossSalary <= c.minGross) return 0;
   if (c.maxGross !== undefined && grossSalary > c.maxGross) return 0;
+
+  // Handle tiered fixed amounts (e.g. Armenia health insurance)
+  if (c.tiers !== undefined && c.tiers.length > 0) {
+    for (const tier of c.tiers) {
+      const aboveMin = tier.min === undefined || grossSalary > tier.min;
+      const belowMax = tier.max === undefined || grossSalary <= tier.max;
+      if (aboveMin && belowMax) {
+        return round2(tier.amount);
+      }
+    }
+    return 0;
+  }
+
   if (c.fixedAmount !== undefined) return round2(c.fixedAmount);
   const base = c.cap ? Math.min(grossSalary, c.cap) : grossSalary;
   const amount = base * (c.rate ?? 0) - (c.offset ?? 0);
@@ -107,13 +127,19 @@ function computeDeductions(
   grossSalary: number,
   rule: CountryTaxRule,
   pensionExempt = false,
+  healthInsured = false,
 ): Deductions {
   const taxableIncome = Math.max(0, grossSalary - (rule.taxFreeAllowance ?? 0));
   const incomeTax = calculateProgressiveTax(taxableIncome, rule.incomeTaxBrackets);
 
-  const applicable = pensionExempt
+  let applicable = pensionExempt
     ? rule.employeeContributions.filter((c) => !c.pensionExemptible)
     : rule.employeeContributions;
+
+  // Filter out health insurance contributions when employee is not enrolled
+  if (!healthInsured) {
+    applicable = applicable.filter((c) => c.field !== 'healthInsurance');
+  }
 
   // Optional slots are initialized to 0 so consumers can always read them
   // (e.g. `deductions.pension` stays 0 when the funded pension is skipped).
@@ -162,6 +188,7 @@ export function calculatePayroll(input: PayrollInput): PayrollCalculation {
     hourlyRate = 0,
     taxOverride = null,
     pensionExempt = false,
+    healthInsured = false,
     overtimeMultiplier = 1.5,
   } = input;
   const rule = applyTaxRuleOverride(getTaxRule(country), taxOverride);
@@ -173,7 +200,7 @@ export function calculatePayroll(input: PayrollInput): PayrollCalculation {
 
   const grossSalary = baseSalary + bonuses + overtimePay;
 
-  const deductions = computeDeductions(grossSalary, rule, pensionExempt);
+  const deductions = computeDeductions(grossSalary, rule, pensionExempt, healthInsured);
   const employerContributions = computeEmployerContributions(grossSalary, rule);
   const totalCost = round2(grossSalary + employerContributions);
   const netSalary = round2(grossSalary - deductions.total);
@@ -199,6 +226,7 @@ export interface GrossFromNetInput {
   hourlyRate?: number;
   taxOverride?: TaxRuleOverride | null;
   pensionExempt?: boolean;
+  healthInsured?: boolean;
   overtimeMultiplier?: number;
 }
 
@@ -218,6 +246,7 @@ export function computeGrossFromNet(input: GrossFromNetInput): PayrollCalculatio
     hourlyRate = 0,
     taxOverride = null,
     pensionExempt = false,
+    healthInsured = false,
     overtimeMultiplier = 1.5,
   } = input;
 
@@ -237,6 +266,7 @@ export function computeGrossFromNet(input: GrossFromNetInput): PayrollCalculatio
       hourlyRate,
       taxOverride,
       pensionExempt,
+      healthInsured,
       overtimeMultiplier,
     }).netSalary;
 
@@ -249,6 +279,7 @@ export function computeGrossFromNet(input: GrossFromNetInput): PayrollCalculatio
       hourlyRate,
       taxOverride,
       pensionExempt,
+      healthInsured,
       overtimeMultiplier,
     });
   }
@@ -282,6 +313,7 @@ export function computeGrossFromNet(input: GrossFromNetInput): PayrollCalculatio
     hourlyRate,
     taxOverride,
     pensionExempt,
+    healthInsured,
     overtimeMultiplier,
   });
 }

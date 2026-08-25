@@ -23,6 +23,8 @@ export interface UserProfile {
   birthYear?: number;
   /** Manual override of the pension exemption derived from birthYear/dateOfBirth. */
   pensionExempt?: boolean;
+  /** Whether the employee participates in Armenia's mandatory health insurance. */
+  healthInsured?: boolean;
   presenceStatus?: 'available' | 'in_meeting' | 'in_call' | 'out_of_office' | 'busy';
   travelAllowance?: number;
   paidLeaveBalance?: number;

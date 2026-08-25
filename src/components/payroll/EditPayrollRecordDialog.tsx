@@ -207,7 +207,9 @@ export function EditPayrollRecordDialog({ open, onOpenChange, record }: Props) {
       toast.success(t('payroll.recordUpdated'));
       onOpenChange(false);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : t('common.error', 'Error'));
+      const msg = e instanceof Error ? e.message : '';
+      const key = getPayrollErrorTranslationKey(msg);
+      toast.error(key ? t(key) : msg || t('common.error', 'Error'));
     }
   };
 
@@ -225,11 +227,25 @@ export function EditPayrollRecordDialog({ open, onOpenChange, record }: Props) {
       toast.success(t('payroll.recordDeleted'));
       onOpenChange(false);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : t('common.error', 'Error'));
+      const msg = e instanceof Error ? e.message : '';
+      const key = getPayrollErrorTranslationKey(msg);
+      toast.error(key ? t(key) : msg || t('common.error', 'Error'));
     } finally {
       setDeleting(false);
     }
   };
+
+  function getPayrollErrorTranslationKey(msg: string): string | null {
+    const map: Record<string, string> = {
+      'Cannot update a paid payroll record': 'payroll.cannotUpdatePaid',
+      'Cannot delete a paid payroll record': 'payroll.cannotDeletePaidRecord',
+      'Base salary cannot be negative': 'payroll.baseSalaryCannotBeNegative',
+      'Bonuses cannot be negative': 'payroll.bonusesCannotBeNegative',
+      'Overtime hours cannot be negative': 'payroll.overtimeHoursCannotBeNegative',
+      'Payroll record not found': 'payroll.recordNotFound',
+    };
+    return map[msg] ?? null;
+  }
 
   const steps: WizardStep[] = [
     {

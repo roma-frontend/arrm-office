@@ -107,11 +107,32 @@ export default function PayrollRunDetailClient({ params }: { params: Promise<{ i
       await fn();
       toast.success(t(successKey) || 'Done');
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : t('common.error', 'Error'));
+      const msg = e instanceof Error ? e.message : '';
+      const key = getPayrollErrorTranslationKey(msg);
+      toast.error(key ? t(key) : msg || t('common.error', 'Error'));
     } finally {
       setActionLoading(false);
     }
   };
+
+  function getPayrollErrorTranslationKey(msg: string): string | null {
+    const map: Record<string, string> = {
+      'Payroll run for this period already exists': 'payroll.runExists',
+      'Invalid period format, expected YYYY-MM': 'payroll.invalidPeriodFormat',
+      'Payroll run not found': 'payroll.runNotFound',
+      'Can only calculate draft payroll runs': 'payroll.canOnlyCalculateDraft',
+      'Can only approve calculated payroll runs': 'payroll.canOnlyApproveCalculated',
+      'Can only pay approved payroll runs': 'payroll.canOnlyPayApproved',
+      'Cannot cancel a paid payroll run': 'payroll.cannotCancelPaid',
+      'Cannot update a paid payroll record': 'payroll.cannotUpdatePaid',
+      'Cannot delete a paid payroll record': 'payroll.cannotDeletePaidRecord',
+      'Insufficient permissions': 'payroll.insufficientPermissions',
+      'Base salary cannot be negative': 'payroll.baseSalaryCannotBeNegative',
+      'Bonuses cannot be negative': 'payroll.bonusesCannotBeNegative',
+      'Overtime hours cannot be negative': 'payroll.overtimeHoursCannotBeNegative',
+    };
+    return map[msg] ?? null;
+  }
 
   if (!run) {
     return (

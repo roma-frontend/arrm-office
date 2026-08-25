@@ -305,6 +305,8 @@ export const calculatePayrollRun = mutation({
           birthYear: emp.birthYear ?? user.birthYear,
           dateOfBirth: emp.dateOfBirth ?? user.dateOfBirth,
         }),
+        // Armenia: health insurance participation flag
+        healthInsured: emp.healthInsured ?? user.healthInsured ?? false,
       });
 
       await ctx.db.insert('payrollRecords', {
@@ -708,6 +710,7 @@ export const updatePayrollRecord = mutation({
           birthYear: empProfile?.birthYear ?? empUser?.birthYear,
           dateOfBirth: empProfile?.dateOfBirth ?? empUser?.dateOfBirth,
         }),
+        healthInsured: empProfile?.healthInsured ?? empUser?.healthInsured ?? false,
       });
 
       updates.grossSalary = calculation.grossSalary;

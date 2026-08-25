@@ -14,6 +14,7 @@ interface PayrollEmployee {
   birthYear?: number;
   dateOfBirth?: string;
   pensionExempt?: boolean;
+  healthInsured?: boolean;
 }
 
 /** Settings returned by `settings.getOrganizationSettings`. */
@@ -74,6 +75,8 @@ export const processScheduledPayroll = action({
             birthYear: emp.birthYear,
             dateOfBirth: emp.dateOfBirth,
           }),
+          // Armenia: health insurance participation flag
+          healthInsured: emp.healthInsured ?? false,
         });
 
         totalGross += calculation.grossSalary;

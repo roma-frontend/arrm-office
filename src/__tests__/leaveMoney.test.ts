@@ -146,6 +146,66 @@ describe('calculateSettlement — funded-pension exemption', () => {
   });
 });
 
+describe('calculateSettlement — health insurance enrollment (Armenia)', () => {
+  it('adds health insurance deduction when healthInsured is true and totalGross > 500k', () => {
+    // total gross 640,000 (> 500k) ; healthInsured: true → 10,800 health ins
+    // income 128,000 + pension 39,000 + stamp 1,000 + health 10,800 = 178,800
+    const r = calculateSettlement({
+      country: 'armenia',
+      baseSalary: 420_000,
+      unusedLeaveDays: 10,
+      lastDay: new Date(2026, 0, 30).getTime(),
+      healthInsured: true,
+    });
+    expect(r.breakdown.deductions.healthInsurance).toBe(10_800);
+    expect(r.breakdown.deductions.total).toBe(178_800);
+    expect(r.net).toBe(461_200);
+  });
+
+  it('applies health insurance tier 4,800 when totalGross is 200,001-500,000', () => {
+    // base 210,000 → daily 10,000 ; unused 5 days → 50,000 ; prorated 22 days → 220,000 ; total 270,000
+    // 200k-500k bracket → 4,800 health ins
+    const r = calculateSettlement({
+      country: 'armenia',
+      baseSalary: 210_000,
+      unusedLeaveDays: 5,
+      lastDay: new Date(2026, 0, 30).getTime(),
+      healthInsured: true,
+    });
+    expect(r.totalGross).toBe(270_000);
+    expect(r.breakdown.deductions.healthInsurance).toBe(4_800);
+  });
+
+  it('does not add health insurance when healthInsured is false', () => {
+    const r = calculateSettlement({
+      country: 'armenia',
+      baseSalary: 420_000,
+      unusedLeaveDays: 10,
+      lastDay: new Date(2026, 0, 30).getTime(),
+      healthInsured: false,
+    });
+    expect(r.breakdown.deductions.healthInsurance).toBe(0);
+    expect(r.breakdown.deductions.total).toBe(168_000);
+    expect(r.net).toBe(472_000);
+  });
+
+  it('skips both pension and health insurance for exempt employee with healthInsured true', () => {
+    // total gross 640,000 ; exempt + insured: income 128,000 + pension 0 + stamp 1,000 + health 10,800
+    const r = calculateSettlement({
+      country: 'armenia',
+      baseSalary: 420_000,
+      unusedLeaveDays: 10,
+      lastDay: new Date(2026, 0, 30).getTime(),
+      pensionExempt: true,
+      healthInsured: true,
+    });
+    expect(r.breakdown.deductions.pension).toBe(0);
+    expect(r.breakdown.deductions.healthInsurance).toBe(10_800);
+    expect(r.breakdown.deductions.total).toBe(139_800);
+    expect(r.net).toBe(500_200);
+  });
+});
+
 describe('WORKING_DAYS_PER_MONTH', () => {
   it('defaults to 21', () => {
     expect(WORKING_DAYS_PER_MONTH).toBe(21);
