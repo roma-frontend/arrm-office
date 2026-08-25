@@ -6,6 +6,21 @@ import { DEFAULT_LIST_CAP, SMALL_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits'
 import { internal } from './_generated/api';
 import { notify } from './lib/notify';
 import { assertModuleAccess } from './lib/entitlements';
+import { getAuthCaller } from './lib/getAuthCaller';
+import type { QueryCtx } from './_generated/server';
+
+/**
+ * Staff callers (admin / superadmin) see the whole org fleet; everyone else
+ * only ever sees assets assigned to them. Returns null for non-staff.
+ */
+async function getStaffCaller(
+  ctx: QueryCtx,
+): Promise<{ _id: Id<'users'>; organizationId?: Id<'organizations'> } | null> {
+  const caller = await getAuthCaller(ctx);
+  if (!caller) return null;
+  if (caller.role !== 'admin' && caller.role !== 'superadmin') return null;
+  return caller;
+}
 
 // ═══════════════════════════════════════════════════════════════
 //  HELPERS
@@ -182,6 +197,13 @@ export const listAssets = query({
     ),
   },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return [];
+    const staff = await getStaffCaller(ctx);
+
+    // Org boundary: a caller with an org only ever sees that org's fleet.
+    if (caller.organizationId && caller.organizationId !== args.organizationId) return [];
+
     let q = ctx.db
       .query('assetCatalog')
       .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId));
@@ -193,7 +215,20 @@ export const listAssets = query({
       q = q.filter((q) => q.eq(q.field('status'), args.status));
     }
 
-    const assets = await q.order('desc').take(DEFAULT_LIST_CAP);
+    let assets = await q.order('desc').take(DEFAULT_LIST_CAP);
+
+    // Non-staff see only the assets currently assigned to them — never the
+    // org catalog or who holds what (that is HR-sensitive data).
+    if (!staff) {
+      const mine = await ctx.db
+        .query('assetAssignments')
+        .withIndex('by_assignee_active', (q) =>
+          q.eq('assignedTo', caller._id).eq('status', 'active'),
+        )
+        .take(DEFAULT_LIST_CAP);
+      const myAssetIds = new Set(mine.map((a) => a.assetId));
+      assets = assets.filter((a) => myAssetIds.has(a._id));
+    }
 
     // Enrich with current assignment info
     return await Promise.all(
@@ -256,8 +291,22 @@ export const listAssets = query({
 export const getAsset = query({
   args: { assetId: v.id('assetCatalog') },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return null;
+    const staff = await getStaffCaller(ctx);
     const asset = await ctx.db.get(args.assetId);
     if (!asset) return null;
+
+    // Org boundary first, then the staff/holder rule: full detail is for
+    // staff or the person the asset is currently assigned to.
+    if (caller.organizationId && caller.organizationId !== asset.organizationId) return null;
+    if (!staff) {
+      const active = await ctx.db
+        .query('assetAssignments')
+        .withIndex('by_asset_active', (q) => q.eq('assetId', asset._id).eq('status', 'active'))
+        .first();
+      if (!active || active.assignedTo !== caller._id) return null;
+    }
 
     // Get full assignment history
     const assignments = await ctx.db
@@ -345,6 +394,10 @@ export const getAsset = query({
 export const getAssetHistory = query({
   args: { assetId: v.id('assetCatalog') },
   handler: async (ctx, args) => {
+    // Audit trail exposes every holder the asset ever had — staff only.
+    const staff = await getStaffCaller(ctx);
+    if (!staff) return [];
+
     return await ctx.db
       .query('assetHistory')
       .withIndex('by_asset_time', (q) => q.eq('assetId', args.assetId))
@@ -365,6 +418,10 @@ export const getAssetQRData = query({
     assetId: v.id('assetCatalog'),
   },
   handler: async (ctx, args) => {
+    // QR stickers carry serial numbers / asset tags — staff only.
+    const staff = await getStaffCaller(ctx);
+    if (!staff) return null;
+
     const asset = await ctx.db.get(args.assetId);
     if (!asset) return null;
 
@@ -404,6 +461,10 @@ export const getDepreciation = query({
       vehicle: 5,
       other: 5,
     };
+
+    // Book values are financial data — staff only.
+    const staff = await getStaffCaller(ctx);
+    if (!staff) return null;
 
     const all = await ctx.db
       .query('assetCatalog')
@@ -471,6 +532,10 @@ export const getDepreciation = query({
 export const getAssetStats = query({
   args: { organizationId: v.id('organizations') },
   handler: async (ctx, args) => {
+    // Fleet-wide aggregates are staff-only — an employee must not be able to
+    // count the org's hardware or see pending request volume.
+    const staff = await getStaffCaller(ctx);
+    if (!staff) return null;
     // Stats are a full-fleet aggregate — use the large cap so totalValue and
     // counts don't silently under-report on bigger tenants (was DEFAULT_LIST_CAP).
     const all = await ctx.db
@@ -537,6 +602,9 @@ export const searchAssets = query({
     query: v.string(),
   },
   handler: async (ctx, args) => {
+    // Search powers the staff assign/request dialogs — staff only.
+    const staff = await getStaffCaller(ctx);
+    if (!staff) return [];
     if (!args.query.trim()) return [];
     const q = args.query.toLowerCase();
     const all = await ctx.db
@@ -563,6 +631,12 @@ export const listEmployeeAssets = query({
     employeeId: v.id('users'),
   },
   handler: async (ctx, args) => {
+    // Employees read only their own assigned assets; staff may inspect anyone's.
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return [];
+    const staff = await getStaffCaller(ctx);
+    if (!staff && caller._id !== args.employeeId) return [];
+
     const assignments = await ctx.db
       .query('assetAssignments')
       .withIndex('by_assignee_org', (q) =>
@@ -626,6 +700,10 @@ export const listMaintenance = query({
     ),
   },
   handler: async (ctx, args) => {
+    // Maintenance records are an internal ops view — staff only.
+    const staff = await getStaffCaller(ctx);
+    if (!staff) return [];
+
     let q = ctx.db
       .query('assetMaintenance')
       .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId));
@@ -664,6 +742,11 @@ export const listAssetRequests = query({
     ),
   },
   handler: async (ctx, args) => {
+    // The org-wide request queue (with requester emails) is staff-only;
+    // employees use getMyAssetRequests for their own.
+    const staff = await getStaffCaller(ctx);
+    if (!staff) return [];
+
     let q = ctx.db
       .query('assetRequests')
       .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId));
@@ -694,6 +777,12 @@ export const listAssetRequests = query({
 export const getMyAssetRequests = query({
   args: { userId: v.id('users') },
   handler: async (ctx, args) => {
+    // A caller may only read their own request list; staff may read anyone's.
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return [];
+    const staff = await getStaffCaller(ctx);
+    if (!staff && caller._id !== args.userId) return [];
+
     const requests = await ctx.db
       .query('assetRequests')
       .withIndex('by_requestor', (q) => q.eq('requestedBy', args.userId))
@@ -1891,6 +1980,12 @@ export const checkActiveAssignmentsForEmployee = query({
     employeeId: v.id('users'),
   },
   handler: async (ctx, args) => {
+    // Employees read only their own assigned assets; staff may inspect anyone's.
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return [];
+    const staff = await getStaffCaller(ctx);
+    if (!staff && caller._id !== args.employeeId) return [];
+
     const assignments = await ctx.db
       .query('assetAssignments')
       .withIndex('by_assignee_org', (q) =>

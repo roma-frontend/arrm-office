@@ -204,6 +204,7 @@ function makeChain() {
   q.field = jest.fn(() => q);
   node.take = jest.fn().mockResolvedValue([]);
   node.first = jest.fn().mockResolvedValue(null);
+  node.unique = jest.fn().mockResolvedValue(null);
   node.order = jest.fn().mockReturnValue(node);
   node.filter = jest.fn((pred?: (qb: any) => any) => {
     if (pred) pred(q);
@@ -234,9 +235,22 @@ function makeCtx() {
       return chains.get(table)!;
     }),
   };
+  // Authenticated as a staff admin by default — most tests exercise the
+  // staff path. Individual tests can override getUserIdentity.
+  const auth = { getUserIdentity: jest.fn().mockResolvedValue({ email: 'admin@test.com' }) };
+  // getAuthCaller resolves the caller via the by_email index. Superadmin so
+  // assertModuleAccess short-circuits without touching the entitlements tables.
+  chain(chains, 'users').unique.mockResolvedValue({
+    _id: ADMIN_ID,
+    email: 'admin@test.com',
+    name: 'Admin',
+    role: 'superadmin',
+    isActive: true,
+  });
   return {
     ctx: {
       db,
+      auth,
       get,
       insert,
       patch,

@@ -111,7 +111,9 @@ async function addAsset(
 }
 
 async function listOne(ctx: Awaited<ReturnType<typeof seed>>): Promise<Catalogued> {
-  const rows = (await ctx.t.query(api.assets.listAssets, {
+  // Catalog queries run as the seeded admin — staff scope.
+  const admin = ctx.t.withIdentity({ email: 'admin@acme.test' });
+  const rows = (await admin.query(api.assets.listAssets, {
     organizationId: ctx.organizationId,
   })) as Catalogued[];
   return rows[0]!;
@@ -289,5 +291,74 @@ describe('listAssets — assignment details', () => {
     expect(row.currentUser?.name).toBe('Bagrat');
     expect(row.currentUser?.position).toBeUndefined();
     expect(row.currentUser?.department).toBeUndefined();
+  });
+
+  it('shows an employee only the assets assigned to them, never the org catalog', async () => {
+    const ctx = await seed();
+    // One asset assigned to Anna, one free on the shelf.
+    const assignedId = await addAsset(ctx, 'assigned');
+    await addAsset(ctx, 'available');
+
+    await ctx.t.run(async (dbCtx) => {
+      await dbCtx.db.insert('assetAssignments', {
+        organizationId: ctx.organizationId,
+        assetId: assignedId,
+        assignedTo: ctx.holderId,
+        assignedBy: ctx.adminId,
+        assignedAt: Date.now(),
+        status: 'active',
+      } as never);
+    });
+
+    const anna = ctx.t.withIdentity({ email: 'anna@acme.test' });
+    const rows = (await anna.query(api.assets.listAssets, {
+      organizationId: ctx.organizationId,
+    })) as Catalogued[];
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!._id).toBe(assignedId);
+  });
+
+  it('hides fleet stats from employees', async () => {
+    const ctx = await seed();
+    await addAsset(ctx);
+
+    const anna = ctx.t.withIdentity({ email: 'anna@acme.test' });
+    const stats = await anna.query(api.assets.getAssetStats, {
+      organizationId: ctx.organizationId,
+    });
+    expect(stats).toBeNull();
+
+    const admin = ctx.t.withIdentity({ email: 'admin@acme.test' });
+    const adminStats = await admin.query(api.assets.getAssetStats, {
+      organizationId: ctx.organizationId,
+    });
+    expect(adminStats).toMatchObject({ total: 1 });
+  });
+
+  it('lets an employee open the detail of an asset assigned to them, but not others', async () => {
+    const ctx = await seed();
+    const assignedId = await addAsset(ctx, 'assigned');
+    const otherId = await addAsset(ctx, 'available');
+
+    await ctx.t.run(async (dbCtx) => {
+      await dbCtx.db.insert('assetAssignments', {
+        organizationId: ctx.organizationId,
+        assetId: assignedId,
+        assignedTo: ctx.holderId,
+        assignedBy: ctx.adminId,
+        assignedAt: Date.now(),
+        status: 'active',
+      } as never);
+    });
+
+    const anna = ctx.t.withIdentity({ email: 'anna@acme.test' });
+    const mine = await anna.query(api.assets.getAsset, {
+      assetId: assignedId as Id<'assetCatalog'>,
+    });
+    expect(mine).not.toBeNull();
+
+    const other = await anna.query(api.assets.getAsset, { assetId: otherId as Id<'assetCatalog'> });
+    expect(other).toBeNull();
   });
 });

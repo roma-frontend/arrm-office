@@ -1006,7 +1006,8 @@ export default function AssetsClient() {
 
   // State
   const [activeTab, setActiveTab] = useState<'catalog' | 'myAssets' | 'requests' | 'maintenance'>(
-    'catalog',
+    // Employees land on their own assets — the catalog is staff-only.
+    isSuperuser ? 'catalog' : 'myAssets',
   );
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -1035,7 +1036,7 @@ export default function AssetsClient() {
     const assetIdParam = new URLSearchParams(window.location.search).get('asset');
     if (assetIdParam) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional mount-only deep-link handling
-      setActiveTab('catalog');
+      if (isSuperuser) setActiveTab('catalog');
       setSelectedAsset({ _id: assetIdParam as Id<'assetCatalog'> });
     }
   }, []);
@@ -1197,8 +1198,12 @@ export default function AssetsClient() {
             />
           )}
 
-          {/* ── Stats Cards ── */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4 my-4">
+          {/* ── Stats Cards (staff only — fleet aggregates) ── */}
+          <div
+            className={
+              isSuperuser ? 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4 my-4' : 'hidden'
+            }
+          >
             <motion.div variants={itemVariants}>
               <StatsCard
                 title={t('assets.stats.total')}
@@ -1243,14 +1248,22 @@ export default function AssetsClient() {
 
           {/* ── Tabs ── */}
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
-            <TabsList className="w-full mb-4 gap-2 bg-transparent p-0 h-auto grid grid-cols-2 md:grid-cols-4">
-              <TabsTrigger
-                className="w-full px-3 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-(--background-subtle) shadow-sm font-medium flex items-center justify-center gap-2 text-sm"
-                value="catalog"
-              >
-                <Monitor className="w-4 h-4 flex-shrink-0" />
-                <span className="hidden sm:inline">{t('assets.tabs.catalog')}</span>
-              </TabsTrigger>
+            <TabsList
+              className={
+                isSuperuser
+                  ? 'w-full mb-4 gap-2 bg-transparent p-0 h-auto grid grid-cols-2 md:grid-cols-4'
+                  : 'w-full mb-4 gap-2 bg-transparent p-0 h-auto grid grid-cols-2'
+              }
+            >
+              {isSuperuser && (
+                <TabsTrigger
+                  className="w-full px-3 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-(--background-subtle) shadow-sm font-medium flex items-center justify-center gap-2 text-sm"
+                  value="catalog"
+                >
+                  <Monitor className="w-4 h-4 flex-shrink-0" />
+                  <span className="hidden sm:inline">{t('assets.tabs.catalog')}</span>
+                </TabsTrigger>
+              )}
               <TabsTrigger
                 className="w-full px-3 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-(--background-subtle) shadow-sm font-medium flex items-center justify-center gap-2 text-sm"
                 value="myAssets"
@@ -1265,13 +1278,15 @@ export default function AssetsClient() {
                 <ClipboardCheck className="w-4 h-4 flex-shrink-0" />
                 <span className="hidden sm:inline">{t('assets.tabs.requests')}</span>
               </TabsTrigger>
-              <TabsTrigger
-                className="w-full px-3 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-(--background-subtle) shadow-sm font-medium flex items-center justify-center gap-2 text-sm"
-                value="maintenance"
-              >
-                <Wrench className="w-4 h-4 flex-shrink-0" />
-                <span className="hidden sm:inline">{t('assets.tabs.maintenance')}</span>
-              </TabsTrigger>
+              {isSuperuser && (
+                <TabsTrigger
+                  className="w-full px-3 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-(--background-subtle) shadow-sm font-medium flex items-center justify-center gap-2 text-sm"
+                  value="maintenance"
+                >
+                  <Wrench className="w-4 h-4 flex-shrink-0" />
+                  <span className="hidden sm:inline">{t('assets.tabs.maintenance')}</span>
+                </TabsTrigger>
+              )}
             </TabsList>
 
             {/* ── TAB: Catalog ── */}
