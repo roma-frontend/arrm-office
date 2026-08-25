@@ -21,6 +21,7 @@ import { LessonFormDialog } from './LessonFormDialog';
 import { CreateCourseDialog } from './CreateCourseDialog';
 import { TeamOverview } from './TeamOverview';
 import { CertificatesTab } from './CertificatesTab';
+import { TemplatePicker } from './TemplatePicker';
 import { CourseEditSheet } from './CourseEditSheet';
 
 type CourseWithLessons = {
@@ -352,13 +353,17 @@ export default function LearningClient() {
     }
   };
 
-  const handleIssueCertificate = async (userId: Id<'users'>, courseId: Id<'courses'>) => {
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('midnight-gold');
+  const [issueCertTarget, setIssueCertTarget] = useState<{ userId: Id<'users'>; courseId: Id<'courses'> } | null>(null);
+
+  const handleIssueCertificate = async (userId: Id<'users'>, courseId: Id<'courses'>, templateId?: string) => {
     if (!effectiveOrgId) return;
     try {
       const result = await issueCertificateMutation({
         organizationId: effectiveOrgId as Id<'organizations'>,
         userId,
         courseId,
+        templateId,
       });
       if (result.success) {
         toast.success(t('learning.certificateIssued', 'Certificate issued successfully'));
@@ -1076,7 +1081,7 @@ export default function LearningClient() {
                                 size="sm"
                                 variant="ghost"
                                 className="gap-1 text-(--brand-text)"
-                                onClick={() => handleIssueCertificate(row.userId, row.courseId)}
+                                onClick={() => setIssueCertTarget({ userId: row.userId, courseId: row.courseId })}
                               >
                                 <Award className="h-3 w-3" />
                                 {t('learning.issueCertificate', 'Issue Certificate')}
@@ -1088,6 +1093,44 @@ export default function LearningClient() {
                   </tbody>
                 </table>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Issue Certificate Template Picker Dialog */}
+      {issueCertTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          onClick={() => setIssueCertTarget(null)}
+        >
+          <div
+            className="bg-(--card) rounded-2xl border border-(--border) shadow-2xl w-full max-w-xl p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-lg font-bold mb-4">
+              {t('learning.selectTemplate', 'Select Certificate Template')}
+            </h2>
+            <TemplatePicker
+              value={selectedTemplate}
+              onChange={setSelectedTemplate}
+            />
+            <div className="flex justify-end gap-2 mt-6">
+              <Button variant="outline" onClick={() => setIssueCertTarget(null)}>
+                {t('common.cancel', 'Cancel')}
+              </Button>
+              <Button
+                onClick={() => {
+                  handleIssueCertificate(
+                    issueCertTarget.userId,
+                    issueCertTarget.courseId,
+                    selectedTemplate,
+                  );
+                  setIssueCertTarget(null);
+                }}
+              >
+                {t('learning.issueCertificate', 'Issue Certificate')}
+              </Button>
             </div>
           </div>
         </div>

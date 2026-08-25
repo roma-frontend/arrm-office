@@ -141,6 +141,7 @@ export const learning = {
     userId: v.id('users'),
     courseId: v.id('courses'),
     certificateId: v.string(), // unique certificate number
+    templateId: v.optional(v.string()), // certificate template used
     issuedAt: v.number(),
     expiresAt: v.optional(v.number()), // for certificates that expire
     metadata: v.optional(v.any()), // additional data (score, instructor, etc.)

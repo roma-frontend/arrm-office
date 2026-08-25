@@ -46,6 +46,16 @@ jest.mock('lucide-react', () => ({
   Award: (props: any) => <span data-testid="icon-award" {...props} />,
   Download: (props: any) => <span data-testid="icon-download" {...props} />,
   Share2: (props: any) => <span data-testid="icon-share" {...props} />,
+  CheckCircle: (props: any) => <span data-testid="icon-check" {...props} />,
+}));
+
+jest.mock('@/components/learning/CertificateRenderer', () => ({
+  CertificateRenderer: ({ courseTitle, certificateId }: any) => (
+    <div data-testid="cert-renderer">
+      <span>{courseTitle}</span>
+      <span>{certificateId}</span>
+    </div>
+  ),
 }));
 
 jest.mock('@/store/useAuthStore', () => ({
@@ -63,6 +73,7 @@ const CERT = {
   userId: 'u1',
   courseId: 'course1',
   certificateId: 'CERT-001',
+  templateId: 'midnight-gold',
   issuedAt: 1750000000000,
   courseTitle: 'React Mastery',
 } as never;
