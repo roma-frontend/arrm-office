@@ -353,7 +353,7 @@ export default function LearningClient() {
     }
   };
 
-  const [selectedTemplate, setSelectedTemplate] = useState<string>('midnight-gold');
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('editorial');
   const [issueCertTarget, setIssueCertTarget] = useState<{
     userId: Id<'users'>;
     courseId: Id<'courses'>;
@@ -644,6 +644,12 @@ export default function LearningClient() {
 
   return (
     <div className="mx-auto">
+      {/* Certificate theme fonts — loaded once for the picker & renderer */}
+      <link rel="preconnect" href="https://fonts.googleapis.com" />
+      <link
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,900&family=IBM+Plex+Mono:wght@400;500&family=Inter+Tight:wght@400;600;700&family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Karla:wght@400;500;600&family=Manrope:wght@400;500;600&family=Marcellus&family=Nunito:wght@400;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=Space+Grotesk:wght@400;500;600&family=Syne:wght@400;600;700&family=Unbounded:wght@400;600;700&display=swap"
+        rel="stylesheet"
+      />
       {/* Header */}
       <div className="sticky top-0 z-10 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 mb-4 bg-(--background)/95 backdrop-blur supports-[backdrop-filter]:bg-(--background)/60 border-b border-(--border)">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
