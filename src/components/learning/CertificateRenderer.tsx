@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { loadQRCode } from '@/lib/dynamic-imports';
 import { CERTIFICATE_THEMES, resolveThemeId, type CertificateTheme } from './certificateTemplates';
 
@@ -12,10 +12,16 @@ type Props = {
   issuedAt: number;
   logoUrl?: string;
   companyName?: string;
+  /** Ref to the fixed-size certificate node — used for print/PDF export */
+  innerRef?: React.RefObject<HTMLDivElement | null>;
 };
 
+/** A4 landscape at 96 dpi — the certificate is laid out at this fixed size. */
+export const CERT_WIDTH = 1122;
+export const CERT_HEIGHT = 794;
+
 /**
- * A4-landscape certificate renderer (297×210 ratio) driven by theme tokens.
+ * A4-landscape certificate renderer (297×210) driven by theme tokens.
  *
  * Shared layout rules for every theme:
  * - safe-zone 14 mm from the edge (≈4.7% inset)
@@ -26,8 +32,9 @@ type Props = {
  *   monochrome — Learning's recognisable signature
  * - max 2 fonts, max 3 colors + neutral (enforced by the token structure)
  *
- * All sizes use container-query units (cqw) so the certificate scales
- * pixel-perfectly from a picker thumbnail to a full-width card.
+ * The certificate is laid out at a fixed 1122×794 px (print-safe: no
+ * container-query units, which Chrome resolves to 0 in print/PDF output) and
+ * scaled to fit its container with a transform.
  */
 export function CertificateRenderer({
   templateId,
@@ -37,11 +44,26 @@ export function CertificateRenderer({
   issuedAt,
   logoUrl,
   companyName,
+  innerRef,
 }: Props) {
   const themeId = resolveThemeId(templateId);
   const theme: CertificateTheme = CERTIFICATE_THEMES[themeId];
   const { palette } = theme;
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(0.5);
+
+  // Scale the fixed-size layout to the container width.
+  useLayoutEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const update = () => setScale(el.clientWidth / CERT_WIDTH);
+    update();
+    if (typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -49,7 +71,7 @@ export function CertificateRenderer({
       .then((QRCode) =>
         QRCode.toDataURL(`learning:certificate:${certificateId}`, {
           margin: 0,
-          width: 96,
+          width: 128,
           color: {
             dark: theme.isDark ? '#FFFFFF' : palette.ink,
             light: '#00000000',
@@ -79,242 +101,265 @@ export function CertificateRenderer({
 
   return (
     <div
+      ref={wrapRef}
       style={{
-        containerType: 'inline-size',
-        position: 'relative',
-        aspectRatio: '297 / 210',
         width: '100%',
+        aspectRatio: `${CERT_WIDTH} / ${CERT_HEIGHT}`,
+        position: 'relative',
         overflow: 'hidden',
-        borderRadius: '0.6cqw',
-        background: theme.preview,
-        color: palette.ink,
-        fontFamily: theme.fonts.text,
-        ...(themeId === 'luxury' ? { boxShadow: 'inset 0 0 6cqw rgba(0,0,0,0.55)' } : null),
       }}
     >
-      <ThemeDecor themeId={themeId} palette={palette} />
-
-      {/* Safe zone — 14 mm ≈ 4.7% inset */}
       <div
         style={{
           position: 'absolute',
-          inset: '4.7%',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: align,
-          justifyContent: 'space-between',
-          textAlign: textAlign as 'left' | 'center',
+          top: 0,
+          left: 0,
+          width: CERT_WIDTH,
+          transform: `scale(${scale})`,
+          transformOrigin: 'top left',
         }}
       >
-        {/* ── Level 0: brand ── */}
-        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: align }}>
-          {logoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element -- certificate is print/exported, plain img keeps exact colors
-            <img
-              src={logoUrl}
-              alt=""
-              style={{
-                height: '4.5cqw',
-                width: 'auto',
-                objectFit: 'contain',
-                marginBottom: '1.2cqw',
-              }}
-            />
-          ) : null}
-          {companyName ? (
-            <div
-              style={{
-                fontSize: '1.05cqw',
-                letterSpacing: '0.32em',
-                textTransform: 'uppercase',
-                color: palette.muted,
-                fontWeight: 600,
-              }}
-            >
-              {companyName}
-            </div>
-          ) : null}
-        </div>
-
-        {/* ── Levels 1–3: label → hero name → course ── */}
         <div
+          ref={innerRef}
           style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: align,
-            gap: '1.1cqw',
-            width: '100%',
+            position: 'relative',
+            width: CERT_WIDTH,
+            height: CERT_HEIGHT,
+            overflow: 'hidden',
+            borderRadius: 7,
+            background: theme.preview,
+            color: palette.ink,
+            fontFamily: theme.fonts.text,
+            ...(themeId === 'luxury' ? { boxShadow: 'inset 0 0 67px rgba(0,0,0,0.55)' } : null),
           }}
         >
-          {/* Level 1 — label */}
+          <ThemeDecor themeId={themeId} palette={palette} />
+
+          {/* Safe zone — 14 mm ≈ 4.7% inset */}
           <div
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '1cqw',
-              fontSize: '1.15cqw',
-              letterSpacing: '0.42em',
-              textTransform: 'uppercase',
-              color: palette.muted,
-              fontWeight: 600,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {isEditorial && (
-              <span
-                style={{
-                  display: 'inline-block',
-                  width: '3.5cqw',
-                  height: '0.18cqw',
-                  background: palette.accent,
-                }}
-              />
-            )}
-            Certificate of Completion
-          </div>
-
-          {/* Level 2 — hero name */}
-          <div
-            style={{
-              fontFamily: theme.fonts.display,
-              fontSize: themeId === 'minimal' ? '6.4cqw' : '7.2cqw',
-              lineHeight: 1.02,
-              fontWeight: themeId === 'playful' || themeId === 'future' ? 700 : 600,
-              letterSpacing: '-0.015em',
-              color: palette.ink,
-              maxWidth: '92%',
-              transform: themeId === 'playful' ? 'rotate(-1.2deg)' : undefined,
-              ...(themeId === 'luxury' || themeId === 'future'
-                ? {
-                    background: `linear-gradient(100deg, ${palette.accent} 15%, ${palette.accentAlt ?? palette.ink} 50%, ${palette.accent} 85%)`,
-                    WebkitBackgroundClip: 'text',
-                    backgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                  }
-                : null),
-            }}
-          >
-            {userName}
-          </div>
-
-          {/* Level 3 — course */}
-          <div
-            style={{ display: 'flex', flexDirection: 'column', alignItems: align, gap: '0.5cqw' }}
-          >
-            <div
-              style={{
-                fontSize: '1.0cqw',
-                letterSpacing: '0.28em',
-                textTransform: 'uppercase',
-                color: palette.muted,
-              }}
-            >
-              has successfully completed
-            </div>
-            <div
-              style={{
-                fontFamily: theme.fonts.display,
-                fontSize: '2.5cqw',
-                fontWeight: 500,
-                color: palette.accent === palette.ink ? palette.accent : palette.ink,
-                maxWidth: '85%',
-              }}
-            >
-              {courseTitle}
-            </div>
-          </div>
-        </div>
-
-        {/* ── Levels 4–5: meta → signature + QR + ID ── */}
-        <div
-          style={{
-            width: '100%',
-            display: 'flex',
-            alignItems: 'flex-end',
-            justifyContent: 'space-between',
-            gap: '2cqw',
-          }}
-        >
-          {/* Level 5a — signature */}
-          <div
-            style={{ display: 'flex', flexDirection: 'column', gap: '0.55cqw', minWidth: '18cqw' }}
-          >
-            <div
-              style={{
-                fontFamily: theme.fonts.display,
-                fontSize: '1.5cqw',
-                fontStyle: themeId === 'luxury' || themeId === 'academic' ? 'italic' : 'normal',
-                color: palette.ink,
-              }}
-            >
-              {companyName ?? 'Learning Team'}
-            </div>
-            <div style={{ width: '100%', height: '0.09cqw', background: palette.line }} />
-            <div
-              style={{
-                fontSize: '0.95cqw',
-                letterSpacing: '0.22em',
-                textTransform: 'uppercase',
-                color: palette.muted,
-              }}
-            >
-              Authorized Signature
-            </div>
-          </div>
-
-          {/* Level 4 — meta */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'baseline',
-              gap: '1.4cqw',
-              fontSize: '1.05cqw',
-              color: palette.muted,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            <span style={{ letterSpacing: '0.14em', textTransform: 'uppercase' }}>{dateStr}</span>
-            <span
-              style={{
-                width: '0.09cqw',
-                height: '1cqw',
-                background: palette.line,
-                alignSelf: 'center',
-              }}
-            />
-            <span style={{ letterSpacing: '0.14em', textTransform: 'uppercase' }}>
-              Verified Credential
-            </span>
-          </div>
-
-          {/* Level 5b — QR + ID, always bottom-right, small & monochrome */}
-          <div
-            style={{
+              position: 'absolute',
+              inset: '4.7%',
               display: 'flex',
               flexDirection: 'column',
-              alignItems: 'flex-end',
-              gap: '0.45cqw',
-              flexShrink: 0,
+              alignItems: align,
+              justifyContent: 'space-between',
+              textAlign: textAlign as 'left' | 'center',
             }}
           >
-            {qrDataUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element -- data URL from local QR lib
-              <img src={qrDataUrl} alt="Verify" style={{ width: '4.6cqw', height: '4.6cqw' }} />
-            ) : (
-              <div style={{ width: '4.6cqw', height: '4.6cqw' }} />
-            )}
+            {/* ── Level 0: brand ── */}
+            <div
+              style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: align }}
+            >
+              {logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element -- certificate is print/exported, plain img keeps exact colors
+                <img
+                  src={logoUrl}
+                  alt=""
+                  style={{ height: 50, width: 'auto', objectFit: 'contain', marginBottom: 13 }}
+                />
+              ) : null}
+              {companyName ? (
+                <div
+                  style={{
+                    fontSize: 12,
+                    letterSpacing: '0.32em',
+                    textTransform: 'uppercase',
+                    color: palette.muted,
+                    fontWeight: 600,
+                  }}
+                >
+                  {companyName}
+                </div>
+              ) : null}
+            </div>
+
+            {/* ── Levels 1–3: label → hero name → course ── */}
             <div
               style={{
-                fontSize: '0.72cqw',
-                letterSpacing: '0.08em',
-                color: palette.muted,
-                maxWidth: '14cqw',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: align,
+                gap: 12,
+                width: '100%',
               }}
             >
-              ID {certificateId}
+              {/* Level 1 — label */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 11,
+                  fontSize: 13,
+                  letterSpacing: '0.42em',
+                  textTransform: 'uppercase',
+                  color: palette.muted,
+                  fontWeight: 600,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {isEditorial && (
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      width: 39,
+                      height: 2,
+                      background: palette.accent,
+                    }}
+                  />
+                )}
+                Certificate of Completion
+              </div>
+
+              {/* Level 2 — hero name */}
+              <div
+                style={{
+                  fontFamily: theme.fonts.display,
+                  fontSize: themeId === 'minimal' ? 72 : 81,
+                  lineHeight: 1.02,
+                  fontWeight: themeId === 'playful' || themeId === 'future' ? 700 : 600,
+                  letterSpacing: '-0.015em',
+                  color: palette.ink,
+                  maxWidth: '92%',
+                  transform: themeId === 'playful' ? 'rotate(-1.2deg)' : undefined,
+                  ...(themeId === 'luxury' || themeId === 'future'
+                    ? {
+                        background: `linear-gradient(100deg, ${palette.accent} 15%, ${palette.accentAlt ?? palette.ink} 50%, ${palette.accent} 85%)`,
+                        WebkitBackgroundClip: 'text',
+                        backgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                      }
+                    : null),
+                }}
+              >
+                {userName}
+              </div>
+
+              {/* Level 3 — course */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: align, gap: 6 }}>
+                <div
+                  style={{
+                    fontSize: 11,
+                    letterSpacing: '0.28em',
+                    textTransform: 'uppercase',
+                    color: palette.muted,
+                  }}
+                >
+                  has successfully completed
+                </div>
+                <div
+                  style={{
+                    fontFamily: theme.fonts.display,
+                    fontSize: 28,
+                    fontWeight: 500,
+                    color: palette.accent === palette.ink ? palette.accent : palette.ink,
+                    maxWidth: '85%',
+                  }}
+                >
+                  {courseTitle}
+                </div>
+              </div>
+            </div>
+
+            {/* ── Levels 4–5: meta → signature + QR + ID ── */}
+            <div
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'flex-end',
+                justifyContent: 'space-between',
+                gap: 22,
+              }}
+            >
+              {/* Level 5a — signature */}
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 6,
+                  minWidth: 200,
+                }}
+              >
+                <div
+                  style={{
+                    fontFamily: theme.fonts.display,
+                    fontSize: 17,
+                    fontStyle: themeId === 'luxury' || themeId === 'academic' ? 'italic' : 'normal',
+                    color: palette.ink,
+                  }}
+                >
+                  {companyName ?? 'Learning Team'}
+                </div>
+                <div style={{ width: '100%', height: 1, background: palette.line }} />
+                <div
+                  style={{
+                    fontSize: 11,
+                    letterSpacing: '0.22em',
+                    textTransform: 'uppercase',
+                    color: palette.muted,
+                  }}
+                >
+                  Authorized Signature
+                </div>
+              </div>
+
+              {/* Level 4 — meta */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'baseline',
+                  gap: 16,
+                  fontSize: 12,
+                  color: palette.muted,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                <span style={{ letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+                  {dateStr}
+                </span>
+                <span
+                  style={{
+                    width: 1,
+                    height: 11,
+                    background: palette.line,
+                    alignSelf: 'center',
+                  }}
+                />
+                <span style={{ letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+                  Verified Credential
+                </span>
+              </div>
+
+              {/* Level 5b — QR + ID, always bottom-right, small & monochrome */}
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-end',
+                  gap: 5,
+                  flexShrink: 0,
+                }}
+              >
+                {qrDataUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- data URL from local QR lib
+                  <img src={qrDataUrl} alt="Verify" style={{ width: 52, height: 52 }} />
+                ) : (
+                  <div style={{ width: 52, height: 52 }} />
+                )}
+                <div
+                  style={{
+                    fontSize: 8,
+                    letterSpacing: '0.08em',
+                    color: palette.muted,
+                    maxWidth: 157,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  ID {certificateId}
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -345,7 +390,7 @@ function ThemeDecor({
               left: '4.7%',
               top: '4.7%',
               bottom: '4.7%',
-              width: '0.55cqw',
+              width: 6,
               background: palette.accent,
             }}
           />
@@ -354,10 +399,10 @@ function ThemeDecor({
             aria-hidden
             style={{
               position: 'absolute',
-              right: '-2cqw',
-              bottom: '-7cqw',
+              right: -22,
+              bottom: -79,
               fontFamily: CERTIFICATE_THEMES.editorial.fonts.display,
-              fontSize: '42cqw',
+              fontSize: 470,
               fontWeight: 900,
               lineHeight: 1,
               color: palette.ink,
@@ -380,7 +425,7 @@ function ThemeDecor({
               left: '4.7%',
               right: '4.7%',
               top: '9%',
-              height: '1px',
+              height: 1,
               background: palette.line,
             }}
           />
@@ -390,7 +435,7 @@ function ThemeDecor({
               left: '4.7%',
               right: '4.7%',
               bottom: '9%',
-              height: '1px',
+              height: 1,
               background: palette.line,
             }}
           />
@@ -406,7 +451,7 @@ function ThemeDecor({
               position: 'absolute',
               inset: '3.2%',
               border: `1px solid ${palette.accent}55`,
-              borderRadius: '0.3cqw',
+              borderRadius: 3,
             }}
           />
           <div
@@ -414,7 +459,7 @@ function ThemeDecor({
               position: 'absolute',
               inset: '3.9%',
               border: `1px solid ${palette.accent}33`,
-              borderRadius: '0.2cqw',
+              borderRadius: 2,
             }}
           />
           {/* Corner ticks */}
@@ -429,8 +474,8 @@ function ThemeDecor({
               style={{
                 position: 'absolute',
                 ...pos,
-                width: '2.2cqw',
-                height: '2.2cqw',
+                width: 25,
+                height: 25,
                 borderColor: `${palette.accent}88`,
                 borderStyle: 'solid',
                 borderWidth: 0,
@@ -452,7 +497,7 @@ function ThemeDecor({
             style={{
               position: 'absolute',
               inset: 0,
-              backgroundImage: `repeating-linear-gradient(0deg, ${palette.ink}0A 0, ${palette.ink}0A 1px, transparent 1px, transparent 4.2cqw), repeating-linear-gradient(90deg, ${palette.ink}0A 0, ${palette.ink}0A 1px, transparent 1px, transparent 4.2cqw)`,
+              backgroundImage: `repeating-linear-gradient(0deg, ${palette.ink}0A 0, ${palette.ink}0A 1px, transparent 1px, transparent 47px), repeating-linear-gradient(90deg, ${palette.ink}0A 0, ${palette.ink}0A 1px, transparent 1px, transparent 47px)`,
             }}
           />
           {/* Soft gradient wash */}
@@ -469,8 +514,8 @@ function ThemeDecor({
               position: 'absolute',
               top: '4.7%',
               left: '4.7%',
-              width: '2.6cqw',
-              height: '2.6cqw',
+              width: 29,
+              height: 29,
               borderTop: `2px solid ${palette.accent}`,
               borderLeft: `2px solid ${palette.accent}`,
             }}
@@ -480,8 +525,8 @@ function ThemeDecor({
               position: 'absolute',
               bottom: '4.7%',
               right: '4.7%',
-              width: '2.6cqw',
-              height: '2.6cqw',
+              width: 29,
+              height: 29,
               borderBottom: `2px solid ${palette.accent}`,
               borderRight: `2px solid ${palette.accent}`,
             }}
@@ -500,8 +545,8 @@ function ThemeDecor({
               position: 'absolute',
               right: '7%',
               top: '50%',
-              width: '17cqw',
-              height: '17cqw',
+              width: 190,
+              height: 190,
               transform: 'translateY(-50%)',
               opacity: 0.5,
             }}
@@ -545,10 +590,10 @@ function ThemeDecor({
           <div
             style={{
               position: 'absolute',
-              top: '-6cqw',
-              right: '-4cqw',
-              width: '20cqw',
-              height: '20cqw',
+              top: -67,
+              right: -45,
+              width: 224,
+              height: 224,
               borderRadius: '50%',
               background: palette.accent,
               opacity: 0.16,
@@ -557,10 +602,10 @@ function ThemeDecor({
           <div
             style={{
               position: 'absolute',
-              bottom: '-8cqw',
+              bottom: -90,
               left: '30%',
-              width: '24cqw',
-              height: '24cqw',
+              width: 269,
+              height: 269,
               borderRadius: '46% 54% 55% 45% / 50% 45% 55% 50%',
               background: palette.accentAlt,
               opacity: 0.18,
@@ -570,15 +615,15 @@ function ThemeDecor({
             style={{
               position: 'absolute',
               top: '30%',
-              left: '-7cqw',
-              width: '14cqw',
-              height: '14cqw',
+              left: -79,
+              width: 157,
+              height: 157,
               borderRadius: '50%',
               background: '#4D96FF',
               opacity: 0.14,
             }}
           />
-          {/* Pill label behind the hierarchy label */}
+          {/* Pill frame */}
           <div
             style={{
               position: 'absolute',
@@ -586,8 +631,8 @@ function ThemeDecor({
               left: '4.7%',
               right: '4.7%',
               bottom: '4.7%',
-              borderRadius: '1.6cqw',
-              border: `0.18cqw solid ${palette.line}`,
+              borderRadius: 18,
+              border: `2px solid ${palette.line}`,
             }}
           />
         </>
@@ -609,9 +654,9 @@ function ThemeDecor({
             style={{
               position: 'absolute',
               top: '12%',
-              left: '-4cqw',
-              width: '34cqw',
-              height: '34cqw',
+              left: -45,
+              width: 381,
+              height: 381,
               borderRadius: '50%',
               border: '1px solid rgba(255,255,255,0.10)',
               background: 'rgba(255,255,255,0.03)',
@@ -620,10 +665,10 @@ function ThemeDecor({
           <div
             style={{
               position: 'absolute',
-              bottom: '-10cqw',
+              bottom: -112,
               right: '18%',
-              width: '40cqw',
-              height: '40cqw',
+              width: 449,
+              height: 449,
               borderRadius: '50%',
               border: '1px solid rgba(255,255,255,0.07)',
               background: 'rgba(255,255,255,0.02)',
@@ -634,7 +679,8 @@ function ThemeDecor({
             style={{
               position: 'absolute',
               inset: 0,
-              background: `repeating-linear-gradient(0deg, rgba(255,255,255,0.015) 0, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 3px)`,
+              background:
+                'repeating-linear-gradient(0deg, rgba(255,255,255,0.015) 0, rgba(255,255,255,0.015) 1px, transparent 1px, transparent 3px)',
             }}
           />
         </>
@@ -647,10 +693,10 @@ function ThemeDecor({
           <div
             style={{
               position: 'absolute',
-              top: '-8cqw',
-              left: '-6cqw',
-              width: '30cqw',
-              height: '30cqw',
+              top: -90,
+              left: -67,
+              width: 337,
+              height: 337,
               borderRadius: '58% 42% 55% 45% / 52% 58% 42% 48%',
               background: palette.accent,
               opacity: 0.14,
@@ -659,10 +705,10 @@ function ThemeDecor({
           <div
             style={{
               position: 'absolute',
-              bottom: '-10cqw',
-              right: '-6cqw',
-              width: '34cqw',
-              height: '34cqw',
+              bottom: -112,
+              right: -67,
+              width: 381,
+              height: 381,
               borderRadius: '45% 55% 48% 52% / 55% 45% 55% 45%',
               background: palette.accentAlt,
               opacity: 0.1,
@@ -672,9 +718,9 @@ function ThemeDecor({
             style={{
               position: 'absolute',
               top: '40%',
-              right: '-5cqw',
-              width: '16cqw',
-              height: '16cqw',
+              right: -56,
+              width: 179,
+              height: 179,
               borderRadius: '52% 48% 45% 55% / 48% 52% 48% 52%',
               background: palette.accent,
               opacity: 0.08,
@@ -686,7 +732,7 @@ function ThemeDecor({
               position: 'absolute',
               inset: '3.6%',
               border: `1px solid ${palette.line}`,
-              borderRadius: '1.4cqw',
+              borderRadius: 16,
             }}
           />
         </>
