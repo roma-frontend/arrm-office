@@ -354,9 +354,16 @@ export default function LearningClient() {
   };
 
   const [selectedTemplate, setSelectedTemplate] = useState<string>('midnight-gold');
-  const [issueCertTarget, setIssueCertTarget] = useState<{ userId: Id<'users'>; courseId: Id<'courses'> } | null>(null);
+  const [issueCertTarget, setIssueCertTarget] = useState<{
+    userId: Id<'users'>;
+    courseId: Id<'courses'>;
+  } | null>(null);
 
-  const handleIssueCertificate = async (userId: Id<'users'>, courseId: Id<'courses'>, templateId?: string) => {
+  const handleIssueCertificate = async (
+    userId: Id<'users'>,
+    courseId: Id<'courses'>,
+    templateId?: string,
+  ) => {
     if (!effectiveOrgId) return;
     try {
       const result = await issueCertificateMutation({
@@ -924,7 +931,7 @@ export default function LearningClient() {
           onClick={() => setShowStatsDetail(false)}
         >
           <div
-            className="bg-(--card) rounded-2xl border border-(--border) shadow-2xl w-full max-w-3xl max-h-[80vh] flex flex-col"
+            className="bg-(--card) rounded-2xl border border-(--border) shadow-2xl w-full max-w-4xl max-h-[80vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -1081,7 +1088,9 @@ export default function LearningClient() {
                                 size="sm"
                                 variant="ghost"
                                 className="gap-1 text-(--brand-text)"
-                                onClick={() => setIssueCertTarget({ userId: row.userId, courseId: row.courseId })}
+                                onClick={() =>
+                                  setIssueCertTarget({ userId: row.userId, courseId: row.courseId })
+                                }
                               >
                                 <Award className="h-3 w-3" />
                                 {t('learning.issueCertificate', 'Issue Certificate')}
@@ -1111,10 +1120,7 @@ export default function LearningClient() {
             <h2 className="text-lg font-bold mb-4">
               {t('learning.selectTemplate', 'Select Certificate Template')}
             </h2>
-            <TemplatePicker
-              value={selectedTemplate}
-              onChange={setSelectedTemplate}
-            />
+            <TemplatePicker value={selectedTemplate} onChange={setSelectedTemplate} />
             <div className="flex justify-end gap-2 mt-6">
               <Button variant="outline" onClick={() => setIssueCertTarget(null)}>
                 {t('common.cancel', 'Cancel')}

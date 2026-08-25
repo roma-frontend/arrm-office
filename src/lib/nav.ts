@@ -196,9 +196,24 @@ export const navItems: NavEntry[] = [
     icon: Briefcase,
     roles: ['superadmin', 'admin', 'supervisor', 'employee'],
     children: [
-      { href: '/recruitment', labelKey: 'nav.recruitment', icon: Briefcase, roles: ['superadmin', 'admin', 'supervisor'] },
-      { href: '/onboarding', labelKey: 'nav.onboarding', icon: Rocket, roles: ['superadmin', 'admin', 'supervisor'] },
-      { href: '/offboarding', labelKey: 'nav.offboarding', icon: UserMinus, roles: ['superadmin', 'admin', 'supervisor'] },
+      {
+        href: '/recruitment',
+        labelKey: 'nav.recruitment',
+        icon: Briefcase,
+        roles: ['superadmin', 'admin', 'supervisor'],
+      },
+      {
+        href: '/onboarding',
+        labelKey: 'nav.onboarding',
+        icon: Rocket,
+        roles: ['superadmin', 'admin', 'supervisor'],
+      },
+      {
+        href: '/offboarding',
+        labelKey: 'nav.offboarding',
+        icon: UserMinus,
+        roles: ['superadmin', 'admin', 'supervisor'],
+      },
       { href: '/learning', labelKey: 'nav.learning', icon: GraduationCap },
     ],
   },
