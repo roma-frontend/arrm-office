@@ -162,7 +162,7 @@ async function enrichTasksWithUserData(ctx: QueryCtx, tasks: Doc<'tasks'>[]) {
   // Skip recurring series (they have their own comments table via recurringTaskComments).
   const commentsPerTask: Doc<'taskComments'>[][] = await Promise.all(
     tasks.map((t: Doc<'tasks'>) =>
-      (t as any)._type === 'recurring'
+      (t as { _type?: string })._type === 'recurring'
         ? Promise.resolve([])
         : ctx.db
             .query('taskComments')
@@ -207,7 +207,7 @@ async function enrichTasksWithUserData(ctx: QueryCtx, tasks: Doc<'tasks'>[]) {
   // path that forgot to decrement it.
   const subtaskRows: Doc<'tasks'>[][] = await Promise.all(
     tasks.map((t: Doc<'tasks'>) =>
-      t.parentTaskId || (t as any)._type === 'recurring'
+      t.parentTaskId || (t as { _type?: string })._type === 'recurring'
         ? Promise.resolve([])
         : ctx.db
             .query('tasks')
@@ -897,7 +897,7 @@ async function fetchAllTasksForStaff(
     _type: 'recurring' as const,
   }));
 
-  return enrichTasksWithUserData(ctx, [...orgTasks, ...recurringAsTasks] as any);
+  return enrichTasksWithUserData(ctx, [...orgTasks, ...recurringAsTasks] as Doc<'tasks'>[]);
 }
 
 export const getAllTasks = query({
@@ -1033,7 +1033,7 @@ export const getVisibleTasks = query({
       _type: 'recurring' as const,
     }));
 
-    const allTasks = [...merged, ...recurringAsTasks] as any;
+    const allTasks = [...merged, ...recurringAsTasks] as Doc<'tasks'>[];
     return enrichTasksWithUserData(ctx, allTasks.slice(0, DEFAULT_LIST_CAP));
   },
 });
