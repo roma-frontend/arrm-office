@@ -443,33 +443,15 @@ jobs:
       name: production
       url: https://hr-project-sigma.vercel.app
     steps:
+      # Vercel deploys automatically via GitHub integration (vercel.json + linked repo).
+      # The CLI-based deploy (vercel pull/build/deploy) was disabled due to
+      # persistent "Could not retrieve Project Settings" errors with the token.
+      # Convex schema + Sentry sourcemaps still run here after E2E tests pass.
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
-      - run: npm install -g vercel
-      # The ids are not secrets — print them to debug link mismatches.
-      - name: Debug Vercel link
-        run: |
-          echo "ORG_ID=team_iLMSpxKnZJiX2jWT6TjTM81t"
-          echo "PROJECT_ID=prj_bQfsPmQAKAMSZolcGBMWxpIz7708"
-          echo "TOKEN_LENGTH=${#VERCEL_TOKEN}"
-          vercel --version
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      - run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
-        env:
-          VERCEL_ORG_ID: team_iLMSpxKnZJiX2jWT6TjTM81t
-          VERCEL_PROJECT_ID: prj_bQfsPmQAKAMSZolcGBMWxpIz7708
-      - run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
-        env:
-          VERCEL_ORG_ID: team_iLMSpxKnZJiX2jWT6TjTM81t
-          VERCEL_PROJECT_ID: prj_bQfsPmQAKAMSZolcGBMWxpIz7708
-      - id: deploy
-        run: |
-          URL=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
-          echo "production-url=$URL" >> $GITHUB_OUTPUT
       - run: npm ci --prefer-offline --no-audit
       - run: npx convex deploy --prod
         env:
@@ -484,7 +466,6 @@ jobs:
           sourcemaps: .next/static/chunks
         continue-on-error: true
 
-# Required GitHub Secrets:
-# VERCEL_TOKEN, CONVEX_DEPLOYMENT, NEXT_PUBLIC_CONVEX_URL,
-# CONVEX_DEPLOY_KEY, SENTRY_AUTH_TOKEN, SENTRY_ORG, SENTRY_PROJECT,
-# CODECOV_TOKEN (Repository Upload Token from codecov.io)
+# Note: VERCEL_TOKEN is no longer needed in CI — deployment is handled by
+# Vercel's GitHub integration. Secrets: CONVEX_DEPLOY_KEY, SENTRY_AUTH_TOKEN,
+# SENTRY_ORG, SENTRY_PROJECT, CODECOV_TOKEN.
