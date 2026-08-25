@@ -340,6 +340,12 @@
     "approaching": "Մոտենում է",
     "planned": "Պլանավորված",
     "completed": "Ավարտված",
+    "statusDraft": "Սևագիր",
+    "statusCalculated": "Հաշվարկված",
+    "statusApproved": "Հաստատված",
+    "statusPaid": "Վճարված",
+    "statusCancelled": "Չեղարկված",
+    "statusUpcoming": "Սպասվող",
     "monthlySchedule": "Ամսական վճարումների գրաֆիկ",
     "biweeklySchedule": "Երկու շաբաթը մեկ գրաֆիկ",
     "weeklySchedule": "Շաբաթական վճարումների գրաֆիկ",
@@ -360,6 +366,13 @@
     "payslipNumber": "Աշխատավարձի թերթ #",
     "issueDate": "Թողարկման ամսաթիվ",
     "earnings": "Աշխատավարձ",
-    "print": "Տպել"
+    "print": "Տպել",
+    "myPayslips": "Իմ վճարային թերթիկները",
+    "myPayslipsDesc": "Դիտեք և ներբեռնեք ձեր վճարային թերթիկները",
+    "noPayslips": "Վճարային թերթիկներ դեռ չկան",
+    "noPayslipsDesc": "Վճարային թերթիկները կհայտնվեն այստեղ աշխատավարձի մշակումից հետո",
+    "net": "Մաքուր",
+    "other": "Այլ",
+    "notPaid": "ՉՎՃԱՐՎԱԾ"
   }
 }

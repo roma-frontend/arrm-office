@@ -89,9 +89,16 @@ export function RoomDetailsModal({
   // Land on the requested day (booking date from the calendar) rather than
   // today every time the room view opens.
   useEffect(() => {
-    if (!open || !initialDate) return;
+    if (!open) return;
+    if (!initialDate) {
+      setDayOffset(0);
+      return;
+    }
     const parsed = new Date(`${initialDate}T00:00:00`);
-    if (isNaN(parsed.getTime())) return;
+    if (isNaN(parsed.getTime())) {
+      setDayOffset(0);
+      return;
+    }
     const target = startOfDay(parsed).getTime();
     const base = startOfDay(new Date()).getTime();
     setDayOffset(Math.round((target - base) / (24 * 60 * 60 * 1000)));

@@ -125,6 +125,22 @@ const PERIOD_LABEL_KEYS: Record<string, string> = {
   'This week': 'payroll.thisWeek',
 };
 
+// Map of payroll run / period statuses to i18n keys (values come raw from
+// the backend, e.g. 'paid', 'upcoming').
+const STATUS_KEYS: Record<string, string> = {
+  draft: 'payroll.statusDraft',
+  calculated: 'payroll.statusCalculated',
+  approved: 'payroll.statusApproved',
+  paid: 'payroll.statusPaid',
+  cancelled: 'payroll.statusCancelled',
+  upcoming: 'payroll.statusUpcoming',
+};
+
+function getStatus(status: string, t: TFunction): string {
+  const key = STATUS_KEYS[status];
+  return key ? t(key, status) : status;
+}
+
 function getPeriodTitle(label: string, t: TFunction): string {
   const key = PERIOD_LABEL_KEYS[label];
   if (key) return t(key, label);
@@ -334,7 +350,7 @@ export default function PayrollUpcomingBanner({ compact }: PayrollUpcomingBanner
                     variant="outline"
                     className="capitalize text-[10px] border-white/30 text-white/90"
                   >
-                    {data.current.status}
+                    {getStatus(data.current.status, t)}
                   </Badge>
                 </div>
                 <div className="flex items-center gap-3 text-xs text-white/70">
@@ -379,7 +395,7 @@ export default function PayrollUpcomingBanner({ compact }: PayrollUpcomingBanner
                         variant={STATUS_BADGE[period.status] ?? 'secondary'}
                         className="capitalize text-[10px]"
                       >
-                        {period.status}
+                        {getStatus(period.status, t)}
                       </Badge>
                       <Badge variant={cfg.badge} className="text-[10px]">
                         {period.daysRemaining === 0

@@ -115,24 +115,40 @@ function PayslipDocument({ payslip, locale }: { payslip: PayslipData; locale: st
     payslip.generatedAt < now - 30 * 24 * 60 * 60 * 1000;
 
   const earnings = [
-    { label: 'Base Salary', value: payslip.record?.baseSalary ?? 0 },
-    ...(payslip.record?.bonuses ? [{ label: 'Bonuses', value: payslip.record.bonuses }] : []),
+    { label: t('payroll.baseSalary', 'Base Salary'), value: payslip.record?.baseSalary ?? 0 },
+    ...(payslip.record?.bonuses
+      ? [{ label: t('payroll.bonuses', 'Bonuses'), value: payslip.record.bonuses }]
+      : []),
     ...(payslip.record?.overtimePay
-      ? [{ label: 'Overtime', value: payslip.record.overtimePay }]
+      ? [{ label: t('payroll.overtime', 'Overtime'), value: payslip.record.overtimePay }]
       : []),
   ];
 
   const deductionItems = deductions
     ? [
-        { label: 'Income Tax', value: deductions.incomeTax },
+        { label: t('payroll.incomeTax', 'Income Tax'), value: deductions.incomeTax },
         ...(deductions.socialSecurity
-          ? [{ label: 'Social Security', value: deductions.socialSecurity }]
+          ? [
+              {
+                label: t('payroll.socialSecurity', 'Social Security'),
+                value: deductions.socialSecurity,
+              },
+            ]
           : []),
         ...(deductions.healthInsurance
-          ? [{ label: 'Health Insurance', value: deductions.healthInsurance }]
+          ? [
+              {
+                label: t('payroll.healthInsurance', 'Health Insurance'),
+                value: deductions.healthInsurance,
+              },
+            ]
           : []),
-        ...(deductions.pension ? [{ label: 'Pension', value: deductions.pension }] : []),
-        ...(deductions.other ? [{ label: 'Other', value: deductions.other }] : []),
+        ...(deductions.pension
+          ? [{ label: t('payroll.pension', 'Pension'), value: deductions.pension }]
+          : []),
+        ...(deductions.other
+          ? [{ label: t('payroll.other', 'Other'), value: deductions.other }]
+          : []),
       ]
     : [];
 
@@ -148,7 +164,7 @@ function PayslipDocument({ payslip, locale }: { payslip: PayslipData; locale: st
       >
         {payslip.status !== 'paid' && payslip.status !== 'viewed' && (
           <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-[0.04] rotate-[-30deg] text-6xl font-black text-(--danger-text) select-none">
-            NOT PAID
+            {t('payroll.notPaid', 'NOT PAID')}
           </div>
         )}
 
@@ -255,7 +271,9 @@ function PayslipDocument({ payslip, locale }: { payslip: PayslipData; locale: st
                       </tr>
                     ))}
                     <tr className="bg-(--success-quiet) border-t-2 border-(--success-outline)">
-                      <td className="px-4 py-3 font-bold text-(--text-primary)">Gross Salary</td>
+                      <td className="px-4 py-3 font-bold text-(--text-primary)">
+                        {t('payroll.grossSalary', 'Gross Salary')}
+                      </td>
                       <td className="px-4 py-3 text-right font-bold text-(--success-text) text-base">
                         {formatCurrency(gross, currency)}
                       </td>

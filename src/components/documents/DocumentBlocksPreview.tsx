@@ -79,7 +79,7 @@ export function ColumnBlocks({ blocks }: { blocks: DocumentLeafBlock[] }) {
                       <img
                         src={party.signatureImage}
                         alt=""
-                        className="h-8 object-contain border-b border-(--border)"
+                        className="h-8 object-contain border-b border-(--border) dark:invert"
                       />
                     ) : (
                       <div className="h-8 border-b border-(--border)" />

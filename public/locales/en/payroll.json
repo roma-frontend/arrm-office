@@ -340,6 +340,12 @@
     "approaching": "Approaching",
     "planned": "Planned",
     "completed": "Completed",
+    "statusDraft": "Draft",
+    "statusCalculated": "Calculated",
+    "statusApproved": "Approved",
+    "statusPaid": "Paid",
+    "statusCancelled": "Cancelled",
+    "statusUpcoming": "Upcoming",
     "monthlySchedule": "Monthly payroll schedule",
     "biweeklySchedule": "Bi-weekly payroll schedule",
     "weeklySchedule": "Weekly payroll schedule",
@@ -360,6 +366,13 @@
     "payslipNumber": "Payslip #",
     "issueDate": "Issue Date",
     "earnings": "Earnings",
-    "print": "Print"
+    "print": "Print",
+    "myPayslips": "My Payslips",
+    "myPayslipsDesc": "View and download your payroll slips",
+    "noPayslips": "No payslips yet",
+    "noPayslipsDesc": "Payslips will appear here after payroll runs are processed",
+    "net": "Net",
+    "other": "Other",
+    "notPaid": "NOT PAID"
   }
 }

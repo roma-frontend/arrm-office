@@ -340,6 +340,12 @@
     "approaching": "Nähert sich",
     "planned": "Geplant",
     "completed": "Abgeschlossen",
+    "statusDraft": "Entwurf",
+    "statusCalculated": "Berechnet",
+    "statusApproved": "Genehmigt",
+    "statusPaid": "Bezahlt",
+    "statusCancelled": "Storniert",
+    "statusUpcoming": "Bevorstehend",
     "monthlySchedule": "Monatlicher Gehaltsplan",
     "biweeklySchedule": "Zweiwöchentlicher Gehaltsplan",
     "weeklySchedule": "Wöchentlicher Gehaltsplan",
@@ -360,6 +366,13 @@
     "payslipNumber": "Gehaltsabrechnung #",
     "issueDate": "Ausstellungsdatum",
     "earnings": "Einkünfte",
-    "print": "Drucken"
+    "print": "Drucken",
+    "myPayslips": "Meine Lohnabrechnungen",
+    "myPayslipsDesc": "Ihre Lohnabrechnungen ansehen und herunterladen",
+    "noPayslips": "Noch keine Lohnabrechnungen",
+    "noPayslipsDesc": "Lohnabrechnungen erscheinen hier, nachdem die Gehaltsläufe verarbeitet wurden",
+    "net": "Netto",
+    "other": "Sonstige",
+    "notPaid": "NICHT BEZAHLT"
   }
 }

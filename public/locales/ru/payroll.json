@@ -340,6 +340,12 @@
     "approaching": "Приближается",
     "planned": "Запланировано",
     "completed": "Завершено",
+    "statusDraft": "Черновик",
+    "statusCalculated": "Рассчитано",
+    "statusApproved": "Утверждено",
+    "statusPaid": "Выплачено",
+    "statusCancelled": "Отменено",
+    "statusUpcoming": "Предстоящий",
     "monthlySchedule": "Ежемесячный график выплат",
     "biweeklySchedule": "График раз в две недели",
     "weeklySchedule": "Еженедельный график выплат",
@@ -360,6 +366,13 @@
     "payslipNumber": "Расчётный лист #",
     "issueDate": "Дата выдачи",
     "earnings": "Начисления",
-    "print": "Печать"
+    "print": "Печать",
+    "myPayslips": "Мои расчётные листы",
+    "myPayslipsDesc": "Просмотр и скачивание ваших расчётных листов",
+    "noPayslips": "Расчётных листов пока нет",
+    "noPayslipsDesc": "Расчётные листы появятся здесь после обработки зарплатных периодов",
+    "net": "На руки",
+    "other": "Прочее",
+    "notPaid": "НЕ ВЫПЛАЧЕНО"
   }
 }

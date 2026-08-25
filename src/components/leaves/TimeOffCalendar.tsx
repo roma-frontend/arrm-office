@@ -56,6 +56,7 @@ import {
   Filter,
   RotateCcw,
   Download,
+  FileSpreadsheet,
   Users,
   Plane,
   Hourglass,
@@ -74,6 +75,7 @@ import type { LucideIcon } from 'lucide-react';
 import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { getInitials, ALL_LEAVE_TYPES, getLeaveTypeColor } from '@/lib/types';
 import { EmployeeHoverCard } from '@/components/employees/EmployeeHoverCard';
+import type * as ExcelJS from 'exceljs';
 
 // ── Leave type catalogue ────────────────────────────────────────────────────
 // The full 9-type catalogue and its colours live in src/lib/types.ts so the
@@ -81,6 +83,38 @@ import { EmployeeHoverCard } from '@/components/employees/EmployeeHoverCard';
 
 /** Accent for the overtime layer — matches OVERTIME_COLOR in CalendarClient. */
 const OVERTIME_COLOR = '#8b5cf6';
+
+/**
+ * Soft pastel palette used for leave-type cells in the Excel export.
+ * Keyed by leave type, mirroring LEAVE_TYPE_COLORS in src/lib/types.ts but
+ * rendered in light, neutral tones so the grid reads at a glance.
+ */
+const TYPE_PASTEL_BG: Record<string, string> = {
+  paid: '#BFDBFE',
+  unpaid: '#FDE68A',
+  sick: '#FECACA',
+  family: '#A7F3D0',
+  doctor: '#A5F3FC',
+  day_off: '#DDD6FE',
+  maternity: '#FBCFE8',
+  paternity: '#C7D2FE',
+  study: '#E2E8F0',
+};
+const TYPE_PASTEL_FG: Record<string, string> = {
+  paid: '#1E3A8A',
+  unpaid: '#78350F',
+  sick: '#7F1D1D',
+  family: '#064E3B',
+  doctor: '#164E63',
+  day_off: '#4C1D95',
+  maternity: '#831843',
+  paternity: '#1E1B4B',
+  study: '#1E293B',
+};
+const FALLBACK_PASTEL_BG = '#F1F5F9';
+const FALLBACK_PASTEL_FG = '#334155';
+const pastelBg = (t: string) => TYPE_PASTEL_BG[t] ?? FALLBACK_PASTEL_BG;
+const pastelFg = (t: string) => TYPE_PASTEL_FG[t] ?? FALLBACK_PASTEL_FG;
 
 const TYPE_LABEL_KEY: Record<string, string> = {
   paid: 'leaveTypes.paid',
@@ -794,6 +828,1404 @@ export function TimeOffCalendar({
     URL.revokeObjectURL(url);
   }, [rows, visibleDays, viewStart, viewEnd, t, typeLabel]);
 
+  // ── Excel export (server-side, via API) ──────────────────────────────────
+  const exportExcel = useCallback(async () => {
+    try {
+      const lang = (i18n.language as 'en' | 'ru' | 'hy' | 'de') || 'en';
+      const payload = {
+        viewStart,
+        viewEnd,
+        lang,
+        days: visibleDays.map((d) => ({
+          date: d.date.toISOString(),
+          ds: d.ds,
+          isWeekend: d.isWeekend,
+          holidayName: d.holiday?.name ?? null,
+        })),
+        rows: rows.map((r) => ({
+          emp: {
+            _id: r.emp._id,
+            name: r.emp.name,
+            department: r.emp.department,
+            position: r.emp.position,
+          },
+          leaves: r.leaves,
+          approvedDays: r.approvedDays,
+          pendingDays: r.pendingDays,
+          byType: Object.fromEntries(r.byType),
+          onLeaveToday: r.onLeaveToday,
+        })),
+        filters: {
+          search: search.trim() || undefined,
+          statuses: statusSet.size ? [...statusSet] : undefined,
+          types: typeSet.size ? [...typeSet] : undefined,
+          department: deptFilter !== 'all' ? deptFilter : undefined,
+          position: posFilter !== 'all' ? posFilter : undefined,
+          level: levelFilter !== 'all' ? levelFilter : undefined,
+          employeeType: empTypeFilter !== 'all' ? empTypeFilter : undefined,
+          onlyWithLeave: onlyWithLeave || undefined,
+        },
+      };
+      const res = await fetch('/api/leave/timesheet-export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
+        body: JSON.stringify(payload),
+        cache: 'no-store',
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const ts = new Date().toTimeString().slice(0, 8).replace(/:/g, '');
+      a.download = `timesheet_${viewStart}_${viewEnd}_${ts}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      return;
+    } catch (err) {
+      console.error('Excel export failed', err);
+      // fall through to legacy in-browser export
+    }
+    const ExcelJS = (await import('exceljs')).default;
+    const wb = new ExcelJS.Workbook();
+    wb.creator = 'HR Project';
+    wb.created = new Date();
+    wb.modified = new Date();
+    wb.title = t('timesheet.title', { defaultValue: 'Табель отсутствий' });
+
+    const typeCols = ALL_LEAVE_TYPES.filter((ty) => rows.some((r) => r.byType.get(ty)));
+
+    // ── Helpers ─────────────────────────────────────────────────────────────
+    const hexToArgb = (hex: string): string => {
+      const h = hex.replace('#', '').trim().toUpperCase();
+      // Already a full ARGB value — return as-is to avoid double-prefixing,
+      // which Excel renders as black cells.
+      if (h.length === 8) return h;
+      const full =
+        h.length === 3
+          ? h
+              .split('')
+              .map((c) => c + c)
+              .join('')
+          : h;
+      const a = 'FF';
+      return a + full;
+    };
+    const darken = (hex: string, amount = 0.7): string => {
+      const h = hex.replace('#', '');
+      const full =
+        h.length === 3
+          ? h
+              .split('')
+              .map((c) => c + c)
+              .join('')
+          : h;
+      const r = Math.max(0, Math.min(255, Math.round(parseInt(full.slice(0, 2), 16) * amount)));
+      const g = Math.max(0, Math.min(255, Math.round(parseInt(full.slice(2, 4), 16) * amount)));
+      const b = Math.max(0, Math.min(255, Math.round(parseInt(full.slice(4, 6), 16) * amount)));
+      return '#' + [r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('');
+    };
+    const mix = (hex: string, withHex: string, t: number): string => {
+      const a = hex.replace('#', '');
+      const b = withHex.replace('#', '');
+      const ar = parseInt(a.slice(0, 2), 16),
+        ag = parseInt(a.slice(2, 4), 16),
+        ab = parseInt(a.slice(4, 6), 16);
+      const br = parseInt(b.slice(0, 2), 16),
+        bg = parseInt(b.slice(2, 4), 16),
+        bb = parseInt(b.slice(4, 6), 16);
+      const r = Math.round(ar + (br - ar) * t);
+      const g = Math.round(ag + (bg - ag) * t);
+      const bl = Math.round(ab + (bb - ab) * t);
+      return '#' + [r, g, bl].map((v) => v.toString(16).padStart(2, '0')).join('');
+    };
+
+    const border: Partial<ExcelJS.Borders> = {
+      top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+      left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+      bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+      right: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+    };
+    const borderStrong: Partial<ExcelJS.Borders> = {
+      top: { style: 'medium', color: { argb: 'FF1E293B' } },
+      left: { style: 'medium', color: { argb: 'FF1E293B' } },
+      bottom: { style: 'medium', color: { argb: 'FF1E293B' } },
+      right: { style: 'medium', color: { argb: 'FF1E293B' } },
+    };
+
+    // ════════════════════════════════════════════════════════════════════════
+    // Sheet 1: «Сводка» — Cover/summary with KPI cards, filters, legend
+    // ════════════════════════════════════════════════════════════════════════
+    const cover = wb.addWorksheet(t('timesheet.sheetSummary'), {
+      views: [{ showGridLines: false, zoomScale: 110 }],
+    });
+    cover.getColumn(1).width = 2;
+    for (let c = 2; c <= 7; c++) cover.getColumn(c).width = 22;
+
+    const now = new Date();
+    cover.mergeCells('B2:G2');
+    const titleCell = cover.getCell('B2');
+    titleCell.value = t('timesheet.title', { defaultValue: 'Табель отсутствий' });
+    titleCell.font = { name: 'Calibri', size: 22, bold: true, color: { argb: 'FF0F172A' } };
+    titleCell.alignment = { vertical: 'middle', horizontal: 'left' };
+    titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEFF6FF' } };
+    cover.getRow(2).height = 44;
+
+    cover.mergeCells('B3:G3');
+    const subCell = cover.getCell('B3');
+    subCell.value = `${format(parseISO(viewStart), 'dd MMMM yyyy', { locale: ru })} — ${format(parseISO(viewEnd), 'dd MMMM yyyy', { locale: ru })} · сформировано ${format(now, 'dd.MM.yyyy HH:mm')}`;
+    subCell.font = { name: 'Calibri', size: 11, italic: true, color: { argb: 'FF475569' } };
+    subCell.alignment = { vertical: 'middle', horizontal: 'left' };
+    cover.getRow(3).height = 22;
+
+    // KPI cards
+    const totalEmp = rows.length;
+    const totalAbsenceDays = rows.reduce((acc, r) => acc + r.approvedDays + r.pendingDays, 0);
+    const totalApproved = rows.reduce((acc, r) => acc + r.approvedDays, 0);
+    const totalPending = rows.reduce((acc, r) => acc + r.pendingDays, 0);
+    const todayAbsentees = rows.filter((r) => r.onLeaveToday).length;
+    const onLeaveByType = new Map<string, number>();
+    rows.forEach((r) => {
+      r.leaves
+        .filter((l) => {
+          const today = format(now, 'yyyy-MM-dd');
+          return l.startDate <= today && l.endDate >= today && l.status !== 'rejected';
+        })
+        .forEach((l) => onLeaveByType.set(l.type, (onLeaveByType.get(l.type) ?? 0) + 1));
+    });
+
+    const kpis: Array<{ label: string; value: number; color: string; sub?: string }> = [
+      {
+        label: t('timesheet.kpiEmployees'),
+        value: totalEmp,
+        color: '#3B82F6',
+        sub: t('timesheet.kpiEmployeesSub'),
+      },
+      {
+        label: t('timesheet.kpiOnLeaveToday'),
+        value: todayAbsentees,
+        color: '#EF4444',
+        sub: t('timesheet.kpiPeopleSub'),
+      },
+      {
+        label: t('timesheet.kpiPending'),
+        value: totalPending,
+        color: '#F59E0B',
+        sub: t('timesheet.kpiDaysSub'),
+      },
+      {
+        label: t('timesheet.kpiDaysInPeriod'),
+        value: totalAbsenceDays,
+        color: '#10B981',
+        sub: t('timesheet.kpiPerPeriodSub'),
+      },
+    ];
+    const kpiRow = 5;
+    cover.getRow(kpiRow).height = 26;
+    cover.getRow(kpiRow + 1).height = 42;
+    kpis.forEach((k, i) => {
+      const col = 2 + i;
+      const labelCell = cover.getCell(kpiRow, col);
+      labelCell.value = k.label;
+      labelCell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+      labelCell.alignment = { vertical: 'middle', horizontal: 'center' };
+      labelCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: hexToArgb(k.color) } };
+      labelCell.border = borderStrong;
+
+      const valueCell = cover.getCell(kpiRow + 1, col);
+      valueCell.value = k.value;
+      valueCell.font = {
+        name: 'Calibri',
+        size: 22,
+        bold: true,
+        color: { argb: hexToArgb(k.color) },
+      };
+      valueCell.alignment = { vertical: 'middle', horizontal: 'center' };
+      valueCell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: hexToArgb(mix(k.color, '#FFFFFF', 0.85)) },
+      };
+      valueCell.border = borderStrong;
+    });
+
+    // Legend
+    const legendRow = kpiRow + 4;
+    cover.mergeCells(legendRow, 2, legendRow, 7);
+    const legendTitle = cover.getCell(legendRow, 2);
+    legendTitle.value = t('timesheet.legendTitle');
+    legendTitle.font = { name: 'Calibri', size: 12, bold: true, color: { argb: 'FF0F172A' } };
+    legendTitle.alignment = { vertical: 'middle' };
+    cover.getRow(legendRow).height = 22;
+
+    const activeTypes = ALL_LEAVE_TYPES.filter(
+      (ty) => onLeaveByType.has(ty) || rows.some((r) => r.byType.get(ty)),
+    );
+    const legendData: Array<{ swatch: string; label: string; note: string }> = [
+      ...activeTypes.map((ty) => ({
+        swatch: pastelBg(ty),
+        label: typeLabel(ty),
+        note: onLeaveByType.has(ty)
+          ? t('timesheet.legendTodayCount', { count: onLeaveByType.get(ty) ?? 0 })
+          : '',
+      })),
+      { swatch: '#FEE2E2', label: t('timesheet.legendWeekend'), note: '' },
+      { swatch: '#E0E7FF', label: t('timesheet.legendToday'), note: '' },
+      { swatch: '#F1F5F9', label: t('timesheet.legendNoData'), note: '' },
+    ];
+    let lRow = legendRow + 1;
+    legendData.forEach((item) => {
+      const sw = cover.getCell(lRow, 2);
+      sw.value = '';
+      sw.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: hexToArgb(item.swatch) } };
+      sw.border = border;
+      const lc = cover.getCell(lRow, 3);
+      lc.value = item.label;
+      lc.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FF0F172A' } };
+      lc.alignment = { vertical: 'middle' };
+      lc.border = border;
+      cover.mergeCells(lRow, 3, lRow, 5);
+      if (item.note) {
+        const noteCell = cover.getCell(lRow, 6);
+        noteCell.value = item.note;
+        noteCell.font = { name: 'Calibri', size: 10, italic: true, color: { argb: 'FF64748B' } };
+        noteCell.alignment = { vertical: 'middle' };
+        noteCell.border = border;
+        cover.mergeCells(lRow, 6, lRow, 7);
+      }
+      cover.getRow(lRow).height = 20;
+      lRow++;
+    });
+
+    // Filters summary
+    lRow += 1;
+    cover.mergeCells(lRow, 2, lRow, 7);
+    const fTitle = cover.getCell(lRow, 2);
+    fTitle.value = t('timesheet.appliedFilters');
+    fTitle.font = { name: 'Calibri', size: 12, bold: true, color: { argb: 'FF0F172A' } };
+    fTitle.alignment = { vertical: 'middle' };
+    cover.getRow(lRow).height = 22;
+    lRow++;
+    const filterInfo: Array<[string, string]> = [];
+    filterInfo.push([t('timesheet.period'), `${viewStart} — ${viewEnd}`]);
+    if (search.trim()) filterInfo.push([t('timesheet.searchLabel'), search.trim()]);
+    if (statusSet.size)
+      filterInfo.push([
+        t('timesheet.statusesLabel'),
+        [...statusSet]
+          .map((s) => (STATUS_BADGE[s] ? t(STATUS_BADGE[s].labelKey, s) : s))
+          .join(', '),
+      ]);
+    if (typeSet.size)
+      filterInfo.push([t('timesheet.typesLabel'), [...typeSet].map(typeLabel).join(', ')]);
+    if (deptFilter !== 'all') filterInfo.push([t('timesheet.department'), deptFilter]);
+    if (posFilter !== 'all') filterInfo.push([t('timesheet.position'), posFilter]);
+    if (levelFilter !== 'all') filterInfo.push([t('timesheet.level'), levelFilter]);
+    if (empTypeFilter !== 'all') filterInfo.push([t('timesheet.employeeType'), empTypeFilter]);
+    if (onlyWithLeave) filterInfo.push([t('timesheet.onlyWithLeave'), t('timesheet.yes')]);
+    filterInfo.forEach(([k, v]) => {
+      const a = cover.getCell(lRow, 2);
+      a.value = k;
+      a.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FF0F172A' } };
+      a.alignment = { vertical: 'middle' };
+      a.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+      a.border = border;
+      const b = cover.getCell(lRow, 3);
+      b.value = v;
+      b.font = { name: 'Calibri', size: 10, color: { argb: 'FF0F172A' } };
+      b.alignment = { vertical: 'middle', wrapText: true };
+      b.border = border;
+      cover.mergeCells(lRow, 3, lRow, 7);
+      cover.getRow(lRow).height = 18;
+      lRow++;
+    });
+
+    // ════════════════════════════════════════════════════════════════════════
+    // Sheet 2: «Табель» — main grid (employees × days)
+    // ════════════════════════════════════════════════════════════════════════
+    const ws = wb.addWorksheet(t('timesheet.sheetTimesheet'), {
+      views: [
+        {
+          state: 'frozen',
+          xSplit: 3,
+          ySplit: 3,
+          showGridLines: false,
+          zoomScale: 100,
+        },
+      ],
+    });
+
+    // Column widths
+    ws.getColumn(1).width = 4; // №
+    ws.getColumn(2).width = 30; // employee
+    ws.getColumn(3).width = 22; // position
+    visibleDays.forEach((d, i) => {
+      const col = 4 + i;
+      ws.getColumn(col).width = d.isWeekend ? 4.5 : 6;
+    });
+    const totalCol = 4 + visibleDays.length;
+    const typeStartCol = totalCol + 1;
+    typeCols.forEach((_, i) => {
+      ws.getColumn(typeStartCol + i).width = 11;
+    });
+    const sumCol = typeStartCol + typeCols.length;
+    ws.getColumn(sumCol).width = 16;
+
+    // Row 1: month banner spans the day columns
+    ws.mergeCells(1, 4, 1, 3 + visibleDays.length);
+    const monthCell = ws.getCell(1, 4);
+    monthCell.value = `${format(parseISO(viewStart), 'LLLL yyyy', { locale: ru })}`;
+    monthCell.font = { name: 'Calibri', size: 12, bold: true, color: { argb: 'FF0F172A' } };
+    monthCell.alignment = { vertical: 'middle', horizontal: 'center' };
+    monthCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEFF6FF' } };
+    monthCell.border = borderStrong;
+    ws.getRow(1).height = 22;
+
+    // Row 2: weekday short names
+    const weekday = parseISO(visibleDays[0]?.ds ?? viewStart);
+    const wkLocale =
+      i18n.language === 'ru'
+        ? ru
+        : i18n.language === 'hy'
+          ? hy
+          : i18n.language === 'de'
+            ? de
+            : enUS;
+    const dayLabel = (dateStr: string) => format(parseISO(dateStr), 'EEEEEE', { locale: wkLocale });
+    visibleDays.forEach((d, i) => {
+      const cell = ws.getCell(2, 4 + i);
+      cell.value = dayLabel(d.ds);
+      cell.font = {
+        name: 'Calibri',
+        size: 9,
+        bold: true,
+        color: { argb: d.isWeekend ? 'FFB91C1C' : 'FF475569' },
+      };
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+      cell.border = border;
+    });
+
+    // Row 3: day numbers + headers for left columns
+    const headerFill: ExcelJS.Fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFEFF6FF' },
+    };
+    const headerFont: Partial<ExcelJS.Font> = {
+      name: 'Calibri',
+      size: 10,
+      bold: true,
+      color: { argb: 'FF0F172A' },
+    };
+    const headerAlign: Partial<ExcelJS.Alignment> = { vertical: 'middle', horizontal: 'center' };
+    const leftHeaders: Array<[number, string]> = [
+      [1, t('timesheet.rowNumber')],
+      [2, t('timesheet.employee')],
+      [3, t('timesheet.department') + ' · ' + t('timesheet.position')],
+    ];
+    leftHeaders.forEach(([c, v]) => {
+      const cell = ws.getCell(3, c);
+      cell.value = v;
+      cell.font = headerFont;
+      cell.alignment =
+        c === 1 ? headerAlign : { vertical: 'middle', horizontal: 'left', indent: 1 };
+      cell.fill = headerFill;
+      cell.border = borderStrong;
+    });
+
+    visibleDays.forEach((d, i) => {
+      const cell = ws.getCell(3, 4 + i);
+      const dNum = format(parseISO(d.ds), 'd');
+      const isHoliday = !!d.holiday;
+      const isTodayCol = d.ds === format(now, 'yyyy-MM-dd');
+      let fillArgb: string;
+      if (isHoliday) fillArgb = 'FFFEF3C7';
+      else if (isTodayCol) fillArgb = 'FFE0E7FF';
+      else if (d.isWeekend) fillArgb = 'FFFEE2E2';
+      else fillArgb = 'FFFAFBFC';
+      cell.value = parseInt(dNum, 10);
+      cell.font = {
+        name: 'Calibri',
+        size: 11,
+        bold: true,
+        color: {
+          argb: isHoliday
+            ? 'FF92400E'
+            : isTodayCol
+              ? 'FF3730A3'
+              : d.isWeekend
+                ? 'FFB91C1C'
+                : 'FF0F172A',
+        },
+      };
+      cell.alignment = headerAlign;
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: fillArgb } };
+      cell.border = border;
+      if (isTodayCol) {
+        cell.border = {
+          top: { style: 'medium', color: { argb: 'FF4F46E5' } },
+          left: { style: 'medium', color: { argb: 'FF4F46E5' } },
+          bottom: { style: 'medium', color: { argb: 'FF4F46E5' } },
+          right: { style: 'medium', color: { argb: 'FF4F46E5' } },
+        };
+      }
+    });
+
+    // Totals / per-type headers
+    const totalHeader = ws.getCell(3, totalCol);
+    totalHeader.value = t('timesheet.totalDays');
+    totalHeader.font = headerFont;
+    totalHeader.alignment = headerAlign;
+    totalHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDBEAFE' } };
+    totalHeader.border = borderStrong;
+    typeCols.forEach((ty, i) => {
+      const cell = ws.getCell(3, typeStartCol + i);
+      cell.value = typeLabel(ty);
+      cell.font = {
+        name: 'Calibri',
+        size: 9,
+        bold: true,
+        color: { argb: hexToArgb(pastelFg(ty)) },
+      };
+      cell.alignment = { ...headerAlign, wrapText: true };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: hexToArgb(pastelBg(ty)) } };
+      cell.border = border;
+    });
+    const sumHeader = ws.getCell(3, sumCol);
+    sumHeader.value = t('timesheet.totalDays');
+    sumHeader.font = headerFont;
+    sumHeader.alignment = headerAlign;
+    sumHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDBEAFE' } };
+    sumHeader.border = borderStrong;
+
+    ws.getRow(3).height = 32;
+    ws.getRow(2).height = 16;
+    ws.getRow(1).height = 22;
+
+    // Body rows
+    rows.forEach((r, idx) => {
+      const xlRow = 4 + idx;
+      const isAlt = idx % 2 === 1;
+      const baseRowFill = isAlt ? 'FFE2E8F0' : 'FFF1F5F9';
+
+      // №
+      const numCell = ws.getCell(xlRow, 1);
+      numCell.value = idx + 1;
+      numCell.font = { name: 'Calibri', size: 10, color: { argb: 'FF94A3B8' } };
+      numCell.alignment = { vertical: 'middle', horizontal: 'center' };
+      numCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: baseRowFill } };
+      numCell.border = border;
+
+      // Employee
+      const empCell = ws.getCell(xlRow, 2);
+      empCell.value = r.emp.name;
+      empCell.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FF0F172A' } };
+      empCell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+      empCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: baseRowFill } };
+      empCell.border = border;
+
+      // Department · position
+      const depCell = ws.getCell(xlRow, 3);
+      depCell.value = [r.emp.department, r.emp.position].filter(Boolean).join(' · ');
+      depCell.font = { name: 'Calibri', size: 10, color: { argb: 'FF475569' } };
+      depCell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1, wrapText: false };
+      depCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: baseRowFill } };
+      depCell.border = border;
+
+      // Day cells
+      visibleDays.forEach((d, i) => {
+        const cell = ws.getCell(xlRow, 4 + i);
+        const covering = r.leaves
+          .filter((l) => l.startDate <= d.ds && l.endDate >= d.ds && l.status !== 'rejected')
+          .sort((a) => (a.status === 'pending' ? 1 : -1));
+        const cov = covering[0];
+        const isHoliday = !!d.holiday;
+        const isTodayCol = d.ds === format(now, 'yyyy-MM-dd');
+        let bg: string;
+        if (isHoliday) bg = 'FFFEF3C7';
+        else if (isTodayCol) bg = 'FFE0E7FF';
+        else if (d.isWeekend) bg = 'FFFEE2E2';
+        else bg = baseRowFill;
+        if (cov) {
+          const fg = pastelFg(cov.type);
+          cell.value =
+            cov.status === 'pending' ? `${prettifyType(cov.type)} ?` : prettifyType(cov.type);
+          bg = pastelBg(cov.type);
+          cell.font = {
+            name: 'Calibri',
+            size: 9,
+            bold: true,
+            color: { argb: hexToArgb(cov.status === 'pending' ? mix(fg, '#FFFFFF', 0.35) : fg) },
+          };
+        } else {
+          cell.value = '';
+          cell.font = { name: 'Calibri', size: 9, color: { argb: 'FFCBD5E1' } };
+        }
+        cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: hexToArgb(bg) } };
+        cell.border = border;
+        if (isTodayCol) {
+          cell.border = {
+            top: { style: 'medium', color: { argb: 'FF4F46E5' } },
+            left: { style: 'medium', color: { argb: 'FF4F46E5' } },
+            bottom: { style: 'medium', color: { argb: 'FF4F46E5' } },
+            right: { style: 'medium', color: { argb: 'FF4F46E5' } },
+          };
+        }
+      });
+
+      // Total days (approved)
+      const totalCell = ws.getCell(xlRow, totalCol);
+      const totalDays = r.approvedDays + r.pendingDays;
+      totalCell.value = totalDays;
+      totalCell.font = {
+        name: 'Calibri',
+        size: 11,
+        bold: true,
+        color: { argb: totalDays > 0 ? 'FF0F172A' : 'FFCBD5E1' },
+      };
+      totalCell.alignment = { vertical: 'middle', horizontal: 'center' };
+      totalCell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: totalDays > 0 ? 'FFEFF6FF' : baseRowFill },
+      };
+      totalCell.border = border;
+      totalCell.numFmt = '0';
+
+      // Per-type breakdown
+      typeCols.forEach((ty, i) => {
+        const cell = ws.getCell(xlRow, typeStartCol + i);
+        const v = r.byType.get(ty) ?? 0;
+        cell.value = v || '';
+        const fg = pastelFg(ty);
+        const bg = pastelBg(ty);
+        cell.font = {
+          name: 'Calibri',
+          size: 10,
+          bold: v > 0,
+          color: { argb: v > 0 ? hexToArgb(fg) : 'FFCBD5E1' },
+        };
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: v > 0 ? hexToArgb(bg) : baseRowFill },
+        };
+        cell.border = border;
+        cell.numFmt = '0';
+      });
+
+      // Grand total
+      const gCell = ws.getCell(xlRow, sumCol);
+      gCell.value = totalDays;
+      gCell.font = { name: 'Calibri', size: 12, bold: true, color: { argb: 'FF0F172A' } };
+      gCell.alignment = { vertical: 'middle', horizontal: 'center' };
+      gCell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: totalDays > 0 ? 'FFDBEAFE' : 'FFF1F5F9' },
+      };
+      gCell.border = borderStrong;
+      gCell.numFmt = '0';
+
+      ws.getRow(xlRow).height = 22;
+    });
+
+    // Daily absence totals footer
+    const footerRow = 4 + rows.length;
+    const fLabel = ws.getCell(footerRow, 2);
+    fLabel.value = t('timesheet.absentPerDayTotal');
+    fLabel.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FF0F172A' } };
+    fLabel.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+    fLabel.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEFF6FF' } };
+    fLabel.border = borderStrong;
+    ws.mergeCells(footerRow, 2, footerRow, 3);
+    visibleDays.forEach((d, i) => {
+      const col = 4 + i;
+      const dayCount = rows.filter((r) =>
+        r.leaves.some((l) => l.startDate <= d.ds && l.endDate >= d.ds && l.status !== 'rejected'),
+      ).length;
+      const cell = ws.getCell(footerRow, col);
+      cell.value = dayCount || '';
+      cell.font = {
+        name: 'Calibri',
+        size: 10,
+        bold: true,
+        color: { argb: dayCount ? 'FF0F172A' : 'FFCBD5E1' },
+      };
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: {
+          argb: dayCount
+            ? 'FFEFF6FF'
+            : d.holiday
+              ? 'FFFEF3C7'
+              : d.isWeekend
+                ? 'FFFEE2E2'
+                : 'FFFAFBFC',
+        },
+      };
+      cell.border = border;
+      cell.numFmt = '0';
+    });
+    const grandTotal = rows.reduce((acc, r) => acc + r.approvedDays + r.pendingDays, 0);
+    const fTotal = ws.getCell(footerRow, totalCol);
+    fTotal.value = grandTotal;
+    fTotal.font = { name: 'Calibri', size: 12, bold: true, color: { argb: 'FF0F172A' } };
+    fTotal.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDBEAFE' } };
+    fTotal.alignment = { vertical: 'middle', horizontal: 'center' };
+    fTotal.border = borderStrong;
+    fTotal.numFmt = '0';
+    typeCols.forEach((ty, i) => {
+      const col = typeStartCol + i;
+      const v = rows.reduce((acc, r) => acc + (r.byType.get(ty) ?? 0), 0);
+      const cell = ws.getCell(footerRow, col);
+      cell.value = v || '';
+      const fg = pastelFg(ty);
+      const bg = pastelBg(ty);
+      cell.font = {
+        name: 'Calibri',
+        size: 10,
+        bold: true,
+        color: { argb: v ? hexToArgb(fg) : 'FFCBD5E1' },
+      };
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: v ? hexToArgb(bg) : 'FFF8FAFC' },
+      };
+      cell.border = border;
+      cell.numFmt = '0';
+    });
+    const fSum = ws.getCell(footerRow, sumCol);
+    fSum.value = grandTotal;
+    fSum.font = { name: 'Calibri', size: 12, bold: true, color: { argb: 'FF0F172A' } };
+    fSum.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDBEAFE' } };
+    fSum.alignment = { vertical: 'middle', horizontal: 'center' };
+    fSum.border = borderStrong;
+    fSum.numFmt = '0';
+    ws.getRow(footerRow).height = 24;
+
+    // Print setup for grid
+    ws.pageSetup = {
+      orientation: 'landscape',
+      paperSize: 9,
+      fitToPage: true,
+      fitToWidth: 1,
+      fitToHeight: 0,
+      margins: { left: 0.4, right: 0.4, top: 0.5, bottom: 0.5, header: 0.3, footer: 0.3 },
+      horizontalCentered: true,
+    };
+    ws.headerFooter.oddHeader = `&L&\"Calibri,Bold\"&14${t('timesheet.title', { defaultValue: 'Табель отсутствий' })}&R&\"Calibri,Italic\"&10${format(parseISO(viewStart), 'dd.MM.yyyy')} — ${format(parseISO(viewEnd), 'dd.MM.yyyy')}`;
+    ws.headerFooter.oddFooter = `&C${t('timesheet.footerPage')}&R${t('timesheet.footerGeneratedAt', { date: format(now, 'dd.MM.yyyy HH:mm') })}`;
+
+    // ════════════════════════════════════════════════════════════════════════
+    // Sheet 3: «Детально» — flat per-leave list with all metadata
+    // ════════════════════════════════════════════════════════════════════════
+    const detail = wb.addWorksheet(t('timesheet.sheetDetail'), {
+      views: [{ state: 'frozen', ySplit: 1, showGridLines: false }],
+    });
+    const dHeaders = [
+      t('timesheet.rowNumber'),
+      t('timesheet.employee'),
+      t('timesheet.department'),
+      t('timesheet.position'),
+      t('timesheet.timeOffType'),
+      t('leave.status'),
+      t('leave.startDate'),
+      t('leave.endDate'),
+      t('leave.days'),
+      t('leave.reason'),
+      t('timesheet.approver'),
+      t('timesheet.reviewComment'),
+    ];
+    dHeaders.forEach((h, i) => {
+      const cell = detail.getCell(1, i + 1);
+      cell.value = h;
+      cell.font = headerFont;
+      cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEFF6FF' } };
+      cell.border = borderStrong;
+    });
+    detail.getRow(1).height = 30;
+    const colWidths = [5, 26, 18, 20, 16, 12, 12, 12, 8, 30, 20, 30];
+    colWidths.forEach((w, i) => {
+      detail.getColumn(i + 1).width = w;
+    });
+
+    // Flatten leaves
+    const flat: Array<{
+      row: number;
+      empName: string;
+      empDept: string;
+      empPos: string;
+      leave: (typeof rows)[number]['leaves'][number];
+    }> = [];
+    rows.forEach((r) => {
+      r.leaves.forEach((l) =>
+        flat.push({
+          row: 0,
+          empName: r.emp.name,
+          empDept: r.emp.department ?? '',
+          empPos: r.emp.position ?? '',
+          leave: l,
+        }),
+      );
+    });
+    flat.sort(
+      (a, b) =>
+        a.empName.localeCompare(b.empName) || a.leave.startDate.localeCompare(b.leave.startDate),
+    );
+    const meta = (status: string): { label: string; color: string } => {
+      const sb = STATUS_BADGE[status];
+      if (status === 'approved') return { label: t('leaveStatus.approved'), color: '#10B981' };
+      if (status === 'pending') return { label: t('leaveStatus.pending'), color: '#F59E0B' };
+      if (status === 'rejected') return { label: t('leaveStatus.rejected'), color: '#EF4444' };
+      return { label: sb?.labelKey ?? status, color: '#64748B' };
+    };
+    flat.forEach((f, i) => {
+      const xlRow = i + 2;
+      const isAlt = i % 2 === 1;
+      const l = f.leave;
+      const days = overlapDays(l.startDate, l.endDate, viewStart, viewEnd);
+      const tc = typeColor(l.type);
+      const st = meta(l.status);
+      const fill = {
+        type: 'pattern' as const,
+        pattern: 'solid' as const,
+        fgColor: { argb: isAlt ? 'FFF1F5F9' : 'FFFAFBFC' },
+      };
+
+      const cells: Array<{ v: unknown; opts: Record<string, unknown> }> = [
+        {
+          v: i + 1,
+          opts: {
+            numFmt: '0',
+            align: { vertical: 'middle', horizontal: 'center' },
+            font: { name: 'Calibri', size: 10, color: { argb: 'FF94A3B8' } },
+          },
+        },
+        {
+          v: f.empName,
+          opts: {
+            font: { name: 'Calibri', size: 11, bold: true, color: { argb: 'FF0F172A' } },
+            align: { vertical: 'middle' },
+          },
+        },
+        {
+          v: f.empDept,
+          opts: {
+            font: { name: 'Calibri', size: 10, color: { argb: 'FF475569' } },
+            align: { vertical: 'middle' },
+          },
+        },
+        {
+          v: f.empPos,
+          opts: {
+            font: { name: 'Calibri', size: 10, color: { argb: 'FF475569' } },
+            align: { vertical: 'middle' },
+          },
+        },
+        {
+          v: typeLabel(l.type),
+          opts: {
+            font: {
+              name: 'Calibri',
+              size: 10,
+              bold: true,
+              color: { argb: hexToArgb(pastelFg(l.type)) },
+            },
+            align: { vertical: 'middle', horizontal: 'center' },
+            fill: {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: hexToArgb(pastelBg(l.type)) },
+            },
+          },
+        },
+        {
+          v: st.label,
+          opts: {
+            font: { name: 'Calibri', size: 10, bold: true, color: { argb: 'FFFFFFFF' } },
+            align: { vertical: 'middle', horizontal: 'center' },
+            fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: hexToArgb(st.color) } },
+          },
+        },
+        {
+          v: l.startDate,
+          opts: {
+            numFmt: 'dd.mm.yyyy',
+            font: { name: 'Calibri', size: 10, color: { argb: 'FF0F172A' } },
+            align: { vertical: 'middle', horizontal: 'center' },
+          },
+        },
+        {
+          v: l.endDate,
+          opts: {
+            numFmt: 'dd.mm.yyyy',
+            font: { name: 'Calibri', size: 10, color: { argb: 'FF0F172A' } },
+            align: { vertical: 'middle', horizontal: 'center' },
+          },
+        },
+        {
+          v: days,
+          opts: {
+            numFmt: '0',
+            font: { name: 'Calibri', size: 11, bold: true, color: { argb: 'FF0F172A' } },
+            align: { vertical: 'middle', horizontal: 'center' },
+          },
+        },
+        {
+          v: l.reason ?? '',
+          opts: {
+            font: { name: 'Calibri', size: 10, color: { argb: 'FF334155' } },
+            align: { vertical: 'middle', wrapText: true },
+          },
+        },
+        {
+          v: l.reviewerName ?? '',
+          opts: {
+            font: { name: 'Calibri', size: 10, color: { argb: 'FF334155' } },
+            align: { vertical: 'middle' },
+          },
+        },
+        {
+          v: l.reviewComment ?? '',
+          opts: {
+            font: { name: 'Calibri', size: 10, italic: true, color: { argb: 'FF64748B' } },
+            align: { vertical: 'middle', wrapText: true },
+          },
+        },
+      ];
+      cells.forEach((c, j) => {
+        const cell = detail.getCell(xlRow, j + 1);
+        cell.value = c.v as ExcelJS.CellValue;
+        const opts = c.opts as { font?: unknown; align?: unknown; fill?: unknown; numFmt?: string };
+        if (opts.font) cell.font = opts.font as never;
+        if (opts.align) cell.alignment = opts.align as never;
+        if (opts.fill) cell.fill = opts.fill as never;
+        if (opts.numFmt) cell.numFmt = opts.numFmt;
+        cell.border = border;
+        if (j === 0 || j === 8)
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: isAlt ? 'FFF1F5F9' : 'FFEFF6FF' },
+          };
+        if (j !== 4 && j !== 5 && j !== 0 && j !== 8) cell.fill = fill;
+      });
+      detail.getRow(xlRow).height = 20;
+    });
+
+    if (flat.length === 0) {
+      const r = detail.getRow(2);
+      r.height = 24;
+      detail.mergeCells(2, 1, 2, dHeaders.length);
+      const c = detail.getCell(2, 1);
+      c.value = t('timesheet.noLeavesInPeriod');
+      c.font = { name: 'Calibri', size: 12, italic: true, color: { argb: 'FF94A3B8' } };
+      c.alignment = { vertical: 'middle', horizontal: 'center' };
+    }
+
+    // Apply filter to header row
+    detail.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: dHeaders.length } };
+    detail.pageSetup = {
+      orientation: 'landscape',
+      paperSize: 9,
+      fitToPage: true,
+      fitToWidth: 1,
+      fitToHeight: 0,
+      margins: { left: 0.4, right: 0.4, top: 0.5, bottom: 0.5, header: 0.3, footer: 0.3 },
+    };
+    detail.headerFooter.oddHeader = `&L&\"Calibri,Bold\"&12${t('timesheet.title', { defaultValue: 'Табель отсутствий' })}${t('timesheet.detailSuffix')}&R&\"Calibri,Italic\"&10${format(parseISO(viewStart), 'dd.MM.yyyy')} — ${format(parseISO(viewEnd), 'dd.MM.yyyy')}`;
+    detail.headerFooter.oddFooter = `&C${t('timesheet.footerPage')}`;
+
+    // ════════════════════════════════════════════════════════════════════════
+    // Sheet 4: «По типам» — aggregated stats per leave type
+    // ════════════════════════════════════════════════════════════════════════
+    const byType = wb.addWorksheet(t('timesheet.sheetByTypes'), {
+      views: [{ showGridLines: false }],
+    });
+    byType.getColumn(1).width = 4;
+    byType.getColumn(2).width = 28;
+    byType.getColumn(3).width = 14;
+    byType.getColumn(4).width = 16;
+    byType.getColumn(5).width = 16;
+    byType.getColumn(6).width = 16;
+    byType.getColumn(7).width = 16;
+    byType.mergeCells('B2:G2');
+    const byTypeTitle = byType.getCell('B2');
+    byTypeTitle.value = t('timesheet.byTypeSheetTitle');
+    byTypeTitle.font = { name: 'Calibri', size: 16, bold: true, color: { argb: 'FF0F172A' } };
+    byTypeTitle.alignment = { vertical: 'middle' };
+    byType.getRow(2).height = 28;
+
+    const sHeaders = [
+      t('timesheet.rowNumber'),
+      t('timesheet.typesLabel'),
+      t('timesheet.colorLabel'),
+      t('timesheet.daysApprovedCol'),
+      t('timesheet.daysPendingCol'),
+      t('timesheet.kpiEmployees'),
+      t('timesheet.pctOfTotal'),
+    ];
+    sHeaders.forEach((h, i) => {
+      const cell = byType.getCell(4, i + 1);
+      cell.value = h;
+      cell.font = headerFont;
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEFF6FF' } };
+      cell.border = borderStrong;
+    });
+    byType.getRow(4).height = 24;
+
+    const grandTotalForPct = Math.max(
+      1,
+      typeCols.reduce((acc, ty) => acc + rows.reduce((a, r) => a + (r.byType.get(ty) ?? 0), 0), 0),
+    );
+    typeCols.forEach((ty, i) => {
+      const xlRow = 5 + i;
+      const totalDaysForType = rows.reduce((a, r) => a + (r.byType.get(ty) ?? 0), 0);
+      const empCount = rows.filter((r) => (r.byType.get(ty) ?? 0) > 0).length;
+      const approvedOnly = rows.reduce((acc, r) => {
+        const inRange = r.leaves.filter(
+          (l) =>
+            l.type === ty &&
+            l.status === 'approved' &&
+            !(l.endDate < viewStart || l.startDate > viewEnd),
+        );
+        return (
+          acc +
+          inRange.reduce((s, l) => s + overlapDays(l.startDate, l.endDate, viewStart, viewEnd), 0)
+        );
+      }, 0);
+      const pendingOnly = rows.reduce((acc, r) => {
+        const inRange = r.leaves.filter(
+          (l) =>
+            l.type === ty &&
+            l.status === 'pending' &&
+            !(l.endDate < viewStart || l.startDate > viewEnd),
+        );
+        return (
+          acc +
+          inRange.reduce((s, l) => s + overlapDays(l.startDate, l.endDate, viewStart, viewEnd), 0)
+        );
+      }, 0);
+      const tc = typeColor(ty);
+      const isAlt = i % 2 === 1;
+      const rowFill = isAlt ? 'FFF1F5F9' : 'FFFAFBFC';
+
+      const cells: Array<{ v: unknown; opts?: Record<string, unknown> }> = [
+        { v: i + 1, opts: { numFmt: '0', align: { vertical: 'middle', horizontal: 'center' } } },
+        {
+          v: typeLabel(ty),
+          opts: {
+            font: { name: 'Calibri', size: 11, bold: true, color: { argb: 'FF0F172A' } },
+            align: { vertical: 'middle' },
+          },
+        },
+        { v: '' },
+        {
+          v: approvedOnly,
+          opts: {
+            numFmt: '0',
+            font: { name: 'Calibri', size: 11, bold: true, color: { argb: 'FF047857' } },
+            align: { vertical: 'middle', horizontal: 'center' },
+          },
+        },
+        {
+          v: pendingOnly,
+          opts: {
+            numFmt: '0',
+            font: { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFB45309' } },
+            align: { vertical: 'middle', horizontal: 'center' },
+          },
+        },
+        {
+          v: empCount,
+          opts: {
+            numFmt: '0',
+            font: { name: 'Calibri', size: 11, color: { argb: 'FF0F172A' } },
+            align: { vertical: 'middle', horizontal: 'center' },
+          },
+        },
+        {
+          v: totalDaysForType / grandTotalForPct,
+          opts: {
+            numFmt: '0.0%',
+            font: { name: 'Calibri', size: 11, color: { argb: 'FF0F172A' } },
+            align: { vertical: 'middle', horizontal: 'center' },
+          },
+        },
+      ];
+      cells.forEach((c, j) => {
+        const cell = byType.getCell(xlRow, j + 1);
+        cell.value = c.v as ExcelJS.CellValue;
+        if (c.opts?.font) cell.font = c.opts.font as Partial<ExcelJS.Font>;
+        if (c.opts?.align) cell.alignment = c.opts.align as Partial<ExcelJS.Alignment>;
+        if (c.opts?.numFmt) cell.numFmt = c.opts.numFmt as string;
+        if (j === 2) {
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: hexToArgb(pastelBg(ty)) },
+          };
+          cell.font = {
+            name: 'Calibri',
+            size: 11,
+            bold: true,
+            color: { argb: hexToArgb(pastelFg(ty)) },
+          };
+        } else {
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: rowFill } };
+        }
+        cell.border = border;
+      });
+      byType.getRow(xlRow).height = 22;
+    });
+
+    // Totals row
+    const totalRow = 5 + typeCols.length;
+    const tCells: Array<[number, unknown, string?]> = [
+      [1, ''],
+      [2, t('timesheet.totalLabel')],
+      [3, ''],
+      [4, rows.reduce((a, r) => a + r.approvedDays, 0), '0'],
+      [5, rows.reduce((a, r) => a + r.pendingDays, 0), '0'],
+      [6, rows.length, '0'],
+      [7, 1, '0.0%'],
+    ];
+    tCells.forEach(([col, val, fmt]) => {
+      const cell = byType.getCell(totalRow, col);
+      cell.value = val as ExcelJS.CellValue;
+      cell.font = { name: 'Calibri', size: 12, bold: true, color: { argb: 'FF0F172A' } };
+      cell.alignment =
+        col === 1 || col === 3
+          ? { vertical: 'middle', horizontal: 'center' }
+          : { vertical: 'middle', horizontal: col >= 4 ? 'center' : 'left', indent: 1 };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDBEAFE' } };
+      cell.border = borderStrong;
+      if (fmt) cell.numFmt = fmt;
+    });
+    byType.getRow(totalRow).height = 26;
+
+    // Chart: per-type bar
+    if (typeCols.length > 0) {
+      const chartRow = totalRow + 3;
+      byType.mergeCells(chartRow, 1, chartRow, 7);
+      const cTitle = byType.getCell(chartRow, 1);
+      cTitle.value = t('timesheet.chartByTypeTitle');
+      cTitle.font = { name: 'Calibri', size: 13, bold: true, color: { argb: 'FF0F172A' } };
+      cTitle.alignment = { vertical: 'middle' };
+      byType.getRow(chartRow).height = 24;
+
+      const dataStartRow = chartRow + 1;
+      // write helper columns
+      typeCols.forEach((ty, i) => {
+        const cell = byType.getCell(dataStartRow + i, 2);
+        cell.value = typeLabel(ty);
+        cell.font = { name: 'Calibri', size: 10, color: { argb: 'FF0F172A' } };
+      });
+      // Visual bar representation (inline data bars) for each type
+      const maxDays = Math.max(
+        1,
+        ...typeCols.map((ty) => rows.reduce((a, r) => a + (r.byType.get(ty) ?? 0), 0)),
+      );
+      const barMax = 30;
+      typeCols.forEach((ty, i) => {
+        const xlRow = dataStartRow + i;
+        const days = rows.reduce((a, r) => a + (r.byType.get(ty) ?? 0), 0);
+        const filled = Math.max(0, Math.round((days / maxDays) * barMax));
+        const bar = '█'.repeat(filled) + '░'.repeat(Math.max(0, barMax - filled));
+        const cell = byType.getCell(xlRow, 3);
+        cell.value = `${bar} ${days}`;
+        const tc2 = typeColor(ty);
+        cell.font = { name: 'Consolas', size: 10, color: { argb: hexToArgb(pastelFg(ty)) } };
+        cell.alignment = { vertical: 'middle' };
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: hexToArgb(pastelBg(ty)) },
+        };
+        cell.border = border;
+      });
+    }
+
+    byType.pageSetup = {
+      orientation: 'portrait',
+      paperSize: 9,
+      fitToPage: true,
+      fitToWidth: 1,
+      fitToHeight: 1,
+    };
+    byType.headerFooter.oddHeader = `&L&\"Calibri,Bold\"&12Сводная статистика`;
+    byType.headerFooter.oddFooter = `&CСтр. &P из &N`;
+
+    // ════════════════════════════════════════════════════════════════════════
+    // Sheet 5: «По отделам» — pivot by department
+    // ════════════════════════════════════════════════════════════════════════
+    const byDept = wb.addWorksheet(t('timesheet.sheetByDepts'), {
+      views: [{ showGridLines: false }],
+    });
+    byDept.getColumn(1).width = 4;
+    byDept.getColumn(2).width = 30;
+    byDept.getColumn(3).width = 14;
+    byDept.getColumn(4).width = 16;
+    byDept.getColumn(5).width = 16;
+    byDept.getColumn(6).width = 16;
+    byDept.getColumn(7).width = 16;
+    byDept.mergeCells('B2:G2');
+    const deptTitle = byDept.getCell('B2');
+    deptTitle.value = t('timesheet.byDeptSheetTitle');
+    deptTitle.font = { name: 'Calibri', size: 16, bold: true, color: { argb: 'FF0F172A' } };
+    deptTitle.alignment = { vertical: 'middle' };
+    byDept.getRow(2).height = 28;
+
+    const dHeaders2 = [
+      t('timesheet.rowNumber'),
+      t('timesheet.department'),
+      t('timesheet.kpiEmployees'),
+      t('timesheet.daysApprovedCol'),
+      t('timesheet.daysPendingCol'),
+      t('timesheet.totalDays'),
+      t('timesheet.avgPerPerson'),
+    ];
+    dHeaders2.forEach((h, i) => {
+      const cell = byDept.getCell(4, i + 1);
+      cell.value = h;
+      cell.font = headerFont;
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEFF6FF' } };
+      cell.border = borderStrong;
+    });
+    byDept.getRow(4).height = 24;
+
+    const deptMap = new Map<
+      string,
+      { count: Set<string>; approved: number; pending: number; total: number }
+    >();
+    rows.forEach((r) => {
+      const d = r.emp.department || t('timesheet.noDepartment');
+      if (!deptMap.has(d)) deptMap.set(d, { count: new Set(), approved: 0, pending: 0, total: 0 });
+      const entry = deptMap.get(d)!;
+      entry.count.add(r.emp._id);
+      entry.approved += r.approvedDays;
+      entry.pending += r.pendingDays;
+      entry.total += r.approvedDays + r.pendingDays;
+    });
+    const deptEntries = [...deptMap.entries()].sort((a, b) => b[1].total - a[1].total);
+    deptEntries.forEach(([name, data], i) => {
+      const xlRow = 5 + i;
+      const isAlt = i % 2 === 1;
+      const rowFill = isAlt ? 'FFF1F5F9' : 'FFFAFBFC';
+      const avg = data.count.size > 0 ? data.total / data.count.size : 0;
+      const cells: Array<{ v: unknown; opts?: Record<string, unknown> }> = [
+        { v: i + 1, opts: { numFmt: '0', align: { vertical: 'middle', horizontal: 'center' } } },
+        {
+          v: name,
+          opts: {
+            font: { name: 'Calibri', size: 11, bold: true, color: { argb: 'FF0F172A' } },
+            align: { vertical: 'middle' },
+          },
+        },
+        {
+          v: data.count.size,
+          opts: {
+            numFmt: '0',
+            font: { name: 'Calibri', size: 11, color: { argb: 'FF0F172A' } },
+            align: { vertical: 'middle', horizontal: 'center' },
+          },
+        },
+        {
+          v: data.approved,
+          opts: {
+            numFmt: '0',
+            font: { name: 'Calibri', size: 11, bold: true, color: { argb: 'FF047857' } },
+            align: { vertical: 'middle', horizontal: 'center' },
+          },
+        },
+        {
+          v: data.pending,
+          opts: {
+            numFmt: '0',
+            font: { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFB45309' } },
+            align: { vertical: 'middle', horizontal: 'center' },
+          },
+        },
+        {
+          v: data.total,
+          opts: {
+            numFmt: '0',
+            font: { name: 'Calibri', size: 12, bold: true, color: { argb: 'FF0F172A' } },
+            align: { vertical: 'middle', horizontal: 'center' },
+            fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDBEAFE' } },
+          },
+        },
+        {
+          v: avg,
+          opts: {
+            numFmt: '0.00',
+            font: { name: 'Calibri', size: 11, color: { argb: 'FF0F172A' } },
+            align: { vertical: 'middle', horizontal: 'center' },
+          },
+        },
+      ];
+      cells.forEach((c, j) => {
+        const cell = byDept.getCell(xlRow, j + 1);
+        cell.value = c.v as ExcelJS.CellValue;
+        if (c.opts?.font) cell.font = c.opts.font as Partial<ExcelJS.Font>;
+        if (c.opts?.align) cell.alignment = c.opts.align as Partial<ExcelJS.Alignment>;
+        if (c.opts?.numFmt) cell.numFmt = c.opts.numFmt as string;
+        if (!c.opts?.fill)
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: rowFill } };
+        cell.border = border;
+      });
+      byDept.getRow(xlRow).height = 22;
+    });
+
+    const deptTotalRow = 5 + deptEntries.length;
+    const tCells2: Array<[number, unknown, string?]> = [
+      [1, ''],
+      [2, t('timesheet.totalLabel')],
+      [3, rows.length, '0'],
+      [4, rows.reduce((a, r) => a + r.approvedDays, 0), '0'],
+      [5, rows.reduce((a, r) => a + r.pendingDays, 0), '0'],
+      [6, rows.reduce((a, r) => a + r.approvedDays + r.pendingDays, 0), '0'],
+      [
+        7,
+        rows.length > 0
+          ? rows.reduce((a, r) => a + r.approvedDays + r.pendingDays, 0) / rows.length
+          : 0,
+        '0.00',
+      ],
+    ];
+    tCells2.forEach(([col, val, fmt]) => {
+      const cell = byDept.getCell(deptTotalRow, col);
+      cell.value = val as ExcelJS.CellValue;
+      cell.font = { name: 'Calibri', size: 12, bold: true, color: { argb: 'FF0F172A' } };
+      cell.alignment = {
+        vertical: 'middle',
+        horizontal: col === 2 ? 'left' : 'center',
+        indent: col === 2 ? 1 : 0,
+      };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDBEAFE' } };
+      cell.border = borderStrong;
+      if (fmt) cell.numFmt = fmt;
+    });
+    byDept.getRow(deptTotalRow).height = 26;
+
+    byDept.pageSetup = {
+      orientation: 'portrait',
+      paperSize: 9,
+      fitToPage: true,
+      fitToWidth: 1,
+      fitToHeight: 1,
+    };
+    byDept.headerFooter.oddHeader = `&L&\"Calibri,Bold\"&12По отделам`;
+    byDept.headerFooter.oddFooter = `&CСтр. &P из &N`;
+
+    // ════════════════════════════════════════════════════════════════════════
+    // Download
+    // ════════════════════════════════════════════════════════════════════════
+    const rawBuf = await wb.xlsx.writeBuffer();
+    // Post-process: inject a light Office theme so Excel doesn't fall back to a
+    // dark theme in dark mode (which inverts light cell fills to dark).
+    const JSZipMod = await import('jszip');
+    const zip = await new JSZipMod.default().loadAsync(rawBuf);
+    const lightTheme = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="Office">
+<a:themeElements>
+<a:clrScheme name="Office">
+<a:dk1><a:sysClr val="windowText" lastClr="000000"/></a:dk1>
+<a:lt1><a:sysClr val="window" lastClr="FFFFFF"/></a:lt1>
+<a:dk2><a:srgbClr val="44546A"/></a:dk2>
+<a:lt2><a:srgbClr val="E7E6E6"/></a:lt2>
+<a:accent1><a:srgbClr val="4472C4"/></a:accent1>
+<a:accent2><a:srgbClr val="ED7D31"/></a:accent2>
+<a:accent3><a:srgbClr val="A5A5A5"/></a:accent3>
+<a:accent4><a:srgbClr val="FFC000"/></a:accent4>
+<a:accent5><a:srgbClr val="5B9BD5"/></a:accent5>
+<a:accent6><a:srgbClr val="70AD47"/></a:accent6>
+<a:hlink><a:srgbClr val="0563C1"/></a:hlink>
+<a:folHlink><a:srgbClr val="954F72"/></a:folHlink>
+</a:clrScheme>
+<a:fontScheme name="Office">
+<a:majorFont>
+<a:latin typeface="Calibri Light" panose="020F0302020204030204"/>
+<a:ea typeface=""/>
+<a:cs typeface=""/>
+<a:font script="Cyrillic" typeface="Calibri Light" panose="020F0302020204030204"/>
+</a:majorFont>
+<a:minorFont>
+<a:latin typeface="Calibri" panose="020F0502020204030204"/>
+<a:ea typeface=""/>
+<a:cs typeface=""/>
+<a:font script="Cyrillic" typeface="Calibri" panose="020F0502020204030204"/>
+</a:minorFont>
+</a:fontScheme>
+<a:fmtScheme name="Office">
+<a:fillStyleLst>
+<a:solidFill><a:schemeClr val="phClr"/></a:solidFill>
+<a:solidFill><a:schemeClr val="phClr"/></a:solidFill>
+<a:solidFill><a:schemeClr val="phClr"/></a:solidFill>
+</a:fillStyleLst>
+<a:lnStyleLst>
+<a:ln w="6350" cap="flat" cmpd="sng" algn="ctr"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:prstDash val="solid"/></a:ln>
+<a:ln w="12700" cap="flat" cmpd="sng" algn="ctr"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:prstDash val="solid"/></a:ln>
+<a:ln w="19050" cap="flat" cmpd="sng" algn="ctr"><a:solidFill><a:schemeClr val="phClr"/></a:solidFill><a:prstDash val="solid"/></a:ln>
+</a:lnStyleLst>
+<a:effectStyleLst>
+<a:effectStyle><a:effectLst/></a:effectStyle>
+<a:effectStyle><a:effectLst/></a:effectStyle>
+<a:effectStyle><a:effectLst/></a:effectStyle>
+</a:effectStyleLst>
+<a:bgFillStyleLst>
+<a:solidFill><a:schemeClr val="phClr"/></a:solidFill>
+<a:solidFill><a:schemeClr val="phClr"/></a:solidFill>
+<a:solidFill><a:schemeClr val="phClr"/></a:solidFill>
+</a:bgFillStyleLst>
+</a:fmtScheme>
+</a:themeElements>
+</a:theme>`;
+    const themePath = 'xl/theme/theme1.xml';
+    if (zip.files[themePath]) {
+      zip.file(themePath, lightTheme);
+    }
+    const buf = await zip.generateAsync({ type: 'arraybuffer' });
+    const blob = new Blob([buf], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `timesheet_${viewStart}_${viewEnd}_${format(now, 'HHmmss')}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [
+    rows,
+    visibleDays,
+    viewStart,
+    viewEnd,
+    t,
+    typeLabel,
+    typeColor,
+    search,
+    statusSet,
+    typeSet,
+    deptFilter,
+    posFilter,
+    levelFilter,
+    empTypeFilter,
+    onlyWithLeave,
+    overlapDays,
+    prettifyType,
+  ]);
+
   // ── Render helpers ───────────────────────────────────────────────────────
   const rowHeight = (laneCount: number) =>
     Math.max(compact ? 40 : 58, (compact ? 8 : 14) + laneCount * (laneH + LANE_GAP));
@@ -1169,8 +2601,8 @@ export function TimeOffCalendar({
 
               <div className="mx-1 hidden h-6 w-px bg-(--border-subtle) sm:block" />
 
-              <Button size="sm" variant="outline" onClick={exportCsv} className="gap-1.5">
-                <Download className="h-3.5 w-3.5" />
+              <Button size="sm" variant="outline" onClick={exportExcel} className="gap-1.5">
+                <FileSpreadsheet className="h-3.5 w-3.5" />
                 {t('timesheet.exportCsv')}
               </Button>
 

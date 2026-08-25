@@ -67,7 +67,7 @@ export function DriverStatsCard({ driverId }: DriverStatsCardProps) {
         status: s.status,
       }));
 
-    exportTripsToExcel(trips, `driver-trips-${period}.xlsx`);
+    exportTripsToExcel(trips, `driver-trips-${period}.xlsx`, i18n.language);
   };
 
   const handleExportPDF = () => {
@@ -102,6 +102,7 @@ export function DriverStatsCard({ driverId }: DriverStatsCardProps) {
               : t('driver.lastYear', 'Last Year'),
       },
       `driver-report-${period}.pdf`,
+      i18n.language,
     );
   };
 

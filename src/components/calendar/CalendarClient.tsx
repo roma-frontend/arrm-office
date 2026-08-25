@@ -2667,14 +2667,24 @@ export const CalendarClient = React.memo(function CalendarClient() {
                             onClick={() => {
                               if (viewProfileTarget) return;
                               const room = rooms.find((r) => r._id === booking.roomId);
-                              if (room) setDetailsRoom(room);
+                              if (room) {
+                                setDetailsRoom(room);
+                                setDetailsRoomDate(
+                                  format(new Date(booking.startTime), 'yyyy-MM-dd'),
+                                );
+                              }
                             }}
                             onKeyDown={(event) => {
                               if (event.key === 'Enter' || event.key === ' ') {
                                 event.preventDefault();
                                 if (viewProfileTarget) return;
                                 const room = rooms.find((r) => r._id === booking.roomId);
-                                if (room) setDetailsRoom(room);
+                                if (room) {
+                                  setDetailsRoom(room);
+                                  setDetailsRoomDate(
+                                    format(new Date(booking.startTime), 'yyyy-MM-dd'),
+                                  );
+                                }
                               }
                             }}
                             className="flex items-start gap-2.5 p-2.5 rounded-lg border border-(--border) bg-(--background-subtle) cursor-pointer hover:border-(--primary)/50 transition-colors"

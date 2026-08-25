@@ -542,7 +542,7 @@ export default function IssuedDocumentsTab({
 
       {/* Preview */}
       <Sheet open={previewDoc !== null} onOpenChange={(open) => !open && setPreviewDoc(null)}>
-        <SheetContent side="right" size="full" closeLabel={t('common.close', 'Close')}>
+        <SheetContent side="right" size="xl" closeLabel={t('common.close', 'Close')}>
           {previewDoc && (
             <>
               <SheetHeader>
