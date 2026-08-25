@@ -50,6 +50,10 @@ export const listDocuments = query({
   handler: async (ctx, args) => {
     const { canManage } = await checkAccess(ctx, args.organizationId);
 
+    // The library (policies, forms, templates) is staff-only. Employees work
+    // with the documents issued to them (issuedDocuments.listMine) instead.
+    if (!canManage) return [];
+
     let docs = await ctx.db
       .query('documents')
       .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
@@ -85,7 +89,8 @@ export const getDocument = query({
     documentId: v.id('documents'),
   },
   handler: async (ctx, args) => {
-    await checkAccess(ctx, args.organizationId);
+    const { canManage } = await checkAccess(ctx, args.organizationId);
+    if (!canManage) throw new Error('Document not found');
     const doc = await ctx.db.get(args.documentId);
     if (!doc || doc.organizationId !== args.organizationId) {
       throw new Error('Document not found');
@@ -117,6 +122,8 @@ export const getDocumentById = query({
     if (!isSuper && caller.organizationId !== doc.organizationId) return null;
 
     const canManage = isSuper || caller.role === 'admin';
+    // The library is staff-only; employees open their issued documents instead.
+    if (!canManage) return null;
     if (!doc.isPublished && !canManage) return null;
 
     const uploader = await ctx.db.get(doc.uploadedBy);
@@ -256,7 +263,9 @@ export const recordDocumentView = mutation({
     acknowledged: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    const { requester } = await checkAccess(ctx, args.organizationId);
+    const { requester, canManage } = await checkAccess(ctx, args.organizationId);
+    // Viewing is tracked for library documents, which are staff-only now.
+    if (!canManage) throw new Error('Access denied');
 
     const document = await ctx.db.get(args.documentId);
     if (!document || document.organizationId !== args.organizationId) {
@@ -346,7 +355,9 @@ export const getDocumentCategories = query({
     organizationId: v.id('organizations'),
   },
   handler: async (ctx, args) => {
-    await checkAccess(ctx, args.organizationId);
+    const { canManage } = await checkAccess(ctx, args.organizationId);
+    // Categories organize the staff-only library — nothing to list for others.
+    if (!canManage) return [];
     return await ctx.db
       .query('documentCategories')
       .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))

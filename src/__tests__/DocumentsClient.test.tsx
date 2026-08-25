@@ -159,6 +159,11 @@ let uploadWizardProps: any = null;
 let templateWizardProps: any = null;
 let builderProps: any = null;
 let issuedProps: any = null;
+jest.mock('@/components/documents/MyIssuedDocuments', () => ({
+  __esModule: true,
+  default: () => <div data-testid="my-issued-documents">MyIssuedDocuments</div>,
+}));
+
 jest.mock('@/components/documents/DocumentUploadWizard', () => ({
   __esModule: true,
   default: (props: any) => {
@@ -340,11 +345,12 @@ describe('DocumentsClient', () => {
     expect(screen.queryByText('Total Documents')).not.toBeInTheDocument();
     expect(screen.queryByText('Publish')).not.toBeInTheDocument();
     expect(screen.queryByText('Delete')).not.toBeInTheDocument();
-    // Documents still listable for non-admins.
-    expect(screen.getByText('HR Policy')).toBeInTheDocument();
-    // Non-admin passes includeUnpublished: false to the query.
-    const args = lastArgs('listDocuments') as any;
-    expect(args.includeUnpublished).toBe(false);
+    // The library is staff-only: employees get the My Documents tab instead
+    // and never see the document grid.
+    expect(screen.queryByText('HR Policy')).not.toBeInTheDocument();
+    expect(screen.getByTestId('my-issued-documents')).toBeInTheDocument();
+    expect(screen.getByText('My Documents')).toBeInTheDocument();
+    expect(screen.queryByText('All Documents')).not.toBeInTheDocument();
   });
 
   it('passes includeUnpublished: true for admins', () => {

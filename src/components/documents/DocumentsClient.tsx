@@ -31,6 +31,7 @@ import DocumentUploadWizard from '@/components/documents/DocumentUploadWizard';
 import DocumentTemplateWizard from '@/components/documents/DocumentTemplateWizard';
 import DocumentBuilderTab from '@/components/documents/DocumentBuilderTab';
 import IssuedDocumentsTab from '@/components/documents/IssuedDocumentsTab';
+import MyIssuedDocuments from '@/components/documents/MyIssuedDocuments';
 import { Badge } from '@/components/ui/badge';
 import { useDraftResume } from '@/hooks/useDraftResume';
 import { DraftResumeBar } from '@/components/ui/DraftResumeBar';
@@ -73,7 +74,8 @@ export default function DocumentsClient() {
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
   const effectiveOrgId = selectedOrgId ?? user?.organizationId;
 
-  const [activeTab, setActiveTab] = useState('all');
+  // Employees land on their issued documents — the library is staff-only.
+  const [activeTab, setActiveTab] = useState(isAdmin ? 'all' : 'my');
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [showUploadWizard, setShowUploadWizard] = useState(false);
@@ -375,20 +377,33 @@ export default function DocumentsClient() {
         <TabsList
           className={`w-full mb-4 gap-2 bg-transparent p-0 h-auto ${isAdmin ? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6' : 'grid grid-cols-2 md:grid-cols-3'}`}
         >
-          <TabsTrigger
-            value="all"
-            className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center gap-2"
-          >
-            <FileText className="h-4 w-4" />
-            {t('documents.allDocuments', 'All Documents')}
-          </TabsTrigger>
-          <TabsTrigger
-            value="mandatory"
-            className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center gap-2"
-          >
-            <CheckCircle className="h-4 w-4" />
-            {t('documents.mandatoryDocuments', 'Mandatory')}
-          </TabsTrigger>
+          {isAdmin && (
+            <TabsTrigger
+              value="all"
+              className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center gap-2"
+            >
+              <FileText className="h-4 w-4" />
+              {t('documents.allDocuments', 'All Documents')}
+            </TabsTrigger>
+          )}
+          {isAdmin && (
+            <TabsTrigger
+              value="mandatory"
+              className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center gap-2"
+            >
+              <CheckCircle className="h-4 w-4" />
+              {t('documents.mandatoryDocuments', 'Mandatory')}
+            </TabsTrigger>
+          )}
+          {!isAdmin && (
+            <TabsTrigger
+              value="my"
+              className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center gap-2"
+            >
+              <FileSignature className="h-4 w-4" />
+              {t('documents.myDocuments', 'My Documents')}
+            </TabsTrigger>
+          )}
           {isAdmin && (
             <TabsTrigger
               value="unpublished"
@@ -416,14 +431,23 @@ export default function DocumentsClient() {
               {t('documents.issuedTab', 'Issued')}
             </TabsTrigger>
           )}
-          <TabsTrigger
-            value="templates"
-            className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center gap-2"
-          >
-            <FolderOpen className="h-4 w-4" />
-            {t('documents.templates', 'Templates')}
-          </TabsTrigger>
+          {isAdmin && (
+            <TabsTrigger
+              value="templates"
+              className="w-full px-4 py-2.5 rounded-xl data-[state=active]:bg-(--brand) data-[state=active]:text-white data-[state=inactive]:bg-[var(--background-subtle)] shadow-sm font-medium flex items-center justify-center gap-2"
+            >
+              <FolderOpen className="h-4 w-4" />
+              {t('documents.templates', 'Templates')}
+            </TabsTrigger>
+          )}
         </TabsList>
+
+        {/* ── My issued documents (employee view) ───────────────── */}
+        {!isAdmin && (
+          <TabsContent value="my" className="space-y-4">
+            <MyIssuedDocuments />
+          </TabsContent>
+        )}
 
         {/* ── Bilingual template builder ───────────────────────── */}
         {isAdmin && effectiveOrgId && (
@@ -439,9 +463,11 @@ export default function DocumentsClient() {
           </TabsContent>
         )}
 
-        {/* Documents List */}
+        {/* Documents List (staff library — employees see My Documents above) */}
         <TabsContent
-          value={activeTab === 'templates' ? 'templates' : activeTab}
+          value={
+            activeTab === 'templates' ? 'templates' : activeTab === 'my' ? 'my-library' : activeTab
+          }
           className="space-y-4"
         >
           {activeTab === 'builder' || activeTab === 'issued' ? null : activeTab === 'templates' ? (
