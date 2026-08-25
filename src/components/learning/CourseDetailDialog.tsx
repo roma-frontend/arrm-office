@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { Id } from '../../../convex/_generated/dataModel';
 import { Button } from '@/components/ui/button';
@@ -177,69 +176,87 @@ export function CourseDetailDialog({
               {courseWithLessons?.lessons && courseWithLessons.lessons.length > 0 ? (
                 courseWithLessons.lessons.map((lesson, index: number) => {
                   const ContentTypeIcon = contentTypeIcons[lesson.contentType] || FileText;
+                  const isPreviewing = previewLesson?._id === lesson._id;
                   return (
-                    <div
-                      key={lesson._id}
-                      className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors"
-                    >
-                      <div
-                        className="flex items-center gap-3 flex-1 cursor-pointer"
-                        onClick={() => onOpenLessonPlayer(course, courseWithLessons.lessons, index)}
-                      >
-                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary text-sm font-medium">
-                          {index + 1}
-                        </div>
-                        <div>
-                          <p className="font-medium text-sm">{lesson.title}</p>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <ContentTypeIcon className="h-3 w-3" />
-                            <span>{lesson.contentType}</span>
-                            {lesson.durationMinutes && (
-                              <>
-                                <span>•</span>
-                                <span>{lesson.durationMinutes} min</span>
-                              </>
-                            )}
+                    <div key={lesson._id}>
+                      <div className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors">
+                        <div
+                          className="flex items-center gap-3 flex-1 cursor-pointer"
+                          onClick={() =>
+                            onOpenLessonPlayer(course, courseWithLessons.lessons, index)
+                          }
+                        >
+                          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary text-sm font-medium">
+                            {index + 1}
+                          </div>
+                          <div>
+                            <p className="font-medium text-sm">{lesson.title}</p>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <ContentTypeIcon className="h-3 w-3" />
+                              <span>{lesson.contentType}</span>
+                              {lesson.durationMinutes && (
+                                <>
+                                  <span>•</span>
+                                  <span>{lesson.durationMinutes} min</span>
+                                </>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        {lesson.contentType === 'video' && lesson.videoUrl && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="gap-1 text-(--brand-text)"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setPreviewLesson(lesson);
-                            }}
-                          >
-                            <Play className="h-3 w-3" />
-                            {t('learning.preview', 'Preview')}
-                          </Button>
-                        )}
-                        {isAdmin ? (
-                          <>
+                        <div className="flex items-center gap-1">
+                          {lesson.contentType === 'video' && lesson.videoUrl && (
                             <Button
                               size="sm"
                               variant="ghost"
-                              onClick={() => onOpenEditLesson(lesson)}
+                              className="gap-1 text-(--brand-text)"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setPreviewLesson(isPreviewing ? null : lesson);
+                              }}
                             >
-                              {t('common.edit', 'Edit')}
+                              <Play className="h-3 w-3" />
+                              {isPreviewing
+                                ? t('learning.hidePreview', 'Hide')
+                                : t('learning.preview', 'Preview')}
                             </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="text-destructive hover:text-destructive"
-                              onClick={() => onDeleteLesson(lesson._id)}
-                            >
-                              {t('common.delete', 'Delete')}
-                            </Button>
-                          </>
-                        ) : (
-                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                        )}
+                          )}
+                          {isAdmin ? (
+                            <>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => onOpenEditLesson(lesson)}
+                              >
+                                {t('common.edit', 'Edit')}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="text-destructive hover:text-destructive"
+                                onClick={() => onDeleteLesson(lesson._id)}
+                              >
+                                {t('common.delete', 'Delete')}
+                              </Button>
+                            </>
+                          ) : (
+                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </div>
                       </div>
+                      {/* Inline video preview */}
+                      {isPreviewing && lesson.videoUrl && (
+                        <div className="mt-1 rounded-lg border overflow-hidden">
+                          <div className="aspect-video bg-black">
+                            <iframe
+                              src={getEmbedUrl(lesson.videoUrl)}
+                              className="w-full h-full"
+                              allow="autoplay; encrypted-media"
+                              allowFullScreen
+                              title={lesson.title}
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })
@@ -277,54 +294,6 @@ export function CourseDetailDialog({
           </SheetBody>
         </SheetContent>
       </Sheet>
-
-      {/* Video Preview Modal — rendered via portal to escape the Sheet's stacking context */}
-      {previewLesson &&
-        createPortal(
-          <div
-            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm"
-            onClick={() => setPreviewLesson(null)}
-          >
-            <div
-              className="relative bg-(--card) rounded-2xl border border-(--border) shadow-2xl overflow-hidden w-full max-w-2xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between px-4 py-3 border-b border-(--border)">
-                <div className="flex items-center gap-2">
-                  <Play className="h-4 w-4 text-(--brand-text)" />
-                  <span className="font-medium text-sm text-(--text-primary)">
-                    {previewLesson.title}
-                  </span>
-                </div>
-                <button
-                  onClick={() => setPreviewLesson(null)}
-                  className="p-1 rounded-lg hover:bg-(--background-subtle) transition-colors"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-              </div>
-              {/* Video */}
-              <div className="aspect-video bg-black">
-                <iframe
-                  src={getEmbedUrl(previewLesson.videoUrl ?? '')}
-                  className="w-full h-full"
-                  allow="autoplay; encrypted-media"
-                  allowFullScreen
-                  title={previewLesson.title}
-                />
-              </div>
-            </div>
-          </div>,
-          document.body,
-        )}
     </>
   );
 }

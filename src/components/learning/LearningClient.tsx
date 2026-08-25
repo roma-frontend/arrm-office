@@ -222,6 +222,7 @@ export default function LearningClient() {
   const updateLessonMutation = useMutation(api.learning.updateLesson);
   const deleteLessonMutation = useMutation(api.learning.deleteLesson);
   const updateCourseMutation = useMutation(api.learning.updateCourse);
+  const issueCertificateMutation = useMutation(api.learning.issueCertificate);
 
   const handleEditCourse = (updates: {
     title: string;
@@ -274,6 +275,17 @@ export default function LearningClient() {
         }
       : 'skip',
   );
+
+  const orgCertificates = useQuery(
+    api.learning.getOrgCertificates,
+    effectiveOrgId && user?.role === 'admin'
+      ? {
+          organizationId: effectiveOrgId as Id<'organizations'>,
+        }
+      : 'skip',
+  );
+
+  const issuedCertSet = new Set((orgCertificates ?? []).map((c) => `${c.userId}-${c.courseId}`));
 
   const handleEnroll = async (courseId: Id<'courses'>) => {
     if (!effectiveOrgId || !user?.id) return;
@@ -337,6 +349,24 @@ export default function LearningClient() {
       });
     } catch {
       toast.error(t('learning.courseCreateError', 'Failed to create course'));
+    }
+  };
+
+  const handleIssueCertificate = async (userId: Id<'users'>, courseId: Id<'courses'>) => {
+    if (!effectiveOrgId) return;
+    try {
+      const result = await issueCertificateMutation({
+        organizationId: effectiveOrgId as Id<'organizations'>,
+        userId,
+        courseId,
+      });
+      if (result.success) {
+        toast.success(t('learning.certificateIssued', 'Certificate issued successfully'));
+      } else {
+        toast.info(result.message || t('learning.certificateExists', 'Certificate already exists'));
+      }
+    } catch {
+      toast.error(t('learning.certificateError', 'Failed to issue certificate'));
     }
   };
 
@@ -975,6 +1005,9 @@ export default function LearningClient() {
                       <th className="text-left py-2 px-3 text-xs font-semibold text-(--text-muted)">
                         {t('learning.enrolled', 'Enrolled')}
                       </th>
+                      <th className="text-left py-2 px-3 text-xs font-semibold text-(--text-muted)">
+                        {t('common.actions', 'Actions')}
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1031,6 +1064,24 @@ export default function LearningClient() {
                         </td>
                         <td className="py-2.5 px-3 text-xs text-(--text-muted)">
                           {row.enrolledAt ? new Date(row.enrolledAt).toLocaleDateString() : '—'}
+                        </td>
+                        <td className="py-2.5 px-3">
+                          {row.status === 'completed' &&
+                            (issuedCertSet.has(`${row.userId}-${row.courseId}`) ? (
+                              <span className="text-xs text-(--success-text) font-medium">
+                                {t('learning.certified', '✓ Certified')}
+                              </span>
+                            ) : (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="gap-1 text-(--brand-text)"
+                                onClick={() => handleIssueCertificate(row.userId, row.courseId)}
+                              >
+                                <Award className="h-3 w-3" />
+                                {t('learning.issueCertificate', 'Issue Certificate')}
+                              </Button>
+                            ))}
                         </td>
                       </tr>
                     ))}

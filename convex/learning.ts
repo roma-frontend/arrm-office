@@ -860,6 +860,23 @@ export const getMyCertificates = query({
   },
 });
 
+export const getOrgCertificates = query({
+  args: {
+    organizationId: v.id('organizations'),
+  },
+  handler: async (ctx, args) => {
+    const { isSuperadmin } = await checkAccess(ctx, args.organizationId);
+    if (!isSuperadmin) throw new Error('Only admins can view org certificates');
+
+    const certificates = await ctx.db
+      .query('certificates')
+      .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
+      .take(DEFAULT_LIST_CAP);
+
+    return certificates;
+  },
+});
+
 export const issueCertificate = mutation({
   args: {
     organizationId: v.id('organizations'),
@@ -1035,6 +1052,8 @@ export const getEnrollmentDetails = query({
         const course = await ctx.db.get(enrollment.courseId);
         return {
           _id: enrollment._id,
+          userId: enrollment.userId,
+          courseId: enrollment.courseId,
           userName: user?.name ?? 'Unknown',
           userEmail: user?.email ?? '',
           userDepartment: user?.department,

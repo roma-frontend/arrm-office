@@ -146,6 +146,7 @@ export const learning = {
     metadata: v.optional(v.any()), // additional data (score, instructor, etc.)
     createdAt: v.number(),
   })
+    .index('by_org', ['organizationId'])
     .index('by_user', ['organizationId', 'userId'])
     .index('by_user_course', ['organizationId', 'userId', 'courseId'])
     .index('by_certificate_id', ['organizationId', 'certificateId']),

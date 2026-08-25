@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslation } from 'react-i18next';
+import { Video } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -51,6 +52,17 @@ export function LessonFormDialog({
   onCancel,
 }: LessonFormDialogProps) {
   const { t } = useTranslation();
+
+  const getVideoEmbedUrl = (url: string): string => {
+    if (!url) return url;
+    const youtubeMatch = url.match(
+      /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^\"&?\/\s]{11})/,
+    );
+    if (youtubeMatch) {
+      return `https://www.youtube.com/embed/${youtubeMatch[1]}`;
+    }
+    return url;
+  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -156,6 +168,25 @@ export function LessonFormDialog({
               {t('learning.preview', 'Preview')}
             </label>
           </div>
+          {form.isPreview && form.contentType === 'video' && form.videoUrl && (
+            <div className="rounded-lg border overflow-hidden">
+              <div className="aspect-video bg-black flex items-center justify-center">
+                <iframe
+                  src={getVideoEmbedUrl(form.videoUrl)}
+                  className="w-full h-full"
+                  allowFullScreen
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  title={form.title || 'Video preview'}
+                />
+              </div>
+            </div>
+          )}
+          {form.isPreview && form.contentType === 'video' && !form.videoUrl && (
+            <div className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
+              <Video className="h-6 w-6 mx-auto mb-1 opacity-50" />
+              {t('learning.enterUrlToPreview', 'Enter a video URL to see a preview')}
+            </div>
+          )}
         </SheetBody>
         <SheetFooter>
           <Button variant="outline" onClick={onCancel}>
