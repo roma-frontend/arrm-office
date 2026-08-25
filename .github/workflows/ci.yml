@@ -422,12 +422,12 @@ jobs:
       - run: npm install -g vercel
       - run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
         env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_ORG_ID: team_iLMSpxKnZJiX2jWT6TjTM81t
+          VERCEL_PROJECT_ID: prj_bQfsPmQAKAMSZolcGBMWxpIz7708
       - run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
         env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_ORG_ID: team_iLMSpxKnZJiX2jWT6TjTM81t
+          VERCEL_PROJECT_ID: prj_bQfsPmQAKAMSZolcGBMWxpIz7708
       - id: deploy
         run: |
           URL=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
@@ -452,19 +452,19 @@ jobs:
       # The ids are not secrets — print them to debug link mismatches.
       - name: Debug Vercel link
         run: |
-          echo "ORG_ID=${{ secrets.VERCEL_ORG_ID }}"
-          echo "PROJECT_ID=${{ secrets.VERCEL_PROJECT_ID }}"
+          echo "ORG_ID=team_iLMSpxKnZJiX2jWT6TjTM81t"
+          echo "PROJECT_ID=prj_bQfsPmQAKAMSZolcGBMWxpIz7708"
           echo "TOKEN_LENGTH=${#VERCEL_TOKEN}"
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       - run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
         env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_ORG_ID: team_iLMSpxKnZJiX2jWT6TjTM81t
+          VERCEL_PROJECT_ID: prj_bQfsPmQAKAMSZolcGBMWxpIz7708
       - run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
         env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_ORG_ID: team_iLMSpxKnZJiX2jWT6TjTM81t
+          VERCEL_PROJECT_ID: prj_bQfsPmQAKAMSZolcGBMWxpIz7708
       - id: deploy
         run: |
           URL=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
