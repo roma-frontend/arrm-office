@@ -420,11 +420,6 @@ jobs:
           node-version-file: '.nvmrc'
           cache: 'npm'
       - run: npm install -g vercel
-      - name: Link Vercel project (preview)
-        run: vercel link --yes --token=${{ secrets.VERCEL_TOKEN }}
-        env:
-          VERCEL_ORG_ID: team_iLMSpxKnZJiX2jWT6TjTM81t
-          VERCEL_PROJECT_ID: prj_bQfsPmQAKAMSZolcGBMWxpIz7708
       - run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
         env:
           VERCEL_ORG_ID: team_iLMSpxKnZJiX2jWT6TjTM81t
@@ -463,11 +458,6 @@ jobs:
           vercel --version
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      - name: Link Vercel project
-        run: vercel link --yes --token=${{ secrets.VERCEL_TOKEN }}
-        env:
-          VERCEL_ORG_ID: team_iLMSpxKnZJiX2jWT6TjTM81t
-          VERCEL_PROJECT_ID: prj_bQfsPmQAKAMSZolcGBMWxpIz7708
       - run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
         env:
           VERCEL_ORG_ID: team_iLMSpxKnZJiX2jWT6TjTM81t
