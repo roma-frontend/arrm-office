@@ -159,7 +159,7 @@ export function LessonPlayerDialog({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" size="full" closeLabel={t('common.close', 'Close')}>
+      <SheetContent side="right" size="lg" closeLabel={t('common.close', 'Close')}>
         <SheetHeader>
           <SheetTitle className="flex items-center justify-between">
             <span>{currentLesson.title}</span>
