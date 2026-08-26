@@ -1887,16 +1887,6 @@ export function CustomConference(props: ConferenceProps) {
                     canModerate={canModerate}
                     onToggleMic={(id, micMuted) => void handleToggleMic(p, id, micMuted)}
                     onToggleCam={(id, camMuted) => void handleToggleCam(p, id, camMuted)}
-                    onAskUnmuteMic={(id) => {
-                      sendHostCommand('askUnmute', id);
-                      toast.success(t('meetings.askUnmuteSent'));
-                    }}
-                    onAskUnmuteCam={(id) => {
-                      sendHostCommand('askUnmuteCam', id);
-                      toast.success(
-                        t('meetings.askUnmuteCamSent', { defaultValue: 'Camera request sent' }),
-                      );
-                    }}
                     onRemove={handleRemove}
                   />
                 ))}
