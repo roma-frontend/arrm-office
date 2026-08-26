@@ -147,14 +147,15 @@ describe('LobbyForm', () => {
       );
     });
     // The registration-only success state offers a "Join the meeting" CTA.
-    expect(
-      screen.getByRole('button', { name: 'Join the meeting' }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Join the meeting' })).toBeInTheDocument();
   });
 
   it('shows the wait-for-host state when the waiting room is on', async () => {
     renderForm(
-      [{ name: 'fullName', required: true }, { name: 'email', required: true }],
+      [
+        { name: 'fullName', required: true },
+        { name: 'email', required: true },
+      ],
       true,
     );
     fireEvent.change(screen.getByPlaceholderText('meetings.fieldFullNamePlaceholder'), {
