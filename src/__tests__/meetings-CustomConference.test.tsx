@@ -132,7 +132,8 @@ jest.mock('@livekit/components-react', () => ({
     // enum has a single key whose value is the lowercase string, so pluck
     // the value out of the enum object directly.
     const source = sources[0] as { Microphone?: string; Camera?: string } | string | undefined;
-    const sourceKey = typeof source === 'string' ? source : source?.Microphone ?? source?.Camera ?? '';
+    const sourceKey =
+      typeof source === 'string' ? source : (source?.Microphone ?? source?.Camera ?? '');
     return lk.tracks[identity]?.[sourceKey] ?? NO_TRACKS;
   },
   useTracks: () => lk.screenShares,
