@@ -156,11 +156,7 @@ export const register = mutation({
     registrationFields: v.optional(
       v.array(
         v.object({
-          name: v.union(
-            v.literal('fullName'),
-            v.literal('email'),
-            v.literal('phone'),
-          ),
+          name: v.union(v.literal('fullName'), v.literal('email'), v.literal('phone')),
           required: v.boolean(),
         }),
       ),
@@ -438,11 +434,7 @@ export const setCohostIds = mutation({
     if (!isSuperadmin(caller) && caller.organizationId !== meeting.organizationId) {
       throw new Error('Access denied: different organization');
     }
-    if (
-      !isSuperadmin(caller) &&
-      meeting.hostUserId !== caller._id &&
-      caller.role !== 'admin'
-    ) {
+    if (!isSuperadmin(caller) && meeting.hostUserId !== caller._id && caller.role !== 'admin') {
       throw new Error('Only the host or an admin can change co-hosts');
     }
     await ctx.db.patch(meeting._id, {
@@ -525,11 +517,7 @@ export const listPending = query({
       .unique();
     if (!meeting) return [];
     if (!isSuperadmin(caller) && caller.organizationId !== meeting.organizationId) return [];
-    if (
-      !isSuperadmin(caller) &&
-      meeting.hostUserId !== caller._id &&
-      caller.role !== 'admin'
-    ) {
+    if (!isSuperadmin(caller) && meeting.hostUserId !== caller._id && caller.role !== 'admin') {
       return [];
     }
     return await ctx.db
@@ -555,11 +543,7 @@ export const listRegistrations = query({
       .unique();
     if (!meeting) return [];
     if (!isSuperadmin(caller) && caller.organizationId !== meeting.organizationId) return [];
-    if (
-      !isSuperadmin(caller) &&
-      meeting.hostUserId !== caller._id &&
-      caller.role !== 'admin'
-    ) {
+    if (!isSuperadmin(caller) && meeting.hostUserId !== caller._id && caller.role !== 'admin') {
       return [];
     }
     return await ctx.db
@@ -588,11 +572,7 @@ export const removeRegistration = mutation({
     if (!isSuperadmin(caller) && caller.organizationId !== meeting.organizationId) {
       throw new Error('Access denied: different organization');
     }
-    if (
-      !isSuperadmin(caller) &&
-      meeting.hostUserId !== caller._id &&
-      caller.role !== 'admin'
-    ) {
+    if (!isSuperadmin(caller) && meeting.hostUserId !== caller._id && caller.role !== 'admin') {
       throw new Error('Only the host or an admin can manage the lobby');
     }
     await ctx.db.delete(registrationId);
@@ -614,7 +594,6 @@ export const getRegistrationById = query({
  * because signing the invite token needs `node:crypto`, which is only
  * available in the Node runtime. */
 
-
 /** Host-only — toggle the waiting room and/or registration form, and edit
  * which form fields guests see. The two toggles are independent: a meeting
  * can require a registration without gating entry, or use the waiting room
@@ -627,11 +606,7 @@ export const updateLobbyAndRegistration = mutation({
     registrationFields: v.optional(
       v.array(
         v.object({
-          name: v.union(
-            v.literal('fullName'),
-            v.literal('email'),
-            v.literal('phone'),
-          ),
+          name: v.union(v.literal('fullName'), v.literal('email'), v.literal('phone')),
           required: v.boolean(),
         }),
       ),
@@ -649,11 +624,7 @@ export const updateLobbyAndRegistration = mutation({
       .withIndex('by_room_name', (q) => q.eq('roomName', roomName))
       .unique();
     if (!meeting) throw new Error('Meeting not found');
-    if (
-      !isSuperadmin(caller) &&
-      meeting.hostUserId !== caller._id &&
-      caller.role !== 'admin'
-    ) {
+    if (!isSuperadmin(caller) && meeting.hostUserId !== caller._id && caller.role !== 'admin') {
       throw new Error('Only the host or an admin can change meeting settings');
     }
     const patch: Record<string, unknown> = { updatedAt: Date.now() };
@@ -686,11 +657,7 @@ export const createForRoomBooking = mutation({
     registrationFields: v.optional(
       v.array(
         v.object({
-          name: v.union(
-            v.literal('fullName'),
-            v.literal('email'),
-            v.literal('phone'),
-          ),
+          name: v.union(v.literal('fullName'), v.literal('email'), v.literal('phone')),
           required: v.boolean(),
         }),
       ),

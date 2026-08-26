@@ -84,9 +84,7 @@ export function MeetingSettings({
 
   const toggleRequired = (name: FieldName) => {
     if (name === 'fullName') return; // always required
-    const next = fields.map((f) =>
-      f.name === name ? { ...f, required: !f.required } : f,
-    );
+    const next = fields.map((f) => (f.name === name ? { ...f, required: !f.required } : f));
     update({ registrationFields: next });
   };
 
@@ -105,8 +103,7 @@ export function MeetingSettings({
         icon={<Lock className="h-3.5 w-3.5" />}
         title={t('meetings.waitingRoomToggle', { defaultValue: 'Waiting room' })}
         hint={t('meetings.waitingRoomHint', {
-          defaultValue:
-            'External visitors wait in a lobby until you admit them. No form is shown.',
+          defaultValue: 'External visitors wait in a lobby until you admit them. No form is shown.',
         })}
         checked={waitingRoomEnabled}
         onChange={(v) => update({ waitingRoomEnabled: v })}

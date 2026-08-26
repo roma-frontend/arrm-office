@@ -66,8 +66,7 @@ export function LobbyForm({
   }, [roomName]);
 
   const want = (name: FieldName) => fields.some((f) => f.name === name);
-  const isRequired = (name: FieldName) =>
-    fields.some((f) => f.name === name && f.required);
+  const isRequired = (name: FieldName) => fields.some((f) => f.name === name && f.required);
 
   const validate = (): string | null => {
     if (want('fullName') && isRequired('fullName') && !fullName.trim()) {
@@ -256,11 +255,7 @@ export function LobbyForm({
             </div>
           )}
 
-          <Button
-            type="submit"
-            disabled={busy}
-            className="btn-gradient mt-6 w-full"
-          >
+          <Button type="submit" disabled={busy} className="btn-gradient mt-6 w-full">
             {busy ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (

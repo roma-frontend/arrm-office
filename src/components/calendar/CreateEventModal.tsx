@@ -185,12 +185,12 @@ export function CreateEventModal({
     api.meetings.getByEvent,
     open && editEvent?.id ? { eventId: editEvent.id as Id<'calendarEvents'> } : 'skip',
   ) as
-    | (Partial<{
+    | Partial<{
         mode: 'meeting' | 'webinar';
         waitingRoomEnabled: boolean;
         registrationEnabled: boolean;
         registrationFields: Array<{ name: 'fullName' | 'email' | 'phone'; required: boolean }>;
-      }>)
+      }>
     | null
     | undefined;
   // `open` deliberately refreshes the timestamp for each new modal session.
@@ -1373,127 +1373,127 @@ export function CreateEventModal({
                     </div>
                     {videoEnabled && (
                       <>
-                      <div className="flex items-center gap-3 border-t border-(--border-subtle) px-4 py-3">
-                        <div className="min-w-0 flex-1">
-                          <p className="text-caption font-medium text-(--text-secondary)">
-                            {t('createMeeting.videoModeLabel')}
-                          </p>
-                          <p className="text-caption text-(--text-muted)">
-                            {t('createMeeting.videoModeDesc')}
-                          </p>
-                        </div>
-                        <div className="flex shrink-0 gap-1.5 rounded-pill bg-(--surface-1) p-1">
-                          {(['meeting', 'webinar'] as const).map((mode) => (
-                            <button
-                              key={mode}
-                              type="button"
-                              onClick={() => setVideoMode(mode)}
-                              className={
-                                'rounded-pill px-3 py-1.5 text-caption font-medium transition-colors duration-140 ease-spark ' +
-                                (videoMode === mode
-                                  ? 'bg-(--brand) text-white'
-                                  : 'text-(--text-muted) hover:text-(--text-primary)')
-                              }
+                        <div className="flex items-center gap-3 border-t border-(--border-subtle) px-4 py-3">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-caption font-medium text-(--text-secondary)">
+                              {t('createMeeting.videoModeLabel')}
+                            </p>
+                            <p className="text-caption text-(--text-muted)">
+                              {t('createMeeting.videoModeDesc')}
+                            </p>
+                          </div>
+                          <div className="flex shrink-0 gap-1.5 rounded-pill bg-(--surface-1) p-1">
+                            {(['meeting', 'webinar'] as const).map((mode) => (
+                              <button
+                                key={mode}
+                                type="button"
+                                onClick={() => setVideoMode(mode)}
+                                className={
+                                  'rounded-pill px-3 py-1.5 text-caption font-medium transition-colors duration-140 ease-spark ' +
+                                  (videoMode === mode
+                                    ? 'bg-(--brand) text-white'
+                                    : 'text-(--text-muted) hover:text-(--text-primary)')
+                                }
                               >
                                 {t('createMeeting.videoMode.' + mode)}
                               </button>
-                          ))}
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-3 border-t border-(--border-subtle) px-4 py-3">
-                        <div className="min-w-0 flex-1">
-                          <p className="text-caption font-medium text-(--text-secondary)">
-                            {t('createMeeting.waitingRoomLabel')}
-                          </p>
-                          <p className="text-caption text-(--text-muted)">
-                            {t('createMeeting.waitingRoomDesc')}
-                          </p>
-                        </div>
-                        <Switch
-                          checked={waitingRoomEnabled}
-                          onCheckedChange={(v) => setWaitingRoomEnabled(Boolean(v))}
-                        />
-                      </div>
-                      <div className="space-y-2.5 border-t border-(--border-subtle) px-4 py-3">
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 border-t border-(--border-subtle) px-4 py-3">
                           <div className="min-w-0 flex-1">
                             <p className="text-caption font-medium text-(--text-secondary)">
-                              {t('createMeeting.registrationLabel')}
+                              {t('createMeeting.waitingRoomLabel')}
                             </p>
                             <p className="text-caption text-(--text-muted)">
-                              {t('createMeeting.registrationDesc')}
+                              {t('createMeeting.waitingRoomDesc')}
                             </p>
                           </div>
                           <Switch
-                            checked={registrationEnabled}
-                            onCheckedChange={(v) => setRegistrationEnabled(Boolean(v))}
+                            checked={waitingRoomEnabled}
+                            onCheckedChange={(v) => setWaitingRoomEnabled(Boolean(v))}
                           />
                         </div>
-                        {registrationEnabled && (
-                          <div className="grid gap-1.5 rounded-field border border-(--border-subtle) bg-(--surface-1) p-2.5">
-                            {(
-                              [
-                                { name: 'fullName', label: t('createMeeting.fieldFullName') },
-                                { name: 'email', label: t('createMeeting.fieldEmail') },
-                                { name: 'phone', label: t('createMeeting.fieldPhone') },
-                              ] as const
-                            ).map((f) => {
-                              const entry = registrationFields.find((rf) => rf.name === f.name);
-                              const shown = !!entry;
-                              const required = entry?.required ?? (f.name === 'fullName');
-                              return (
-                                <label
-                                  key={f.name}
-                                  className="flex items-center gap-2 rounded-control px-1.5 py-1 text-caption text-(--text-secondary) hover:bg-(--surface-2)"
-                                >
-                                  <input
-                                    type="checkbox"
-                                    className="size-3.5 accent-(--brand)"
-                                    checked={shown}
-                                    disabled={f.name === 'fullName'}
-                                    onChange={() => {
-                                      if (f.name === 'fullName') return;
-                                      setRegistrationFields((prev) =>
-                                        prev.some((rf) => rf.name === f.name)
-                                          ? prev.filter((rf) => rf.name !== f.name)
-                                          : [...prev, { name: f.name, required: true }],
-                                      );
-                                    }}
-                                  />
-                                  <span className="flex-1">{f.label}</span>
-                                  <button
-                                    type="button"
-                                    disabled={!shown || f.name === 'fullName'}
-                                    onClick={() => {
-                                      if (f.name === 'fullName') return;
-                                      setRegistrationFields((prev) =>
-                                        prev.map((rf) =>
-                                          rf.name === f.name
-                                            ? { ...rf, required: !rf.required }
-                                            : rf,
-                                        ),
-                                      );
-                                    }}
-                                    className={
-                                      'rounded-pill px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider transition ' +
-                                      (required
-                                        ? 'bg-(--brand-quiet) text-(--brand-text)'
-                                        : 'bg-(--surface-2) text-(--text-muted)') +
-                                      (!shown || f.name === 'fullName'
-                                        ? ' cursor-not-allowed opacity-50'
-                                        : '')
-                                    }
-                                  >
-                                    {required
-                                      ? t('createMeeting.fieldRequired')
-                                      : t('createMeeting.fieldOptional')}
-                                  </button>
-                                </label>
-                              );
-                            })}
+                        <div className="space-y-2.5 border-t border-(--border-subtle) px-4 py-3">
+                          <div className="flex items-center gap-3">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-caption font-medium text-(--text-secondary)">
+                                {t('createMeeting.registrationLabel')}
+                              </p>
+                              <p className="text-caption text-(--text-muted)">
+                                {t('createMeeting.registrationDesc')}
+                              </p>
+                            </div>
+                            <Switch
+                              checked={registrationEnabled}
+                              onCheckedChange={(v) => setRegistrationEnabled(Boolean(v))}
+                            />
                           </div>
-                        )}
-                      </div>
+                          {registrationEnabled && (
+                            <div className="grid gap-1.5 rounded-field border border-(--border-subtle) bg-(--surface-1) p-2.5">
+                              {(
+                                [
+                                  { name: 'fullName', label: t('createMeeting.fieldFullName') },
+                                  { name: 'email', label: t('createMeeting.fieldEmail') },
+                                  { name: 'phone', label: t('createMeeting.fieldPhone') },
+                                ] as const
+                              ).map((f) => {
+                                const entry = registrationFields.find((rf) => rf.name === f.name);
+                                const shown = !!entry;
+                                const required = entry?.required ?? f.name === 'fullName';
+                                return (
+                                  <label
+                                    key={f.name}
+                                    className="flex items-center gap-2 rounded-control px-1.5 py-1 text-caption text-(--text-secondary) hover:bg-(--surface-2)"
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      className="size-3.5 accent-(--brand)"
+                                      checked={shown}
+                                      disabled={f.name === 'fullName'}
+                                      onChange={() => {
+                                        if (f.name === 'fullName') return;
+                                        setRegistrationFields((prev) =>
+                                          prev.some((rf) => rf.name === f.name)
+                                            ? prev.filter((rf) => rf.name !== f.name)
+                                            : [...prev, { name: f.name, required: true }],
+                                        );
+                                      }}
+                                    />
+                                    <span className="flex-1">{f.label}</span>
+                                    <button
+                                      type="button"
+                                      disabled={!shown || f.name === 'fullName'}
+                                      onClick={() => {
+                                        if (f.name === 'fullName') return;
+                                        setRegistrationFields((prev) =>
+                                          prev.map((rf) =>
+                                            rf.name === f.name
+                                              ? { ...rf, required: !rf.required }
+                                              : rf,
+                                          ),
+                                        );
+                                      }}
+                                      className={
+                                        'rounded-pill px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider transition ' +
+                                        (required
+                                          ? 'bg-(--brand-quiet) text-(--brand-text)'
+                                          : 'bg-(--surface-2) text-(--text-muted)') +
+                                        (!shown || f.name === 'fullName'
+                                          ? ' cursor-not-allowed opacity-50'
+                                          : '')
+                                      }
+                                    >
+                                      {required
+                                        ? t('createMeeting.fieldRequired')
+                                        : t('createMeeting.fieldOptional')}
+                                    </button>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
                       </>
                     )}
                     {!livekitConfigured && (

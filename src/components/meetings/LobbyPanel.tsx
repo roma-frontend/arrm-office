@@ -106,19 +106,14 @@ export function LobbyPanel({ roomName }: { roomName: string }) {
           const invite = invites[reg._id];
           const isBusy = busyId === reg._id;
           return (
-            <li
-              key={reg._id}
-              className="rounded-xl border border-white/10 bg-white/[0.04] p-2.5"
-            >
+            <li key={reg._id} className="rounded-xl border border-white/10 bg-white/[0.04] p-2.5">
               <div className="flex items-start gap-2.5">
                 <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-amber-400/15 text-[10px] font-bold text-amber-300">
                   {reg.fullName.slice(0, 1).toUpperCase()}
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-xs font-medium text-white/90">{reg.fullName}</p>
-                  {reg.email && (
-                    <p className="truncate text-[10px] text-white/45">{reg.email}</p>
-                  )}
+                  {reg.email && <p className="truncate text-[10px] text-white/45">{reg.email}</p>}
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
                   <button

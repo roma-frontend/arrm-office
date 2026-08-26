@@ -429,7 +429,15 @@ function DockBtn({
  * Dock button for mic and camera: always a red icon, and on hover the icon
  * fades out and a red cross appears — the click turns the device off/on.
  */
-function RedDockBtn({ label, icon, onClick }: { label: string; icon: React.ReactNode; onClick: () => void }) {
+function RedDockBtn({
+  label,
+  icon,
+  onClick,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  onClick: () => void;
+}) {
   return (
     <button
       type="button"
@@ -437,7 +445,9 @@ function RedDockBtn({ label, icon, onClick }: { label: string; icon: React.React
       title={label}
       className="group relative flex size-11 items-center justify-center rounded-xl bg-white/10 transition-all hover:scale-105 hover:bg-white/15"
     >
-      <span className="text-rose-400 transition-opacity duration-150 group-hover:opacity-0">{icon}</span>
+      <span className="text-rose-400 transition-opacity duration-150 group-hover:opacity-0">
+        {icon}
+      </span>
       <X className="absolute h-4.5 w-4.5 text-rose-400 opacity-0 transition-opacity duration-150 group-hover:opacity-100" />
     </button>
   );
@@ -674,9 +684,7 @@ function ParticipantRow({
         }
         className={cn(
           'shrink-0 rounded-md p-0.5 transition',
-          isSelf || canModerate
-            ? 'cursor-pointer hover:bg-white/10'
-            : 'cursor-default opacity-40',
+          isSelf || canModerate ? 'cursor-pointer hover:bg-white/10' : 'cursor-default opacity-40',
           micMuted ? 'text-red-400' : 'text-white/55',
         )}
       >
@@ -697,9 +705,7 @@ function ParticipantRow({
         }
         className={cn(
           'shrink-0 rounded-md p-0.5 transition',
-          isSelf || canModerate
-            ? 'cursor-pointer hover:bg-white/10'
-            : 'cursor-default opacity-40',
+          isSelf || canModerate ? 'cursor-pointer hover:bg-white/10' : 'cursor-default opacity-40',
           camMuted ? 'text-red-400' : 'text-white/55',
         )}
       >
@@ -893,15 +899,20 @@ export function CustomConference(props: ConferenceProps) {
           break;
         }
         case 'askUnmuteCam': {
-          toast(t('meetings.camUnmuteRequest', { defaultValue: 'The host asks you to turn your camera on' }), {
-            icon: <Video className="h-4 w-4 text-emerald-400" />,
-            action: {
-              label: t('meetings.camOn'),
-              onClick: () => {
-                void localParticipant?.setCameraEnabled(true);
+          toast(
+            t('meetings.camUnmuteRequest', {
+              defaultValue: 'The host asks you to turn your camera on',
+            }),
+            {
+              icon: <Video className="h-4 w-4 text-emerald-400" />,
+              action: {
+                label: t('meetings.camOn'),
+                onClick: () => {
+                  void localParticipant?.setCameraEnabled(true);
+                },
               },
             },
-          });
+          );
           break;
         }
       }
@@ -955,11 +966,7 @@ export function CustomConference(props: ConferenceProps) {
    *   - mic on     → force-mute through the LiveKit server
    *   - mic off    → send a polite "please unmute" prompt on the data channel
    */
-  const handleToggleMic = async (
-    row: Participant,
-    identity: string,
-    micMuted: boolean,
-  ) => {
+  const handleToggleMic = async (row: Participant, identity: string, micMuted: boolean) => {
     if (identity === localIdentity) {
       await toggleTrack(() => mic.toggle(), t('meetings.micDenied'));
       return;
@@ -972,20 +979,14 @@ export function CustomConference(props: ConferenceProps) {
     }
   };
 
-  const handleToggleCam = async (
-    row: Participant,
-    identity: string,
-    camMuted: boolean,
-  ) => {
+  const handleToggleCam = async (row: Participant, identity: string, camMuted: boolean) => {
     if (identity === localIdentity) {
       await toggleTrack(() => cam.toggle(), t('meetings.camDenied'));
       return;
     }
     if (camMuted) {
       sendHostCommand('askUnmuteCam', identity);
-      toast.success(
-        t('meetings.askUnmuteCamSent', { defaultValue: 'Camera request sent' }),
-      );
+      toast.success(t('meetings.askUnmuteCamSent', { defaultValue: 'Camera request sent' }));
     } else {
       await handleMuteTrack(identity, 'camera');
     }
@@ -1874,9 +1875,7 @@ export function CustomConference(props: ConferenceProps) {
               )}
               {/* Host-only: incoming visitors waiting for admission. The host
                   mints an invite URL here and shares it with the visitor. */}
-              {isHost && waitingRoomEnabled && (
-                <LobbyPanel roomName={roomName} />
-              )}
+              {isHost && waitingRoomEnabled && <LobbyPanel roomName={roomName} />}
               <div className="flex-1 space-y-1 overflow-y-auto p-2">
                 {participants.map((p) => (
                   <ParticipantRow
@@ -1999,9 +1998,7 @@ export function CustomConference(props: ConferenceProps) {
                     });
                     toast.success(t('meetings.settingsSaved'));
                   } catch (err) {
-                    toast.error(
-                      err instanceof Error ? err.message : t('meetings.actionFailed'),
-                    );
+                    toast.error(err instanceof Error ? err.message : t('meetings.actionFailed'));
                   }
                 }}
               />
@@ -2286,7 +2283,10 @@ export function CustomConference(props: ConferenceProps) {
 
       {/* Reclaim host dialog — fires once when the original host joins a room
           that already has a co-host, matching the Zoom re-entry flow. */}
-      <AlertDialog open={reclaimDialog !== null} onOpenChange={(open) => !open && closeReclaimDialog()}>
+      <AlertDialog
+        open={reclaimDialog !== null}
+        onOpenChange={(open) => !open && closeReclaimDialog()}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>

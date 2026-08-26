@@ -384,10 +384,10 @@ export function MeetingRoomClient() {
   const isExternalUnauthed = !user && !inviteToken;
   const isLobbyUser = Boolean(
     meeting &&
-      'waitingRoomEnabled' in meeting &&
-      (meeting.waitingRoomEnabled || meeting.registrationEnabled) &&
-      isExternalUnauthed &&
-      !registrationDone,
+    'waitingRoomEnabled' in meeting &&
+    (meeting.waitingRoomEnabled || meeting.registrationEnabled) &&
+    isExternalUnauthed &&
+    !registrationDone,
   );
 
   if (isLobbyUser) {
@@ -442,7 +442,9 @@ export function MeetingRoomClient() {
                   ? (meeting.cohostIds as unknown as readonly string[])
                   : ([] as readonly string[])
               }
-              waitingRoomEnabled={Boolean('waitingRoomEnabled' in meeting && meeting.waitingRoomEnabled)}
+              waitingRoomEnabled={Boolean(
+                'waitingRoomEnabled' in meeting && meeting.waitingRoomEnabled,
+              )}
             />
             <RoomAudioRenderer />
           </LiveKitRoom>

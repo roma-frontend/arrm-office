@@ -117,11 +117,7 @@ export const ensureRoom = action({
     registrationFields: v.optional(
       v.array(
         v.object({
-          name: v.union(
-            v.literal('fullName'),
-            v.literal('email'),
-            v.literal('phone'),
-          ),
+          name: v.union(v.literal('fullName'), v.literal('email'), v.literal('phone')),
           required: v.boolean(),
         }),
       ),
@@ -745,11 +741,7 @@ export const admitRegistration = action({
     if (!isSuperadmin(caller) && caller.organizationId !== meeting.organizationId) {
       throw new Error('Access denied: different organization');
     }
-    if (
-      !isSuperadmin(caller) &&
-      meeting.hostUserId !== caller._id &&
-      caller.role !== 'admin'
-    ) {
+    if (!isSuperadmin(caller) && meeting.hostUserId !== caller._id && caller.role !== 'admin') {
       throw new Error('Only the host or an admin can admit visitors');
     }
 

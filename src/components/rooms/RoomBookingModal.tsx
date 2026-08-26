@@ -801,7 +801,7 @@ export function RoomBookingModal({
                     ).map((f) => {
                       const entry = registrationFields.find((rf) => rf.name === f.name);
                       const shown = !!entry;
-                      const required = entry?.required ?? (f.name === 'fullName');
+                      const required = entry?.required ?? f.name === 'fullName';
                       return (
                         <div
                           key={f.name}
@@ -829,9 +829,7 @@ export function RoomBookingModal({
                               if (f.name === 'fullName') return;
                               setRegistrationFields((prev) =>
                                 prev.map((rf) =>
-                                  rf.name === f.name
-                                    ? { ...rf, required: !rf.required }
-                                    : rf,
+                                  rf.name === f.name ? { ...rf, required: !rf.required } : rf,
                                 ),
                               );
                             }}
