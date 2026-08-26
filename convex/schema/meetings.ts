@@ -57,11 +57,7 @@ export const meetings = {
     registrationFields: v.optional(
       v.array(
         v.object({
-          name: v.union(
-            v.literal('fullName'),
-            v.literal('email'),
-            v.literal('phone'),
-          ),
+          name: v.union(v.literal('fullName'), v.literal('email'), v.literal('phone')),
           required: v.boolean(),
         }),
       ),
