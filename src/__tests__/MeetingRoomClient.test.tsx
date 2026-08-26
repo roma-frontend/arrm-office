@@ -52,6 +52,8 @@ const mockBack = jest.fn();
 jest.mock('next/navigation', () => ({
   useParams: () => ({ id: 'room-42' }),
   useRouter: () => ({ push: mockPush, back: mockBack }),
+  // The lobby reads `?invite=...` from the URL; tests run with no query.
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 // ── Auth ─────────────────────────────────────────────────────────────────────

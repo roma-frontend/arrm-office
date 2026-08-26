@@ -3,21 +3,23 @@
 /**
  * LiveKit video meeting room — the full-screen page behind `/meetings/{roomName}`.
  *
- * Two phases:
- *   1. Pre-join — themed screen with a live camera preview, mic/camera toggles
- *      and the participant's name. Uses `usePreviewTracks` from the LiveKit kit
- *      (self-contained, no server connection needed yet).
- *   2. In-call — a real LiveKit room rendered with the kit's `VideoConference`
- *      prefab (grid + speaker view, control bar, chat, reactions, screen share)
- *      wrapped in our header (title, status, timer, copy link, leave).
+ * Three phases:
+ *   1. **Lobby** — shown to unauthenticated external visitors when the host
+ *      turned the waiting room on. They fill out a registration form
+ *      (configured per-meeting), get an invite link, and the host admits them.
+ *   2. **Pre-join** — themed screen with a live camera preview, mic/camera
+ *      toggles and the participant's name. Internal members and admitted
+ *      guests land here directly.
+ *   3. **In-call** — a real LiveKit room rendered with our `CustomConference`
+ *      (grid + speaker view, control bar, chat, reactions, screen share).
  *
  * Token minting happens server-side in the Convex action `meetings.getJoinToken`
- * — the page never sees the LiveKit API secret, and joining is limited to the
- * room's organization (Phase 1; guest-by-link lands with the lobby in Phase 2).
+ * — the page never sees the LiveKit API secret, and joining is gated by org
+ * membership for staff or by an HMAC-signed one-shot invite for guests.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { useAction, useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -45,6 +47,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ensureAppNamespaces } from '@/i18n/config';
+import { LobbyForm } from './LobbyForm';
 import '@livekit/components-styles';
 import './meetings.css';
 
@@ -83,7 +86,12 @@ export function MeetingRoomClient() {
   const { t } = useTranslation();
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const roomName = params?.id ?? '';
+  // External guests reach the room via a one-time invite URL the host shares
+  // from the admit dialog. Anything else (or an unauthenticated visitor with
+  // no invite) gets bounced to the lobby if the host turned it on.
+  const inviteToken = searchParams?.get('invite') ?? undefined;
   const { user } = useAuthStore();
   const getJoinToken = useAction(api.meetingsActions.getJoinToken);
   const setStatus = useMutation(api.meetings.setStatus);
@@ -100,6 +108,10 @@ export function MeetingRoomClient() {
   const [token, setToken] = useState<string>();
   const [serverUrl, setServerUrl] = useState<string>();
   const [room, setRoom] = useState<Room>();
+  // After a registration-only lobby submit, the visitor advances to the
+  // pre-join screen via this local flag — must live above any early return
+  // so hooks fire in the same order every render.
+  const [registrationDone, setRegistrationDone] = useState(false);
   const roomRef = useRef<Room | null>(null);
   // Wall-clock second the call was joined; `elapsed` is the difference from it.
   // (Storing `Date.now()` directly here printed the epoch in the header clock.)
@@ -167,7 +179,9 @@ export function MeetingRoomClient() {
       setJoining(true);
       setJoinError(null);
       try {
-        const { token: jwt, url } = await getJoinToken({ roomName });
+        const args: { roomName: string; invite?: string } = { roomName };
+        if (inviteToken) args.invite = inviteToken;
+        const { token: jwt, url } = await getJoinToken(args);
         const userChoices: LocalUserChoices = {
           username: displayName.trim() || user?.name || 'Participant',
           videoEnabled: withVideo && camOn,
@@ -224,6 +238,7 @@ export function MeetingRoomClient() {
       previewTracks,
       choices.audioinput,
       choices.videoinput,
+      inviteToken,
     ],
   );
 
@@ -355,7 +370,40 @@ export function MeetingRoomClient() {
     );
   }
 
-  const meetingTitle = meeting.event?.title ?? t('meetings.untitled');
+  const meetingTitle =
+    'event' in meeting && meeting.event?.title ? meeting.event.title : t('meetings.untitled');
+
+  // ── Lobby (waiting room / registration) ─────────────────────────────────
+  // External visitors without an invite land here when EITHER waiting room
+  // or registration is on. The two flags are independent:
+  //   - waiting room on, registration off → "wait for admit" screen
+  //   - waiting room off, registration on → "fill form → continue" flow
+  //   - both on → fill form, then wait for admit
+  // Once the form is submitted and there is no waiting room, the visitor
+  // advances to the pre-join screen via local state.
+  const isExternalUnauthed = !user && !inviteToken;
+  const isLobbyUser = Boolean(
+    meeting &&
+      'waitingRoomEnabled' in meeting &&
+      (meeting.waitingRoomEnabled || meeting.registrationEnabled) &&
+      isExternalUnauthed &&
+      !registrationDone,
+  );
+
+  if (isLobbyUser) {
+    const isRegistrationOnly = !meeting.waitingRoomEnabled && meeting.registrationEnabled;
+    return (
+      <LobbyForm
+        roomName={roomName}
+        title={meetingTitle}
+        hostName={('hostName' in meeting && meeting.hostName) || ''}
+        fields={meeting.registrationFields ?? []}
+        waitingRoomEnabled={Boolean(meeting.waitingRoomEnabled)}
+        onCancel={() => router.push('/dashboard')}
+        onRegistered={isRegistrationOnly ? () => setRegistrationDone(true) : undefined}
+      />
+    );
+  }
 
   // ── In-call ───────────────────────────────────────────────────────────────
   if (joined && token && serverUrl && room) {
@@ -388,6 +436,13 @@ export function MeetingRoomClient() {
               onLeave={handleDisconnect}
               deviceChoices={choices}
               onDeviceChange={handleDeviceChange}
+              isOriginalHost={Boolean('isOriginalHost' in meeting && meeting.isOriginalHost)}
+              cohostIds={
+                'cohostIds' in meeting && meeting.cohostIds
+                  ? (meeting.cohostIds as unknown as readonly string[])
+                  : ([] as readonly string[])
+              }
+              waitingRoomEnabled={Boolean('waitingRoomEnabled' in meeting && meeting.waitingRoomEnabled)}
             />
             <RoomAudioRenderer />
           </LiveKitRoom>
@@ -516,7 +571,9 @@ export function MeetingRoomClient() {
                 {meetingTitle}
               </h2>
               <p className="mt-1.5 text-sm leading-relaxed text-(--text-3)">
-                {meeting.event?.description || t('meetings.joinHint')}
+                {'event' in meeting && meeting.event?.description
+                  ? meeting.event.description
+                  : t('meetings.joinHint')}
               </p>
 
               {/* Name input */}

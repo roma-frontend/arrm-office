@@ -112,6 +112,14 @@ export function RoomBookingModal({
     '',
   );
   const [videoUrl, setVideoUrl] = useState('');
+  const [waitingRoomEnabled, setWaitingRoomEnabled] = useState(false);
+  const [registrationEnabled, setRegistrationEnabled] = useState(false);
+  const [registrationFields, setRegistrationFields] = useState<
+    Array<{ name: 'fullName' | 'email' | 'phone'; required: boolean }>
+  >([
+    { name: 'fullName', required: true },
+    { name: 'email', required: true },
+  ]);
   const [submitting, setSubmitting] = useState(false);
 
   // Seed the form each time the dialog opens.
@@ -152,6 +160,12 @@ export function RoomBookingModal({
     setExternalInput('');
     setVideoProvider('');
     setVideoUrl('');
+    setWaitingRoomEnabled(false);
+    setRegistrationEnabled(false);
+    setRegistrationFields([
+      { name: 'fullName', required: true },
+      { name: 'email', required: true },
+    ]);
     // bookableRooms is intentionally read once per open — the list changing
     // mid-dialog must not reset what the user already typed.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -351,6 +365,9 @@ export function RoomBookingModal({
               eventId: eventResult.eventId,
               organizationId: organizationId as Id<'organizations'>,
               mode: 'meeting',
+              waitingRoomEnabled,
+              registrationEnabled,
+              registrationFields,
             });
             if (roomResult.configured && roomResult.videoUrl) {
               toast.success(
@@ -731,12 +748,116 @@ export function RoomBookingModal({
             </div>
           )}
           {videoProvider === 'livekit' && (
-            <p className="text-[11px] text-(--text-muted)">
-              {t(
-                'rooms.booking.livekitHint',
-                'A built-in video room will be created automatically.',
-              )}
-            </p>
+            <>
+              {/* Two independent toggles for the in-room video behaviour.
+                  Both default to off so most one-tap bookings stay one tap. */}
+              <label className="flex items-start gap-3 rounded-field border border-(--border) bg-(--background) p-2.5">
+                <input
+                  type="checkbox"
+                  checked={waitingRoomEnabled}
+                  onChange={(e) => setWaitingRoomEnabled(e.target.checked)}
+                  className="mt-0.5 size-4 accent-(--brand)"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-medium text-(--text-primary)">
+                    {t('rooms.booking.waitingRoomLabel', 'Waiting room')}
+                  </p>
+                  <p className="text-[11px] text-(--text-muted)">
+                    {t(
+                      'rooms.booking.waitingRoomDesc',
+                      'External guests wait in a lobby until you admit them.',
+                    )}
+                  </p>
+                </div>
+              </label>
+              <div className="space-y-2 rounded-field border border-(--border) bg-(--background) p-2.5">
+                <label className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={registrationEnabled}
+                    onChange={(e) => setRegistrationEnabled(e.target.checked)}
+                    className="mt-0.5 size-4 accent-(--brand)"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-medium text-(--text-primary)">
+                      {t('rooms.booking.registrationLabel', 'Registration form')}
+                    </p>
+                    <p className="text-[11px] text-(--text-muted)">
+                      {t(
+                        'rooms.booking.registrationDesc',
+                        'Guests fill out a form before joining. Responses are saved for the attendee report.',
+                      )}
+                    </p>
+                  </div>
+                </label>
+                {registrationEnabled && (
+                  <div className="grid gap-1 pl-7">
+                    {(
+                      [
+                        { name: 'fullName', label: t('rooms.booking.fieldFullName', 'Full name') },
+                        { name: 'email', label: t('rooms.booking.fieldEmail', 'Email') },
+                        { name: 'phone', label: t('rooms.booking.fieldPhone', 'Phone') },
+                      ] as const
+                    ).map((f) => {
+                      const entry = registrationFields.find((rf) => rf.name === f.name);
+                      const shown = !!entry;
+                      const required = entry?.required ?? (f.name === 'fullName');
+                      return (
+                        <div
+                          key={f.name}
+                          className="flex items-center gap-2 text-xs text-(--text-secondary)"
+                        >
+                          <input
+                            type="checkbox"
+                            className="size-3.5 accent-(--brand)"
+                            checked={shown}
+                            disabled={f.name === 'fullName'}
+                            onChange={() => {
+                              if (f.name === 'fullName') return;
+                              setRegistrationFields((prev) =>
+                                prev.some((rf) => rf.name === f.name)
+                                  ? prev.filter((rf) => rf.name !== f.name)
+                                  : [...prev, { name: f.name, required: true }],
+                              );
+                            }}
+                          />
+                          <span className="flex-1">{f.label}</span>
+                          <button
+                            type="button"
+                            disabled={!shown || f.name === 'fullName'}
+                            onClick={() => {
+                              if (f.name === 'fullName') return;
+                              setRegistrationFields((prev) =>
+                                prev.map((rf) =>
+                                  rf.name === f.name
+                                    ? { ...rf, required: !rf.required }
+                                    : rf,
+                                ),
+                              );
+                            }}
+                            className={`rounded-pill px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider transition ${
+                              required
+                                ? 'bg-(--brand-quiet) text-(--brand-text)'
+                                : 'bg-(--surface-2) text-(--text-muted)'
+                            } ${!shown || f.name === 'fullName' ? 'cursor-not-allowed opacity-50' : ''}`}
+                          >
+                            {required
+                              ? t('rooms.booking.fieldRequired', 'Required')
+                              : t('rooms.booking.fieldOptional', 'Optional')}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+              <p className="text-[11px] text-(--text-muted)">
+                {t(
+                  'rooms.booking.livekitHint',
+                  'A built-in video room will be created automatically.',
+                )}
+              </p>
+            </>
           )}
         </div>
       </div>

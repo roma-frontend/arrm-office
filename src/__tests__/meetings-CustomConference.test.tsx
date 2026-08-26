@@ -126,8 +126,15 @@ jest.mock('@livekit/components-react', () => ({
   useSpeakingParticipants: () => lk.speaking,
   useConnectionState: () => lk.connectionState,
   useIsRecording: () => lk.isRecording,
-  useParticipantTracks: (sources: string[], identity: string) =>
-    lk.tracks[identity]?.[sources[0] ?? ''] ?? NO_TRACKS,
+  useParticipantTracks: (sources: unknown[], identity: string) => {
+    // The real hook accepts `Track.Source.*` enum objects; the test stores
+    // tracks under their string form (`"microphone"`, `"camera"`). The mock
+    // enum has a single key whose value is the lowercase string, so pluck
+    // the value out of the enum object directly.
+    const source = sources[0] as { Microphone?: string; Camera?: string } | string | undefined;
+    const sourceKey = typeof source === 'string' ? source : source?.Microphone ?? source?.Camera ?? '';
+    return lk.tracks[identity]?.[sourceKey] ?? NO_TRACKS;
+  },
   useTracks: () => lk.screenShares,
   useTrackToggle: ({ source }: { source: string }) => lk.toggles[source],
   useChat: () => ({ chatMessages: lk.chatMessages, send: mockChatSend }),
@@ -167,16 +174,39 @@ const actions: Record<string, jest.Mock> = {
   muteEveryone: jest.fn(async () => undefined),
   startRecording: jest.fn(async () => ({ configured: true, alreadyRunning: false })),
   stopRecording: jest.fn(async () => undefined),
+  // Host rotation (Zoom-style). The tests do not exercise the rotation flow
+  // directly, but CustomConference eagerly subscribes; the mocks just need to
+  // exist so the queries/actions resolve.
+  assignCohost: jest.fn(async () => ({ ok: true, cohostIds: [] })),
+  reclaimHost: jest.fn(async () => ({ ok: true, demoted: 0 })),
+  admitRegistration: jest.fn(async () => ({
+    success: true,
+    inviteToken: 'mock-token',
+    inviteUrl: '/meetings/room-42?invite=mock-token',
+    expiresAt: Date.now() + 30 * 60 * 1000,
+    guestName: 'Guest',
+  })),
+};
+const mutations: Record<string, jest.Mock> = {
+  // New mutation powering the in-call settings panel; tests that toggle the
+  // waiting room or registration form rely on this to resolve.
+  updateLobbyAndRegistration: jest.fn(async () => ({ success: true })),
+  removeRegistration: jest.fn(async () => ({ success: true })),
 };
 jest.mock('convex/react', () => ({
   useQuery: (ref: { _name: string }) => queries[ref._name],
   useAction: (ref: { _name: string }) => actions[ref._name],
+  useMutation: (ref: { _name: string }) => mutations[ref._name],
 }));
 jest.mock('@/convex/_generated/api', () => ({
   api: {
     meetings: {
       recordingConfigured: { _name: 'recordingConfigured' },
       getByRoomName: { _name: 'getByRoomName' },
+      listPending: { _name: 'listPending' },
+      listRegistrations: { _name: 'listRegistrations' },
+      updateLobbyAndRegistration: { _name: 'updateLobbyAndRegistration' },
+      removeRegistration: { _name: 'removeRegistration' },
     },
     meetingsActions: {
       removeParticipant: { _name: 'removeParticipant' },
@@ -184,6 +214,9 @@ jest.mock('@/convex/_generated/api', () => ({
       muteEveryone: { _name: 'muteEveryone' },
       startRecording: { _name: 'startRecording' },
       stopRecording: { _name: 'stopRecording' },
+      assignCohost: { _name: 'assignCohost' },
+      reclaimHost: { _name: 'reclaimHost' },
+      admitRegistration: { _name: 'admitRegistration' },
     },
   },
 }));
@@ -217,6 +250,11 @@ const baseProps: ConferenceProps = {
   onLeave,
   deviceChoices: {},
   onDeviceChange,
+  // Host-rotation + lobby props are read by the conference unconditionally
+  // even when the local user is a regular participant.
+  isOriginalHost: false,
+  cohostIds: [] as readonly string[],
+  waitingRoomEnabled: false,
 };
 
 function renderConference(overrides: Partial<ConferenceProps> = {}) {
@@ -737,9 +775,14 @@ describe('CustomConference — participants panel', () => {
     renderConference();
     await clickButton('meetings.participants · P');
 
+    // `muteAll` is host-only and must not appear for a guest.
     expect(screen.queryByText('meetings.muteAll')).not.toBeInTheDocument();
-    expect(screen.queryByTitle('meetings.muteMic')).not.toBeInTheDocument();
+    // The per-row mic/cam icons are now visible to everyone (so the local
+    // user can mute themselves), but the host moderation buttons (the
+    // dedicated `meetings.muteMic`/`meetings.remove` actions) are not.
     expect(screen.queryByTitle('meetings.remove')).not.toBeInTheDocument();
+    // The remove X must also be hidden — `disabled` rows do not get it.
+    expect(screen.queryAllByTitle('meetings.remove')).toHaveLength(0);
   });
 });
 
@@ -789,6 +832,11 @@ describe('CustomConference — host controls', () => {
   });
 
   it('asks a participant to unmute without touching their tracks', async () => {
+    // Force bob's mic to render as muted so the row icon shows the
+    // `meetings.askUnmute` tooltip (click = ask-to-unmute, not force-mute).
+    lk.tracks.bob = {
+      microphone: [{ publication: { isMuted: true } }],
+    };
     await openPanelAsHost();
 
     await clickButton('meetings.askUnmute');

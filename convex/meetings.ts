@@ -78,12 +78,34 @@ export const getByRoomName = query({
       .unique();
     if (!meeting) return null;
     const caller = await getAuthCaller(ctx);
-    // Phase 1: org members + superadmins may read the meeting. Guest access by
-    // link lands in Phase 2 together with the lobby/PIN flow.
-    if (!caller) return null;
-    if (!isSuperadmin(caller) && caller.organizationId !== meeting.organizationId) return null;
-    const event = meeting.eventId ? await ctx.db.get(meeting.eventId) : null;
-    return { ...meeting, event };
+    // Internal members see the full row + their host/cohost flags. External
+    // visitors only need the bits required to render the lobby/registration
+    // page — title, host name, waiting-room toggle, form fields. Anything
+    // privileged (hostUserId, pin code, recording id) is stripped.
+    if (caller) {
+      if (!isSuperadmin(caller) && caller.organizationId !== meeting.organizationId) return null;
+      const event = meeting.eventId ? await ctx.db.get(meeting.eventId) : null;
+      return {
+        ...meeting,
+        event,
+        isOriginalHost: meeting.hostUserId === caller._id,
+        isCohost: (meeting.cohostIds ?? []).includes(caller._id),
+      };
+    }
+    const host = await ctx.db.get(meeting.hostUserId);
+    return {
+      roomName: meeting.roomName,
+      organizationId: meeting.organizationId,
+      status: meeting.status,
+      mode: meeting.mode,
+      waitingRoomEnabled: meeting.waitingRoomEnabled ?? false,
+      registrationEnabled: meeting.registrationEnabled ?? false,
+      registrationFields: meeting.registrationFields ?? [
+        { name: 'fullName' as const, required: true },
+        { name: 'email' as const, required: true },
+      ],
+      hostName: host?.name ?? '',
+    };
   },
 });
 
@@ -129,6 +151,20 @@ export const register = mutation({
     organizationId: v.id('organizations'),
     roomName: v.string(),
     mode: v.union(v.literal('meeting'), v.literal('webinar')),
+    waitingRoomEnabled: v.optional(v.boolean()),
+    registrationEnabled: v.optional(v.boolean()),
+    registrationFields: v.optional(
+      v.array(
+        v.object({
+          name: v.union(
+            v.literal('fullName'),
+            v.literal('email'),
+            v.literal('phone'),
+          ),
+          required: v.boolean(),
+        }),
+      ),
+    ),
   },
   handler: async (ctx, args) => {
     await assertModuleAccess(ctx, 'videoConferences');
@@ -149,11 +185,29 @@ export const register = mutation({
       .unique();
     const now = Date.now();
 
+    // Re-saving a meeting is idempotent for stable fields (room name, host,
+    // status) but the host may have flipped the waiting room or registration
+    // form in the meeting settings dialog between the two saves — patch those
+    // through so the change is not lost.
+    const lobbyPatch: Record<string, unknown> = {
+      mode: args.mode,
+      updatedAt: now,
+    };
+    if (args.waitingRoomEnabled !== undefined) {
+      lobbyPatch.waitingRoomEnabled = args.waitingRoomEnabled;
+    }
+    if (args.registrationEnabled !== undefined) {
+      lobbyPatch.registrationEnabled = args.registrationEnabled;
+    }
+    if (args.registrationFields !== undefined) {
+      const hasFullName = args.registrationFields.some((f) => f.name === 'fullName');
+      lobbyPatch.registrationFields = hasFullName
+        ? args.registrationFields
+        : [...args.registrationFields, { name: 'fullName' as const, required: true }];
+    }
+
     if (existing) {
-      await ctx.db.patch(existing._id, {
-        mode: args.mode,
-        updatedAt: now,
-      });
+      await ctx.db.patch(existing._id, lobbyPatch);
     } else {
       // A new video room consumes a seat of the monthly `rooms` quota.
       await assertQuota(ctx, 'videoConferences', 'rooms', 1, currentPeriodKey());
@@ -164,6 +218,11 @@ export const register = mutation({
         hostUserId: caller._id,
         mode: args.mode,
         status: 'scheduled',
+        waitingRoomEnabled: args.waitingRoomEnabled,
+        registrationEnabled: args.registrationEnabled,
+        registrationFields: lobbyPatch.registrationFields as
+          | Array<{ name: 'fullName' | 'email' | 'phone'; required: boolean }>
+          | undefined,
         createdAt: now,
         updatedAt: now,
       });
@@ -353,5 +412,329 @@ export const removeVideo = mutation({
       updatedAt: Date.now(),
     });
     return { success: true };
+  },
+});
+
+/**
+ * Replaces the co-host list of a meeting. Only called by `assignCohost` /
+ * `reclaimHost` actions in `meetingsActions.ts` — both already enforce that
+ * the caller is the host, so the mutation trusts the caller once the same
+ * org check passes.
+ */
+export const setCohostIds = mutation({
+  args: {
+    roomName: v.string(),
+    cohostIds: v.array(v.id('users')),
+  },
+  handler: async (ctx, { roomName, cohostIds }) => {
+    await assertModuleAccess(ctx, 'videoConferences');
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const meeting = await ctx.db
+      .query('meetings')
+      .withIndex('by_room_name', (q) => q.eq('roomName', roomName))
+      .unique();
+    if (!meeting) throw new Error('Meeting not found');
+    if (!isSuperadmin(caller) && caller.organizationId !== meeting.organizationId) {
+      throw new Error('Access denied: different organization');
+    }
+    if (
+      !isSuperadmin(caller) &&
+      meeting.hostUserId !== caller._id &&
+      caller.role !== 'admin'
+    ) {
+      throw new Error('Only the host or an admin can change co-hosts');
+    }
+    await ctx.db.patch(meeting._id, {
+      cohostIds: cohostIds.length > 0 ? cohostIds : undefined,
+      updatedAt: Date.now(),
+    });
+    return { success: true, cohostIds };
+  },
+});
+
+// ── Lobby / registration ────────────────────────────────────────────────────
+// External visitors can only reach the room via the link; if the host turned
+// the waiting room on, they must first submit a registration form. Internal
+// org members skip this step entirely.
+
+/** Public — accepts a registration from an external visitor. Idempotent on
+ * `visitorId` so a page refresh does not produce duplicate rows. */
+export const submitRegistration = mutation({
+  args: {
+    roomName: v.string(),
+    fullName: v.string(),
+    email: v.optional(v.string()),
+    phone: v.optional(v.string()),
+    visitorId: v.optional(v.string()),
+  },
+  handler: async (ctx, { roomName, fullName, email, phone, visitorId }) => {
+    const meeting = await ctx.db
+      .query('meetings')
+      .withIndex('by_room_name', (q) => q.eq('roomName', roomName))
+      .unique();
+    if (!meeting) throw new Error('Meeting not found');
+    if (!(meeting.registrationEnabled ?? false)) {
+      throw new Error('This meeting does not require registration');
+    }
+    // Trim and validate against the host's configured fields.
+    const fields = meeting.registrationFields ?? [];
+    const data: Record<string, string> = {
+      fullName: fullName.trim(),
+      email: (email ?? '').trim(),
+      phone: (phone ?? '').trim(),
+    };
+    if (!data.fullName) throw new Error('Full name is required');
+    for (const f of fields) {
+      if (f.required && !data[f.name]) {
+        throw new Error(`${f.name} is required`);
+      }
+    }
+
+    if (visitorId) {
+      const existing = await ctx.db
+        .query('meetingRegistrations')
+        .withIndex('by_room', (q) => q.eq('roomName', roomName))
+        .collect();
+      const dup = existing.find((r) => r.visitorId === visitorId);
+      if (dup) return { registrationId: dup._id, deduped: true as const };
+    }
+
+    const registrationId = await ctx.db.insert('meetingRegistrations', {
+      roomName,
+      organizationId: meeting.organizationId,
+      fullName: data.fullName,
+      email: data.email || undefined,
+      phone: data.phone || undefined,
+      visitorId,
+      createdAt: Date.now(),
+    });
+    return { registrationId, deduped: false as const };
+  },
+});
+
+/** Host-only — list everyone currently waiting in the lobby. */
+export const listPending = query({
+  args: { roomName: v.string() },
+  handler: async (ctx, { roomName }) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return [];
+    const meeting = await ctx.db
+      .query('meetings')
+      .withIndex('by_room_name', (q) => q.eq('roomName', roomName))
+      .unique();
+    if (!meeting) return [];
+    if (!isSuperadmin(caller) && caller.organizationId !== meeting.organizationId) return [];
+    if (
+      !isSuperadmin(caller) &&
+      meeting.hostUserId !== caller._id &&
+      caller.role !== 'admin'
+    ) {
+      return [];
+    }
+    return await ctx.db
+      .query('meetingRegistrations')
+      .withIndex('by_room', (q) => q.eq('roomName', roomName))
+      .collect();
+  },
+});
+
+/**
+ * Host-only — every registration the meeting ever received, regardless of
+ * admit state. Used for the post-meeting attendee report so the host can
+ * see who turned up (or who only registered and never came).
+ */
+export const listRegistrations = query({
+  args: { roomName: v.string() },
+  handler: async (ctx, { roomName }) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return [];
+    const meeting = await ctx.db
+      .query('meetings')
+      .withIndex('by_room_name', (q) => q.eq('roomName', roomName))
+      .unique();
+    if (!meeting) return [];
+    if (!isSuperadmin(caller) && caller.organizationId !== meeting.organizationId) return [];
+    if (
+      !isSuperadmin(caller) &&
+      meeting.hostUserId !== caller._id &&
+      caller.role !== 'admin'
+    ) {
+      return [];
+    }
+    return await ctx.db
+      .query('meetingRegistrations')
+      .withIndex('by_room', (q) => q.eq('roomName', roomName))
+      .collect();
+  },
+});
+
+/** Host-only — remove a pending registration (deny or admit + clean-up). */
+export const removeRegistration = mutation({
+  args: { registrationId: v.id('meetingRegistrations') },
+  handler: async (ctx, { registrationId }) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const reg = await ctx.db.get(registrationId);
+    if (!reg) return { success: true };
+    const meeting = await ctx.db
+      .query('meetings')
+      .withIndex('by_room_name', (q) => q.eq('roomName', reg.roomName))
+      .unique();
+    if (!meeting) {
+      await ctx.db.delete(registrationId);
+      return { success: true };
+    }
+    if (!isSuperadmin(caller) && caller.organizationId !== meeting.organizationId) {
+      throw new Error('Access denied: different organization');
+    }
+    if (
+      !isSuperadmin(caller) &&
+      meeting.hostUserId !== caller._id &&
+      caller.role !== 'admin'
+    ) {
+      throw new Error('Only the host or an admin can manage the lobby');
+    }
+    await ctx.db.delete(registrationId);
+    return { success: true };
+  },
+});
+
+/** Public — used by the guest invite flow to resolve a registration row. */
+export const getRegistrationById = query({
+  args: { registrationId: v.id('meetingRegistrations') },
+  handler: async (ctx, { registrationId }) => {
+    const reg = await ctx.db.get(registrationId);
+    if (!reg) return null;
+    return { roomName: reg.roomName, fullName: reg.fullName };
+  },
+});
+
+/** Host-only — admit a pending visitor. Moved to `meetingsActions.ts`
+ * because signing the invite token needs `node:crypto`, which is only
+ * available in the Node runtime. */
+
+
+/** Host-only — toggle the waiting room and/or registration form, and edit
+ * which form fields guests see. The two toggles are independent: a meeting
+ * can require a registration without gating entry, or use the waiting room
+ * without collecting any form data. */
+export const updateLobbyAndRegistration = mutation({
+  args: {
+    roomName: v.string(),
+    waitingRoomEnabled: v.optional(v.boolean()),
+    registrationEnabled: v.optional(v.boolean()),
+    registrationFields: v.optional(
+      v.array(
+        v.object({
+          name: v.union(
+            v.literal('fullName'),
+            v.literal('email'),
+            v.literal('phone'),
+          ),
+          required: v.boolean(),
+        }),
+      ),
+    ),
+  },
+  handler: async (
+    ctx,
+    { roomName, waitingRoomEnabled, registrationEnabled, registrationFields },
+  ) => {
+    await assertModuleAccess(ctx, 'videoConferences');
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const meeting = await ctx.db
+      .query('meetings')
+      .withIndex('by_room_name', (q) => q.eq('roomName', roomName))
+      .unique();
+    if (!meeting) throw new Error('Meeting not found');
+    if (
+      !isSuperadmin(caller) &&
+      meeting.hostUserId !== caller._id &&
+      caller.role !== 'admin'
+    ) {
+      throw new Error('Only the host or an admin can change meeting settings');
+    }
+    const patch: Record<string, unknown> = { updatedAt: Date.now() };
+    if (waitingRoomEnabled !== undefined) patch.waitingRoomEnabled = waitingRoomEnabled;
+    if (registrationEnabled !== undefined) patch.registrationEnabled = registrationEnabled;
+    if (registrationFields !== undefined) {
+      // `fullName` is always required — registration without a name is useless.
+      const hasFullName = registrationFields.some((f) => f.name === 'fullName');
+      const fields = hasFullName
+        ? registrationFields
+        : [...registrationFields, { name: 'fullName' as const, required: true }];
+      patch.registrationFields = fields;
+    }
+    await ctx.db.patch(meeting._id, patch);
+    return { success: true };
+  },
+});
+
+/**
+ * Creates a meeting row from the "Room booking" (Переговорные) flow — i.e. a
+ * video room attached to a meeting room booking rather than a calendar event.
+ * Returns the room name so the caller can navigate to `/meetings/{roomName}`
+ * and reuse the same flow the calendar uses.
+ */
+export const createForRoomBooking = mutation({
+  args: {
+    organizationId: v.id('organizations'),
+    waitingRoomEnabled: v.optional(v.boolean()),
+    registrationEnabled: v.optional(v.boolean()),
+    registrationFields: v.optional(
+      v.array(
+        v.object({
+          name: v.union(
+            v.literal('fullName'),
+            v.literal('email'),
+            v.literal('phone'),
+          ),
+          required: v.boolean(),
+        }),
+      ),
+    ),
+  },
+  handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'videoConferences');
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    if (!isSuperadmin(caller) && caller.organizationId !== args.organizationId) {
+      throw new Error('Access denied: different organization');
+    }
+    const now = Date.now();
+    // Each room-booking video gets a fresh, unique room name. The booking id
+    // is part of the name so two simultaneous bookings never collide, and the
+    // `room_` prefix distinguishes it from `evt_` (calendar) at a glance.
+    const roomName = `room_${caller._id}_${now.toString(36)}`;
+    await assertQuota(ctx, 'videoConferences', 'rooms', 1, currentPeriodKey());
+    const hasFullName = (args.registrationFields ?? []).some((f) => f.name === 'fullName');
+    const fields = hasFullName
+      ? args.registrationFields
+      : [...(args.registrationFields ?? []), { name: 'fullName' as const, required: true }];
+    await ctx.db.insert('meetings', {
+      organizationId: args.organizationId,
+      roomName,
+      hostUserId: caller._id,
+      mode: 'meeting',
+      status: 'live',
+      waitingRoomEnabled: args.waitingRoomEnabled,
+      registrationEnabled: args.registrationEnabled,
+      registrationFields: fields,
+      createdAt: now,
+      updatedAt: now,
+    });
+    if (caller.organizationId) {
+      await incrementUsage(
+        ctx,
+        caller.organizationId,
+        'videoConferences',
+        'rooms',
+        1,
+        currentPeriodKey(),
+      );
+    }
+    return { roomName, videoUrl: videoUrlForRoom(roomName) };
   },
 });

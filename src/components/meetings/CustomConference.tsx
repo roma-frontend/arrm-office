@@ -44,7 +44,7 @@ import {
   useConnectionQualityIndicator,
   useIsRecording,
 } from '@livekit/components-react';
-import { useAction, useQuery } from 'convex/react';
+import { useAction, useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { toast } from 'sonner';
 import {
@@ -92,6 +92,18 @@ import { useVideoEffects } from './useVideoEffects';
 import { useNoiseFilter } from './useNoiseFilter';
 import { captionsSupported, useLiveCaptions, type CaptionLine } from './useLiveCaptions';
 import type { MeetingDeviceChoices, MeetingDeviceKind } from './useMeetingDevices';
+import { LobbyPanel } from './LobbyPanel';
+import { MeetingSettings } from './MeetingSettings';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 type MeetingStatus = 'scheduled' | 'live' | 'ended';
 
@@ -107,6 +119,21 @@ export interface ConferenceProps {
   /** Remembered mic / camera / speaker, shared with the pre-join screen. */
   deviceChoices: MeetingDeviceChoices;
   onDeviceChange: (kind: MeetingDeviceKind, deviceId: string) => void;
+  /**
+   * Whether the signed-in user is the original meeting host (`meetings.hostUserId`).
+   * Used on first join to offer to reclaim host rights when a co-host is live.
+   * Independent of the JWT role, which only describes the current seat.
+   */
+  isOriginalHost: boolean;
+  /**
+   * Co-host ids currently on the meeting row. When the local user is the
+   * original host and this list is non-empty on first join, we prompt them to
+   * reclaim — otherwise they would silently re-enter as a regular participant.
+   */
+  cohostIds: readonly string[];
+  /** Whether the host enabled the waiting room for this meeting. Controls the
+   * visibility of the in-call admit/deny panel. */
+  waitingRoomEnabled: boolean;
 }
 
 function getInitials(name: string) {
@@ -399,6 +426,24 @@ function DockBtn({
 }
 
 /**
+ * Dock button for mic and camera: always a red icon, and on hover the icon
+ * fades out and a red cross appears — the click turns the device off/on.
+ */
+function RedDockBtn({ label, icon, onClick }: { label: string; icon: React.ReactNode; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={label}
+      className="group relative flex size-11 items-center justify-center rounded-xl bg-white/10 transition-all hover:scale-105 hover:bg-white/15"
+    >
+      <span className="text-rose-400 transition-opacity duration-150 group-hover:opacity-0">{icon}</span>
+      <X className="absolute h-4.5 w-4.5 text-rose-400 opacity-0 transition-opacity duration-150 group-hover:opacity-100" />
+    </button>
+  );
+}
+
+/**
  * Dock button for the panels and popovers (chat, participants, reactions,
  * settings). Unlike `DockBtn` it is not a device on/off state, so "active" only
  * means the thing it opens is currently open.
@@ -531,32 +576,42 @@ function ParticipantRow({
   participant,
   localIdentity,
   hands,
-  isHost,
-  onMuteMic,
-  onMuteCam,
-  onAskUnmute,
+  canModerate,
+  onToggleMic,
+  onToggleCam,
   onRemove,
-  onToggleSelfMic,
-  onToggleSelfCam,
 }: {
   participant: Participant;
   localIdentity: string;
   hands: Record<string, boolean>;
-  isHost: boolean;
-  onMuteMic: (identity: string) => void;
-  onMuteCam: (identity: string) => void;
-  onAskUnmute: (identity: string) => void;
+  canModerate: boolean;
+  /**
+   * Toggles the participant's microphone. The caller passes the row's
+   * `micMuted` flag (already computed from the LiveKit track publications)
+   * so we do not need to call `getTrackPublication` again here — that call
+   * is missing in some test mocks and would diverge the host UI from the
+   * icon the user actually clicked.
+   */
+  onToggleMic: (identity: string, micMuted: boolean) => void;
+  onToggleCam: (identity: string, camMuted: boolean) => void;
   onRemove: (identity: string) => void;
-  onToggleSelfMic?: () => void;
-  onToggleSelfCam?: () => void;
 }) {
   const { t } = useTranslation();
+  const isSelf = participant.identity === localIdentity;
   const micRefs = useParticipantTracks([Track.Source.Microphone], participant.identity);
   const camRefs = useParticipantTracks([Track.Source.Camera], participant.identity);
-  const micMuted = !micRefs[0]?.publication?.track || !!micRefs[0]?.publication?.isMuted;
-  const camMuted = !camRefs[0]?.publication?.track || !!camRefs[0]?.publication?.isMuted;
-  const isSelf = participant.identity === localIdentity;
-  const isRowHost = participantRole(participant.metadata) === 'host';
+  // `useParticipantTracks` returns an empty array when the track has not been
+  // published yet (e.g. the local user has not enabled their camera). Treat
+  // the absence of a publication as "off" for self rows and "on" for remote
+  // rows — the local toggle, by definition, knows it is off, while a remote
+  // participant we have not seen publish yet is the default state we show.
+  const hasMicPub = !!micRefs[0]?.publication;
+  const hasCamPub = !!camRefs[0]?.publication;
+  const micMuted = hasMicPub ? !!micRefs[0]?.publication?.isMuted : isSelf;
+  const camMuted = hasCamPub ? !!camRefs[0]?.publication?.isMuted : isSelf;
+  const rowRole = participantRole(participant.metadata);
+  const isRowHost = rowRole === 'host';
+  const isRowCohost = rowRole === 'cohost';
   const identity = participant.identity || participant.sid;
   const handRaised = !!hands[identity];
 
@@ -579,6 +634,11 @@ function ParticipantRow({
         </p>
         <p className="flex items-center gap-1.5 text-[10px] text-white/45">
           {isRowHost && <span className="text-amber-300/80">{t('meetings.host')}</span>}
+          {isRowCohost && (
+            <span className="text-sky-300/80">
+              {t('meetings.cohost', { defaultValue: 'Co-host' })}
+            </span>
+          )}
           {handRaised && (
             <span className="inline-flex items-center gap-0.5 text-amber-300/90">
               <Hand className="h-2.5 w-2.5" />
@@ -592,65 +652,68 @@ function ParticipantRow({
           <Hand className="h-2.5 w-2.5 text-amber-950" />
         </span>
       )}
-      {/* Mic indicator — clickable only for self; for others it's read-only. */}
+      {/*
+        Per-row mic + camera controls. The icon turns red the moment the track
+        is off, so red = "this is currently muted/stopped" for both self and
+        remote participants. For self the button toggles the local track; for
+        remote rows it is a host moderation control — `canModerate` gates it,
+        and an extra remove (X) button appears on hover.
+      */}
       <button
         type="button"
-        onClick={() => (isSelf ? onToggleSelfMic?.() : undefined)}
-        disabled={!isSelf}
+        onClick={() => onToggleMic(isSelf ? localIdentity : identity, micMuted)}
+        disabled={!isSelf && !canModerate}
+        title={
+          isSelf
+            ? micMuted
+              ? t('meetings.micOn')
+              : t('meetings.micOff')
+            : micMuted
+              ? t('meetings.askUnmute')
+              : t('meetings.muteMic')
+        }
         className={cn(
           'shrink-0 rounded-md p-0.5 transition',
-          isSelf ? 'cursor-pointer hover:bg-white/10' : 'cursor-default opacity-50',
-          micMuted ? 'text-red-400' : 'text-white/50',
+          isSelf || canModerate
+            ? 'cursor-pointer hover:bg-white/10'
+            : 'cursor-default opacity-40',
+          micMuted ? 'text-red-400' : 'text-white/55',
         )}
-        title={isSelf ? (micMuted ? t('meetings.micOn') : t('meetings.micOff')) : undefined}
       >
         {micMuted ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
       </button>
-      {/* Camera indicator — clickable only for self; for others it's read-only. */}
       <button
         type="button"
-        onClick={() => (isSelf ? onToggleSelfCam?.() : undefined)}
-        disabled={!isSelf}
+        onClick={() => onToggleCam(isSelf ? localIdentity : identity, camMuted)}
+        disabled={!isSelf && !canModerate}
+        title={
+          isSelf
+            ? camMuted
+              ? t('meetings.camOn')
+              : t('meetings.camOff')
+            : camMuted
+              ? t('meetings.askUnmuteCam', { defaultValue: 'Ask to turn camera on' })
+              : t('meetings.muteCam')
+        }
         className={cn(
           'shrink-0 rounded-md p-0.5 transition',
-          isSelf ? 'cursor-pointer hover:bg-white/10' : 'cursor-default opacity-50',
-          camMuted ? 'text-red-400' : 'text-white/50',
+          isSelf || canModerate
+            ? 'cursor-pointer hover:bg-white/10'
+            : 'cursor-default opacity-40',
+          camMuted ? 'text-red-400' : 'text-white/55',
         )}
-        title={isSelf ? (camMuted ? t('meetings.camOn') : t('meetings.camOff')) : undefined}
       >
         {camMuted ? <VideoOff className="h-3.5 w-3.5" /> : <Video className="h-3.5 w-3.5" />}
       </button>
-      {isHost && !isSelf && (
-        <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
-          <IconBtn
-            title={t('meetings.muteMic')}
-            onClick={() => onMuteMic(identity)}
-            className="size-7 bg-white/[0.06] hover:bg-red-500/30 hover:text-red-300"
-          >
-            <MicOff className="h-3 w-3" />
-          </IconBtn>
-          <IconBtn
-            title={t('meetings.muteCam')}
-            onClick={() => onMuteCam(identity)}
-            className="size-7 bg-white/[0.06] hover:bg-red-500/30 hover:text-red-300"
-          >
-            <VideoOff className="h-3 w-3" />
-          </IconBtn>
-          <IconBtn
-            title={t('meetings.askUnmute')}
-            onClick={() => onAskUnmute(identity)}
-            className="size-7 bg-white/[0.06]"
-          >
-            <Mic className="h-3 w-3" />
-          </IconBtn>
-          <IconBtn
-            title={t('meetings.remove')}
-            onClick={() => onRemove(identity)}
-            className="size-7 bg-white/[0.06] hover:bg-red-500/40 hover:text-red-200"
-          >
-            <X className="h-3 w-3" />
-          </IconBtn>
-        </div>
+      {canModerate && !isSelf && (
+        <button
+          type="button"
+          onClick={() => onRemove(identity)}
+          title={t('meetings.remove')}
+          className="shrink-0 rounded-md p-0.5 text-white/40 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100 hover:bg-rose-500/20 hover:text-rose-300"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
       )}
     </div>
   );
@@ -668,6 +731,9 @@ export function CustomConference(props: ConferenceProps) {
     onLeave,
     deviceChoices,
     onDeviceChange,
+    isOriginalHost,
+    cohostIds,
+    waitingRoomEnabled,
   } = props;
   const { t, i18n } = useTranslation();
   const { localParticipant, cameraTrack } = useLocalParticipant();
@@ -777,20 +843,23 @@ export function CustomConference(props: ConferenceProps) {
 
   // ── Host controls ──────────────────────────────────────────────────────────
   const localIdentity = localParticipant?.identity ?? '';
-  const isHost = useMemo(
-    () => participantRole(localParticipant?.metadata) === 'host',
-    [localParticipant?.metadata],
-  );
+  const localRole = participantRole(localParticipant?.metadata);
+  const isHost = useMemo(() => localRole === 'host', [localRole]);
+  // Alias for the host-or-cohost gate used by moderation controls (mute all,
+  // per-row mic/cam/remove buttons). Cohosts can moderate but cannot start
+  // recordings or end the meeting for everyone — that stays `isHost`-only.
+  const canModerate = isHost || localRole === 'cohost';
   const { send: sendHostCtrl } = useDataChannel('hostCtrl');
   const removeParticipant = useAction(api.meetingsActions.removeParticipant);
   const muteParticipantTrack = useAction(api.meetingsActions.muteParticipantTrack);
   const muteEveryone = useAction(api.meetingsActions.muteEveryone);
 
   useDataChannel('hostCtrl', (msg) => {
-    // Only the host's commands are honored — role is read from the token
+    // Only host/co-host commands are honored — role is read from the token
     // metadata LiveKit exposes on the remote participant, so spoofing the
     // topic cannot mute others.
-    if (participantRole(msg.from?.metadata) !== 'host') return;
+    const senderRole = participantRole(msg.from?.metadata);
+    if (senderRole !== 'host' && senderRole !== 'cohost') return;
     try {
       const data = JSON.parse(new TextDecoder().decode(msg.payload)) as {
         cmd?: string;
@@ -818,6 +887,18 @@ export function CustomConference(props: ConferenceProps) {
               label: t('meetings.unmute'),
               onClick: () => {
                 void localParticipant?.setMicrophoneEnabled(true);
+              },
+            },
+          });
+          break;
+        }
+        case 'askUnmuteCam': {
+          toast(t('meetings.camUnmuteRequest', { defaultValue: 'The host asks you to turn your camera on' }), {
+            icon: <Video className="h-4 w-4 text-emerald-400" />,
+            action: {
+              label: t('meetings.camOn'),
+              onClick: () => {
+                void localParticipant?.setCameraEnabled(true);
               },
             },
           });
@@ -856,9 +937,58 @@ export function CustomConference(props: ConferenceProps) {
     }
   };
 
-  const handleAskUnmute = (identity: string) => {
-    sendHostCommand('askUnmute', identity);
-    toast.success(t('meetings.askUnmuteSent'));
+  /**
+   * Single-button mic toggle per row: the local user toggles their own track
+   * directly; for a remote row the host either forces the mic off (if it is
+   * currently on) or sends a polite "please turn on" prompt (if it is off).
+   * The server-side `mutePublishedTrack` can only stop a published track — it
+   * cannot unmute a remote — so the ask path is the only way to recover.
+   */
+  /**
+   * Toggles the participant's microphone. The caller passes the row's
+   * `micMuted` flag (already computed from the LiveKit track publications)
+   * so we do not need to call `getTrackPublication` again here — that call
+   * is missing in some test mocks and would diverge the host UI from the
+   * icon the user actually clicked.
+   *
+   *   - isSelf     → toggle the local track via the LiveKit mic hook
+   *   - mic on     → force-mute through the LiveKit server
+   *   - mic off    → send a polite "please unmute" prompt on the data channel
+   */
+  const handleToggleMic = async (
+    row: Participant,
+    identity: string,
+    micMuted: boolean,
+  ) => {
+    if (identity === localIdentity) {
+      await toggleTrack(() => mic.toggle(), t('meetings.micDenied'));
+      return;
+    }
+    if (micMuted) {
+      sendHostCommand('askUnmute', identity);
+      toast.success(t('meetings.askUnmuteSent'));
+    } else {
+      await handleMuteTrack(identity, 'microphone');
+    }
+  };
+
+  const handleToggleCam = async (
+    row: Participant,
+    identity: string,
+    camMuted: boolean,
+  ) => {
+    if (identity === localIdentity) {
+      await toggleTrack(() => cam.toggle(), t('meetings.camDenied'));
+      return;
+    }
+    if (camMuted) {
+      sendHostCommand('askUnmuteCam', identity);
+      toast.success(
+        t('meetings.askUnmuteCamSent', { defaultValue: 'Camera request sent' }),
+      );
+    } else {
+      await handleMuteTrack(identity, 'camera');
+    }
   };
 
   const handleMuteEveryone = async () => {
@@ -909,7 +1039,9 @@ export function CustomConference(props: ConferenceProps) {
   const startRecording = useAction(api.meetingsActions.startRecording);
   const stopRecording = useAction(api.meetingsActions.stopRecording);
   const [recordingBusy, setRecordingBusy] = useState(false);
-  const cloudRecording = Boolean(meetingRow?.egressId);
+  const cloudRecording = Boolean(
+    meetingRow && 'egressId' in meetingRow ? meetingRow.egressId : false,
+  );
   const recordingReady = recordingSupport?.configured !== false;
 
   const toggleRecording = async () => {
@@ -965,6 +1097,106 @@ export function CustomConference(props: ConferenceProps) {
   }, [participants]);
 
   const handsCount = participants.filter((p) => hands[p.identity || p.sid]).length;
+
+  // ── Host rotation (Zoom-style) ───────────────────────────────────────────
+  // `localRole` / `canModerate` are already computed above from the JWT
+  // metadata so we can hand them straight to the dialog actions.
+  const assignCohost = useAction(api.meetingsActions.assignCohost);
+  const reclaimHost = useAction(api.meetingsActions.reclaimHost);
+  const updateLobby = useMutation(api.meetings.updateLobbyAndRegistration);
+  const [leaveDialog, setLeaveDialog] = useState<null | {
+    busy: boolean;
+    pickedIdentity: string;
+  }>(null);
+  const [reclaimDialog, setReclaimDialog] = useState<{
+    busy: boolean;
+    /** Snapshot of the cohost list when the dialog opened. */
+    cohostIds: string[];
+  } | null>(null);
+
+  /**
+   * Show the reclaim dialog once per session, when the local user is the
+   * original host and at least one co-host from the meeting row is currently
+   * in the room. The list passed via props is a live Convex query, so the
+   * moment a co-host leaves the room we close the dialog and never re-prompt.
+   */
+  const reclaimPromptedRef = useRef(false);
+  useEffect(() => {
+    if (reclaimPromptedRef.current) return;
+    if (!isOriginalHost) return;
+    const liveCohosts = cohostIds.filter(
+      (id) => id !== localIdentity && participants.some((p) => (p.identity || p.sid) === id),
+    );
+    if (liveCohosts.length === 0) return;
+    reclaimPromptedRef.current = true;
+    setReclaimDialog({ busy: false, cohostIds: liveCohosts });
+  }, [isOriginalHost, cohostIds, localIdentity, participants]);
+
+  // If the last co-host leaves the room while the dialog is open, close it
+  // automatically — there is no one left to hand the seat to.
+  useEffect(() => {
+    if (!reclaimDialog) return;
+    const stillThere = reclaimDialog.cohostIds.some((id) =>
+      participants.some((p) => (p.identity || p.sid) === id),
+    );
+    if (!stillThere) setReclaimDialog(null);
+  }, [reclaimDialog, participants]);
+
+  const closeReclaimDialog = () => setReclaimDialog(null);
+
+  const handleReclaim = async () => {
+    if (!reclaimDialog || reclaimDialog.busy) return;
+    setReclaimDialog((state) => (state ? { ...state, busy: true } : state));
+    try {
+      await reclaimHost({ roomName });
+      toast.success(t('meetings.reclaimHostDone', { defaultValue: 'You are the host again' }));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('meetings.actionFailed'));
+    } finally {
+      setReclaimDialog(null);
+    }
+  };
+
+  const handleStayCohost = () => {
+    setReclaimDialog(null);
+  };
+
+  /** Host only — prompt before leaving. */
+  const handleLeaveClick = () => {
+    if (!isHost || participants.length <= 1) {
+      // No one else to hand the room to: just end for everyone (the existing
+      // `onDisconnected` flow will flip the status to `ended`).
+      onLeave();
+      return;
+    }
+    const firstOther = participants.find((p) => (p.identity || p.sid) !== localIdentity);
+    setLeaveDialog({
+      busy: false,
+      pickedIdentity: firstOther ? firstOther.identity || firstOther.sid : '',
+    });
+  };
+
+  const handleEndForAll = () => {
+    setLeaveDialog(null);
+    onLeave();
+  };
+
+  const handleAssignAndLeave = async () => {
+    if (!leaveDialog || leaveDialog.busy) return;
+    const picked = leaveDialog.pickedIdentity;
+    if (!picked) return;
+    setLeaveDialog((state) => (state ? { ...state, busy: true } : state));
+    try {
+      await assignCohost({ roomName, newCohostIdentity: picked });
+      toast.success(
+        t('meetings.cohostAssigned', { defaultValue: 'Co-host assigned — leaving the meeting' }),
+      );
+      onLeave();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('meetings.actionFailed'));
+      setLeaveDialog((state) => (state ? { ...state, busy: false } : state));
+    }
+  };
 
   // ── Pin / spotlight ────────────────────────────────────────────────────────
   const [pinnedId, setPinnedId] = useState<string | null>(null);
@@ -1628,7 +1860,7 @@ export function CustomConference(props: ConferenceProps) {
                   ✕
                 </button>
               </div>
-              {isHost && (
+              {canModerate && (
                 <div className="px-3 pt-3">
                   <button
                     type="button"
@@ -1640,6 +1872,11 @@ export function CustomConference(props: ConferenceProps) {
                   </button>
                 </div>
               )}
+              {/* Host-only: incoming visitors waiting for admission. The host
+                  mints an invite URL here and shares it with the visitor. */}
+              {isHost && waitingRoomEnabled && (
+                <LobbyPanel roomName={roomName} />
+              )}
               <div className="flex-1 space-y-1 overflow-y-auto p-2">
                 {participants.map((p) => (
                   <ParticipantRow
@@ -1647,13 +1884,20 @@ export function CustomConference(props: ConferenceProps) {
                     participant={p}
                     localIdentity={localIdentity}
                     hands={hands}
-                    isHost={isHost}
-                    onMuteMic={(id) => void handleMuteTrack(id, 'microphone')}
-                    onMuteCam={(id) => void handleMuteTrack(id, 'camera')}
-                    onAskUnmute={handleAskUnmute}
+                    canModerate={canModerate}
+                    onToggleMic={(id, micMuted) => void handleToggleMic(p, id, micMuted)}
+                    onToggleCam={(id, camMuted) => void handleToggleCam(p, id, camMuted)}
+                    onAskUnmuteMic={(id) => {
+                      sendHostCommand('askUnmute', id);
+                      toast.success(t('meetings.askUnmuteSent'));
+                    }}
+                    onAskUnmuteCam={(id) => {
+                      sendHostCommand('askUnmuteCam', id);
+                      toast.success(
+                        t('meetings.askUnmuteCamSent', { defaultValue: 'Camera request sent' }),
+                      );
+                    }}
                     onRemove={handleRemove}
-                    onToggleSelfMic={() => toggleTrack(() => mic.toggle(), t('meetings.micDenied'))}
-                    onToggleSelfCam={() => toggleTrack(() => cam.toggle(), t('meetings.camDenied'))}
                   />
                 ))}
               </div>
@@ -1744,6 +1988,34 @@ export function CustomConference(props: ConferenceProps) {
                 onSelect={effects.setEffect}
               />
             </div>
+
+            {/* Host-only meeting settings: two independent toggles — waiting
+                room and registration form — plus a form-fields editor. */}
+            {isHost && (
+              <MeetingSettings
+                initialWaitingRoomEnabled={waitingRoomEnabled}
+                initialRegistrationEnabled={Boolean(
+                  meetingRow && 'registrationEnabled' in meetingRow
+                    ? meetingRow.registrationEnabled
+                    : false,
+                )}
+                onUpdate={async (next) => {
+                  try {
+                    await updateLobby({
+                      roomName,
+                      waitingRoomEnabled: next.waitingRoomEnabled,
+                      registrationEnabled: next.registrationEnabled,
+                      registrationFields: next.registrationFields,
+                    });
+                    toast.success(t('meetings.settingsSaved'));
+                  } catch (err) {
+                    toast.error(
+                      err instanceof Error ? err.message : t('meetings.actionFailed'),
+                    );
+                  }
+                }}
+              />
+            )}
           </div>
         )}
         {dockMenu === 'shortcuts' && (
@@ -1795,17 +2067,13 @@ export function CustomConference(props: ConferenceProps) {
         )}
 
         <div className="flex max-w-full flex-wrap items-center justify-center gap-1.5 rounded-2xl bg-[#141824]/85 px-2.5 py-2 shadow-2xl shadow-black/60 backdrop-blur-xl">
-          <DockBtn
-            on={mic.enabled}
-            onIcon={<Mic className="h-4.5 w-4.5" />}
-            offIcon={<MicOff className="h-4.5 w-4.5" />}
+          <RedDockBtn
+            icon={<Mic className="h-4.5 w-4.5" />}
             label={`${mic.enabled ? t('meetings.micOn') : t('meetings.micOff')} · M`}
             onClick={() => toggleTrack(() => mic.toggle(), t('meetings.micDenied'))}
           />
-          <DockBtn
-            on={cam.enabled}
-            onIcon={<Video className="h-4.5 w-4.5" />}
-            offIcon={<VideoOff className="h-4.5 w-4.5" />}
+          <RedDockBtn
+            icon={<Video className="h-4.5 w-4.5" />}
             label={`${cam.enabled ? t('meetings.camOn') : t('meetings.camOff')} · V`}
             onClick={() => toggleTrack(() => cam.toggle(), t('meetings.camDenied'))}
           />
@@ -1925,7 +2193,7 @@ export function CustomConference(props: ConferenceProps) {
 
           <button
             type="button"
-            onClick={onLeave}
+            onClick={handleLeaveClick}
             className="ml-1 flex h-11 items-center gap-2 rounded-xl bg-red-500/90 px-4 text-sm font-semibold text-white shadow-lg shadow-red-500/30 transition hover:bg-red-500"
           >
             <PhoneOff className="h-4.5 w-4.5" />
@@ -1933,6 +2201,135 @@ export function CustomConference(props: ConferenceProps) {
           </button>
         </div>
       </div>
+
+      {/* Host leave dialog — only opens when there is at least one other
+          participant to hand the room to. Otherwise the existing flow simply
+          ends the meeting. */}
+      <AlertDialog
+        open={leaveDialog !== null}
+        onOpenChange={(open) => {
+          if (!open && !leaveDialog?.busy) setLeaveDialog(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('meetings.leaveHostTitle', { defaultValue: 'Leave the meeting?' })}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('meetings.leaveHostDesc', {
+                defaultValue:
+                  'You are the host. Choose what happens when you leave — the meeting will continue for everyone else.',
+              })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {leaveDialog && (
+            <div className="space-y-2.5">
+              <p className="text-xs font-semibold text-white/65">
+                {t('meetings.leaveHostPickCohost', {
+                  defaultValue: 'Make someone a co-host before leaving',
+                })}
+              </p>
+              <div className="max-h-56 space-y-1 overflow-y-auto rounded-xl border border-white/10 bg-white/[0.04] p-1.5">
+                {participants
+                  .filter((p) => (p.identity || p.sid) !== localIdentity)
+                  .map((p) => {
+                    const id = p.identity || p.sid;
+                    const selected = id === leaveDialog.pickedIdentity;
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        disabled={leaveDialog.busy}
+                        onClick={() =>
+                          setLeaveDialog((state) =>
+                            state ? { ...state, pickedIdentity: id } : state,
+                          )
+                        }
+                        className={cn(
+                          'flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left text-xs transition',
+                          selected
+                            ? 'bg-(--brand)/20 text-white'
+                            : 'text-white/75 hover:bg-white/10',
+                        )}
+                      >
+                        <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[#1c2233] text-[10px] font-bold text-white/85">
+                          {getInitials(p.name || id)}
+                        </span>
+                        <span className="truncate">{p.name || id}</span>
+                        {selected && <Check className="ml-auto h-3.5 w-3.5 text-(--brand)" />}
+                      </button>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
+          <AlertDialogFooter className="flex-col gap-2 sm:flex-col">
+            <AlertDialogAction
+              disabled={leaveDialog?.busy}
+              onClick={(event) => {
+                event.preventDefault();
+                void handleAssignAndLeave();
+              }}
+            >
+              {leaveDialog?.busy && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}
+              {t('meetings.leaveHostAssign', {
+                defaultValue: 'Make co-host and leave',
+              })}
+            </AlertDialogAction>
+            <button
+              type="button"
+              disabled={leaveDialog?.busy}
+              onClick={handleEndForAll}
+              className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-200 transition hover:bg-red-500/20 disabled:opacity-50"
+            >
+              {t('meetings.leaveHostEndAll', {
+                defaultValue: 'End meeting for everyone',
+              })}
+            </button>
+            <AlertDialogCancel disabled={leaveDialog?.busy}>
+              {t('common.cancel', { defaultValue: 'Cancel' })}
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Reclaim host dialog — fires once when the original host joins a room
+          that already has a co-host, matching the Zoom re-entry flow. */}
+      <AlertDialog open={reclaimDialog !== null} onOpenChange={(open) => !open && closeReclaimDialog()}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('meetings.reclaimHostTitle', { defaultValue: 'Take back the host role?' })}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('meetings.reclaimHostDesc', {
+                defaultValue:
+                  'You handed this meeting to a co-host before. Reclaim the host seat or stay as a co-host for this session.',
+              })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col gap-2 sm:flex-col">
+            <AlertDialogAction
+              disabled={reclaimDialog?.busy}
+              onClick={(event) => {
+                event.preventDefault();
+                void handleReclaim();
+              }}
+            >
+              {reclaimDialog?.busy && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}
+              {t('meetings.reclaimHostAction', {
+                defaultValue: 'Take back host',
+              })}
+            </AlertDialogAction>
+            <AlertDialogCancel disabled={reclaimDialog?.busy} onClick={handleStayCohost}>
+              {t('meetings.reclaimHostStay', {
+                defaultValue: 'Stay as co-host',
+              })}
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

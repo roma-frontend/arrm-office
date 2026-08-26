@@ -78,6 +78,7 @@ interface ActionMeeting {
   /** Present only while a cloud recording is running. */
   egressId?: string;
   recordingFilepath?: string;
+  cohostIds?: Id<'users'>[];
 }
 
 /**
@@ -111,8 +112,25 @@ export const ensureRoom = action({
     eventId: v.id('calendarEvents'),
     organizationId: v.id('organizations'),
     mode: v.optional(v.union(v.literal('meeting'), v.literal('webinar'))),
+    waitingRoomEnabled: v.optional(v.boolean()),
+    registrationEnabled: v.optional(v.boolean()),
+    registrationFields: v.optional(
+      v.array(
+        v.object({
+          name: v.union(
+            v.literal('fullName'),
+            v.literal('email'),
+            v.literal('phone'),
+          ),
+          required: v.boolean(),
+        }),
+      ),
+    ),
   },
-  handler: async (ctx, { eventId, organizationId, mode }) => {
+  handler: async (
+    ctx,
+    { eventId, organizationId, mode, waitingRoomEnabled, registrationEnabled, registrationFields },
+  ) => {
     const caller = await getActionCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
     if (!isSuperadmin(caller) && caller.organizationId !== organizationId) {
@@ -143,6 +161,9 @@ export const ensureRoom = action({
       organizationId,
       roomName,
       mode: mode ?? 'meeting',
+      waitingRoomEnabled,
+      registrationEnabled,
+      registrationFields,
     });
 
     return { configured: true as const, roomName, videoUrl: videoUrlForRoom(roomName) };
@@ -150,23 +171,87 @@ export const ensureRoom = action({
 });
 
 /**
- * Mints a short-lived LiveKit join token for an authenticated user.
+ * Mints a short-lived LiveKit join token. Two entry points:
  *
- * Phase 1 rules: any member of the room's organization may join. Webinar mode
- * downgrades non-hosts to viewers (no publish) — the host panel comes in Phase
- * 2. Guests without an account are Phase 2 too (lobby + PIN).
+ * 1. **Authenticated member** of the meeting's organization — gets the usual
+ *    `host` / `cohost` / `participant` role.
+ * 2. **External guest with an invite** (single token produced by
+ *    `admitRegistration`, format `id:exp:sig`) — gets a one-shot `guest`
+ *    identity whose display name comes from the registration row, with
+ *    publish rights and a TTL tied to the invite's expiry.
  */
 export const getJoinToken = action({
   args: {
     roomName: v.string(),
+    /**
+     * Combined invite token: `${registrationId}:${exp}:${hmacSig}`. The HMAC
+     * is checked against the same LiveKit secret the host signed it with, so
+     * a forged URL gets rejected before the LiveKit token is minted.
+     */
+    invite: v.optional(v.string()),
   },
-  handler: async (ctx, { roomName }) => {
-    const caller = await getActionCaller(ctx);
-    if (!caller) throw new Error('Not authenticated');
-
+  handler: async (ctx, { roomName, invite }) => {
     if (!livekitConfigured()) {
       throw new Error('Video calls are not configured yet');
     }
+
+    // ── Guest path ─────────────────────────────────────────────────────────
+    if (invite) {
+      const parts = invite.split(':');
+      if (parts.length !== 3) throw new Error('Invalid invite token');
+      const [registrationId, expStr, providedSig] = parts;
+      const exp = Number(expStr);
+      if (!Number.isFinite(exp)) throw new Error('Invalid invite expiry');
+      if (Date.now() > exp) throw new Error('Invite has expired — ask the host for a new one');
+      const { createHmac } = await import('node:crypto');
+      const secret = process.env.LIVEKIT_API_SECRET ?? process.env.CLERK_JWT_KEY ?? 'unknown';
+      const expectedSig = createHmac('sha256', secret)
+        .update(`${registrationId}:${exp}`)
+        .digest('hex')
+        .slice(0, 40);
+      if (expectedSig !== providedSig) throw new Error('Invite signature mismatch');
+
+      const reg = (await ctx.runQuery(api.meetings.getRegistrationById, {
+        registrationId: registrationId as Id<'meetingRegistrations'>,
+      })) as { roomName: string; fullName: string } | null;
+      if (!reg) throw new Error('Invite revoked');
+      if (reg.roomName !== roomName) throw new Error('Invite is for a different meeting');
+
+      const guestIdentity = `guest_${registrationId}`;
+      const { AccessToken } = await import('livekit-server-sdk');
+      const token = new AccessToken(LIVEKIT_API_KEY!, LIVEKIT_API_SECRET!, {
+        identity: guestIdentity,
+        name: reg.fullName,
+        ttl: Math.max(60, Math.floor((exp - Date.now()) / 1000)),
+        metadata: JSON.stringify({
+          organizationId: undefined,
+          roomName,
+          role: 'guest',
+        }),
+      });
+      token.addGrant({
+        roomJoin: true,
+        room: roomName,
+        canPublish: true,
+        canSubscribe: true,
+        canPublishData: true,
+      });
+      return {
+        token: await token.toJwt(),
+        url: LIVEKIT_URL!,
+        identity: guestIdentity,
+        name: reg.fullName,
+        isHost: false,
+        isCohost: false,
+        isOriginalHost: false,
+        cohostIds: [] as string[],
+        mode: 'meeting' as const,
+        isGuest: true,
+      };
+    }
+
+    const caller = await getActionCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
 
     // `getByRoomName` is the security boundary: it returns null unless the
     // caller belongs to the meeting's organization. The action re-uses it, so
@@ -178,7 +263,8 @@ export const getJoinToken = action({
 
     const isHost =
       meeting.hostUserId === caller._id || caller.role === 'admin' || isSuperadmin(caller);
-    const isWebinarViewer = meeting.mode === 'webinar' && !isHost;
+    const isCohost = (meeting.cohostIds ?? []).includes(caller._id) && !isHost;
+    const isWebinarViewer = meeting.mode === 'webinar' && !isHost && !isCohost;
 
     const { AccessToken } = await import('livekit-server-sdk');
     const token = new AccessToken(LIVEKIT_API_KEY!, LIVEKIT_API_SECRET!, {
@@ -188,7 +274,7 @@ export const getJoinToken = action({
       metadata: JSON.stringify({
         organizationId: meeting.organizationId,
         roomName,
-        role: isHost ? 'host' : isWebinarViewer ? 'viewer' : 'participant',
+        role: isHost ? 'host' : isCohost ? 'cohost' : isWebinarViewer ? 'viewer' : 'participant',
       }),
     });
     token.addGrant({
@@ -205,6 +291,9 @@ export const getJoinToken = action({
       identity: caller._id,
       name: caller.name,
       isHost,
+      isCohost,
+      isOriginalHost: meeting.hostUserId === caller._id,
+      cohostIds: meeting.cohostIds ?? [],
       mode: meeting.mode,
     };
   },
@@ -237,7 +326,8 @@ export const removeParticipant = action({
 
     const isHost =
       meeting.hostUserId === caller._id || caller.role === 'admin' || isSuperadmin(caller);
-    if (!isHost) throw new Error('Only the host can remove participants');
+    const isCohost = (meeting.cohostIds ?? []).includes(caller._id) && !isHost;
+    if (!isHost && !isCohost) throw new Error('Only the host or a co-host can remove participants');
 
     const { RoomServiceClient } = await import('livekit-server-sdk');
     const roomService = new RoomServiceClient(LIVEKIT_URL!, LIVEKIT_API_KEY!, LIVEKIT_API_SECRET!);
@@ -277,7 +367,8 @@ export const muteParticipantTrack = action({
 
     const isHost =
       meeting.hostUserId === caller._id || caller.role === 'admin' || isSuperadmin(caller);
-    if (!isHost) throw new Error('Only the host can mute participants');
+    const isCohost = (meeting.cohostIds ?? []).includes(caller._id) && !isHost;
+    if (!isHost && !isCohost) throw new Error('Only the host or a co-host can mute participants');
 
     const { RoomServiceClient, TrackSource } = await import('livekit-server-sdk');
     const roomService = new RoomServiceClient(LIVEKIT_URL!, LIVEKIT_API_KEY!, LIVEKIT_API_SECRET!);
@@ -327,7 +418,8 @@ export const muteEveryone = action({
 
     const isHost =
       meeting.hostUserId === caller._id || caller.role === 'admin' || isSuperadmin(caller);
-    if (!isHost) throw new Error('Only the host can mute participants');
+    const isCohost = (meeting.cohostIds ?? []).includes(caller._id) && !isHost;
+    if (!isHost && !isCohost) throw new Error('Only the host or a co-host can mute participants');
 
     const { RoomServiceClient, TrackSource } = await import('livekit-server-sdk');
     const roomService = new RoomServiceClient(LIVEKIT_URL!, LIVEKIT_API_KEY!, LIVEKIT_API_SECRET!);
@@ -502,5 +594,180 @@ export const stopRecording = action({
     });
 
     return { stopped: Boolean(egressId), url };
+  },
+});
+
+// ── Host rotation (Zoom-style) ─────────────────────────────────────────────
+// When the host leaves, they can either end the meeting for everyone, or hand
+// the room to a single participant who becomes a co-host. The original host
+// can reclaim their seat on a later join and the co-host is automatically
+// demoted back to `participant`.
+
+/** Pushes fresh metadata to a live LiveKit participant so the client re-renders
+ * its `isHost` / `isCohost` derivations immediately. */
+async function pushMetadata(
+  roomName: string,
+  identity: string,
+  metadata: Record<string, unknown>,
+): Promise<void> {
+  const { RoomServiceClient } = await import('livekit-server-sdk');
+  const roomService = new RoomServiceClient(LIVEKIT_URL!, LIVEKIT_API_KEY!, LIVEKIT_API_SECRET!);
+  await roomService.updateParticipant(roomName, identity, {
+    metadata: JSON.stringify(metadata),
+  });
+}
+
+/**
+ * Host-only. Records a co-host assignment, then returns. The caller is
+ * expected to disconnect the room right after — the live metadata push lets
+ * the chosen participant's UI flip to co-host without a reconnect.
+ */
+export const assignCohost = action({
+  args: {
+    roomName: v.string(),
+    newCohostIdentity: v.string(),
+  },
+  handler: async (ctx, { roomName, newCohostIdentity }) => {
+    const caller = await getActionCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    if (!livekitConfigured()) throw new Error('Video calls are not configured yet');
+
+    const meeting = (await ctx.runQuery(api.meetings.getByRoomName, {
+      roomName,
+    })) as (ActionMeeting & { cohostIds?: Id<'users'>[] }) | null;
+    if (!meeting) throw new Error('Meeting not found');
+
+    const isHost =
+      meeting.hostUserId === caller._id || caller.role === 'admin' || isSuperadmin(caller);
+    if (!isHost) throw new Error('Only the host can assign a co-host');
+
+    if (newCohostIdentity === caller._id) {
+      throw new Error('You are already the host');
+    }
+
+    const list = (meeting.cohostIds ?? []).filter((id) => id !== newCohostIdentity);
+    list.push(newCohostIdentity as Id<'users'>);
+    await ctx.runMutation(api.meetings.setCohostIds, {
+      roomName,
+      cohostIds: list,
+    });
+
+    // Push the new role into LiveKit so the participant's UI updates live.
+    await pushMetadata(roomName, newCohostIdentity, {
+      organizationId: meeting.organizationId,
+      roomName,
+      role: 'cohost',
+    });
+
+    return { ok: true as const, cohostIds: list };
+  },
+});
+
+/**
+ * Host-only. The original host is rejoining a meeting they previously handed
+ * off: we wipe the co-host list, push the host role back to themselves, and
+ * demote every current co-host back to `participant` in one go.
+ */
+export const reclaimHost = action({
+  args: {
+    roomName: v.string(),
+  },
+  handler: async (ctx, { roomName }) => {
+    const caller = await getActionCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    if (!livekitConfigured()) throw new Error('Video calls are not configured yet');
+
+    const meeting = (await ctx.runQuery(api.meetings.getByRoomName, {
+      roomName,
+    })) as (ActionMeeting & { cohostIds?: Id<'users'>[] }) | null;
+    if (!meeting) throw new Error('Meeting not found');
+
+    // Only the original host can reclaim — admins/superadmins are kept out so
+    // the rotation stays between the people who actually own the meeting.
+    if (meeting.hostUserId !== caller._id) {
+      throw new Error('Only the original host can reclaim the host role');
+    }
+
+    const previousCohosts = meeting.cohostIds ?? [];
+    await ctx.runMutation(api.meetings.setCohostIds, { roomName, cohostIds: [] });
+
+    const { RoomServiceClient } = await import('livekit-server-sdk');
+    const roomService = new RoomServiceClient(LIVEKIT_URL!, LIVEKIT_API_KEY!, LIVEKIT_API_SECRET!);
+
+    // The host takes back the role.
+    await pushMetadata(roomName, caller._id, {
+      organizationId: meeting.organizationId,
+      roomName,
+      role: 'host',
+    });
+
+    // Anyone who was a co-host is now a regular participant again.
+    await Promise.allSettled(
+      previousCohosts.map((identity) =>
+        pushMetadata(roomName, identity, {
+          organizationId: meeting.organizationId,
+          roomName,
+          role: 'participant',
+        }),
+      ),
+    );
+
+    // List is informational — `updateParticipant` does not need a fresh fetch.
+    void roomService;
+
+    return { ok: true as const, demoted: previousCohosts.length };
+  },
+});
+
+/**
+ * Host-only — admit a pending visitor by minting a one-time invite URL.
+ * Runs as an action because signing the token needs `node:crypto` (Node
+ * runtime only). The URL embeds the registration id + an HMAC token valid
+ * for 30 minutes, so the host can pass it to the guest via any side
+ * channel and a forged URL can never reach the LiveKit join path.
+ */
+export const admitRegistration = action({
+  args: { registrationId: v.id('meetingRegistrations') },
+  handler: async (ctx, { registrationId }) => {
+    const caller = await getActionCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+
+    const reg = (await ctx.runQuery(api.meetings.getRegistrationById, {
+      registrationId,
+    })) as { roomName: string; fullName: string } | null;
+    if (!reg) throw new Error('Registration not found');
+
+    const meeting = (await ctx.runQuery(api.meetings.getByRoomName, {
+      roomName: reg.roomName,
+    })) as ActionMeeting | null;
+    if (!meeting) throw new Error('Meeting not found');
+
+    if (!isSuperadmin(caller) && caller.organizationId !== meeting.organizationId) {
+      throw new Error('Access denied: different organization');
+    }
+    if (
+      !isSuperadmin(caller) &&
+      meeting.hostUserId !== caller._id &&
+      caller.role !== 'admin'
+    ) {
+      throw new Error('Only the host or an admin can admit visitors');
+    }
+
+    const { createHmac } = await import('node:crypto');
+    const secret = process.env.LIVEKIT_API_SECRET ?? process.env.CLERK_JWT_KEY ?? 'unknown';
+    const expiresAt = Date.now() + 30 * 60 * 1000;
+    const signature = createHmac('sha256', secret)
+      .update(`${registrationId}:${expiresAt}`)
+      .digest('hex')
+      .slice(0, 40);
+    const combinedToken = `${registrationId}:${expiresAt}:${signature}`;
+
+    return {
+      success: true as const,
+      inviteToken: combinedToken,
+      inviteUrl: `/meetings/${reg.roomName}?invite=${encodeURIComponent(combinedToken)}`,
+      expiresAt,
+      guestName: reg.fullName,
+    };
   },
 });
