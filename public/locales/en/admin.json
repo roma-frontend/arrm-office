@@ -920,7 +920,20 @@
       "chatDesc": "Recent user messages",
       "system": "System",
       "noChatMessages": "No messages found",
-      "loading": "Loading..."
+      "loading": "Loading...",
+      "issueTempPassword": "Temporary Password",
+      "issueConfirmTitle": "Issue a temporary password?",
+      "issueConfirmDesc": "The current password will be replaced immediately and all sessions signed out. The user must log in with the temporary password and set their own right away — it stops working once the validity window passes.",
+      "validityLabel": "Valid for",
+      "validityHours": "{{count}} hours",
+      "issueConfirmAction": "Issue password",
+      "issuing": "Issuing...",
+      "tempPwTitle": "Temporary password issued",
+      "tempPwDesc": "Shown only once — relay it to the user through a secure channel. It is not stored in plain text.",
+      "copy": "Copy",
+      "copied": "Copied!",
+      "validUntil": "Valid until {{date}}. After that the temporary password stops working and a new one is required.",
+      "tempPwError": "Could not issue the temporary password"
     },
     "creatingOrg": "Creating {{name}}…",
     "orgCreated": "Organization \"{{name}}\" created!",
@@ -1363,6 +1376,21 @@
         "news-schedule-expiry": "hourly",
         "recurring-tasks-generate": "hourly"
       }
+    },
+    "usersIndex": {
+      "description": "Search any user across all organizations and open their 360° profile — logins, security and temporary passwords.",
+      "searchPlaceholder": "Search by name, email or position...",
+      "noResults": "No users found",
+      "count": "{{count}} shown"
+    },
+    "pendingTemp": {
+      "title": "Pending temporary passwords",
+      "description": "Accounts signed in with (or locked out of) a superadmin-issued temporary password. They must set their own password before the expiry — otherwise a reissue is required.",
+      "expired": "Expired",
+      "awaiting": "Awaiting change",
+      "revoke": "Cancel",
+      "revokeConfirm": "Confirm?",
+      "revoking": "Cancelling..."
     }
   },
   "superadminSecurity": {

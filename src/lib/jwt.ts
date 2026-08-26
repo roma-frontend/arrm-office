@@ -26,6 +26,8 @@ export interface JWTPayload {
   position?: string;
   employeeType?: 'staff' | 'contractor';
   avatar?: string;
+  /** Superadmin issued a temporary password — user must change it first. */
+  mustChangePassword?: boolean;
   type?: '2fa-pending';
   impersonation?: {
     active: true;

@@ -199,6 +199,27 @@ export async function POST(req: NextRequest) {
       }
       const result = data.value;
 
+      // ── Temporary password expired — refuse before anything else ──────────
+      // The superadmin-issued temp credential has a hard grace window; past it
+      // the user must ask for a fresh one. No cookies are set.
+      if (result.tempPasswordExpired) {
+        if (auditEnabled) {
+          await convexMutation('security:logLoginAttempt', {
+            email,
+            userId: result.userId,
+            organizationId: result.organizationId,
+            success: false,
+            method: 'password',
+            ip,
+            userAgent,
+            riskScore: riskResult.score,
+            riskFactors: riskResult.factors,
+            blockedReason: 'Temporary password expired',
+          });
+        }
+        return NextResponse.json({ error: 'temp_password_expired' }, { status: 403 });
+      }
+
       // ── Check if 2FA is enabled ─────────────────────────────────────────────
       if (result.totpEnabled) {
         // Generate short-lived temp token (5 minutes)
@@ -348,6 +369,7 @@ export async function POST(req: NextRequest) {
         position: result.position,
         employeeType: result.employeeType,
         avatar: result.avatarUrl,
+        mustChangePassword: !!result.mustChangePassword,
       });
 
       const response = NextResponse.json({
@@ -366,6 +388,7 @@ export async function POST(req: NextRequest) {
           position: result.position,
           employeeType: result.employeeType,
           avatar: result.avatarUrl,
+          mustChangePassword: !!result.mustChangePassword,
         },
       });
 

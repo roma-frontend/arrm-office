@@ -148,6 +148,10 @@ export interface AuthLoginResult {
   travelAllowance: number;
   isApproved: boolean;
   totpEnabled: boolean;
+  /** Superadmin issued a temporary password — user must set their own now. */
+  mustChangePassword?: boolean;
+  /** The temporary password's grace window has passed — login refused. */
+  tempPasswordExpired?: boolean;
 }
 
 export async function registerAction(formData: FormData) {

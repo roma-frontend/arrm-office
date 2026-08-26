@@ -236,6 +236,7 @@
     "backups": "Backups",
     "superadmin": "Superadmin",
     "superadminHub": "Superadmin Hub",
+    "users360": "Users 360",
     "featureToggles": "Feature Toggles",
     "database": "Data Browser",
     "sessions": "Active Sessions",
@@ -1476,7 +1477,8 @@
       "leaveCancellationRejected": "Your $t(leaveTypes.{{type}}) ({{start}} → {{end}}) cancellation was rejected by {{reviewerName}}.",
       "leaveCancellationRejectedWithReason": "Your $t(leaveTypes.{{type}}) ({{start}} → {{end}}) cancellation was rejected by {{reviewerName}}. Reason: {{comment}}",
       "roomMeetingReminder": "Starts at {{startTime}} in {{roomName}}",
-      "roomMeetingReminderWithPlatform": "Starts at {{startTime}} in {{roomName}} · {{platform}}"
+      "roomMeetingReminderWithPlatform": "Starts at {{startTime}} in {{roomName}} · {{platform}}",
+      "tempPasswordLogin": "{{name}} ({{email}}) signed in with a superadmin-issued temporary password."
     },
     "titles": {
       "movementFormReady": "📄 Movement Form Ready for Signing",
@@ -1593,7 +1595,8 @@
       "leaveCancelRequested": "Leave Cancellation Requested",
       "leaveCancellationApproved": "Cancellation Approved",
       "leaveCancellationRejected": "Cancellation Rejected",
-      "roomMeetingReminder": "Upcoming: {{bookingTitle}}"
+      "roomMeetingReminder": "Upcoming: {{bookingTitle}}",
+      "tempPasswordLogin": "🔑 Temporary Password Used"
     }
   },
   "aiChat": {

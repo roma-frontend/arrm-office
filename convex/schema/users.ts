@@ -101,6 +101,16 @@ export const users = {
     backupCodes: v.optional(v.array(v.string())),
     resetPasswordToken: v.optional(v.string()),
     resetPasswordExpiry: v.optional(v.number()),
+    // Temporary password issued by a superadmin (e.g. user forgot theirs and
+    // email delivery is unavailable). The flag forces a password change right
+    // after login; the expiry makes the temp credential useless once the grace
+    // window passes, pushing the user to change it quickly.
+    mustChangePassword: v.optional(v.boolean()),
+    tempPasswordIssuedAt: v.optional(v.number()),
+    tempPasswordExpiresAt: v.optional(v.number()),
+    // Set the first time the temp credential is used to sign in — admins get
+    // one in-app notice per issuance instead of one per login attempt.
+    tempPasswordLoginNotifiedAt: v.optional(v.number()),
     sessionToken: v.optional(v.string()),
     sessionExpiry: v.optional(v.number()),
     focusModeEnabled: v.optional(v.boolean()),
@@ -152,7 +162,9 @@ export const users = {
     .index('by_department', ['departmentId'])
     .index('by_position', ['positionId'])
     // Lets an integration sync find a previously imported user by provider id.
-    .index('by_org_external', ['organizationId', 'externalSource', 'externalId']),
+    .index('by_org_external', ['organizationId', 'externalSource', 'externalId'])
+    // Superadmin overview of accounts waiting to rotate a temporary password.
+    .index('by_must_change_password', ['mustChangePassword']),
 
   webauthnCredentials: defineTable({
     userId: v.id('users'),

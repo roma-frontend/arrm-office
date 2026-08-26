@@ -375,6 +375,11 @@ export default function LoginPage() {
             );
             return;
           }
+          // Temporary password grace window has passed — show a precise,
+          // localized message instead of a generic failure.
+          if (errorData.error === 'temp_password_expired') {
+            throw new Error(t('auth.changePassword.tempExpired'));
+          }
           throw new Error(errorData.error || 'Login failed');
         }
 
@@ -391,6 +396,7 @@ export default function LoginPage() {
             position?: string;
             employeeType?: string;
             avatar?: string;
+            mustChangePassword?: boolean;
           };
           riskLevel?: string;
           error?: string;
@@ -437,10 +443,14 @@ export default function LoginPage() {
           );
         }
 
-        // Redirect to dashboard or callback URL
+        // Redirect to dashboard or callback URL — unless a superadmin issued
+        // this account a temporary password, in which case the user must set
+        // their own credential first.
         const params = new URLSearchParams(window.location.search);
         const nextUrl = params.get('next');
-        const redirectUrl = nextUrl || '/dashboard';
+        const redirectUrl = session.mustChangePassword
+          ? '/change-password'
+          : nextUrl || '/dashboard';
         router.push(redirectUrl);
       } catch (err) {
         logger.error('❌ Login failed:', err);
@@ -517,6 +527,7 @@ export default function LoginPage() {
             position?: string;
             employeeType?: string;
             avatar?: string;
+            mustChangePassword?: boolean;
           };
         };
 
@@ -540,10 +551,12 @@ export default function LoginPage() {
         login(userData);
         sessionStorage.setItem('just_logged_in', 'true');
 
-        // Check for callback URL
+        // Check for callback URL — a forced password change still comes first
         const params = new URLSearchParams(window.location.search);
         const nextUrl = params.get('next');
-        const redirectUrl = nextUrl || '/dashboard';
+        const redirectUrl = session.mustChangePassword
+          ? '/change-password'
+          : nextUrl || '/dashboard';
         router.push(redirectUrl);
       } catch (err) {
         setTwoFactorError(err instanceof Error ? err.message : 'Verification failed');

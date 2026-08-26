@@ -920,7 +920,20 @@
       "chatDesc": "Letzte Nachrichten des Benutzers",
       "system": "System",
       "noChatMessages": "Keine Nachrichten gefunden",
-      "loading": ""
+      "loading": "",
+      "issueTempPassword": "Temporäres Passwort",
+      "issueConfirmTitle": "Temporäres Passwort ausstellen?",
+      "issueConfirmDesc": "Das aktuelle Passwort wird sofort ersetzt und alle Sitzungen beendet. Der Benutzer muss sich mit dem temporären Passwort anmelden und umgehend ein eigenes festlegen — nach Ablauf des Gültigkeitsfensters funktioniert es nicht mehr.",
+      "validityLabel": "Gültig für",
+      "validityHours": "{{count}} Stunden",
+      "issueConfirmAction": "Passwort ausstellen",
+      "issuing": "Wird ausgestellt...",
+      "tempPwTitle": "Temporäres Passwort ausgestellt",
+      "tempPwDesc": "Nur einmal sichtbar — übermitteln Sie es über einen sicheren Kanal. Es wird nicht im Klartext gespeichert.",
+      "copy": "Kopieren",
+      "copied": "Kopiert!",
+      "validUntil": "Gültig bis {{date}}. Danach funktioniert das temporäre Passwort nicht mehr und ein neues ist erforderlich.",
+      "tempPwError": "Temporäres Passwort konnte nicht ausgestellt werden"
     },
     "creatingOrg": "{{name}} wird erstellt…",
     "orgCreated": "Organisation \"{{name}}\" erstellt!",
@@ -1363,6 +1376,21 @@
         "news-schedule-expiry": "stündlich",
         "recurring-tasks-generate": "stündlich"
       }
+    },
+    "usersIndex": {
+      "description": "Suchen Sie jeden Benutzer in allen Organisationen und öffnen Sie sein 360°-Profil — Anmeldungen, Sicherheit und temporäre Passwörter.",
+      "searchPlaceholder": "Nach Name, E-Mail oder Position suchen...",
+      "noResults": "Keine Benutzer gefunden",
+      "count": "{{count}} angezeigt"
+    },
+    "pendingTemp": {
+      "title": "Ausstehende temporäre Passwörter",
+      "description": "Konten, die sich mit einem temporären Passwort angemeldet haben (oder danach ausgesperrt sind). Der Benutzer muss vor Ablauf ein eigenes Passwort festlegen, sonst ist eine Neuausstellung nötig.",
+      "expired": "Abgelaufen",
+      "awaiting": "Wartet auf Änderung",
+      "revoke": "Abbrechen",
+      "revokeConfirm": "Sicher?",
+      "revoking": "Wird abgebrochen..."
     }
   },
   "superadminSecurity": {

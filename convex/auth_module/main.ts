@@ -8,6 +8,7 @@ import { getStartingLeaveBalances } from '../lib/leaveBalances';
 import { resolveOrgUnitsByName } from '../lib/orgUnits';
 import { resolveTravelAllowanceForOrg } from '../lib/travelAllowance';
 import { checkTempAccessStillValid } from '../superadmin/accessTokens';
+import { notifyTempPasswordLogin } from '../superadmin/tempPasswords';
 import { logger } from '../../src/lib/logger';
 
 // ── Password Hashing Helpers ─────────────────────────────────────────────────
@@ -124,6 +125,7 @@ function safeUser(user: {
   travelAllowance: number;
   isApproved: boolean;
   totpSecret?: string;
+  mustChangePassword?: boolean;
 }) {
   return {
     userId: user._id,
@@ -138,6 +140,7 @@ function safeUser(user: {
     travelAllowance: user.travelAllowance,
     isApproved: user.isApproved,
     totpSecret: user.totpSecret,
+    mustChangePassword: !!user.mustChangePassword,
   };
 }
 
@@ -542,13 +545,53 @@ export const login = mutation({
         throw new Error(tempCheck.reason ?? 'Temporary access is no longer valid.');
       }
 
-      await ctx.db.patch(user._id, {
-        sessionToken,
-        sessionExpiry,
-        lastLoginAt: Date.now(),
-        loginFailedAttempts: 0,
-        loginLockedUntil: undefined,
-      });
+      // ═══════════════════════════════════════════════════════════
+      // SUPERADMIN-ISSUED TEMPORARY PASSWORD — enforce the grace window
+      // ═══════════════════════════════════════════════════════════
+      // The temp credential REPLACED the old password hash at issuance, so
+      // once it expires the account cannot be entered until a superadmin
+      // issues a fresh one. We still return the (expired) flag instead of
+      // throwing so the client can show a precise message; no session is
+      // created for an expired credential.
+      const tempPasswordExpired =
+        !!user.mustChangePassword &&
+        !!user.tempPasswordExpiresAt &&
+        user.tempPasswordExpiresAt < Date.now();
+
+      if (!tempPasswordExpired) {
+        await ctx.db.patch(user._id, {
+          sessionToken,
+          sessionExpiry,
+          lastLoginAt: Date.now(),
+          loginFailedAttempts: 0,
+          loginLockedUntil: undefined,
+        });
+
+        // First sign-in with a superadmin-issued temporary password — give the
+        // admins an in-app heads-up (once per issuance, not per login).
+        if (
+          user.mustChangePassword &&
+          !user.tempPasswordLoginNotifiedAt &&
+          !isOAuthLogin &&
+          !isFaceLogin
+        ) {
+          await ctx.db.patch(user._id, { tempPasswordLoginNotifiedAt: Date.now() });
+          await notifyTempPasswordLogin(ctx, {
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            organizationId: user.organizationId ?? undefined,
+          });
+        }
+      } else {
+        await ctx.db.insert('auditLogs', {
+          organizationId: user.organizationId,
+          userId: user._id,
+          action: 'temp_password_expired_login',
+          details: `Login attempted with an expired temporary password (issued ${user.tempPasswordIssuedAt ?? 'unknown'})`,
+          createdAt: Date.now(),
+        });
+      }
 
       return {
         ...safeUser(user as Parameters<typeof safeUser>[0]),
@@ -556,6 +599,7 @@ export const login = mutation({
         organizationSlug: org.slug,
         organizationPlan: org.plan,
         totpEnabled: !!user.totpSecret,
+        tempPasswordExpired,
       };
     }, 'login');
   },
@@ -682,6 +726,10 @@ export const resetPassword = mutation({
       passwordHash: hashedPassword,
       resetPasswordToken: undefined,
       resetPasswordExpiry: undefined,
+      // A deliberate reset also lifts any pending forced change.
+      mustChangePassword: false,
+      tempPasswordIssuedAt: undefined,
+      tempPasswordExpiresAt: undefined,
       sessionToken: undefined,
     });
 
@@ -737,6 +785,11 @@ export const changePassword = mutation({
     await ctx.db.patch(userId, {
       passwordHash: hashedPassword,
       sessionToken: undefined, // force re-login on other devices
+      // Satisfies a superadmin-issued forced change: the temporary password
+      // window closes as soon as the user sets their own credential.
+      mustChangePassword: false,
+      tempPasswordIssuedAt: undefined,
+      tempPasswordExpiresAt: undefined,
     });
 
     return { success: true };

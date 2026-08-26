@@ -267,6 +267,7 @@ import type * as superadmin_operatorToolsInternal from "../superadmin/operatorTo
 import type * as superadmin_organizations from "../superadmin/organizations.js";
 import type * as superadmin_search from "../superadmin/search.js";
 import type * as superadmin_sessions from "../superadmin/sessions.js";
+import type * as superadmin_tempPasswords from "../superadmin/tempPasswords.js";
 import type * as superadmin_terminal from "../superadmin/terminal.js";
 import type * as superadmin_trash from "../superadmin/trash.js";
 import type * as superadmin_user360 from "../superadmin/user360.js";
@@ -557,6 +558,7 @@ declare const fullApi: ApiFromModules<{
   "superadmin/organizations": typeof superadmin_organizations;
   "superadmin/search": typeof superadmin_search;
   "superadmin/sessions": typeof superadmin_sessions;
+  "superadmin/tempPasswords": typeof superadmin_tempPasswords;
   "superadmin/terminal": typeof superadmin_terminal;
   "superadmin/trash": typeof superadmin_trash;
   "superadmin/user360": typeof superadmin_user360;

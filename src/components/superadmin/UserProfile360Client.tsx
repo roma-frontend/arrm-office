@@ -1,8 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { localizedTaskTitle } from '@/lib/taskTitle';
-import { useQuery } from 'convex/react';
+import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { useTranslation } from 'react-i18next';
@@ -26,6 +27,8 @@ import {
   Ban,
   Key,
   ArrowLeft,
+  Copy,
+  Check,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -33,13 +36,36 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
+
+// Validity options for a superadmin-issued temporary password, in hours.
+const TEMP_PASSWORD_TTL_OPTIONS = [8, 24, 48, 72] as const;
+
 export default function UserProfile360Page() {
   const params = useParams();
   const router = useRouter();
   const userId = params.userId as Id<'users'>;
 
   const data = useQuery(api.superadmin.getUser360, userId ? { userId } : 'skip');
+  const issueTempPassword = useMutation(api.superadmin.tempPasswords.issueTempPassword);
+
+  // Temporary-password flow: confirm dialog → plaintext shown exactly once.
+  const [pwDialogOpen, setPwDialogOpen] = useState(false);
+  const [ttlHours, setTtlHours] = useState<number>(24);
+  const [issuing, setIssuing] = useState(false);
+  const [issueError, setIssueError] = useState<string | null>(null);
+  const [tempPwResult, setTempPwResult] = useState<{ password: string; expiresAt: number } | null>(
+    null,
+  );
+  const [copied, setCopied] = useState(false);
 
   const { t, i18n } = useTranslation();
 
@@ -75,11 +101,37 @@ export default function UserProfile360Page() {
     }
   };
 
+  // ── Temporary password issuance (email reset unavailable / user forgot) ────
+  const handleIssueTempPassword = async () => {
+    setIssuing(true);
+    setIssueError(null);
+    try {
+      const res = await issueTempPassword({ userId, ttlHours });
+      // The plaintext arrives exactly once — show it, let the admin relay it.
+      setTempPwResult({ password: res.password, expiresAt: res.expiresAt });
+      setCopied(false);
+    } catch (err) {
+      setIssueError(err instanceof Error ? err.message : t('superadmin.users.tempPwError'));
+    } finally {
+      setIssuing(false);
+    }
+  };
+
+  const handleCopyTempPw = async () => {
+    if (!tempPwResult) return;
+    try {
+      await navigator.clipboard.writeText(tempPwResult.password);
+      setCopied(true);
+    } catch {
+      // Clipboard unavailable — the code is selectable text anyway.
+    }
+  };
+
   return (
     <div className="min-h-screen">
       <div className="mx-auto max-w-7xl">
         {/* Back Button */}
-        <div className="mb-4">
+        <div className="my-4">
           <Button variant="ghost" onClick={() => router.back()} className="gap-2">
             <ArrowLeft className="w-4 h-4" />
             {t('superadmin.users.back')}
@@ -90,7 +142,7 @@ export default function UserProfile360Page() {
         <div className="sticky top-0 z-10 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 mb-4 bg-(--background)/95 backdrop-blur supports-[backdrop-filter]:bg-(--background)/60 border-b border-(--border)">
           <Card className="mb-6" style={{ background: 'var(--card)' }}>
             <CardContent className="p-6">
-              <div className="flex items-start justify-between">
+              <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="flex items-start gap-4">
                   <Avatar className="w-20 h-20">
                     <AvatarImage src={user.avatarUrl} />
@@ -167,14 +219,24 @@ export default function UserProfile360Page() {
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 data-[state=active]:bg-(--brand) data-[state=active]:text-white">
+                <div className="flex items-center flex-wrap gap-2 data-[state=active]:bg-(--brand) data-[state=active]:text-white">
                   <Button variant="outline" size="sm" className="gap-2">
                     <MessageSquare className="w-4 h-4" />
                     {t('superadmin.users.writeMessage')}
                   </Button>
-                  <Button variant="outline" size="sm" className="gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    disabled={user.role === 'superadmin'}
+                    onClick={() => {
+                      setIssueError(null);
+                      setTempPwResult(null);
+                      setPwDialogOpen(true);
+                    }}
+                  >
                     <Key className="w-4 h-4" />
-                    {t('superadmin.users.impersonate')}
+                    {t('superadmin.users.issueTempPassword')}
                   </Button>
                   <Button
                     variant="outline"
@@ -722,6 +784,115 @@ export default function UserProfile360Page() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Temporary password dialog — confirm first, then show the plaintext
+            exactly once with copy + expiry info. */}
+        <Dialog
+          open={pwDialogOpen}
+          onOpenChange={(open) => {
+            if (!issuing) {
+              setPwDialogOpen(open);
+              if (!open) setTempPwResult(null);
+            }
+          }}
+        >
+          <DialogContent className="sm:max-w-md">
+            {!tempPwResult ? (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <AlertTriangle className="w-5 h-5 text-(--warning-text)" />
+                    {t('superadmin.users.issueConfirmTitle')}
+                  </DialogTitle>
+                  <DialogDescription>{t('superadmin.users.issueConfirmDesc')}</DialogDescription>
+                </DialogHeader>
+                <div className="py-2">
+                  <label className="block text-sm font-medium mb-1.5">
+                    {t('superadmin.users.validityLabel')}
+                  </label>
+                  <select
+                    value={ttlHours}
+                    onChange={(e) => setTtlHours(Number(e.target.value))}
+                    className="w-full rounded-lg border bg-transparent px-3 py-2 text-sm"
+                    style={{ borderColor: 'var(--border)' }}
+                    disabled={issuing}
+                  >
+                    {TEMP_PASSWORD_TTL_OPTIONS.map((h) => (
+                      <option key={h} value={h}>
+                        {t('superadmin.users.validityHours', { count: h })}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {issueError && <p className="text-sm text-(--danger-text)">{issueError}</p>}
+                <DialogFooter className="gap-2 sm:gap-0">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={issuing}
+                    onClick={() => setPwDialogOpen(false)}
+                  >
+                    {t('common.cancel')}
+                  </Button>
+                  <Button size="sm" disabled={issuing} onClick={handleIssueTempPassword}>
+                    {issuing
+                      ? t('superadmin.users.issuing')
+                      : t('superadmin.users.issueConfirmAction')}
+                  </Button>
+                </DialogFooter>
+              </>
+            ) : (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Key className="w-5 h-5 text-primary" />
+                    {t('superadmin.users.tempPwTitle')}
+                  </DialogTitle>
+                  <DialogDescription>{t('superadmin.users.tempPwDesc')}</DialogDescription>
+                </DialogHeader>
+                <div
+                  className="my-2 flex items-center gap-2 rounded-xl border p-3"
+                  style={{ background: 'var(--background-subtle)', borderColor: 'var(--border)' }}
+                >
+                  <code className="min-w-0 flex-1 select-all break-all text-center font-mono text-lg font-bold tracking-wider">
+                    {tempPwResult.password}
+                  </code>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleCopyTempPw}
+                    className="shrink-0 gap-1.5"
+                  >
+                    {copied ? (
+                      <Check className="w-4 h-4 text-(--success-text)" />
+                    ) : (
+                      <Copy className="w-4 h-4" />
+                    )}
+                    {copied ? t('superadmin.users.copied') : t('superadmin.users.copy')}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {t('superadmin.users.validUntil', {
+                    date: new Date(tempPwResult.expiresAt).toLocaleString(
+                      i18n.language === 'ru' ? 'ru-RU' : i18n.language === 'hy' ? 'hy-AM' : 'en-US',
+                    ),
+                  })}
+                </p>
+                <DialogFooter>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setPwDialogOpen(false);
+                      setTempPwResult(null);
+                    }}
+                  >
+                    {t('common.done')}
+                  </Button>
+                </DialogFooter>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

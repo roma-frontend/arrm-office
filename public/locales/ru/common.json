@@ -236,6 +236,7 @@
     "backups": "Резервные копии",
     "superadmin": "Суперадмин",
     "superadminHub": "Хаб суперадмина",
+    "users360": "Пользователи 360",
     "featureToggles": "Переключатели функций",
     "database": "Обозреватель данных",
     "sessions": "Активные сессии",
@@ -1494,7 +1495,8 @@
       "leaveCancellationRejected": "{{reviewerName}} отклонил вашу отмену $t(leaveTypes.{{type}}) ({{start}} → {{end}}).",
       "leaveCancellationRejectedWithReason": "{{reviewerName}} отклонил вашу отмену $t(leaveTypes.{{type}}) ({{start}} → {{end}}). Причина: {{comment}}",
       "roomMeetingReminder": "Начало в {{startTime}}, {{roomName}}",
-      "roomMeetingReminderWithPlatform": "Начало в {{startTime}}, {{roomName}} · {{platform}}"
+      "roomMeetingReminderWithPlatform": "Начало в {{startTime}}, {{roomName}} · {{platform}}",
+      "tempPasswordLogin": "{{name}} ({{email}}) вошёл(ла) с выданным суперадмином временным паролем."
     },
     "titles": {
       "movementFormReady": "📄 Акт перемещения готов к подписанию",
@@ -1611,7 +1613,8 @@
       "leaveCancelRequested": "Запрошена отмена отпуска",
       "leaveCancellationApproved": "Отмена одобрена",
       "leaveCancellationRejected": "Отмена отклонена",
-      "roomMeetingReminder": "Скоро: {{bookingTitle}}"
+      "roomMeetingReminder": "Скоро: {{bookingTitle}}",
+      "tempPasswordLogin": "🔑 Вход с временным паролем"
     }
   },
   "aiChat": {

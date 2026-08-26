@@ -9,6 +9,12 @@ export {
   endImpersonationWithToken,
 } from './impersonation';
 export { generateAccessToken, revokeAccessToken, listAccessTokens } from './accessTokens';
+export {
+  issueTempPassword,
+  clearMustChangePassword,
+  listPendingTempPasswords,
+  generateTempPassword,
+} from './tempPasswords';
 export { globalSearch, quickSearch, searchUsersByPrefix } from './search';
 export {
   getFreezeState,

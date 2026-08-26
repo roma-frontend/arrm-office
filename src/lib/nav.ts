@@ -407,6 +407,11 @@ export const navItems: NavEntry[] = [
         icon: LayoutDashboard,
       },
       {
+        href: '/superadmin/users',
+        labelKey: 'nav.users360',
+        icon: Users,
+      },
+      {
         href: '/superadmin/control',
         labelKey: 'nav.controlCenter',
         icon: Gauge,

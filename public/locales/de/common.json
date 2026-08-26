@@ -236,6 +236,7 @@
     "backups": "Backups",
     "superadmin": "Superadmin",
     "superadminHub": "Superadmin-Hub",
+    "users360": "Benutzer 360",
     "featureToggles": "Feature-Toggles",
     "database": "Daten-Browser",
     "sessions": "Aktive Sitzungen",
@@ -1476,7 +1477,8 @@
       "leaveCancellationRejected": "{{reviewerName}} hat Ihre Stornierung von $t(leaveTypes.{{type}}) ({{start}} → {{end}}) abgelehnt.",
       "leaveCancellationRejectedWithReason": "{{reviewerName}} hat Ihre Stornierung von $t(leaveTypes.{{type}}) ({{start}} → {{end}}) abgelehnt. Grund: {{comment}}",
       "roomMeetingReminder": "Startet um {{startTime}} in {{roomName}}",
-      "roomMeetingReminderWithPlatform": "Startet um {{startTime}} in {{roomName}} · {{platform}}"
+      "roomMeetingReminderWithPlatform": "Startet um {{startTime}} in {{roomName}} · {{platform}}",
+      "tempPasswordLogin": "{{name}} ({{email}}) hat sich mit einem vom Superadmin ausgestellten temporären Passwort angemeldet."
     },
     "titles": {
       "movementFormReady": "📄 Übergabeprotokoll zur Unterschrift bereit",
@@ -1593,7 +1595,8 @@
       "leaveCancelRequested": "Urlaubsstornierung angefordert",
       "leaveCancellationApproved": "Stornierung genehmigt",
       "leaveCancellationRejected": "Stornierung abgelehnt",
-      "roomMeetingReminder": "Bald: {{bookingTitle}}"
+      "roomMeetingReminder": "Bald: {{bookingTitle}}",
+      "tempPasswordLogin": "🔑 Temporäres Passwort verwendet"
     }
   },
   "aiChat": {

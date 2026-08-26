@@ -236,6 +236,7 @@
     "backups": "Պահուստային պատճեններ",
     "superadmin": "Սուպերադմին",
     "superadminHub": "Սուպերադմինի հաբ",
+    "users360": "Օգտատերեր 360",
     "featureToggles": "Ֆունկցիաների անջատիչներ",
     "database": "Տվյալների զննիչ",
     "sessions": "Ակտիվ սեսիաներ",
@@ -1476,7 +1477,8 @@
       "leaveCancellationRejected": "{{reviewerName}}-ը մերժել է ձեր $t(leaveTypes.{{type}}) ({{start}} → {{end}}) չեղարկումը։",
       "leaveCancellationRejectedWithReason": "{{reviewerName}}-ը մերժել է ձեր $t(leaveTypes.{{type}}) ({{start}} → {{end}}) չեղարկումը։ Պատճառը՝ {{comment}}",
       "roomMeetingReminder": "Սկսվում է {{startTime}}-ին, {{roomName}}",
-      "roomMeetingReminderWithPlatform": "Սկսվում է {{startTime}}-ին, {{roomName}} · {{platform}}"
+      "roomMeetingReminderWithPlatform": "Սկսվում է {{startTime}}-ին, {{roomName}} · {{platform}}",
+      "tempPasswordLogin": "{{name}} ({{email}}) մուտք է գործել սուպերադմինի տրամադրած ժամանակավոր գաղտնաբառով:"
     },
     "titles": {
       "movementFormReady": "📄 Տեղափոխման ակտը պատրաստ է ստորագրման",
@@ -1593,7 +1595,8 @@
       "leaveCancelRequested": "Արձակուրդի չեղարկում է պահանջվել",
       "leaveCancellationApproved": "Չեղարկումը հաստատված է",
       "leaveCancellationRejected": "Չեղարկումը մերժված է",
-      "roomMeetingReminder": "Շուտով՝ {{bookingTitle}}"
+      "roomMeetingReminder": "Շուտով՝ {{bookingTitle}}",
+      "tempPasswordLogin": "🔑 Մուտք ժամանակավոր գաղտնաբառով"
     }
   },
   "aiChat": {
