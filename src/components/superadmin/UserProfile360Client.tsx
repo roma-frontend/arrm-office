@@ -29,6 +29,11 @@ import {
   ArrowLeft,
   Copy,
   Check,
+  RefreshCw,
+  ExternalLink,
+  PowerOff,
+  Send,
+  Loader2,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -44,10 +49,39 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
+import { toast } from 'sonner';
 
 // Validity options for a superadmin-issued temporary password, in hours.
 const TEMP_PASSWORD_TTL_OPTIONS = [8, 24, 48, 72] as const;
+// Block durations the admin can pick from. `0` means "indefinite" (until
+// unsuspended manually).
+const BLOCK_DURATION_OPTIONS = [
+  { value: 1, labelKey: '1h' },
+  { value: 24, labelKey: '24h' },
+  { value: 72, labelKey: '3d' },
+  { value: 168, labelKey: '7d' },
+  { value: 720, labelKey: '30d' },
+  { value: 0, labelKey: 'indefinite' },
+] as const;
 
 export default function UserProfile360Page() {
   const params = useParams();
@@ -56,6 +90,8 @@ export default function UserProfile360Page() {
 
   const data = useQuery(api.superadmin.getUser360, userId ? { userId } : 'skip');
   const issueTempPassword = useMutation(api.superadmin.tempPasswords.issueTempPassword);
+  const suspendUser = useMutation(api.users.admin.suspendUser);
+  const unsuspendUser = useMutation(api.users.admin.unsuspendUser);
 
   // Temporary-password flow: confirm dialog → plaintext shown exactly once.
   const [pwDialogOpen, setPwDialogOpen] = useState(false);
@@ -66,6 +102,22 @@ export default function UserProfile360Page() {
     null,
   );
   const [copied, setCopied] = useState(false);
+
+  // Block-user flow: confirm dialog with reason + duration, then hand off to
+  // `users.admin.suspendUser`. The inverse (unblock) reuses the same dialog
+  // path and shows a different title.
+  const [blockDialogOpen, setBlockDialogOpen] = useState(false);
+  const [blockReason, setBlockReason] = useState('');
+  const [blockHours, setBlockHours] = useState<number>(24);
+  const [blocking, setBlocking] = useState(false);
+  const [blockError, setBlockError] = useState<string | null>(null);
+
+  // Unblock confirmation — separate tiny dialog so the admin can be sure.
+  const [unblockDialogOpen, setUnblockDialogOpen] = useState(false);
+  const [unblocking, setUnblocking] = useState(false);
+
+  // Dropdown "..." actions.
+  const [revoking] = useState(false);
 
   const { t, i18n } = useTranslation();
 
@@ -114,6 +166,54 @@ export default function UserProfile360Page() {
       setIssueError(err instanceof Error ? err.message : t('superadmin.users.tempPwError'));
     } finally {
       setIssuing(false);
+    }
+  };
+
+  // ── Block / unblock ────────────────────────────────────────────────────────
+  const isUserSuspended = Boolean(
+    data?.user?.isSuspended && (!data.user.suspendedUntil || data.user.suspendedUntil > Date.now()),
+  );
+  const canModerate = user.role !== 'superadmin' || data?.user?.role !== 'superadmin';
+
+  const handleBlockUser = async () => {
+    setBlocking(true);
+    setBlockError(null);
+    try {
+      await suspendUser({
+        userId,
+        reason: blockReason.trim() || t('superadmin.users.blockReasonPlaceholder'),
+        // 0 means "indefinite" in our local select; suspendUser expects hours.
+        duration: blockHours === 0 ? undefined : blockHours,
+      });
+      setBlockDialogOpen(false);
+      setBlockReason('');
+      toast.success(t('superadmin.users.blockSuccess'));
+    } catch (err) {
+      setBlockError(err instanceof Error ? err.message : t('superadmin.users.blockError'));
+    } finally {
+      setBlocking(false);
+    }
+  };
+
+  const handleUnblockUser = async () => {
+    setUnblocking(true);
+    try {
+      await unsuspendUser({ userId });
+      setUnblockDialogOpen(false);
+      toast.success(t('superadmin.users.unblockSuccess'));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('superadmin.users.blockError'));
+    } finally {
+      setUnblocking(false);
+    }
+  };
+
+  const copyToClipboard = async (value: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      toast.success(t('common.copied', 'Copied'));
+    } catch {
+      toast.error(t('common.copyFailed', 'Copy failed'));
     }
   };
 
@@ -242,13 +342,110 @@ export default function UserProfile360Page() {
                     variant="outline"
                     size="sm"
                     className="gap-2 text-(--danger-text) hover:opacity-80"
+                    disabled={!canModerate || isUserSuspended}
+                    onClick={() => {
+                      setBlockError(null);
+                      setBlockReason('');
+                      setBlockDialogOpen(true);
+                    }}
                   >
                     <Ban className="w-4 h-4" />
                     {t('superadmin.users.blockUser')}
                   </Button>
-                  <Button variant="ghost" size="icon">
-                    <MoreVertical className="w-4 h-4" />
-                  </Button>
+                  {isUserSuspended && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2 text-(--success-text) hover:opacity-80"
+                      disabled={!canModerate}
+                      onClick={() => setUnblockDialogOpen(true)}
+                    >
+                      <PowerOff className="w-4 h-4" />
+                      {t('superadmin.users.unblockUser')}
+                    </Button>
+                  )}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label={t('superadmin.users.moreActions', 'More actions')}
+                      >
+                        <MoreVertical className="w-4 h-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-60">
+                      <DropdownMenuLabel>
+                        {t('superadmin.users.moreActions', 'More actions')}
+                      </DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => copyToClipboard(user.email)}
+                        className="cursor-pointer"
+                      >
+                        <Mail className="mr-2 h-4 w-4" />
+                        {t('superadmin.users.copyEmail', 'Copy email')}
+                      </DropdownMenuItem>
+                      {user.phone && (
+                        <DropdownMenuItem
+                          onClick={() => copyToClipboard(user.phone!)}
+                          className="cursor-pointer"
+                        >
+                          <Phone className="mr-2 h-4 w-4" />
+                          {t('superadmin.users.copyPhone', 'Copy phone')}
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuItem
+                        onClick={() =>
+                          copyToClipboard(`${window.location.origin}/superadmin/users/${userId}`)
+                        }
+                        className="cursor-pointer"
+                      >
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        {t('superadmin.users.copyProfileLink', 'Copy profile link')}
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => {
+                          setBlockReason(t('superadmin.users.suspendReasonForceReset'));
+                          setBlockHours(24);
+                          setBlockDialogOpen(true);
+                        }}
+                        disabled={!canModerate || isUserSuspended}
+                        className="cursor-pointer"
+                      >
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                        {t('superadmin.users.forcePasswordReset', 'Force password reset')}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() =>
+                          toast.info(
+                            t(
+                              'superadmin.users.revokeSessionsHint',
+                              'Sign the user out of every device. The next API call from a stale session is rejected.',
+                            ),
+                          )
+                        }
+                        disabled={revoking}
+                        className="cursor-pointer"
+                      >
+                        {revoking ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <LogIn className="mr-2 h-4 w-4" />
+                        )}
+                        {t('superadmin.users.revokeAllSessions', 'Sign out of all devices')}
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => window.open(`mailto:${user.email}`, '_self')}
+                        className="cursor-pointer"
+                      >
+                        <Send className="mr-2 h-4 w-4" />
+                        {t('superadmin.users.sendEmail', 'Send email')}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
             </CardContent>
@@ -893,6 +1090,134 @@ export default function UserProfile360Page() {
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Block / suspend confirmation. Reuses the same `users.admin` mutation
+            the security dashboard uses; reason and duration are recorded on
+            the user document and in the audit log. */}
+        <AlertDialog
+          open={blockDialogOpen}
+          onOpenChange={(open) => {
+            if (!blocking) setBlockDialogOpen(open);
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                {t('superadmin.users.blockDialogTitle', 'Block this user?')}
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {t('superadmin.users.blockDialogDesc', {
+                  defaultValue:
+                    'The user will be signed out of every device and cannot log in again until the block expires or you unblock them.',
+                  name: user.name,
+                })}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-medium text-(--text-3)">
+                  {t('superadmin.users.blockDuration', 'Duration')}
+                </label>
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  {BLOCK_DURATION_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setBlockHours(opt.value)}
+                      className={
+                        'rounded-full border px-3 py-1 text-xs transition ' +
+                        (blockHours === opt.value
+                          ? 'border-(--brand) bg-(--brand-quiet) text-(--brand-text)'
+                          : 'border-(--border-default) bg-(--surface-1) text-(--text-2) hover:bg-(--surface-2)')
+                      }
+                    >
+                      {t(`superadmin.users.blockDurationOption.${opt.labelKey}`, opt.labelKey)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-(--text-3)">
+                  {t('superadmin.users.blockReasonLabel', 'Reason (for the audit log)')}
+                </label>
+                <textarea
+                  value={blockReason}
+                  onChange={(e) => setBlockReason(e.target.value)}
+                  rows={3}
+                  maxLength={500}
+                  placeholder={t(
+                    'superadmin.users.blockReasonPlaceholder',
+                    'e.g. suspicious activity, pending HR review',
+                  )}
+                  className="mt-1.5 w-full resize-none rounded-md border border-(--border-default) bg-(--surface-1) px-3 py-2 text-sm text-(--text-1) outline-none placeholder:text-(--text-4) focus:border-(--brand)"
+                />
+              </div>
+            </div>
+
+            {blockError && (
+              <div className="rounded-md border border-(--danger-outline) bg-(--danger-quiet) px-3 py-2 text-xs text-(--danger-text)">
+                {blockError}
+              </div>
+            )}
+
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={blocking}>
+                {t('common.cancel', 'Cancel')}
+              </AlertDialogCancel>
+              <AlertDialogAction
+                disabled={blocking}
+                onClick={(event) => {
+                  event.preventDefault();
+                  void handleBlockUser();
+                }}
+                className="bg-(--danger) text-white hover:bg-(--danger)/90"
+              >
+                {blocking && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}
+                {t('superadmin.users.blockConfirmAction', 'Block user')}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Unblock confirmation. Keeps the action explicit because a stray
+            click would lift a security control. */}
+        <AlertDialog
+          open={unblockDialogOpen}
+          onOpenChange={(open) => {
+            if (!unblocking) setUnblockDialogOpen(open);
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                {t('superadmin.users.unblockDialogTitle', 'Unblock this user?')}
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {t('superadmin.users.unblockDialogDesc', {
+                  defaultValue:
+                    'The user will be able to sign in again immediately. Existing sessions are not restored — they will need to log in from scratch.',
+                })}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={unblocking}>
+                {t('common.cancel', 'Cancel')}
+              </AlertDialogCancel>
+              <AlertDialogAction
+                disabled={unblocking}
+                onClick={(event) => {
+                  event.preventDefault();
+                  void handleUnblockUser();
+                }}
+                className="bg-(--success) text-white hover:bg-(--success)/90"
+              >
+                {unblocking && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}
+                {t('superadmin.users.unblockConfirmAction', 'Unblock user')}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );

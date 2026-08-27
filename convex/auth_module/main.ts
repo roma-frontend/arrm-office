@@ -448,6 +448,13 @@ export const login = mutation({
           'Your account is pending approval from your organization administrator. Please wait.',
         );
       }
+      // Admin-initiated block. The user (or their host) lifted the block by
+      // running `unsuspendUser`; mirror that with a polite message here.
+      if (user.isSuspended && (!user.suspendedUntil || user.suspendedUntil > Date.now())) {
+        throw new Error(
+          'Your account is temporarily suspended. Please contact your organization administrator.',
+        );
+      }
 
       // ═══════════════════════════════════════════════════════════════
       // ACCOUNT LOCKOUT — block after 5 failed password attempts for 15 min
@@ -877,6 +884,8 @@ export const loginWebauthn = mutation({
     if (!user) throw new Error('User not found');
     if (!user.isActive) throw new Error('Account is deactivated');
     if (!user.isApproved) throw new Error('Account pending approval');
+    if (user.isSuspended && (!user.suspendedUntil || user.suspendedUntil > Date.now()))
+      throw new Error('Account is temporarily suspended. Contact your administrator.');
     if (!user.organizationId) throw new Error('User has no organization');
 
     const org = await ctx.db.get(user.organizationId);
@@ -931,6 +940,11 @@ export const googleOAuthLogin = mutation({
         throw new Error('Your account has been deactivated. Contact your administrator.');
       if (!user.isApproved)
         throw new Error('Your account is pending approval from your organization administrator.');
+      if (user.isSuspended && (!user.suspendedUntil || user.suspendedUntil > Date.now())) {
+        throw new Error(
+          'Your account is temporarily suspended. Please contact your organization administrator.',
+        );
+      }
       if (!user.organizationId) throw new Error('User has no organization');
 
       const org = await ctx.db.get(user.organizationId);

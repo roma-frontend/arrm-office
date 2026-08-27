@@ -136,6 +136,12 @@ export const suspendUser = mutation({
       suspendedReason: reason,
       suspendedBy: adminId,
       suspendedAt: Date.now(),
+      // Immediately revoke any live session so a blocked user cannot keep
+      // using the app until their next API call rejects them. Cookies carry
+      // a sessionToken that we null out, and a fresh login is required even
+      // after the block is lifted.
+      sessionToken: undefined,
+      sessionExpiry: undefined,
     });
 
     // Create audit log
@@ -354,6 +360,9 @@ export const secureSuspendUser = mutation({
       suspendedReason: reason,
       suspendedBy: caller._id,
       suspendedAt: Date.now(),
+      // Revoke any live session so the user is forced to re-authenticate.
+      sessionToken: undefined,
+      sessionExpiry: undefined,
     });
 
     await ctx.db.insert('auditLogs', {
