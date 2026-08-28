@@ -27,12 +27,12 @@ const MobileMenu = dynamic(() => import('./MobileMenu'), {
   loading: () => null,
 });
 
-const PlatformMegaMenu = dynamic(() => import('./PlatformMegaMenu'), {
+const PlatformMegaMenu = dynamic(() => import('./PeopleForceMegaMenu'), {
   ssr: false,
   loading: () => null,
 });
 
-const ResourcesMenu = dynamic(() => import('./PlatformMegaMenu').then((m) => m.ResourcesMenu), {
+const ResourcesMenu = dynamic(() => import('./SolutionMenus').then((m) => m.ResourcesMenu), {
   ssr: false,
   loading: () => null,
 });

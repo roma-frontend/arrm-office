@@ -41,7 +41,10 @@ jest.mock('../../convex/_generated/api', () => ({
       queries: { getUserById: { _name: 'getUserById' } },
       mutations: { deleteUser: { _name: 'deleteUser' } },
     },
-    employeeProfiles: { getEmployeeProfile: { _name: 'getEmployeeProfile' } },
+    employeeProfiles: {
+      getEmployeeProfile: { _name: 'getEmployeeProfile' },
+      getSalary: { _name: 'getSalary' },
+    },
     // Hiring packet panel (rendered inside the profile). Left unstubbed in
     // `queryResults`, so `useQuery` returns undefined and the panel shows its
     // loading state instead of interfering with these assertions.
@@ -63,6 +66,7 @@ jest.mock('../../convex/_generated/api', () => ({
     },
     timeTracking: { getMonthlyStats: { _name: 'getMonthlyStats' } },
     settlement: { getSettlementPreview: { _name: 'getSettlementPreview' } },
+    compensation: { getCompensationHistory: { _name: 'getCompensationHistory' } },
     probation: {
       getProbationForEmployee: { _name: 'getProbationForEmployee' },
       startProbation: { _name: 'probationStart' },
@@ -169,6 +173,10 @@ jest.mock('lucide-react', () => {
     CalendarClock: MockIcon,
     CheckCircle2: MockIcon,
     XCircle: MockIcon,
+    DollarSign: MockIcon,
+    TrendingUp: MockIcon,
+    TrendingDown: MockIcon,
+    Minus: MockIcon,
   };
 });
 

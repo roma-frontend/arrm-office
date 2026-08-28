@@ -337,9 +337,14 @@
       "overview": "Übersicht",
       "profile": "Profil",
       "performance": "Leistung",
-      "documents": "Dokumente"
+      "documents": "Dokumente",
+      "salary": "Gehalt"
     },
-    "noDocuments": "Noch keine Dokumente hochgeladen"
+    "noDocuments": "Noch keine Dokumente hochgeladen",
+    "currentSalary": "Aktuelles Gehalt",
+    "compensationHistory": "Vergütungshistorie",
+    "noSalaryData": "Keine Gehaltsinformationen verfügbar",
+    "noCompensationRecords": "Noch keine Vergütungseinträge vorhanden"
   },
   "profile": {
     "currentLanguage": "Aktuelle Sprache",

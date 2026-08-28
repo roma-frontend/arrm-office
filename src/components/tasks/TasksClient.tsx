@@ -55,7 +55,6 @@ import {
   Clock,
   FileText,
   MessageSquare,
-  MoreVertical,
   Pencil,
   Search as SearchIcon,
   Tag,
@@ -1125,6 +1124,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
   const taskDraft = useDraftResume('create-task', !showCreate);
   /** Task shown in the slide-over, with its title for the panel header. */
   const [sheetTask, setSheetTask] = useState<{ id: Id<'tasks'>; title: string } | null>(null);
+  const [sheetInitialEditing, setSheetInitialEditing] = useState(false);
   /** Recurring series being edited — opens the CreateTaskWizard in edit mode. */
   const [editingRecurring, setEditingRecurring] = useState<any | null>(null);
   /** Inline rename: set to a task id to show a rename input, null to hide. */
@@ -1226,6 +1226,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
     if (task._type === 'recurring') {
       setEditingRecurring(task);
     } else {
+      setSheetInitialEditing(true);
       setSheetTask({ id: task._id as Id<'tasks'>, title: task.title });
     }
   }, []);
@@ -2658,10 +2659,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
                                   <span className="text-sm text-(--text-primary) truncate font-medium">
                                     {localizedTaskTitle(t, task)}
                                   </span>
-                                  {/* Hover context menu trigger */}
-                                  <span className="ml-auto opacity-0 group-hover/task:opacity-100 transition-opacity shrink-0">
-                                    <MoreVertical className="h-4 w-4 text-(--text-muted)" />
-                                  </span>
+
                                 </div>
                                 {/* Cells, in the same order as the header */}
                                 {listColumnOrder.map(([key]) => {
@@ -2780,7 +2778,8 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
       <TaskSheet
         taskId={sheetTask?.id ?? null}
         taskTitle={sheetTask?.title}
-        onClose={() => setSheetTask(null)}
+        initialEditing={sheetInitialEditing}
+        onClose={() => { setSheetTask(null); setSheetInitialEditing(false); }}
       />
 
       {/* Recurring series detail + edit sheet */}

@@ -748,6 +748,44 @@ export const updatePayrollRecord = mutation({
 
     await ctx.db.patch(args.payrollRecordId, updates);
 
+    // ── Sync: payroll baseSalary change → update employeeProfiles ──
+    if (args.baseSalary !== undefined) {
+      const empProfile = await ctx.db
+        .query('employeeProfiles')
+        .withIndex('by_user', (q) => q.eq('userId', record.userId))
+        .first();
+
+      if (empProfile) {
+        const oldSalary = empProfile.baseSalary ?? 0;
+        const newSalary = args.baseSalary;
+        if (newSalary !== oldSalary && newSalary > 0) {
+          await ctx.db.patch(empProfile._id, {
+            baseSalary: newSalary,
+            salaryUpdatedAt: Date.now(),
+            updatedAt: Date.now(),
+          });
+
+          // Also create a compensation record for audit trail
+          await ctx.db.insert('compensationRecords', {
+            organizationId: record.organizationId!,
+            userId: record.userId,
+            type: newSalary > oldSalary ? 'raise' : 'adjustment',
+            amount: Math.abs(newSalary - oldSalary),
+            currency: record.currency ?? 'USD',
+            frequency: 'monthly',
+            effectiveFrom: Date.now(),
+            status: 'approved',
+            approvedBy: requesterId,
+            approvedAt: Date.now(),
+            notes: `Payroll base salary changed from ${oldSalary} to ${newSalary}`,
+            createdBy: requesterId,
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+          });
+        }
+      }
+    }
+
     if (record.payrollRunId) {
       await recomputeRunTotals(ctx, record.payrollRunId);
     }

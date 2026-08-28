@@ -3,15 +3,13 @@
 /**
  * TaskContextMenu — right-click context menu for task cards/rows.
  *
- * Uses Radix ContextMenu with the portal forced to document.body
- * so it always appears above overflow containers.
+ * Uses Radix ContextMenu. The trigger wraps children in a div that
+ * receives the ContextMenuTrigger ref (needed for asChild to work
+ * with function components that don't forwardRef).
  *
- * Also attaches a native capture-phase contextmenu listener on the
- * trigger to ensure Radix captures the event before dnd-kit's native
- * listeners can intercept it.
+ * Portal renders to document.body so it escapes overflow containers.
  */
 
-import { useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ContextMenu,
@@ -24,6 +22,7 @@ import {
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
 import { Eye, Pencil, Type, ArrowRight, Flag, Copy, Trash2, Pause, Play } from 'lucide-react';
+import type { ReactNode } from 'react';
 
 export interface ContextTask {
   _id: string;
@@ -36,7 +35,7 @@ export interface ContextTask {
 export interface TaskContextMenuProps {
   task: ContextTask;
   canManage: boolean;
-  children: React.ReactNode;
+  children: ReactNode;
   onOpen: (task: ContextTask) => void;
   onEdit: (task: ContextTask) => void;
   onRename?: (task: ContextTask) => void;
@@ -61,33 +60,6 @@ const PRIORITIES = [
   { key: 'high', color: 'bg-orange-500' },
   { key: 'urgent', color: 'bg-red-500' },
 ] as const;
-
-/**
- * A trigger wrapper that ensures the native contextmenu event is captured
- * in the capture phase BEFORE dnd-kit (or any other library) can intercept it.
- */
-function CtxTrigger({ children }: { children: React.ReactNode }) {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-
-    // Capture-phase listener: fires before any bubble-phase listeners
-    // from dnd-kit or other native addEventListener calls.
-    const handler = (e: MouseEvent) => {
-      e.stopPropagation();
-    };
-    el.addEventListener('contextmenu', handler, { capture: true, once: false });
-    return () => el.removeEventListener('contextmenu', handler, { capture: true });
-  }, []);
-
-  return (
-    <ContextMenuTrigger asChild>
-      <div ref={ref}>{children}</div>
-    </ContextMenuTrigger>
-  );
-}
 
 export function TaskContextMenu({
   task,
@@ -114,12 +86,10 @@ export function TaskContextMenu({
 
   return (
     <ContextMenu>
-      <CtxTrigger>{children}</CtxTrigger>
-      <ContextMenuContent
-        className="w-56 z-[9999]"
-        /* Force portal to document.body so it escapes any overflow containers */
-        container={typeof document !== 'undefined' ? document.body : undefined}
-      >
+      <ContextMenuTrigger asChild>
+        <div className="contents">{children}</div>
+      </ContextMenuTrigger>
+      <ContextMenuContent className="w-56 z-[9999]">
         <ContextMenuItem onClick={() => onOpen(task)} className="gap-2">
           <Eye className="h-4 w-4" />
           {t('tasksClient.open', 'Open')}
@@ -132,8 +102,8 @@ export function TaskContextMenu({
           </ContextMenuItem>
         )}
 
-        {canManage && onRename && !isRecurring && (
-          <ContextMenuItem onClick={() => onRename(task)} className="gap-2">
+        {canManage && !isRecurring && (
+          <ContextMenuItem onClick={() => onEdit(task)} className="gap-2">
             <Type className="h-4 w-4" />
             {t('tasksClient.rename', 'Rename')}
           </ContextMenuItem>
@@ -181,8 +151,7 @@ export function TaskContextMenu({
                   <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${p.color}`} />
                   {priorityLabel(p.key)}
                   {task.priority === p.key && <span className="ml-auto text-xs opacity-50">✓</span>}
-                </ContextMenuItem>
-              ))}
+                </ContextMenuItem>              ))}
             </ContextMenuSubContent>
           </ContextMenuSub>
         )}

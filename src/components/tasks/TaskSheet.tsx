@@ -49,16 +49,20 @@ export interface TaskSheetProps {
   taskTitle?: string;
   /** Open the edit form in a sheet instead of navigating to the edit page. */
   onEdit?: (taskId: Id<'tasks'>) => void;
+  /** Start in edit mode immediately instead of view mode. */
+  initialEditing?: boolean;
 }
 
-export function TaskSheet({ taskId, onClose, taskTitle }: TaskSheetProps) {
+export function TaskSheet({ taskId, onClose, taskTitle, initialEditing }: TaskSheetProps) {
   const { t } = useTranslation();
-  const [editingId, setEditingId] = useState<Id<'tasks'> | null>(null);
+  const [editingId, setEditingId] = useState<Id<'tasks'> | null>(
+    initialEditing && taskId ? taskId : null,
+  );
 
   // Reset edit mode when the task changes or the sheet closes.
   useEffect(() => {
-    setEditingId(null);
-  }, [taskId]);
+    setEditingId(initialEditing && taskId ? taskId : null);
+  }, [taskId, initialEditing]);
 
   const handleEdit = useCallback((id: Id<'tasks'>) => {
     setEditingId(id);

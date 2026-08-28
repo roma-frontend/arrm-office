@@ -197,6 +197,8 @@
         "recognition": "Anerkennung & Prämien",
         "ats": "Recruiting (ATS)",
         "onboarding": "On-/Offboarding",
+        "learning": "Schulungen & Kurse",
+        "rooms": "Raumbuchung",
         "surveys": "Umfragen & Engagement",
         "ai": "KI-HR-Assistent",
         "payroll": "Lohnabrechnung & Steuern",
@@ -217,8 +219,63 @@
         "company": "Unternehmen",
         "items": {
           "story": "So funktioniert's",
-          "privacy": "Datenschutz"
+          "privacy": "Datenschutz",
+          "features": "Funktionen",
+          "testimonials": "Referenzen",
+          "faq": "Häufig gestellte Fragen",
+          "careers": "Karriere",
+          "contact": "Kontakt"
+        },
+        "descs": {
+          "story": "Unsere Geschichte",
+          "features": "Was Strata bietet",
+          "testimonials": "Was unsere Kunden sagen",
+          "faq": "Antworten auf Ihre Fragen",
+          "careers": "Werden Sie Teil unseres Teams",
+          "contact": "Kontaktieren Sie uns"
         }
+      },
+      "desc": {
+        "directory": "Ihre Mitarbeiter, zentralisiert.",
+        "orgchart": "Organisationsstruktur.",
+        "documents": "Dokumente und Richtlinien.",
+        "esign": "Elektronische Signaturen (imID).",
+        "leave": "Urlaubsverwaltung.",
+        "attendance": "Biometrische Anwesenheit.",
+        "tasks": "Aufgaben und Projekte.",
+        "calendar": "Kalender und Outlook.",
+        "rooms": "Raumbuchung.",
+        "okr": "OKR und Ziele.",
+        "strategyMaps": "Strategiekarten.",
+        "performance": "Leistungsbewertung.",
+        "recognition": "Anerkennung und Prämien.",
+        "ats": "Rekrutierung (ATS).",
+        "onboarding": "On/Offboarding.",
+        "learning": "Schulungen und Kurse.",
+        "surveys": "Umfragen und Engagement.",
+        "payroll": "Gehalt und Steuern.",
+        "compensation": "Vergütungsgrades.",
+        "expenses": "Ausgabenverwaltung.",
+        "reports": "Benutzerdefinierte Berichte.",
+        "analytics": "HR-Analytik.",
+        "compliance": "Compliance-Center.",
+        "automation": "Prozessautomatisierung."
+      },
+      "featured": {
+        "employeeDirectory": "Mitarbeiterverzeichnis",
+        "timeOff": "Urlaubsverwaltung",
+        "okrTracking": "OKR-Verfolgung",
+        "recruitment": "Rekrutierung",
+        "payroll": "Gehalt",
+        "analytics": "Analytik",
+        "learnMore": "Mehr erfahren"
+      },
+      "explore": "Entdecken",
+      "bottom": {
+        "reporting": "Berichte und Analytik",
+        "integrations": "Integrationen",
+        "mobile": "Mobile App",
+        "trust": "Trust Hub"
       }
     },
     "personasEyebrow": "Für wen",
@@ -276,7 +333,8 @@
         "healthcare": "Gesundheitswesen",
         "logistics": "Logistik",
         "professional": "Dienstleistungen"
-      }
+      },
+      "desc": "Massgeschneidert für Ihr Team"
     },
     "whyMenu": {
       "title": "Warum Strata",

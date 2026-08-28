@@ -746,13 +746,30 @@ export const admitRegistration = action({
     }
 
     const { createHmac } = await import('node:crypto');
-    const secret = process.env.LIVEKIT_API_SECRET ?? process.env.CLERK_JWT_KEY ?? 'unknown';
+    // Bug-3 fix: refuse to mint a guest token if neither LiveKit's signing
+    // key nor the Clerk JWT secret is set, instead of silently using the
+    // literal `'unknown'` which would make every admit/verify pair
+    // forgeable by anyone reading the source.
+    const secret = process.env.LIVEKIT_API_SECRET ?? process.env.CLERK_JWT_KEY;
+    if (!secret) {
+      throw new Error('Server is missing LIVEKIT_API_SECRET — cannot admit visitors');
+    }
     const expiresAt = Date.now() + 30 * 60 * 1000;
     const signature = createHmac('sha256', secret)
       .update(`${registrationId}:${expiresAt}`)
       .digest('hex')
       .slice(0, 40);
     const combinedToken = `${registrationId}:${expiresAt}:${signature}`;
+
+    // Bug-2 fix: write the admit timestamp + token back to the registration
+    // row so the visitor's lobby page can subscribe to *their* row and
+    // see the admit event live (instead of being stuck on a "thanks" page
+    // with no way to know they've been admitted).
+    await ctx.runMutation(api.meetings.markRegistrationAdmitted, {
+      registrationId,
+      admittedAt: Date.now(),
+      admitToken: combinedToken,
+    });
 
     return {
       success: true as const,

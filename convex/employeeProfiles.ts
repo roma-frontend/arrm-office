@@ -324,23 +324,52 @@ export const updateSalary = mutation({
     if (args.hourlyRate !== undefined) patch.hourlyRate = args.hourlyRate;
     if (args.salaryCurrency !== undefined) patch.salaryCurrency = args.salaryCurrency;
 
+    let profileId: Id<'employeeProfiles'>;
     if (existing) {
       await ctx.db.patch(existing._id, patch);
-      return existing._id;
+      profileId = existing._id;
+    } else {
+      profileId = await ctx.db.insert('employeeProfiles', {
+        userId: args.userId,
+        organizationId: args.organizationId,
+        baseSalary: args.baseSalary,
+        bonuses: args.bonuses,
+        overtimeHours: args.overtimeHours,
+        hourlyRate: args.hourlyRate,
+        salaryCurrency: args.salaryCurrency,
+        salaryUpdatedAt: now,
+        createdAt: now,
+        updatedAt: now,
+      });
     }
 
-    return await ctx.db.insert('employeeProfiles', {
-      userId: args.userId,
-      organizationId: args.organizationId,
-      baseSalary: args.baseSalary,
-      bonuses: args.bonuses,
-      overtimeHours: args.overtimeHours,
-      hourlyRate: args.hourlyRate,
-      salaryCurrency: args.salaryCurrency,
-      salaryUpdatedAt: now,
-      createdAt: now,
-      updatedAt: now,
-    });
+    // ── Sync: salary change → create compensation record ──
+    if (args.baseSalary !== undefined && args.organizationId) {
+      const oldSalary = existing?.baseSalary ?? 0;
+      const newSalary = args.baseSalary;
+      if (newSalary !== oldSalary && newSalary > 0) {
+        await ctx.db.insert('compensationRecords', {
+          organizationId: args.organizationId,
+          userId: args.userId,
+          type: newSalary > oldSalary ? 'raise' : 'adjustment',
+          amount: Math.abs(newSalary - oldSalary),
+          currency: args.salaryCurrency ?? existing?.salaryCurrency ?? 'USD',
+          frequency: 'monthly',
+          effectiveFrom: now,
+          status: 'approved',
+          approvedBy: args.userId,
+          approvedAt: now,
+          notes: oldSalary > 0
+            ? `Salary changed from ${oldSalary} to ${newSalary}`
+            : `Initial salary set to ${newSalary}`,
+          createdBy: args.userId,
+          createdAt: now,
+          updatedAt: now,
+        });
+      }
+    }
+
+    return profileId;
   },
 });
 

@@ -108,19 +108,26 @@ export const listCompensationRecords = query({
     if (type) records = records.filter((r) => r.type === type);
     if (status) records = records.filter((r) => r.status === status);
 
-    // Enrich with user names
+    // Enrich with user names and current salary
     const enriched = await Promise.all(
       records.map(async (record) => {
         const user = await ctx.db.get(record.userId);
         const userProfile = await getProfile(ctx, record.userId);
         const approvedBy = record.approvedBy ? await ctx.db.get(record.approvedBy) : null;
         const createdBy = await ctx.db.get(record.createdBy);
+        // Fetch current salary from employeeProfiles
+        const empProfile = await ctx.db
+          .query('employeeProfiles')
+          .withIndex('by_user', (q) => q.eq('userId', record.userId))
+          .first();
         return {
           ...record,
           userName: user?.name ?? 'Unknown',
           userAvatar: userProfile?.avatarUrl ?? user?.avatarUrl,
           approvedByName: approvedBy?.name,
           createdByName: createdBy?.name ?? 'Unknown',
+          currentBaseSalary: empProfile?.baseSalary ?? 0,
+          currentCurrency: empProfile?.salaryCurrency ?? record.currency,
         };
       }),
     );
@@ -414,6 +421,61 @@ export const approveCompensationRecord = mutation({
       approvedAt: now,
       updatedAt: now,
     });
+
+    // ── Sync: raise/base approval → update employeeProfiles.baseSalary ──
+    if (record.type === 'raise' || record.type === 'base') {
+      const profile = await ctx.db
+        .query('employeeProfiles')
+        .withIndex('by_user', (q) => q.eq('userId', record.userId))
+        .first();
+
+      if (profile) {
+        const newBaseSalary = record.type === 'raise'
+          ? (profile.baseSalary ?? 0) + record.amount
+          : record.amount;
+
+        await ctx.db.patch(profile._id, {
+          baseSalary: newBaseSalary,
+          salaryUpdatedAt: now,
+          updatedAt: now,
+        });
+      } else {
+        await ctx.db.insert('employeeProfiles', {
+          userId: record.userId,
+          organizationId: record.organizationId,
+          baseSalary: record.amount,
+          salaryUpdatedAt: now,
+          createdAt: now,
+          updatedAt: now,
+        });
+      }
+    }
+
+    // ── Sync: one-time bonus approval → add to employeeProfiles.bonuses ──
+    // This ensures the bonus is included in the next payroll run.
+    if (record.type === 'bonus' && record.frequency === 'one-time') {
+      const profile = await ctx.db
+        .query('employeeProfiles')
+        .withIndex('by_user', (q) => q.eq('userId', record.userId))
+        .first();
+
+      if (profile) {
+        await ctx.db.patch(profile._id, {
+          bonuses: (profile.bonuses ?? 0) + record.amount,
+          salaryUpdatedAt: now,
+          updatedAt: now,
+        });
+      } else {
+        await ctx.db.insert('employeeProfiles', {
+          userId: record.userId,
+          organizationId: record.organizationId,
+          bonuses: record.amount,
+          salaryUpdatedAt: now,
+          createdAt: now,
+          updatedAt: now,
+        });
+      }
+    }
   },
 });
 
@@ -798,6 +860,50 @@ export const approveReviewEntry = mutation({
       reviewedAt: now,
       updatedAt: now,
     });
+
+    // ── Sync: review entry approval → update employeeProfiles.baseSalary ──
+    if (entry.proposedSalary && entry.proposedSalary > 0) {
+      const profile = await ctx.db
+        .query('employeeProfiles')
+        .withIndex('by_user', (q) => q.eq('userId', entry.userId))
+        .first();
+
+      if (profile) {
+        await ctx.db.patch(profile._id, {
+          baseSalary: entry.proposedSalary,
+          salaryUpdatedAt: now,
+          updatedAt: now,
+        });
+      } else {
+        await ctx.db.insert('employeeProfiles', {
+          userId: entry.userId,
+          organizationId: entry.organizationId,
+          baseSalary: entry.proposedSalary,
+          salaryUpdatedAt: now,
+          createdAt: now,
+          updatedAt: now,
+        });
+      }
+
+      // Create a corresponding compensation record for the audit trail
+      const oldSalary = profile?.baseSalary ?? 0;
+      await ctx.db.insert('compensationRecords', {
+        organizationId: entry.organizationId,
+        userId: entry.userId,
+        type: entry.proposedSalary > oldSalary ? 'raise' : 'adjustment',
+        amount: Math.abs(entry.proposedSalary - oldSalary),
+        currency: entry.currentCurrency,
+        frequency: 'monthly',
+        effectiveFrom: now,
+        status: 'approved',
+        approvedBy: scope.caller._id,
+        approvedAt: now,
+        notes: `Review cycle approved: salary ${oldSalary} → ${entry.proposedSalary}`,
+        createdBy: scope.caller._id,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
   },
 });
 

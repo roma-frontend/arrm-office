@@ -17,10 +17,9 @@
  * reader did not ask for. ClickUp draws the same line for the same reason.
  */
 
-import { memo, useState, useRef, useEffect, type CSSProperties } from 'react';
+import { memo, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
-import { MoreVertical } from 'lucide-react';
 import { localizedTaskTitle } from '@/lib/taskTitle';
 import type { FieldFormatContext, TaskFieldValue } from '@/lib/taskFieldTypes';
 import type { ArrangeableTask } from '@/lib/taskGrouping';
@@ -89,98 +88,6 @@ export interface TaskRowContext {
   onDeleteTask?: (taskId: string) => void;
 }
 
-/** Three-dot menu that appears on row hover in the name cell. */
-function NameCellMenu({ task, ctx }: { task: TaskTableRow; ctx: TaskRowContext }) {
-  const { t } = useTranslation();
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  // Close on outside click
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [open]);
-
-  if (!ctx.onEditTask && !ctx.onDeleteTask) return null;
-
-  return (
-    <div ref={ref} className="relative shrink-0">
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          setOpen(!open);
-        }}
-        onPointerDown={(e) => e.stopPropagation()}
-        className={cn(
-          'p-1 rounded-md transition-opacity hover:bg-(--background-subtle) text-(--text-muted) hover:text-(--text-primary)',
-          open ? 'opacity-100' : 'opacity-0 group-hover/row:opacity-100',
-        )}
-        aria-label="Task actions"
-      >
-        <MoreVertical className="h-4 w-4" />
-      </button>
-      {open && (
-        <div className="absolute right-0 top-full mt-1 z-50 w-48 rounded-lg border border-(--border) bg-(--card) shadow-lg p-1">
-          {ctx.onEditTask && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                ctx.onEditTask!(task._id);
-                setOpen(false);
-              }}
-              className="flex items-center gap-2 w-full px-2.5 py-2 text-sm rounded-md hover:bg-(--brand-quiet) hover:text-(--brand-text) transition-colors text-left"
-            >
-              {t('tasksClient.edit', 'Edit')}
-            </button>
-          )}
-          {ctx.onSetPriority && (
-            <>
-              <div className="h-px bg-(--border) my-1" />
-              {['low', 'medium', 'high', 'urgent'].map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    ctx.onSetPriority!(task._id, p);
-                    setOpen(false);
-                  }}
-                  disabled={task.priority === p}
-                  className="flex items-center gap-2 w-full px-2.5 py-2 text-sm rounded-md hover:bg-(--brand-quiet) hover:text-(--brand-text) transition-colors text-left disabled:opacity-50"
-                >
-                  {t(`taskPriority.${p}`, p)}
-                  {task.priority === p && <span className="ml-auto text-xs opacity-50">✓</span>}
-                </button>
-              ))}
-            </>
-          )}
-          {ctx.onDeleteTask && (
-            <>
-              <div className="h-px bg-(--border) my-1" />
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  ctx.onDeleteTask!(task._id);
-                  setOpen(false);
-                }}
-                className="flex items-center gap-2 w-full px-2.5 py-2 text-sm rounded-md hover:bg-(--danger-quiet) text-(--danger-text) transition-colors text-left"
-              >
-                {t('tasksClient.delete', 'Delete')}
-              </button>
-            </>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
 
 /** The sticky lead cell: select, tick, title, subtask count. */
 function NameCell({
@@ -264,7 +171,7 @@ function NameCell({
         </span>
       )}
       {/* Three-dot menu — appears on row hover */}
-      {ctx.canEdit && <NameCellMenu task={task} ctx={ctx} />}
+
     </div>
   );
 }

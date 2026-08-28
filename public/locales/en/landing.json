@@ -197,6 +197,8 @@
         "recognition": "Recognition & Rewards",
         "ats": "Recruitment (ATS)",
         "onboarding": "On/Offboarding",
+        "learning": "Learning & Courses",
+        "rooms": "Room Booking",
         "surveys": "Surveys & Engagement",
         "ai": "AI HR Assistant",
         "payroll": "Payroll & Tax",
@@ -206,6 +208,48 @@
         "analytics": "People Analytics",
         "compliance": "Compliance Hub",
         "automation": "Workflow Automation"
+      },
+      "desc": {
+        "directory": "Your people, centralized.",
+        "orgchart": "Visual org structure.",
+        "documents": "Store and manage docs.",
+        "esign": "Sign securely, stay compliant.",
+        "leave": "Time off, simplified.",
+        "attendance": "Clock in/out tracking.",
+        "tasks": "Manage work and projects.",
+        "calendar": "Schedule and book rooms.",
+        "rooms": "Book meeting spaces.",
+        "okr": "Track goals and progress.",
+        "strategyMaps": "Align strategy to execution.",
+        "performance": "Reviews and feedback.",
+        "recognition": "Celebrate achievements.",
+        "ats": "Find talents faster.",
+        "onboarding": "Day-one ready.",
+        "learning": "Training and courses.",
+        "surveys": "Engagement analysis.",
+        "payroll": "Automate payroll.",
+        "compensation": "Manage compensation.",
+        "expenses": "Track and reimburse.",
+        "reports": "Turn data into decisions.",
+        "analytics": "Deep workforce insights.",
+        "compliance": "Stay compliant.",
+        "automation": "Automate the busywork."
+      },
+      "featured": {
+        "employeeDirectory": "Learn more",
+        "timeOff": "Learn more",
+        "okrTracking": "Learn more",
+        "recruitment": "Learn more",
+        "payroll": "Learn more",
+        "analytics": "Learn more",
+        "learnMore": "Learn more"
+      },
+      "explore": "Explore",
+      "bottom": {
+        "reporting": "Reporting & analytics",
+        "integrations": "Integrations",
+        "mobile": "Mobile App",
+        "trust": "Trust Hub"
       },
       "featuredTitle": "Try Strata free",
       "featuredDesc": "Full platform, no credit card — set up your org in minutes.",
@@ -217,7 +261,20 @@
         "company": "Company",
         "items": {
           "story": "How it works",
+          "features": "Features",
+          "testimonials": "Testimonials",
+          "faq": "FAQ",
+          "careers": "Careers",
+          "contact": "Contact",
           "privacy": "Privacy"
+        },
+        "descs": {
+          "story": "See Strata in action, 60 seconds",
+          "features": "Explore the full platform",
+          "testimonials": "Stories from HR teams using Strata",
+          "faq": "Quick answers to common questions",
+          "careers": "Join our growing team",
+          "contact": "Get in touch with our team"
         }
       }
     },
@@ -276,7 +333,8 @@
         "healthcare": "Healthcare",
         "logistics": "Logistics",
         "professional": "Professional services"
-      }
+      },
+      "desc": "Tailored for your team"
     },
     "whyMenu": {
       "title": "Why Strata",

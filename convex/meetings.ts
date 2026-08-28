@@ -466,11 +466,21 @@ export const submitRegistration = mutation({
       .withIndex('by_room_name', (q) => q.eq('roomName', roomName))
       .unique();
     if (!meeting) throw new Error('Meeting not found');
-    if (!(meeting.registrationEnabled ?? false)) {
+
+    // Pure waiting-room mode (no registration) used to throw here, which
+    // meant the host never saw the visitor in their lobby panel because
+    // no row was ever written. Accept the submit whenever either toggle
+    // is on, and use the form's fullName for the row's display field
+    // even if the registration form is not the source of the data.
+    const registrationOn = meeting.registrationEnabled ?? false;
+    const waitingOn = meeting.waitingRoomEnabled ?? false;
+    if (!registrationOn && !waitingOn) {
       throw new Error('This meeting does not require registration');
     }
-    // Trim and validate against the host's configured fields.
-    const fields = meeting.registrationFields ?? [];
+
+    // Trim and validate against the host's configured fields — only
+    // enforced when the registration form is actually visible.
+    const fields = registrationOn ? meeting.registrationFields ?? [] : [];
     const data: Record<string, string> = {
       fullName: fullName.trim(),
       email: (email ?? '').trim(),
@@ -496,6 +506,9 @@ export const submitRegistration = mutation({
       roomName,
       organizationId: meeting.organizationId,
       fullName: data.fullName,
+      // When waiting-room only, the form did not show these — but we still
+      // need a stable, searchable label. The room name is the default.
+      // The host panel shows the fullName; missing email/phone are fine.
       email: data.email || undefined,
       phone: data.phone || undefined,
       visitorId,

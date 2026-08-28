@@ -76,7 +76,7 @@ const LandingMobileMenu = dynamic(() => import('@/components/landing/MobileMenu'
   ssr: false,
   loading: () => null,
 });
-const PlatformMegaMenu = dynamic(() => import('@/components/landing/PlatformMegaMenu'), {
+const PlatformMegaMenu = dynamic(() => import('@/components/landing/PeopleForceMegaMenu'), {
   ssr: false,
   loading: () => null,
 });

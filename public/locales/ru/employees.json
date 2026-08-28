@@ -337,9 +337,14 @@
       "overview": "Обзор",
       "profile": "Профиль",
       "performance": "Эффективность",
-      "documents": "Документы"
+      "documents": "Документы",
+      "salary": "Зарплата"
     },
-    "noDocuments": "Документы пока не загружены"
+    "noDocuments": "Документы пока не загружены",
+    "currentSalary": "Текущая зарплата",
+    "compensationHistory": "История компенсаций",
+    "noSalaryData": "Информация о зарплате отсутствует",
+    "noCompensationRecords": "Записи компенсаций отсутствуют"
   },
   "profile": {
     "currentLanguage": "Текущий язык",

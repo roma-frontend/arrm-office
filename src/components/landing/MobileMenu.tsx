@@ -201,7 +201,7 @@ export function LiquidHoverBg({ accent, active }: { accent: string; active: bool
 }
 
 export default function MobileMenu({ isOpen, onClose, activeSection = null }: MobileMenuProps) {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['landing', 'landingExtra', 'common']);
   const pathname = usePathname();
   const router = useRouter();
   const { theme, setTheme } = useTheme();

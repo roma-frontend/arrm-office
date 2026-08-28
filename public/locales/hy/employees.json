@@ -337,9 +337,14 @@
       "overview": "Ընդհանուր",
       "profile": "Պրոֆիլ",
       "performance": "Արդյունավետություն",
-      "documents": "Փաստաթղթեր"
+      "documents": "Փաստաթղթեր",
+      "salary": "Աշխատավարձ"
     },
-    "noDocuments": "Փաստաթղթեր դեռ վերբեռնված չեն"
+    "noDocuments": "Փաստաթղթեր դեռ վերբեռնված չեն",
+    "currentSalary": "Ընթացիկ աշխատավարձ",
+    "compensationHistory": "Փոխհատուցման պատմություն",
+    "noSalaryData": "Աշխատավարձի տվյալներ չկան",
+    "noCompensationRecords": "Փոխհատուցման գրառումներ չկան"
   },
   "profile": {
     "currentLanguage": "Ընթացիկ լեզու",

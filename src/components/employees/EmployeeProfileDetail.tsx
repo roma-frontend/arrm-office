@@ -22,6 +22,10 @@ import {
   LayoutGrid,
   User,
   FileText,
+  DollarSign,
+  TrendingUp,
+  TrendingDown,
+  Minus,
 } from 'lucide-react';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import type { Id } from '../../../convex/_generated/dataModel';
@@ -107,6 +111,15 @@ export default function EmployeeProfileDetail({
 
   const employee = useQuery(api.users.queries.getUserById, { userId: employeeId });
   const profile = useQuery(api.employeeProfiles.getEmployeeProfile, { userId: employeeId });
+  const salary = useQuery(api.employeeProfiles.getSalary, { userId: employeeId });
+  const compensationHistory = useQuery(
+    employee?.organizationId
+      ? api.compensation.getCompensationHistory
+      : ('skip' as never),
+    employee?.organizationId
+      ? { organizationId: employee.organizationId as Id<'organizations'>, userId: employeeId }
+      : ('skip' as never),
+  );
   const score = useQuery(api.aiEvaluator.calculateEmployeeScore, { userId: employeeId });
   const latestRating = useQuery(api.supervisorRatings.getLatestRating, { employeeId });
   const monthlyStats = useQuery(api.timeTracking.getMonthlyStats, {
@@ -279,6 +292,11 @@ export default function EmployeeProfileDetail({
           },
         ]
       : []),
+    {
+      value: 'salary',
+      icon: DollarSign,
+      label: t('employeeProfile.tabs.salary', 'Salary'),
+    },
   ];
 
   // Tabs appear as their data loads, so a selection can briefly point at a tab
@@ -743,6 +761,109 @@ export default function EmployeeProfileDetail({
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+
+        {/* ── Salary: current compensation and history ──────────────────────── */}
+        <TabsContent value="salary" className="space-y-6">
+          {/* Current Salary Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <DollarSign className="w-5 h-5 text-(--success-text)" />
+                {t('employeeProfile.currentSalary', 'Current Salary')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {salary ? (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <div className="p-3 rounded-lg bg-(--background-subtle)">
+                    <p className="text-xs text-(--text-muted)">{t('payroll.baseSalary', 'Base Salary')}</p>
+                    <p className="text-xl font-bold text-(--text-primary)">
+                      {salary.salaryCurrency ?? 'AMD'} {salary.baseSalary.toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-(--background-subtle)">
+                    <p className="text-xs text-(--text-muted)">{t('payroll.bonuses', 'Bonuses')}</p>
+                    <p className="text-xl font-bold text-(--text-primary)">
+                      {salary.salaryCurrency ?? 'AMD'} {salary.bonuses.toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-(--background-subtle)">
+                    <p className="text-xs text-(--text-muted)">{t('payroll.overtimeHours', 'Overtime')}</p>
+                    <p className="text-xl font-bold text-(--text-primary)">
+                      {salary.overtimeHours}h
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-(--background-subtle)">
+                    <p className="text-xs text-(--text-muted)">{t('payroll.hourlyRate', 'Hourly Rate')}</p>
+                    <p className="text-xl font-bold text-(--text-primary)">
+                      {salary.salaryCurrency ?? 'AMD'} {salary.hourlyRate.toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-(--text-muted)">{t('employeeProfile.noSalaryData', 'No salary information available')}</p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Compensation History */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-(--brand-text)" />
+                {t('employeeProfile.compensationHistory', 'Compensation History')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {compensationHistory && compensationHistory.length > 0 ? (
+                <div className="space-y-3">
+                  {compensationHistory.map((record) => (
+                    <div
+                      key={record._id}
+                      className="flex items-center justify-between p-3 rounded-lg border border-(--border) bg-(--card)"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-(--primary)/10 flex items-center justify-center">
+                          {record.type === 'raise' ? (
+                            <TrendingUp className="w-5 h-5 text-(--success-text)" />
+                          ) : record.type === 'bonus' ? (
+                            <Star className="w-5 h-5 text-(--warning-text)" />
+                          ) : record.type === 'adjustment' ? (
+                            <Minus className="w-5 h-5 text-(--text-muted)" />
+                          ) : (
+                            <DollarSign className="w-5 h-5 text-(--primary)" />
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-medium text-(--text-primary)">
+                            {t(`compensation.${record.type}`, record.type)}
+                          </p>
+                          <p className="text-xs text-(--text-muted)">
+                            {format(new Date(record.effectiveFrom), 'MMM d, yyyy', { locale: dateFnsLocale })}
+                            {' · '}{t(`compensation.${record.frequency}`, record.frequency)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-(--text-primary)">
+                          {record.currency} {record.amount.toLocaleString()}
+                        </p>
+                        <p className="text-xs text-(--text-muted)">
+                          {t(`compensation.${record.status}`, record.status)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <DollarSign className="w-10 h-10 text-(--text-muted) mx-auto mb-2 opacity-30" />
+                  <p className="text-sm text-(--text-muted)">{t('employeeProfile.noCompensationRecords', 'No compensation records yet')}</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* ── Documents: the hiring packet and everything filed since ─────── */}

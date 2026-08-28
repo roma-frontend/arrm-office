@@ -879,6 +879,8 @@ function CalendarScreen({ t }: { t: TFunction }) {
 
 /* ── Screens registry ────────────────────────────────────────────────────── */
 
+export { DashboardScreen, AnalyticsScreen, ChatScreen, CalendarScreen };
+
 const SCREENS = [
   { id: 'dashboard', labelKey: 'landing.demoTabDash', render: DashboardScreen },
   { id: 'analytics', labelKey: 'landing.demoTabAnalytics', render: AnalyticsScreen },

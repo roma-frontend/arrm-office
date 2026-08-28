@@ -337,9 +337,14 @@
       "overview": "Overview",
       "profile": "Profile",
       "performance": "Performance",
-      "documents": "Documents"
+      "documents": "Documents",
+      "salary": "Salary"
     },
-    "noDocuments": "No documents uploaded yet"
+    "noDocuments": "No documents uploaded yet",
+    "currentSalary": "Current Salary",
+    "compensationHistory": "Compensation History",
+    "noSalaryData": "No salary information available",
+    "noCompensationRecords": "No compensation records yet"
   },
   "profile": {
     "currentLanguage": "Current Language",

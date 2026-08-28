@@ -94,7 +94,17 @@ export const meetings = {
      * same row instead of producing duplicates. */
     visitorId: v.optional(v.string()),
     createdAt: v.number(),
+    /** Set by `meetingsActions.admitRegistration` when the host admits
+     * the visitor. The lobby UI subscribes to this row so it can detect
+     * the admit in real time and copy the invite URL into a "You're in"
+     * banner that the visitor can open with one click. */
+    admittedAt: v.optional(v.number()),
+    /** Optional HMAC-signed admit token written by the host so the
+     * visitor's lobby page can promote them straight into the meeting
+     * without requiring the host to forward the URL by hand. */
+    admitToken: v.optional(v.string()),
   })
     .index('by_room', ['roomName'])
-    .index('by_org', ['organizationId']),
+    .index('by_org', ['organizationId'])
+    .index('by_visitor', ['visitorId']),
 };
