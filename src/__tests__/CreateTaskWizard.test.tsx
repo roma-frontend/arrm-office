@@ -500,7 +500,9 @@ describe('CreateTaskWizard', () => {
     ).map((o) => (o as HTMLOptionElement).value);
     expect(repeatOptions.filter(Boolean)).toEqual(['weekly', 'monthly']);
 
-    // tags → objectiveLink → attachments → submit
+    // subtaskTemplates → checklistTemplates → tags → objectiveLink → attachments → submit
+    fireEvent.click(screen.getByText('Next'));
+    fireEvent.click(screen.getByText('Next'));
     fireEvent.click(screen.getByText('Next'));
     fireEvent.click(screen.getByText('Next'));
     fireEvent.click(screen.getByText('Next'));
