@@ -887,6 +887,8 @@
       "active": "Активен",
       "inactive": "Не активен",
       "writeMessage": "Написать",
+      "writeMessageNoSession": "Войдите, чтобы отправлять сообщения.",
+      "writeMessageError": "Не удалось открыть чат.",
       "impersonate": "Войти как",
       "blockUser": "Заблокировать",
       "pending": "Ожидают",

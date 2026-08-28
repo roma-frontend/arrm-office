@@ -7,6 +7,7 @@ import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import type { Id } from '@/convex/_generated/dataModel';
 import { useTranslation } from 'react-i18next';
+import { useAuthStore } from '@/store/useAuthStore';
 import {
   Mail,
   Phone,
@@ -92,6 +93,14 @@ export default function UserProfile360Page() {
   const issueTempPassword = useMutation(api.superadmin.tempPasswords.issueTempPassword);
   const suspendUser = useMutation(api.users.admin.suspendUser);
   const unsuspendUser = useMutation(api.users.admin.unsuspendUser);
+  // Open or create a direct-message conversation with the profile user and
+  // jump to the chat route. The /chat?conversation=<id> deep-link is the
+  // same one ChatClient recognises (it auto-switches the org selector if
+  // the target user lives in a different tenant).
+  const getOrCreateDM = useMutation(api.chat.mutations.getOrCreateDM);
+  // Pulled from the Zustand auth store — `user.id` is the Convex
+  // `Id<'users'>` of the signed-in superadmin.
+  const viewer = useAuthStore((state) => state.user);
 
   // Temporary-password flow: confirm dialog → plaintext shown exactly once.
   const [pwDialogOpen, setPwDialogOpen] = useState(false);
@@ -217,6 +226,49 @@ export default function UserProfile360Page() {
     }
   };
 
+  /**
+   * Open (or create) a DM with the profile user and jump to the chat route.
+   * Mirrors the deep-link pattern the support-ticket page already uses:
+   *   router.push(`/chat?conversation=${id}`)
+   * `ChatClient` reads the query string, switches the org selector if the
+   * target user is in a different tenant, and selects the conversation.
+   */
+  const [startingChat, setStartingChat] = useState(false);
+  const handleOpenChat = async () => {
+    if (!viewer?.id) {
+      toast.error(t('superadmin.users.writeMessageNoSession', 'Sign in to send messages.'));
+      return;
+    }
+    if (viewer.id === userId) {
+      router.push('/chat');
+      return;
+    }
+    setStartingChat(true);
+    try {
+      // Mirror NewConversationModal's "host the DM in the target user's
+      // organisation" rule so a cross-org superadmin can still chat with
+      // a single-user tenant without the conversation disappearing from
+      // the recipient's inbox.
+      const organizationId = (user.organizationId ?? viewer.organizationId ?? undefined) as
+        | Id<'organizations'>
+        | undefined;
+      const conversationId = await getOrCreateDM({
+        organizationId,
+        currentUserId: viewer.id as Id<'users'>,
+        targetUserId: userId,
+      });
+      router.push(`/chat?conversation=${conversationId}`);
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : t('superadmin.users.writeMessageError', 'Could not open the chat.'),
+      );
+    } finally {
+      setStartingChat(false);
+    }
+  };
+
   const handleCopyTempPw = async () => {
     if (!tempPwResult) return;
     try {
@@ -320,8 +372,18 @@ export default function UserProfile360Page() {
                   </div>
                 </div>
                 <div className="flex items-center flex-wrap gap-2 data-[state=active]:bg-(--brand) data-[state=active]:text-white">
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <MessageSquare className="w-4 h-4" />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    onClick={() => void handleOpenChat()}
+                    disabled={startingChat}
+                  >
+                    {startingChat ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <MessageSquare className="w-4 h-4" />
+                    )}
                     {t('superadmin.users.writeMessage')}
                   </Button>
                   <Button

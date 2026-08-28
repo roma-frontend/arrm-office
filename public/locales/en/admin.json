@@ -887,6 +887,8 @@
       "active": "Active",
       "inactive": "Inactive",
       "writeMessage": "Write",
+      "writeMessageNoSession": "Sign in to send messages.",
+      "writeMessageError": "Could not open the chat.",
       "impersonate": "Login as",
       "blockUser": "Block",
       "pending": "Pending",

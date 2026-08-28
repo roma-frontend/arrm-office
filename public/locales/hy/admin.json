@@ -963,7 +963,9 @@
       "unblockDialogTitle": "Unblock this user?",
       "unblockDialogDesc": "The user will be able to sign in again immediately. Existing sessions are not restored — they will need to log in from scratch.",
       "unblockConfirmAction": "Unblock user",
-      "unblockSuccess": "User unblocked"
+      "unblockSuccess": "User unblocked",
+      "writeMessageNoSession": "Sign in to send messages.",
+      "writeMessageError": "Could not open the chat."
     },
     "creatingOrg": "Կազմակերպության ստեղծում...",
     "orgCreated": "Կազմակերպությունը \"{{name}}\" հաջողությամբ ստեղծվել է!",
