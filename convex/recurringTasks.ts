@@ -814,9 +814,7 @@ export const updateRecurringTaskStatus = mutation({
     // grouping agree. Without this the Status column reads statusKey ("In
     // Progress") while the section filter reads status ("completed").
     const { statuses } = await resolveStatusSet(ctx, series.organizationId, series.projectId);
-    const matchingKey = statuses.find(
-      (s) => STATUS_TYPE_TO_CANONICAL[s.type] === args.status,
-    )?.key;
+    const matchingKey = statuses.find((s) => STATUS_TYPE_TO_CANONICAL[s.type] === args.status)?.key;
     await ctx.db.patch(args.seriesId, {
       status: args.status,
       ...(matchingKey ? { statusKey: matchingKey } : {}),

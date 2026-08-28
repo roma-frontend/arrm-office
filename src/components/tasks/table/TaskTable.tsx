@@ -61,6 +61,7 @@ import {
   type TaskColumn,
 } from './columns';
 import { TaskRow, type TaskRowContext, type TaskRowPatch, type TaskTableRow } from './TaskRow';
+import { TaskContextMenu, type ContextTask } from '../TaskContextMenu';
 import type { TaskCellUser } from './cells/cellChrome';
 
 export type { TaskTableRow, TaskRowPatch } from './TaskRow';
@@ -714,14 +715,19 @@ export function TaskTable({
             {!isCollapsed && (
               <>
                 {section.tasks.map((task) => (
-                    <TaskRow
-                      key={task._id}
-                      task={task}
-                      ctx={rowContext}
-                      selected={selected.has(task._id)}
-                    />
-                  ),
-                )}
+                  <TaskContextMenu
+                    key={task._id}
+                    task={task as ContextTask}
+                    canManage={contextMenu?.canManage ?? false}
+                    onOpen={(t) => onOpenTask(t._id)}
+                    onEdit={contextMenu?.onEdit ?? (() => {})}
+                    onSetStatus={(id, status) => rowContext.onSetStatus(id, status)}
+                    onSetPriority={contextMenu?.onSetPriority ?? (() => {})}
+                    onDelete={contextMenu?.onDelete ?? (() => {})}
+                  >
+                    <TaskRow task={task} ctx={rowContext} selected={selected.has(task._id)} />
+                  </TaskContextMenu>
+                ))}
 
                 {onAddTask && canEdit && adding === sectionKey && (
                   <AddTaskRow
