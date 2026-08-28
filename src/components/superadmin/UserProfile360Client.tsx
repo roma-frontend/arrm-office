@@ -124,6 +124,8 @@ export default function UserProfile360Page() {
   // Unblock confirmation — separate tiny dialog so the admin can be sure.
   const [unblockDialogOpen, setUnblockDialogOpen] = useState(false);
   const [unblocking, setUnblocking] = useState(false);
+  // Inline spinner on the "Write" button while we mint the DM.
+  const [startingChat, setStartingChat] = useState(false);
 
   // Dropdown "..." actions.
   const [revoking] = useState(false);
@@ -233,7 +235,6 @@ export default function UserProfile360Page() {
    * `ChatClient` reads the query string, switches the org selector if the
    * target user is in a different tenant, and selects the conversation.
    */
-  const [startingChat, setStartingChat] = useState(false);
   const handleOpenChat = async () => {
     if (!viewer?.id) {
       toast.error(t('superadmin.users.writeMessageNoSession', 'Sign in to send messages.'));
