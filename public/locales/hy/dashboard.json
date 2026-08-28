@@ -482,5 +482,9 @@
     "viewAll": "Բոլորը",
     "search": "Որոնում",
     "searchHint": "Որոնել ամեն բան"
+  },
+  "stat": {
+    "inOrganization": "կազմակերպությունում",
+    "needsDecision": "սպասում է որոշման"
   }
 }

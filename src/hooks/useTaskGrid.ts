@@ -160,6 +160,8 @@ export function useTaskGrid(scope: TaskGridScope, tasks: readonly GridSourceTask
   const removeTasks = useMutation(api.tasks.bulkDeleteTasks);
   const addField = useMutation(api.taskFields.createField);
   const addTask = useMutation(api.tasks.createTask);
+  const updateRecurringTaskStatus = useMutation(api.recurringTasks.updateRecurringTaskStatus);
+  const updateRecurringTask = useMutation(api.recurringTasks.updateRecurringTask);
   const storeView = useMutation(api.taskViews.saveView);
   const changeView = useMutation(api.taskViews.updateView);
   const dropView = useMutation(api.taskViews.deleteView);
@@ -209,9 +211,7 @@ export function useTaskGrid(scope: TaskGridScope, tasks: readonly GridSourceTask
     (taskId: string, statusKey: string) => {
       // Recurring series IDs come from the `recurringTasks` table and cannot
       // be passed to `v.id('tasks')` validators on `setTaskStatus`.
-      const isRecurring = (tasks ?? []).some(
-        (t) => t._type === 'recurring' && t._id === taskId,
-      );
+      const isRecurring = (tasks ?? []).some((t) => t._type === 'recurring' && t._id === taskId);
       if (isRecurring) {
         void runWrite(() =>
           updateRecurringTaskStatus({
@@ -236,30 +236,44 @@ export function useTaskGrid(scope: TaskGridScope, tasks: readonly GridSourceTask
    */
   const handlePatchTask = useCallback(
     (taskId: string, patch: TaskRowPatch) => {
+      const isRecurring = (tasks ?? []).some((t) => t._type === 'recurring' && t._id === taskId);
       void runWrite(async () => {
-        const result = await patchTasks({
-          taskIds: [taskId as Id<'tasks'>],
-          patch: {
+        if (isRecurring) {
+          await updateRecurringTask({
+            seriesId: taskId as Id<'recurringTasks'>,
             ...(patch.priority !== undefined ? { priority: patch.priority } : {}),
-            ...(patch.deadline !== undefined ? { deadline: patch.deadline } : {}),
             ...(patch.assignedTo !== undefined
               ? { assignedTo: patch.assignedTo as Id<'users'> }
               : {}),
-          },
-        });
-        reportSkipped(result.skipped);
+          });
+        } else {
+          const result = await patchTasks({
+            taskIds: [taskId as Id<'tasks'>],
+            patch: {
+              ...(patch.priority !== undefined ? { priority: patch.priority } : {}),
+              ...(patch.deadline !== undefined ? { deadline: patch.deadline } : {}),
+              ...(patch.assignedTo !== undefined
+                ? { assignedTo: patch.assignedTo as Id<'users'> }
+                : {}),
+            },
+          });
+          reportSkipped(result.skipped);
+        }
       });
     },
-    [runWrite, patchTasks, reportSkipped],
+    [runWrite, patchTasks, reportSkipped, updateRecurringTask, tasks],
   );
 
   const handleSetField = useCallback(
     (taskId: string, fieldId: string, value: TaskFieldValue | null) => {
+      // Recurring series don't have custom fields on the grid — skip silently.
+      const isRecurring = (tasks ?? []).some((t) => t._type === 'recurring' && t._id === taskId);
+      if (isRecurring) return;
       void runWrite(() =>
         writeTaskFields({ taskId: taskId as Id<'tasks'>, values: { [fieldId]: value } }),
       );
     },
-    [runWrite, writeTaskFields],
+    [runWrite, writeTaskFields, tasks],
   );
 
   /**
@@ -296,8 +310,6 @@ export function useTaskGrid(scope: TaskGridScope, tasks: readonly GridSourceTask
 
   // Recurring task mutations for bulk operations
   const deleteRecurringTask = useMutation(api.recurringTasks.deleteRecurringTask);
-  const updateRecurringTaskStatus = useMutation(api.recurringTasks.updateRecurringTaskStatus);
-  const updateRecurringTask = useMutation(api.recurringTasks.updateRecurringTask);
 
   /**
    * Separate IDs into regular tasks and recurring series so we can call

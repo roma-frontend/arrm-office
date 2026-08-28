@@ -1226,6 +1226,12 @@
     "editEmployee": {
       "failedToUpdate": "Failed to update employee",
       "saveChanges": "Save Changes",
+      "errors": {
+        "cantEditOwnSalary": "You can't change your own compensation",
+        "noPermission": "You don't have permission to update this employee.",
+        "salaryUpdateBlocked": "Compensation could not be updated"
+      },
+      "salarySkippedForSelf": "The rest of your changes were saved. Ask HR or finance to update your salary.",
       "title": "Edit Employee",
       "updatedSuccess": "Employee updated successfully"
     }

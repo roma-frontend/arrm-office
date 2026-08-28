@@ -482,5 +482,9 @@
     "viewAll": "Все",
     "search": "Поиск",
     "searchHint": "Искать всё"
+  },
+  "stat": {
+    "inOrganization": "в организации",
+    "needsDecision": "ожидает решения"
   }
 }

@@ -757,39 +757,35 @@ describe('getUsersForAssignment', () => {
     expect(query).not.toHaveBeenCalled();
   });
 
-  it('scopes a supervisor to their own branch of the reporting line', async () => {
+  it('lets a supervisor see all org users (cross-department assignment)', async () => {
     mockGetAuthCaller.mockResolvedValue(makeCaller('supervisor', ORG_A, ADMIN_ID));
     const { ctx, take } = makeCtx();
-    // First take() is the org roster, the rest serve the subtree walk.
     take.mockResolvedValueOnce([
       userDoc({ _id: 'report_1' }),
       userDoc({ _id: 'stranger', supervisorId: 'someone_else' }),
+      userDoc({ _id: ADMIN_ID }),
     ]);
-    take.mockResolvedValueOnce([userDoc({ _id: 'report_1' })]);
     take.mockResolvedValue([]);
 
     const result = (await handlers.getUsersForAssignment(ctx, {})) as any[];
 
-    expect(result.map((u) => u._id)).toEqual(['report_1']);
+    // All org users are visible, including the supervisor (self-assignment).
+    expect(result.map((u) => u._id).sort()).toEqual([ADMIN_ID, 'report_1', 'stranger'].sort());
   });
 
-  // Reporting lines are not filled in everywhere; without this a supervisor
-  // whose reports have no `supervisorId` gets an empty assignee picker.
-  it('falls back to the department when a supervisor has no subtree', async () => {
+  it('includes the supervisor in the roster for self-assignment', async () => {
     mockGetAuthCaller.mockResolvedValue(makeCaller('supervisor', ORG_A, ADMIN_ID));
-    const { ctx, get, take } = makeCtx();
+    const { ctx, take } = makeCtx();
     take.mockResolvedValueOnce([
-      userDoc({ _id: 'same_dept', department: 'Ops' }),
-      userDoc({ _id: 'other_dept', department: 'Sales' }),
       userDoc({ _id: ADMIN_ID, department: 'Ops' }),
+      userDoc({ _id: 'other_dept', department: 'Sales' }),
     ]);
-    take.mockResolvedValue([]); // no direct reports anywhere
-    get.mockResolvedValue(userDoc({ _id: ADMIN_ID, department: 'Ops' }));
+    take.mockResolvedValue([]);
 
     const result = (await handlers.getUsersForAssignment(ctx, {})) as any[];
 
-    // Same department only, and never the supervisor themselves.
-    expect(result.map((u) => u._id)).toEqual(['same_dept']);
+    // Supervisor can assign to themselves and to other departments.
+    expect(result.map((u) => u._id).sort()).toEqual([ADMIN_ID, 'other_dept'].sort());
   });
 });
 

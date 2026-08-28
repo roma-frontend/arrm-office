@@ -388,6 +388,8 @@
         "description": "Who should complete this task?",
         "assigneeLabel": "Assignee",
         "assigneePlaceholder": "Select employee",
+        "departmentFilter": "Department",
+        "allDepartments": "All departments",
         "coAssigneesLabel": "Also working on it",
         "coAssigneesHint": "Optional. The person above stays responsible for the task."
       },

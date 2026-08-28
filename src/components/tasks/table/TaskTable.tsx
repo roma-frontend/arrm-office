@@ -111,6 +111,16 @@ export interface TaskTableProps {
   addColumnSlot?: ReactNode;
   /** Shown instead of the sections when there is nothing to show. */
   emptyState?: ReactNode;
+  /** Context menu handlers — when provided, each task row gets a right-click menu. */
+  contextMenu?: {
+    canManage: boolean;
+    onEdit: (task: any) => void;
+    onRename?: (task: any) => void;
+    onSetStatus: (taskId: string, statusKey: string) => void;
+    onSetPriority: (taskId: string, priority: string) => void;
+    onDelete: (task: any) => void;
+    onToggleActive?: (task: any) => void;
+  };
 }
 
 // ── Header ─────────────────────────────────────────────────────────────────
@@ -387,6 +397,7 @@ export function TaskTable({
   onBulkDelete,
   addColumnSlot,
   emptyState,
+  contextMenu,
 }: TaskTableProps) {
   const { t } = useTranslation();
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(() => new Set());
@@ -490,6 +501,13 @@ export function TaskTable({
       onPatchTask,
       onSetField,
       onToggleSelect: toggleSelect,
+      onEditTask: contextMenu?.onEdit
+        ? (id: string) => contextMenu.onEdit({ _id: id, title: '' } as any)
+        : undefined,
+      onSetPriority: contextMenu?.onSetPriority,
+      onDeleteTask: contextMenu?.onDelete
+        ? (id: string) => contextMenu.onDelete({ _id: id, title: '' } as any)
+        : undefined,
     }),
     [
       columns,
@@ -505,6 +523,7 @@ export function TaskTable({
       onPatchTask,
       onSetField,
       toggleSelect,
+      contextMenu,
     ],
   );
 
@@ -695,13 +714,14 @@ export function TaskTable({
             {!isCollapsed && (
               <>
                 {section.tasks.map((task) => (
-                  <TaskRow
-                    key={task._id}
-                    task={task}
-                    ctx={rowContext}
-                    selected={selected.has(task._id)}
-                  />
-                ))}
+                    <TaskRow
+                      key={task._id}
+                      task={task}
+                      ctx={rowContext}
+                      selected={selected.has(task._id)}
+                    />
+                  ),
+                )}
 
                 {onAddTask && canEdit && adding === sectionKey && (
                   <AddTaskRow

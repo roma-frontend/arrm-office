@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useNow } from '@/hooks/useNow';
 import { useTranslation } from 'react-i18next';
 import { Calendar, AlertTriangle, CheckCircle2, Clock, Circle } from 'lucide-react';
+import { TaskContextMenu } from './TaskContextMenu';
 
 // ── Types ──
 type Status = 'pending' | 'in_progress' | 'review' | 'completed' | 'cancelled';
@@ -28,6 +29,16 @@ interface Task {
 interface TimelineViewProps {
   tasks: Task[];
   onOpen: (task: Task) => void;
+  /** Context menu handlers — when provided, each task gets a right-click menu. */
+  contextMenu?: {
+    canManage: boolean;
+    onEdit: (task: any) => void;
+    onRename?: (task: any) => void;
+    onSetStatus: (taskId: string, statusKey: string) => void;
+    onSetPriority: (taskId: string, priority: string) => void;
+    onDelete: (task: any) => void;
+    onToggleActive?: (task: any) => void;
+  };
 }
 
 // ── Config ──
@@ -125,7 +136,7 @@ function daysBetween(a: Date, b: Date): number {
 }
 
 // ── Timeline View ──
-export default function TimelineView({ tasks, onOpen }: TimelineViewProps) {
+export default function TimelineView({ tasks, onOpen, contextMenu }: TimelineViewProps) {
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const locale = i18n.language || 'en';
@@ -369,25 +380,37 @@ export default function TimelineView({ tasks, onOpen }: TimelineViewProps) {
               </div>
             ) : (
               sortedTasks.map((task, _idx) => (
-                <div
+                <TaskContextMenu
                   key={task._id}
-                  className="flex items-center gap-3 px-4 cursor-pointer hover:bg-(--background-subtle)/50 transition-colors border-b border-(--border)/50 group"
-                  style={{ height: ROW_HEIGHT }}
-                  onClick={() => onOpen(task)}
+                  task={task as any}
+                  canManage={contextMenu?.canManage ?? false}
+                  onOpen={(t) => onOpen(t as any)}
+                  onEdit={contextMenu?.onEdit ?? (() => {})}
+                  onRename={contextMenu?.onRename}
+                  onSetStatus={contextMenu?.onSetStatus ?? (() => {})}
+                  onSetPriority={contextMenu?.onSetPriority ?? (() => {})}
+                  onDelete={contextMenu?.onDelete ?? (() => {})}
+                  onToggleActive={contextMenu?.onToggleActive}
                 >
-                  {statusIcon(task.status)}
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-(--text-primary) truncate group-hover:text-(--brand-text) transition-colors">
-                      {localizedTaskTitle(t, task)}
-                    </p>
-                    <p className="text-[10px] text-(--text-muted) truncate">
-                      {task.assignedToUser?.name ?? '—'}
-                    </p>
+                  <div
+                    className="flex items-center gap-3 px-4 cursor-pointer hover:bg-(--background-subtle)/50 transition-colors border-b border-(--border)/50 group"
+                    style={{ height: ROW_HEIGHT }}
+                    onClick={() => onOpen(task)}
+                  >
+                    {statusIcon(task.status)}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-(--text-primary) truncate group-hover:text-(--brand-text) transition-colors">
+                        {localizedTaskTitle(t, task)}
+                      </p>
+                      <p className="text-[10px] text-(--text-muted) truncate">
+                        {task.assignedToUser?.name ?? '—'}
+                      </p>
+                    </div>
+                    <span
+                      className={`w-2 h-2 rounded-full shrink-0 ${PRIORITY_DOT[task.priority]}`}
+                    />
                   </div>
-                  <span
-                    className={`w-2 h-2 rounded-full shrink-0 ${PRIORITY_DOT[task.priority]}`}
-                  />
-                </div>
+                </TaskContextMenu>
               ))
             )}
           </div>

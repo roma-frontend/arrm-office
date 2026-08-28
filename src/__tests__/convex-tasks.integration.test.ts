@@ -623,13 +623,15 @@ describe('assignment helpers', () => {
     expect(res).toEqual([]);
   });
 
-  it('getUsersForAssignment scopes a supervisor to their own reporting branch', async () => {
+  it('getUsersForAssignment lets a supervisor see all org users (cross-department)', async () => {
     const c = await seed();
     const res = await c.t
       .withIdentity({ email: 'manager@acme.test' })
       .query(api.tasks.getUsersForAssignment, {});
     const names = res.map((u) => u.name).sort();
-    expect(names).toEqual(['Employee', 'Peer']);
+    // Supervisor can now see all org users including themselves.
+    expect(names).toContain('Employee');
+    expect(names).toContain('Peer');
   });
 
   it('getUsersForAssignment falls back to all users for a superadmin (no org)', async () => {

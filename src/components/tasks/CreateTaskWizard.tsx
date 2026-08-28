@@ -14,6 +14,7 @@ import {
   SelectStep,
   FileUploadStep,
 } from '@/components/ui/wizard-step-components';
+import { TemplateListStep } from './TemplateListStep';
 import {
   CheckSquare,
   User,
@@ -78,6 +79,8 @@ interface EditingSeries {
   customFields?: unknown;
   timeEstimateMinutes?: number;
   startOffsetDays?: number;
+  subtaskTemplates?: Array<{ title: string; priority?: string; assigneeId?: Id<'users'> }>;
+  checklistTemplates?: Array<{ title: string }>;
 }
 
 interface CreateTaskWizardProps {
@@ -200,7 +203,7 @@ const AssigneeStepWithFilter = ({
           </label>
           <select
             value={deptFilter}
-            onChange={(e) => updateStepData({ _assigneeDeptFilter: e.target.value })}
+            onChange={(e) => updateStepData('_assigneeDeptFilter', e.target.value)}
             className="w-full rounded-lg border border-(--border) bg-(--card) px-3 py-2 text-sm text-(--text-primary) focus:outline-none focus:ring-2 focus:ring-(--primary)/30"
           >
             <option value="__all__">
@@ -537,6 +540,52 @@ export function CreateTaskWizard({
         </div>
       ),
     },
+    // Subtask & checklist templates — only shown when editing a recurring series.
+    ...(editingSeries
+      ? [
+          {
+            id: 'subtaskTemplates' as const,
+            title: t('tasksClient.subtasks', 'Subtasks'),
+            description: t(
+              'taskWizard.steps.subtaskTemplates.description',
+              'Subtasks copied to every occurrence',
+            ),
+            icon: <CheckSquare className="w-5 h-5" />,
+            content: (
+              <TemplateListStep
+                field="subtaskTemplates"
+                label={t('tasksClient.subtasks', 'Subtasks')}
+                placeholder={t(
+                  'taskWizard.steps.subtaskTemplates.placeholder',
+                  'Add a subtask and press Enter',
+                )}
+                addLabel={t('taskWizard.steps.subtaskTemplates.add', '+ Add')}
+                showPriority
+              />
+            ),
+          },
+          {
+            id: 'checklistTemplates' as const,
+            title: t('tasksClient.checklist', 'Checklist'),
+            description: t(
+              'taskWizard.steps.checklistTemplates.description',
+              'Checklist items copied to every occurrence',
+            ),
+            icon: <CheckSquare className="w-5 h-5" />,
+            content: (
+              <TemplateListStep
+                field="checklistTemplates"
+                label={t('tasksClient.checklist', 'Checklist')}
+                placeholder={t(
+                  'taskWizard.steps.checklistTemplates.placeholder',
+                  'Add an item and press Enter',
+                )}
+                addLabel={t('taskWizard.steps.checklistTemplates.add', '+ Add')}
+              />
+            ),
+          },
+        ]
+      : []),
     {
       id: 'tags',
       title: t('task.tags', 'Tags'),
@@ -648,6 +697,25 @@ export function CreateTaskWizard({
           customFields: customFieldValuesFrom(data, customFields),
           timeEstimateMinutes: estimateMinutesFrom(data),
           startOffsetDays,
+          subtaskTemplates: (() => {
+            try {
+              const raw = typeof data.subtaskTemplates === 'string' ? data.subtaskTemplates : '[]';
+              const arr = JSON.parse(raw);
+              return Array.isArray(arr) && arr.length > 0 ? arr : undefined;
+            } catch {
+              return undefined;
+            }
+          })(),
+          checklistTemplates: (() => {
+            try {
+              const raw =
+                typeof data.checklistTemplates === 'string' ? data.checklistTemplates : '[]';
+              const arr = JSON.parse(raw);
+              return Array.isArray(arr) && arr.length > 0 ? arr : undefined;
+            } catch {
+              return undefined;
+            }
+          })(),
         };
 
         // Files are part of the rule now: they travel with every occurrence the
@@ -803,6 +871,8 @@ export function CreateTaskWizard({
         ...(editingSeries.objectiveId ? { objectiveId: editingSeries.objectiveId } : {}),
         ...(editingSeries.keyResultId ? { keyResultId: editingSeries.keyResultId } : {}),
         ...(isSelfAssignedOnly ? {} : { assigneeId: editingSeries.assignedTo }),
+        subtaskTemplates: JSON.stringify(editingSeries.subtaskTemplates ?? []),
+        checklistTemplates: JSON.stringify(editingSeries.checklistTemplates ?? []),
       };
     }
     return { priority: 'medium', ...(objectiveId ? { objectiveId } : {}) };

@@ -610,20 +610,45 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
       // every save bumped `salaryUpdatedAt` for unrelated edits, and now that
       // setting a salary is scoped (HR org-wide, a manager within their subtree,
       // never your own) an unconditional call would fail an otherwise valid edit.
+      const isSelfEdit = user?.id === employee._id;
       const salaryChanged =
         form.baseSalary !== (currentSalary?.baseSalary ?? 0) ||
         form.bonuses !== (currentSalary?.bonuses ?? 0) ||
         form.overtimeHours !== (currentSalary?.overtimeHours ?? 0) ||
         form.salaryCurrency !== (currentSalary?.salaryCurrency ?? 'AMD');
       if (salaryChanged) {
-        await updateSalary({
-          userId: employee._id as Id<'users'>,
-          organizationId: (employee.organizationId || undefined) as Id<'organizations'> | undefined,
-          baseSalary: form.baseSalary,
-          bonuses: form.bonuses,
-          overtimeHours: form.overtimeHours,
-          salaryCurrency: form.salaryCurrency,
-        });
+        if (isSelfEdit) {
+          // The server rejects self-compensation edits outright (you cannot
+          // change your own compensation). We just skip the call and tell the
+          // user, instead of letting the mutation crash the whole save.
+          toast.warning(t('modals.editEmployee.errors.cantEditOwnSalary'), {
+            description: t('modals.editEmployee.salarySkippedForSelf'),
+          });
+        } else {
+          try {
+            await updateSalary({
+              userId: employee._id as Id<'users'>,
+              organizationId: (employee.organizationId || undefined) as
+                | Id<'organizations'>
+                | undefined,
+              baseSalary: form.baseSalary,
+              bonuses: form.bonuses,
+              overtimeHours: form.overtimeHours,
+              salaryCurrency: form.salaryCurrency,
+            });
+          } catch (salaryErr) {
+            // Server-side guards are the source of truth — if they reject this
+            // edit (self, cross-org, missing capability), surface a translated
+            // message and keep the rest of the save intact.
+            const message =
+              salaryErr instanceof Error
+                ? salaryErr.message
+                : t('modals.editEmployee.failedToUpdate');
+            toast.warning(t('modals.editEmployee.errors.salaryUpdateBlocked'), {
+              description: message,
+            });
+          }
+        }
       }
       await updatePassport({
         userId: employee._id as Id<'users'>,
@@ -652,7 +677,22 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
       clearDraft();
       onClose();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t('modals.editEmployee.failedToUpdate'));
+      // Translate known backend errors into friendly toasts so the user
+      // understands *why* the save failed without having to parse raw
+      // server text. Falls back to the server message for everything else.
+      const message = err instanceof Error ? err.message : '';
+      const friendly = message.toLowerCase().includes('your own compensation')
+        ? t('modals.editEmployee.errors.cantEditOwnSalary', {
+            defaultValue:
+              "You can't change your own compensation — contact your HR or finance team.",
+          })
+        : message.toLowerCase().includes('not authorized') ||
+            message.toLowerCase().includes('access denied')
+          ? t('modals.editEmployee.errors.noPermission', {
+              defaultValue: "You don't have permission to update this employee.",
+            })
+          : null;
+      toast.error(friendly ?? message ?? t('modals.editEmployee.failedToUpdate'));
     } finally {
       setLoading(false);
     }
@@ -1014,6 +1054,15 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
                       'Set base salary and compensation for payroll calculations'}
                   </p>
                 </div>
+
+                {user?.id === employee._id && (
+                  <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
+                    {t('employees.cantEditOwnSalary', {
+                      defaultValue:
+                        "You can't change your own compensation — contact your HR or finance team to make changes.",
+                    })}
+                  </div>
+                )}
 
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium">

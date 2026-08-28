@@ -98,7 +98,6 @@ export function MyPayrollClient() {
 
   const [year, setYear] = useState(() => new Date().getFullYear());
   const [netHidden, setNetHidden] = useState(false);
-  const [pinVerified, setPinVerified] = useState(false);
 
   const summary = useQuery(api.payroll.queries.getMyPayrollSummary, user?.id ? { year } : 'skip');
 
@@ -157,23 +156,6 @@ export function MyPayrollClient() {
   const currentMonth = summary?.latest ?? null;
   const currentNet = currentMonth?.net ?? 0;
   const currentGross = currentMonth?.gross ?? 0;
-
-  // Pin-screen state — when enabled, the user must enter their auth-store
-  // user id (last 4 chars) before net numbers are revealed. Lightweight: the
-  // pin is just the local profile id, no server round-trip.
-  const expectedPin = useMemo(() => (user?.id ? user.id.slice(-4) : ''), [user?.id]);
-  const [pinInput, setPinInput] = useState('');
-  const [pinError, setPinError] = useState(false);
-
-  const handleUnlock = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (pinInput === expectedPin) {
-      setPinVerified(true);
-      setPinError(false);
-    } else {
-      setPinError(true);
-    }
-  };
 
   // Donut % numbers: how much of gross went where.
   const totalDeductions = useMemo(() => {
@@ -263,11 +245,7 @@ export function MyPayrollClient() {
                   </p>
                   <button
                     type="button"
-                    onClick={() => {
-                      setNetHidden((v) => !v);
-                      setPinVerified(false);
-                      setPinInput('');
-                    }}
+                    onClick={() => setNetHidden((v) => !v)}
                     className="rounded-md p-1.5 text-(--text-3) transition hover:bg-(--surface-2) hover:text-(--text-1)"
                     title={t('payroll.myPayroll.toggleHide', 'Toggle hide')}
                   >
@@ -281,19 +259,12 @@ export function MyPayrollClient() {
                 <p className="mt-1 text-[10px] uppercase tracking-wider text-(--text-4)">
                   {currentMonth?.month ?? t('payroll.myPayroll.noData', 'No data yet')}
                 </p>
-                {!netHidden ? (
-                  <PinOrAmount
-                    shown={!hasOfficialData || pinVerified || !user?.id}
-                    pinInput={pinInput}
-                    onPinInput={setPinInput}
-                    onSubmit={handleUnlock}
-                    pinError={pinError}
-                    amount={formatCurrency(currentNet, ytdCurrency)}
-                    expectPin={expectedPin}
-                    hideAmount={netHidden}
-                  />
+                {netHidden ? (
+                  <p className="mt-2 text-4xl font-bold text-(--text-2)">••••••</p>
                 ) : (
-                  <p className="mt-3 text-3xl font-bold text-(--text-2)">••••••</p>
+                  <p className="mt-2 text-4xl font-bold tabular-nums text-(--text-1)">
+                    {formatCurrency(currentNet, ytdCurrency)}
+                  </p>
                 )}
                 <div className="mt-3 flex items-center gap-1.5 text-[11px] text-(--text-4)">
                   <ShieldCheck className="h-3 w-3" />
@@ -659,63 +630,9 @@ function MiniStat({ label, value, icon }: { label: string; value: string; icon: 
  * the user's own id — enough to defeat a casual shoulder-surfer, not
  * enough to be a real security boundary (the data is already theirs).
  */
-function PinOrAmount({
-  shown,
-  pinInput,
-  onPinInput,
-  onSubmit,
-  pinError,
-  amount,
-  expectPin,
-  hideAmount,
-}: {
-  shown: boolean;
-  pinInput: string;
-  onPinInput: (v: string) => void;
-  onSubmit: (e: React.FormEvent) => void;
-  pinError: boolean;
-  amount: string;
-  expectPin: string;
-  hideAmount: boolean;
-}) {
-  const { t } = useTranslation();
-  if (!shown && !hideAmount) {
-    return <p className="mt-2 text-4xl font-bold tabular-nums text-(--text-1)">{amount}</p>;
-  }
-  if (hideAmount) {
-    return <p className="mt-2 text-4xl font-bold text-(--text-2)">••••••</p>;
-  }
-  return (
-    <form onSubmit={onSubmit} className="mt-2 space-y-1.5">
-      <p className="text-[10px] text-(--text-4)">
-        {t('payroll.myPayroll.pinHint', 'Enter last 4 of your ID')}
-      </p>
-      <div className="flex items-center gap-2">
-        <input
-          type="password"
-          inputMode="numeric"
-          pattern="[0-9]*"
-          maxLength={4}
-          value={pinInput}
-          onChange={(e) => onPinInput(e.target.value.replace(/\D/g, '').slice(0, 4))}
-          placeholder="••••"
-          className={cn(
-            'w-24 rounded-md border border-(--border-default) bg-(--surface-1) px-2.5 py-1.5 text-center text-sm font-bold tabular-nums text-(--text-1) tracking-widest outline-none focus:border-(--brand)',
-            pinError && 'border-(--danger) text-(--danger-text)',
-          )}
-        />
-        <Button type="submit" size="sm" variant="outline">
-          {t('payroll.myPayroll.pinSubmit', 'Unlock')}
-        </Button>
-      </div>
-      {pinError && (
-        <p className="text-[10px] text-(--danger-text)">
-          {t('payroll.myPayroll.pinError', 'Wrong code')}
-        </p>
-      )}
-      <p className="text-[10px] text-(--text-4)">
-        {t('payroll.myPayroll.pinLocal', `Hint: last 4 chars of your id (${expectPin})`)}
-      </p>
-    </form>
-  );
+function PinOrAmount() {
+  // Pin-screen removed: it added friction without a real security benefit
+  // (the data is already the user's own). The Hide/Reveal toggle is enough
+  // to keep a shoulder-surfer honest.
+  return null;
 }

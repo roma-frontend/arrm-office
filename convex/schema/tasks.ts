@@ -226,6 +226,34 @@ export const tasks = {
         }),
       ),
     ),
+    /**
+     * Template subtasks that get stamped onto every generated occurrence.
+     * Each becomes a real `tasks` row with `parentTaskId` pointing at the
+     * occurrence, so subtasks are indistinguishable from hand-created ones.
+     */
+    subtaskTemplates: v.optional(
+      v.array(
+        v.object({
+          title: v.string(),
+          priority: v.optional(
+            v.union(v.literal('low'), v.literal('medium'), v.literal('high'), v.literal('urgent')),
+          ),
+          assigneeId: v.optional(v.id('users')),
+        }),
+      ),
+    ),
+    /**
+     * Template checklist items that get stamped onto every generated occurrence.
+     * Each becomes a `taskChecklistItems` row, so they are tick boxes inside
+     * the generated task — indistinguishable from hand-created ones.
+     */
+    checklistTemplates: v.optional(
+      v.array(
+        v.object({
+          title: v.string(),
+        }),
+      ),
+    ),
 
     // ── The rule ──
     frequency: v.union(v.literal('weekly'), v.literal('monthly')),

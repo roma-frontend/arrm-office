@@ -3,7 +3,7 @@
 import { useState, useMemo, useRef, useTransition, useEffect, useCallback } from 'react';
 import { flushSync } from 'react-dom';
 import { useMainRef } from '@/hooks/useMainRef';
-import { useQuery } from 'convex/react';
+import { useMutation, useQuery } from 'convex/react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
@@ -14,6 +14,9 @@ import { localizedTaskTitle, type TitledTask } from '@/lib/taskTitle';
 import { resolveStatus } from '../../../convex/lib/taskStatus';
 import { statusLabel } from '@/lib/taskLabels';
 import { TaskSheet } from './TaskSheet';
+import DetailSheet from '@/components/ui/detail-sheet';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import {
   Sheet,
   SheetContent,
@@ -28,6 +31,7 @@ import { useDraftResume } from '@/hooks/useDraftResume';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { AssignSupervisorModal } from './AssignSupervisorModal';
 import { EmployeeHoverCard } from '@/components/employees/EmployeeHoverCard';
+import { TaskContextMenu, type ContextTask } from './TaskContextMenu';
 import {
   DndContext,
   PointerSensor,
@@ -47,8 +51,16 @@ import { memo } from 'react';
 import {
   ArrowDownWideNarrow,
   ArrowUpNarrowWide,
+  CheckCircle,
+  Clock,
+  FileText,
+  MessageSquare,
+  MoreVertical,
+  Pencil,
   Search as SearchIcon,
+  Tag,
   User,
+  Users,
   X as XIcon,
 } from 'lucide-react';
 import type { TFunction } from 'i18next';
@@ -211,7 +223,6 @@ const PRIORITY_CONFIG: Record<
 // preference (see `useTaskViewPreferences`). Cancelled work has no lane by
 // default because it is closed history, not a stage.
 
-// â”€â”€ Avatar helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function Avatar({
   name,
   url,
@@ -481,11 +492,21 @@ function DroppableKanbanColumn({
   tasks,
   onOpen,
   statuses,
+  contextMenu,
 }: {
   status: Status;
   tasks: TaskItem[];
   onOpen: (t: TaskItem) => void;
   statuses?: readonly import('../../../convex/lib/taskStatus').TaskStatusDef[];
+  contextMenu?: {
+    canManage: boolean;
+    onEdit: (t: ContextTask) => void;
+    onRename?: (t: ContextTask) => void;
+    onSetStatus: (taskId: string, statusKey: string) => void;
+    onSetPriority: (taskId: string, priority: string) => void;
+    onDelete: (t: ContextTask) => void;
+    onToggleActive?: (t: ContextTask) => void;
+  };
 }) {
   const cfg = STATUS_CONFIG[status];
   const { t } = useTranslation();
@@ -510,14 +531,31 @@ function DroppableKanbanColumn({
             : 'border-2 border-transparent'
         }`}
       >
-        {tasks.map((task) => (
-          <DraggableTaskCard
-            key={task._id}
-            task={task}
-            onOpen={() => onOpen(task)}
-            statuses={statuses}
-          />
-        ))}
+        {tasks.map((task) =>
+          contextMenu ? (
+            <TaskContextMenu
+              key={task._id}
+              task={task as ContextTask}
+              canManage={contextMenu.canManage}
+              onOpen={(t) => onOpen(t as any)}
+              onEdit={contextMenu.onEdit}
+              onRename={contextMenu.onRename}
+              onSetStatus={contextMenu.onSetStatus}
+              onSetPriority={contextMenu.onSetPriority}
+              onDelete={contextMenu.onDelete}
+              onToggleActive={contextMenu.onToggleActive}
+            >
+              <DraggableTaskCard task={task} onOpen={() => onOpen(task)} statuses={statuses} />
+            </TaskContextMenu>
+          ) : (
+            <DraggableTaskCard
+              key={task._id}
+              task={task}
+              onOpen={() => onOpen(task)}
+              statuses={statuses}
+            />
+          ),
+        )}
         {tasks.length === 0 && (
           <div
             className={`rounded-2xl border-2 border-dashed ${cfg.border} p-6 text-center transition-colors ${isOver ? 'bg-(--brand-quiet)' : ''}`}
@@ -670,8 +708,9 @@ function TaskRow({ task, onOpen }: { task: TaskItem; onOpen: () => void }) {
 
 // ── Recurring Series Detail Sheet ──────────────────────────────────────────
 /**
- * Shows recurring series details (title, schedule, assignee, status) with
- * an Edit button that opens the CreateTaskWizard in edit mode.
+ * Shows recurring series in the same card layout as a regular task detail.
+ * The status/priority/schedule/assignee cards mirror TaskDetailClient so the
+ * user sees the same UI for both task types.
  */
 function RecurringSeriesDetailSheet({
   series,
@@ -688,6 +727,28 @@ function RecurringSeriesDetailSheet({
 }) {
   const { t } = useTranslation(['tasks', 'common']);
   const [editing, setEditing] = useState(false);
+  const [commentText, setCommentText] = useState('');
+  const [isPosting, setIsPosting] = useState(false);
+
+  const comments = useQuery(
+    api.recurringTasks.listRecurringTaskComments,
+    series?._id ? { seriesId: series._id } : 'skip',
+  );
+  const addComment = useMutation(api.recurringTasks.addRecurringTaskComment);
+
+  const handleCommentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!commentText.trim() || !series?._id || isPosting) return;
+    setIsPosting(true);
+    try {
+      await addComment({ seriesId: series._id, content: commentText.trim() });
+      setCommentText('');
+    } catch {
+      toast.error(t('common.error', 'Something went wrong'));
+    } finally {
+      setIsPosting(false);
+    }
+  };
 
   const WEEKDAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
   const WEEKDAY_ORDER = [1, 2, 3, 4, 5, 6, 0] as const;
@@ -704,97 +765,311 @@ function RecurringSeriesDetailSheet({
     return t('recurringTasks.rule.weekly', { days });
   };
 
+  const canManage = userRole === 'admin' || userRole === 'supervisor' || userRole === 'superadmin';
+
   if (editing) {
     return (
-      <Sheet open onOpenChange={(open) => !open && onClose()}>
-        <SheetContent side="right" size="lg" closeLabel={t('common.close', 'Close')}>
-          <SheetHeader>
-            <SheetTitle>{t('recurringTasks.editTitle', 'Edit recurring task')}</SheetTitle>
-          </SheetHeader>
-          {convexId && (
-            <CreateTaskWizard
-              className="min-h-0 flex-1 px-5 pt-4"
-              currentUserId={convexId}
-              userRole={userRole as 'admin' | 'supervisor' | 'employee'}
-              selectedOrgId={effectiveOrgId as Id<'organizations'> | undefined}
-              editingSeries={series}
-              onComplete={onClose}
-              onCancel={onClose}
-            />
-          )}
-        </SheetContent>
-      </Sheet>
+      <DetailSheet
+        open
+        onClose={onClose}
+        title={t('recurringTasks.editTitle', 'Edit recurring task')}
+        size="xl"
+      >
+        {convexId && (
+          <CreateTaskWizard
+            className="min-h-0 flex-1 px-5 pt-4"
+            currentUserId={convexId}
+            userRole={userRole as 'admin' | 'supervisor' | 'employee'}
+            selectedOrgId={effectiveOrgId as Id<'organizations'> | undefined}
+            editingSeries={series}
+            onComplete={onClose}
+            onCancel={onClose}
+          />
+        )}
+      </DetailSheet>
     );
   }
 
   return (
-    <Sheet open onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="right" size="lg" closeLabel={t('common.close', 'Close')}>
-        <SheetHeader>
-          <SheetTitle>{series.title}</SheetTitle>
-        </SheetHeader>
-        <div className="space-y-4 px-5 pt-4">
-          {/* Status badge */}
-          <div className="flex items-center gap-2">
-            <Badge variant={series.isActive ? 'default' : 'outline'}>
-              {series.isActive
-                ? t('recurringTasks.active', 'Active')
-                : t('recurringTasks.pausedBadge', 'Paused')}
-            </Badge>
-            <Badge variant="secondary">{t(`tasks.priority.${series.priority}`)}</Badge>
-          </div>
-
-          {/* Description */}
-          {series.description && (
-            <p className="text-sm text-(--text-muted)">{series.description}</p>
-          )}
-
-          {/* Schedule */}
-          <div className="space-y-2 rounded-xl border border-(--border) p-3">
-            <p className="text-xs font-semibold text-(--text-muted) uppercase">
-              {t('recurringTasks.editTitle', 'Schedule')}
-            </p>
-            <p className="text-sm">🔁 {describeRule()}</p>
-            {series.startDate && (
-              <p className="text-xs text-(--text-muted)">
-                {t('taskWizard.steps.repeat.startDateLabel', 'Start')}: {series.startDate}
-              </p>
-            )}
-            {series.endDate && (
-              <p className="text-xs text-(--text-muted)">
-                {t('taskWizard.steps.repeat.endDateLabel', 'End')}: {series.endDate}
-              </p>
-            )}
-            {series.deadlineOffsetDays != null && series.deadlineOffsetDays > 0 && (
-              <p className="text-xs text-(--text-muted)">
-                {t('taskWizard.steps.repeat.offsetLabel', 'Deadline offset')}:{' '}
-                {series.deadlineOffsetDays}d
-              </p>
-            )}
-          </div>
-
-          {/* Assignee */}
-          {series.assignedToUser && (
-            <div className="flex items-center gap-2">
-              <User className="h-4 w-4 text-(--text-muted)" />
-              <span className="text-sm">{series.assignedToUser?.name ?? series.assignedTo}</span>
-            </div>
-          )}
-
-          {/* Generated count */}
-          {series.generatedCount != null && (
-            <p className="text-xs text-(--text-muted)">
-              {t('recurringTasks.generatedCount', { count: series.generatedCount })}
-            </p>
-          )}
-
-          {/* Edit button */}
-          <Button onClick={() => setEditing(true)} className="w-full">
+    <DetailSheet
+      open
+      onClose={onClose}
+      title={series.title}
+      subtitle={t('recurringTasks.recurringBadge', '🔁 Recurring task')}
+      size="xl"
+      headerActions={
+        canManage ? (
+          <Button variant="outline" size="sm" onClick={() => setEditing(true)} className="gap-1.5">
+            <Pencil className="h-3.5 w-3.5" />
             {t('recurringTasks.edit', 'Edit')}
           </Button>
+        ) : undefined
+      }
+    >
+      <div className="space-y-6">
+        {/* Row 1: Task Details + Schedule (mirrors TaskDetailClient layout) */}
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Task Details card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                {t('recurringTasks.status', 'Status')} &amp; {t('tasksClient.priority', 'Priority')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">{t('common.status')}</span>
+                <Badge variant={series.isActive ? 'default' : 'outline'}>
+                  {series.isActive
+                    ? t('recurringTasks.active', 'Active')
+                    : t('recurringTasks.pausedBadge', 'Paused')}
+                </Badge>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">{t('tasksClient.priority')}</span>
+                <Badge variant="secondary">{t(`tasks.priority.${series.priority}`)}</Badge>
+              </div>
+              {series.description && (
+                <div className="border-t border-(--border) pt-3">
+                  <p className="text-sm text-muted-foreground">{series.description}</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Schedule card (mirrors Timeline card) */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                {t('recurringTasks.schedule', 'Schedule')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm font-medium">🔁 {describeRule()}</p>
+              {series.startDate && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">
+                    {t('taskWizard.steps.repeat.startDateLabel', 'Starts on')}
+                  </span>
+                  <span className="font-medium text-sm">{series.startDate}</span>
+                </div>
+              )}
+              {series.endDate && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">
+                    {t('taskWizard.steps.repeat.endDateLabel', 'Ends on')}
+                  </span>
+                  <span className="font-medium text-sm">{series.endDate}</span>
+                </div>
+              )}
+              {series.deadlineOffsetDays != null && series.deadlineOffsetDays > 0 && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">
+                    {t('taskWizard.steps.repeat.offsetLabel', 'Deadline offset')}
+                  </span>
+                  <span className="font-medium text-sm">{series.deadlineOffsetDays}d</span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
-      </SheetContent>
-    </Sheet>
+
+        {/* Row 2: Assignee + Generated instances */}
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Assignee card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                {t('tasksClient.assignee', 'Assignee')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {series.assignedToUser || series.assignedToName ? (
+                <div className="flex items-center gap-2">
+                  <Avatar
+                    name={series.assignedToUser?.name ?? series.assignedToName ?? '?'}
+                    url={series.assignedToUser?.avatarUrl ?? series.assignedToAvatar}
+                    size="sm"
+                  />
+                  <span className="font-medium">
+                    {series.assignedToUser?.name ?? series.assignedToName ?? series.assignedTo}
+                  </span>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  {t('tasksTable.unassigned', 'Unassigned')}
+                </p>
+              )}
+
+              {/* Co-assignees */}
+              {series.coAssignees && series.coAssignees.length > 0 && (
+                <div className="border-t border-(--border) pt-3">
+                  <p className="text-xs text-muted-foreground mb-2">
+                    {t('tasksClient.alsoWorking', 'Also working on this')}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {series.coAssignees.map(
+                      (ca: { _id: string; name: string; avatarUrl?: string | null }) => (
+                        <div key={ca._id} className="flex items-center gap-1.5">
+                          <Avatar name={ca.name} url={ca.avatarUrl} size="sm" />
+                          <span className="text-sm">{ca.name}</span>
+                        </div>
+                      ),
+                    )}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Generated instances card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CheckCircle className="h-5 w-5" />
+                {t('recurringTasks.generated', 'Generated')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <p className="text-sm font-medium">
+                {t('recurringTasks.generatedCount', { count: series.generatedCount ?? 0 })}
+              </p>
+              {series.nextOccurrence && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">
+                    {t('recurringTasks.nextRun', { date: series.nextOccurrence })}
+                  </span>
+                </div>
+              )}
+              {/* Comment count */}
+              {series.commentCount != null && series.commentCount > 0 && (
+                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                  <MessageSquare className="h-4 w-4" />
+                  {t('recurringTasks.commentCount', { count: series.commentCount })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Subtasks template */}
+        {series.subtaskTemplates && series.subtaskTemplates.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                {t('tasksClient.subtasks', 'Subtasks')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {series.subtaskTemplates.map((st: any, i: number) => (
+                  <div key={i} className="flex items-center gap-2 text-sm">
+                    <span className="w-4 h-4 rounded border border-(--border) shrink-0" />
+                    <span>{st.title}</span>
+                    {st.priority && st.priority !== 'medium' && (
+                      <Badge variant="secondary" className="text-xs">
+                        {t(`tasks.priority.${st.priority}`)}
+                      </Badge>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Checklist template */}
+        {series.checklistTemplates && series.checklistTemplates.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CheckCircle className="h-5 w-5" />
+                {t('tasksClient.checklist', 'Checklist')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {series.checklistTemplates.map((cl: any, i: number) => (
+                  <div key={i} className="flex items-center gap-2 text-sm">
+                    <span className="w-4 h-4 rounded border border-(--border) shrink-0" />
+                    <span>{cl.title}</span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Tags */}
+        {series.tags && series.tags.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Tag className="h-5 w-5" />
+                {t('tasksClient.tags', 'Tags')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                {series.tags.map((tag: string, i: number) => (
+                  <Badge key={i} variant="secondary">
+                    #{tag}
+                  </Badge>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Comments */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MessageSquare className="h-5 w-5" />
+              {t('tasksClient.comments', 'Comments')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {comments && comments.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                {t('tasksClient.noComments', 'No comments yet')}
+              </p>
+            )}
+            {comments &&
+              comments.map((c: any) => (
+                <div key={c._id} className="flex gap-3">
+                  <Avatar name={c.authorName ?? '?'} url={c.authorAvatar} size="sm" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">{c.authorName}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(c.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-0.5">{c.content}</p>
+                  </div>
+                </div>
+              ))}
+            <form onSubmit={(e) => void handleCommentSubmit(e)} className="flex gap-2">
+              <Input
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                placeholder={t('tasksClient.writeComment', 'Write a comment...')}
+                className="flex-1"
+                disabled={isPosting}
+              />
+              <Button type="submit" size="sm" disabled={!commentText.trim() || isPosting}>
+                {t('tasksClient.post', 'Post')}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    </DetailSheet>
   );
 }
 
@@ -852,6 +1127,9 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
   const [sheetTask, setSheetTask] = useState<{ id: Id<'tasks'>; title: string } | null>(null);
   /** Recurring series being edited — opens the CreateTaskWizard in edit mode. */
   const [editingRecurring, setEditingRecurring] = useState<any | null>(null);
+  /** Inline rename: set to a task id to show a rename input, null to hide. */
+  const [renamingTaskId, setRenamingTaskId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
   const [showAssign, setShowAssign] = useState(false);
   const [_activeTask, setActiveTask] = useState<TaskItem | null>(null);
   const [_isPending, startTransition] = useTransition();
@@ -942,6 +1220,21 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
     },
     [t],
   );
+
+  /** Context menu: open the edit form for a task. */
+  const handleContextMenuEdit = useCallback((task: ContextTask) => {
+    if (task._type === 'recurring') {
+      setEditingRecurring(task);
+    } else {
+      setSheetTask({ id: task._id as Id<'tasks'>, title: task.title });
+    }
+  }, []);
+
+  /** Context menu: start inline rename. */
+  const handleContextMenuRename = useCallback((task: ContextTask) => {
+    setRenamingTaskId(task._id);
+    setRenameValue(task.title);
+  }, []);
 
   // Queries — one visibility rule for every role, decided server-side by the
   // reporting line (see convex/tasks.ts `getVisibleTasks`): employees and
@@ -1116,6 +1409,33 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
     [savedViews, patchView],
   );
 
+  /** Context menu: delete a single task. */
+  const handleDeleteSingle = useCallback(
+    (task: ContextTask) => {
+      if (!canManage) return;
+      void handleBulkDelete([task._id]);
+    },
+    [canManage, handleBulkDelete],
+  );
+
+  /** Context menu: set priority. */
+  const handleContextMenuPriority = useCallback(
+    (taskId: string, priority: string) => {
+      void handlePatchTask(taskId, { priority: priority as any });
+    },
+    [handlePatchTask],
+  );
+
+  /** Context menu: toggle active/paused for recurring series. */
+  const handleToggleActive = useCallback(
+    (task: ContextTask) => {
+      if (task._type !== 'recurring') return;
+      const newStatus = task.status === 'cancelled' ? 'in_progress' : 'cancelled';
+      handleSetStatus(task._id, newStatus);
+    },
+    [handleSetStatus],
+  );
+
   /**
    * A default view is what the board opens as — unless the link says otherwise.
    *
@@ -1198,8 +1518,14 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
     // not in the next while the list is being built.
     const now = Date.now();
     const filtered = rawTasksWithOptimistic.filter((t) => {
+      // Resolve status through org definitions so recurring tasks with
+      // mismatched status/statusKey are treated consistently everywhere.
+      const rKey = statuses
+        ? (resolveStatus({ status: t.status as any, statusKey: t.statusKey }, statuses)
+            .key as Status)
+        : (t.status as Status);
       const matchPriority = filterPriority === 'all' || t.priority === filterPriority;
-      const matchStatus = filterStatus === 'all' || t.status === filterStatus;
+      const matchStatus = filterStatus === 'all' || rKey === filterStatus;
       const matchSearch = !search || t.title.toLowerCase().includes(search.toLowerCase());
       const matchEmployee = filterEmployee === 'all' || t.assignedToUser?._id === filterEmployee;
       const matchProject =
@@ -1207,10 +1533,10 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
         (filterProject === 'none' ? !t.projectId : t.projectId === filterProject);
       const matchOverdue =
         !filterOverdue ||
-        (!!t.deadline && t.deadline < now && t.status !== 'completed' && t.status !== 'cancelled');
+        (!!t.deadline && t.deadline < now && rKey !== 'completed' && rKey !== 'cancelled');
       // A layout preference, not a filter: it is deliberately not in the link,
       // so a shared view never silently hides finished work from the recipient.
-      const matchCompleted = !prefs.hideCompleted || t.status !== 'completed';
+      const matchCompleted = !prefs.hideCompleted || rKey !== 'completed';
       // Tab: 'recurring' shows only recurring series; 'all' shows everything.
       const matchTab = viewState.tab === 'all' || (t as any)._type === 'recurring';
       return (
@@ -1267,6 +1593,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
     });
   }, [
     rawTasksWithOptimistic,
+    statuses,
     filterPriority,
     filterStatus,
     search,
@@ -1288,21 +1615,29 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
   // cards always add up to what the board shows.
   const stats = useMemo(() => {
     const all = rawTasksWithOptimistic ?? [];
+    /** Resolve the status key through org definitions so recurring tasks
+     *  with mismatched status/statusKey show up in the correct bucket. */
+    const resolvedKey = (t: (typeof all)[number]) => {
+      const r = statuses
+        ? resolveStatus({ status: t.status as any, statusKey: t.statusKey }, statuses)
+        : null;
+      return (r?.key ?? t.status) as Status;
+    };
     return {
-      total: all.filter((t) => t.status !== 'cancelled').length,
-      pending: all.filter((t) => t.status === 'pending').length,
-      inProgress: all.filter((t) => t.status === 'in_progress').length,
-      review: all.filter((t) => t.status === 'review').length,
-      completed: all.filter((t) => t.status === 'completed').length,
+      total: all.filter((t) => resolvedKey(t) !== 'cancelled').length,
+      pending: all.filter((t) => resolvedKey(t) === 'pending').length,
+      inProgress: all.filter((t) => resolvedKey(t) === 'in_progress').length,
+      review: all.filter((t) => resolvedKey(t) === 'review').length,
+      completed: all.filter((t) => resolvedKey(t) === 'completed').length,
       overdue: all.filter(
         (t) =>
           t.deadline &&
           t.deadline < Date.now() &&
-          t.status !== 'completed' &&
-          t.status !== 'cancelled',
+          resolvedKey(t) !== 'completed' &&
+          resolvedKey(t) !== 'cancelled',
       ).length,
     };
-  }, [rawTasksWithOptimistic]);
+  }, [rawTasksWithOptimistic, statuses]);
 
   const tasksByStatus = useMemo(() => {
     const map: Record<Status, TaskItem[]> = {
@@ -1313,10 +1648,17 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
       cancelled: [],
     };
     tasks.forEach((t) => {
-      map[t.status as Status].push(t);
+      // Use resolveStatus so recurring tasks with mismatched status/statusKey
+      // land in the correct section (same logic as the Table view).
+      const resolved = statuses
+        ? resolveStatus({ status: t.status as any, statusKey: t.statusKey }, statuses)
+        : null;
+      const key = (resolved?.key ?? t.status) as Status;
+      if (map[key]) map[key].push(t);
+      else map.pending.push(t);
     });
     return map;
-  }, [tasks]);
+  }, [tasks, statuses]);
 
   // Group tasks for section-based view
   const sections = useMemo(() => {
@@ -1325,7 +1667,14 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
       return sectionOrder.map((status) => ({
         key: status,
         label: t(STATUS_CONFIG[status].labelKey),
-        tasks: tasks.filter((t) => t.status === status),
+        tasks: tasks.filter((t) => {
+          // Use resolveStatus so recurring tasks with mismatched status/statusKey
+          // land in the correct section (same logic as the Table view).
+          const resolved = statuses
+            ? resolveStatus({ status: t.status as any, statusKey: t.statusKey }, statuses)
+            : null;
+          return (resolved?.key ?? t.status) === status;
+        }),
       }));
     }
     if (groupBy === 'priority') {
@@ -1362,7 +1711,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
       else map.set(key, { label: name, tasks: [tk] });
     });
     return [...map.entries()].map(([key, v]) => ({ key, label: v.label, tasks: v.tasks }));
-  }, [tasks, groupBy, t]);
+  }, [tasks, groupBy, t, statuses]);
 
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   const toggleSection = (key: string) => {
@@ -2095,13 +2444,42 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
                   tasks={tasksByStatus[status]}
                   onOpen={(task) => openTask(task)}
                   statuses={statuses}
+                  contextMenu={
+                    canManage
+                      ? {
+                          canManage,
+                          onEdit: handleContextMenuEdit,
+                          onRename: handleContextMenuRename,
+                          onSetStatus: handleSetStatus,
+                          onSetPriority: handleContextMenuPriority,
+                          onDelete: handleDeleteSingle,
+                          onToggleActive: handleToggleActive,
+                        }
+                      : undefined
+                  }
                 />
               ))}
             </div>
           </DndContext>
         ) : viewMode === 'timeline' ? (
           <div className="p-4 sm:p-6">
-            <TimelineView tasks={tasks} onOpen={(task) => openTask(task)} />
+            <TimelineView
+              tasks={tasks}
+              onOpen={(task) => openTask(task)}
+              contextMenu={
+                canManage
+                  ? {
+                      canManage,
+                      onEdit: handleContextMenuEdit,
+                      onRename: handleContextMenuRename,
+                      onSetStatus: handleSetStatus,
+                      onSetPriority: handleContextMenuPriority,
+                      onDelete: handleDeleteSingle,
+                      onToggleActive: handleToggleActive,
+                    }
+                  : undefined
+              }
+            />
           </div>
         ) : viewMode === 'table' ? (
           /* ═══ Table View — the ClickUp grid ═══ */
@@ -2133,6 +2511,19 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
             onBulkPatch={canManage ? handleBulkPatch : undefined}
             onBulkDelete={canManage ? handleBulkDelete : undefined}
             addColumnSlot={canManage ? <AddFieldPopover onSubmit={handleCreateField} /> : undefined}
+            contextMenu={
+              canManage
+                ? {
+                    canManage,
+                    onEdit: handleContextMenuEdit,
+                    onRename: handleContextMenuRename,
+                    onSetStatus: handleSetStatus,
+                    onSetPriority: handleContextMenuPriority,
+                    onDelete: handleDeleteSingle,
+                    onToggleActive: handleToggleActive,
+                  }
+                : undefined
+            }
             emptyState={
               <div className="py-20 text-center">
                 <p className="mb-3 text-4xl">📋</p>
@@ -2226,110 +2617,126 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
                           const statusCfg = STATUS_CONFIG[task.status as Status];
                           const priorityCfg = PRIORITY_CONFIG[task.priority as Priority];
                           return (
-                            <div
+                            <TaskContextMenu
                               key={task._id}
-                              onClick={() => openTask(task)}
-                              style={listGridStyle}
-                              className="grid border-b border-(--border) last:border-0 hover:bg-(--background-subtle) cursor-pointer transition-colors items-center"
+                              task={task as ContextTask}
+                              canManage={canManage}
+                              onOpen={(t) => openTask(t as any)}
+                              onEdit={handleContextMenuEdit}
+                              onRename={handleContextMenuRename}
+                              onSetStatus={handleSetStatus}
+                              onSetPriority={handleContextMenuPriority}
+                              onDelete={handleDeleteSingle}
+                              onToggleActive={handleToggleActive}
                             >
-                              {/* Name */}
-                              <div className={`flex items-center gap-2 ${cellPad} min-w-0`}>
-                                <span
-                                  className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${task.status === 'completed' ? 'border-(--success-solid) bg-(--success-solid)' : 'border-(--text-muted)'}`}
-                                >
-                                  {task.status === 'completed' && (
-                                    <svg
-                                      className="w-2.5 h-2.5 text-white"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      viewBox="0 0 24 24"
-                                    >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={3}
-                                        d="M5 13l4 4L19 7"
-                                      />
-                                    </svg>
-                                  )}
-                                </span>
-                                <span className="text-sm text-(--text-primary) truncate font-medium">
-                                  {localizedTaskTitle(t, task)}
-                                </span>
-                              </div>
-                              {/* Cells, in the same order as the header */}
-                              {listColumnOrder.map(([key]) => {
-                                if (key === 'deadline')
-                                  return (
-                                    <div key={key} className={cellPad}>
-                                      <DeadlineBadge
-                                        deadline={task.deadline}
-                                        status={task.status as Status}
-                                      />
-                                    </div>
-                                  );
-                                if (key === 'assignee')
-                                  return (
-                                    <div
-                                      key={key}
-                                      className={`flex items-center gap-2 ${cellPad} min-w-0`}
-                                    >
-                                      <Avatar
-                                        name={task.assignedToUser?.name ?? '?'}
-                                        url={task.assignedToUser?.avatarUrl}
-                                        size="sm"
-                                      />
-                                      <span className="text-xs text-(--text-secondary) truncate">
-                                        {task.assignedToUser?.name ?? '—'}
-                                      </span>
-                                    </div>
-                                  );
-                                if (key === 'project')
-                                  return (
-                                    <div key={key} className={`${cellPad} min-w-0 truncate`}>
-                                      <ProjectBadge
-                                        projectId={task.projectId}
-                                        projectName={task.projectName}
-                                        className="text-xs max-w-[140px]"
-                                      />
-                                    </div>
-                                  );
-                                if (key === 'priority')
-                                  return (
-                                    <div key={key} className={cellPad}>
-                                      <span
-                                        className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${priorityCfg.bg} ${priorityCfg.color}`}
+                              <div
+                                onClick={() => openTask(task)}
+                                style={listGridStyle}
+                                className="group/task grid border-b border-(--border) last:border-0 hover:bg-(--brand-quiet)/40 cursor-pointer transition-all duration-150 items-center"
+                              >
+                                {/* Name */}
+                                <div className={`flex items-center gap-2 ${cellPad} min-w-0`}>
+                                  <span
+                                    className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${task.status === 'completed' ? 'border-(--success-solid) bg-(--success-solid)' : 'border-(--text-muted)'}`}
+                                  >
+                                    {task.status === 'completed' && (
+                                      <svg
+                                        className="w-2.5 h-2.5 text-white"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
                                       >
-                                        {priorityCfg.icon && <span>{priorityCfg.icon}</span>}
-                                        {t(priorityCfg.labelKey)}
-                                      </span>
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          strokeWidth={3}
+                                          d="M5 13l4 4L19 7"
+                                        />
+                                      </svg>
+                                    )}
+                                  </span>
+                                  <span className="text-sm text-(--text-primary) truncate font-medium">
+                                    {localizedTaskTitle(t, task)}
+                                  </span>
+                                  {/* Hover context menu trigger */}
+                                  <span className="ml-auto opacity-0 group-hover/task:opacity-100 transition-opacity shrink-0">
+                                    <MoreVertical className="h-4 w-4 text-(--text-muted)" />
+                                  </span>
+                                </div>
+                                {/* Cells, in the same order as the header */}
+                                {listColumnOrder.map(([key]) => {
+                                  if (key === 'deadline')
+                                    return (
+                                      <div key={key} className={cellPad}>
+                                        <DeadlineBadge
+                                          deadline={task.deadline}
+                                          status={task.status as Status}
+                                        />
+                                      </div>
+                                    );
+                                  if (key === 'assignee')
+                                    return (
+                                      <div
+                                        key={key}
+                                        className={`flex items-center gap-2 ${cellPad} min-w-0`}
+                                      >
+                                        <Avatar
+                                          name={task.assignedToUser?.name ?? '?'}
+                                          url={task.assignedToUser?.avatarUrl}
+                                          size="sm"
+                                        />
+                                        <span className="text-xs text-(--text-secondary) truncate">
+                                          {task.assignedToUser?.name ?? '—'}
+                                        </span>
+                                      </div>
+                                    );
+                                  if (key === 'project')
+                                    return (
+                                      <div key={key} className={`${cellPad} min-w-0 truncate`}>
+                                        <ProjectBadge
+                                          projectId={task.projectId}
+                                          projectName={task.projectName}
+                                          className="text-xs max-w-[140px]"
+                                        />
+                                      </div>
+                                    );
+                                  if (key === 'priority')
+                                    return (
+                                      <div key={key} className={cellPad}>
+                                        <span
+                                          className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${priorityCfg.bg} ${priorityCfg.color}`}
+                                        >
+                                          {priorityCfg.icon && <span>{priorityCfg.icon}</span>}
+                                          {t(priorityCfg.labelKey)}
+                                        </span>
+                                      </div>
+                                    );
+                                  return (
+                                    <div key={key} className={cellPad}>
+                                      <div className="flex items-center gap-1.5">
+                                        <span
+                                          className={`w-2 h-2 rounded-full shrink-0 ${statusCfg.dot}`}
+                                        />
+                                        <span className={`text-xs font-medium ${statusCfg.color}`}>
+                                          {statuses
+                                            ? statusLabel(
+                                                t,
+                                                resolveStatus(
+                                                  {
+                                                    status: task.status as any,
+                                                    statusKey: task.statusKey,
+                                                  },
+                                                  statuses,
+                                                ),
+                                              )
+                                            : t(statusCfg.labelKey)}
+                                        </span>
+                                      </div>
                                     </div>
                                   );
-                                return (
-                                  <div key={key} className={cellPad}>
-                                    <div className="flex items-center gap-1.5">
-                                      <span
-                                        className={`w-2 h-2 rounded-full shrink-0 ${statusCfg.dot}`}
-                                      />
-                                      <span className={`text-xs font-medium ${statusCfg.color}`}>
-                                        {statuses
-                                          ? statusLabel(
-                                              t,
-                                              resolveStatus(
-                                                {
-                                                  status: task.status as any,
-                                                  statusKey: task.statusKey,
-                                                },
-                                                statuses,
-                                              ),
-                                            )
-                                          : t(statusCfg.labelKey)}
-                                      </span>
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
+                                })}
+                              </div>
+                            </TaskContextMenu>
                           );
                         })}
 

@@ -398,6 +398,8 @@
         "description": "Кто должен выполнить эту задачу?",
         "assigneeLabel": "Исполнитель",
         "assigneePlaceholder": "Выберите сотрудника",
+        "departmentFilter": "Отдел",
+        "allDepartments": "Все отделы",
         "coAssigneesLabel": "Кто ещё работает",
         "coAssigneesHint": "Необязательно. Ответственным остаётся человек выше."
       },

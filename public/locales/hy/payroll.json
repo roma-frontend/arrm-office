@@ -421,6 +421,10 @@
       "ytd": "YTD",
       "status": "Status",
       "incomeTax": "Income tax"
-    }
+    },
+    "runExistsDesc": "A payroll run for {{period}} already exists. Open it to calculate, approve or pay.",
+    "openRun": "Open",
+    "permissionDenied": "You do not have permission to create a payroll run.",
+    "quotaExceeded": "Monthly run quota exceeded — upgrade your plan or cancel an existing run."
   }
 }

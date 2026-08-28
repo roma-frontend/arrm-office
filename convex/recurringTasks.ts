@@ -35,7 +35,7 @@ import {
   readCustomFields,
   resolveStatusSet,
 } from './lib/taskConfig';
-import { canonicalFor, firstOpenStatus } from './lib/taskStatus';
+import { canonicalFor, firstOpenStatus, STATUS_TYPE_TO_CANONICAL } from './lib/taskStatus';
 import type { TaskFieldValue } from './lib/taskCustomFields';
 
 const frequencyValidator = v.union(v.literal('weekly'), v.literal('monthly'));
@@ -232,6 +232,24 @@ export const createRecurringTask = mutation({
     customFields: v.optional(v.record(v.string(), v.any())),
     timeEstimateMinutes: v.optional(v.number()),
     startOffsetDays: v.optional(v.number()),
+    subtaskTemplates: v.optional(
+      v.array(
+        v.object({
+          title: v.string(),
+          priority: v.optional(
+            v.union(v.literal('low'), v.literal('medium'), v.literal('high'), v.literal('urgent')),
+          ),
+          assigneeId: v.optional(v.id('users')),
+        }),
+      ),
+    ),
+    checklistTemplates: v.optional(
+      v.array(
+        v.object({
+          title: v.string(),
+        }),
+      ),
+    ),
 
     frequency: frequencyValidator,
     daysOfWeek: v.optional(v.array(v.number())),
@@ -370,6 +388,8 @@ export const createRecurringTask = mutation({
       endDate: args.endDate,
       deadlineOffsetDays: args.deadlineOffsetDays,
       ...template,
+      subtaskTemplates: args.subtaskTemplates,
+      checklistTemplates: args.checklistTemplates,
       isActive: true,
       generatedCount: 0,
       createdAt: now,
@@ -494,20 +514,29 @@ export const listRecurringTasks = query({
 
 /** Adds the names and the next run date the UI needs, without a second round trip. */
 async function decorate(ctx: QueryCtx, series: Doc<'recurringTasks'>, today: string) {
-  const [assignee, author, commentRows] = await Promise.all([
+  const [assignee, author, commentRows, coAssigneeUsers] = await Promise.all([
     ctx.db.get(series.assignedTo),
     ctx.db.get(series.assignedBy),
     ctx.db
       .query('recurringTaskComments')
       .withIndex('by_series', (q) => q.eq('seriesId', series._id))
       .take(SMALL_LIST_CAP),
+    series.assigneeIds?.length
+      ? Promise.all(series.assigneeIds.map((id) => ctx.db.get(id)))
+      : Promise.resolve([]),
   ]);
 
   return {
     ...series,
     assignedToName: assignee?.name ?? 'Unknown',
+    assignedToAvatar: assignee?.avatarUrl ?? null,
     assignedByName: author?.name ?? 'Unknown',
     commentCount: commentRows.length,
+    coAssignees: (coAssigneeUsers ?? []).filter(Boolean).map((u) => ({
+      _id: u!._id,
+      name: u!.name,
+      avatarUrl: u!.avatarUrl ?? null,
+    })),
     // Tomorrow onwards: today's occurrence, if any, has already been produced.
     nextOccurrence: series.isActive ? nextOccurrence(ruleOf(series), addDays(today, 1)) : null,
   };
@@ -569,6 +598,24 @@ export const updateRecurringTask = mutation({
     customFields: v.optional(v.record(v.string(), v.any())),
     timeEstimateMinutes: v.optional(v.number()),
     startOffsetDays: v.optional(v.number()),
+    subtaskTemplates: v.optional(
+      v.array(
+        v.object({
+          title: v.string(),
+          priority: v.optional(
+            v.union(v.literal('low'), v.literal('medium'), v.literal('high'), v.literal('urgent')),
+          ),
+          assigneeId: v.optional(v.id('users')),
+        }),
+      ),
+    ),
+    checklistTemplates: v.optional(
+      v.array(
+        v.object({
+          title: v.string(),
+        }),
+      ),
+    ),
     /** Full replacement list — the client sends what should be kept, minus removals. */
     attachments: v.optional(
       v.array(
@@ -686,6 +733,10 @@ export const updateRecurringTask = mutation({
           : series.timeEstimateMinutes,
       startOffsetDays:
         args.startOffsetDays !== undefined ? template.startOffsetDays : series.startOffsetDays,
+      subtaskTemplates:
+        args.subtaskTemplates !== undefined ? args.subtaskTemplates : series.subtaskTemplates,
+      checklistTemplates:
+        args.checklistTemplates !== undefined ? args.checklistTemplates : series.checklistTemplates,
       attachments:
         args.attachments === undefined
           ? series.attachments
@@ -759,7 +810,18 @@ export const updateRecurringTaskStatus = mutation({
     const { caller, series } = await requireOwnSeries(ctx, args.seriesId);
     if (series.status === args.status) return { success: true };
     const now = Date.now();
-    await ctx.db.patch(args.seriesId, { status: args.status, updatedAt: now });
+    // Keep statusKey in sync with status so the board column and the list
+    // grouping agree. Without this the Status column reads statusKey ("In
+    // Progress") while the section filter reads status ("completed").
+    const { statuses } = await resolveStatusSet(ctx, series.organizationId, series.projectId);
+    const matchingKey = statuses.find(
+      (s) => STATUS_TYPE_TO_CANONICAL[s.type] === args.status,
+    )?.key;
+    await ctx.db.patch(args.seriesId, {
+      status: args.status,
+      ...(matchingKey ? { statusKey: matchingKey } : {}),
+      updatedAt: now,
+    });
     await ctx.db.insert('auditLogs', {
       organizationId: series.organizationId,
       userId: caller._id,
@@ -906,6 +968,38 @@ async function materializeIfDue(
     createdAt: now,
     updatedAt: now,
   });
+
+  // ── Stamp subtask templates onto the generated task ──
+  for (const tpl of series.subtaskTemplates ?? []) {
+    if (!tpl.title?.trim()) continue;
+    await ctx.db.insert('tasks', {
+      organizationId: series.organizationId,
+      title: tpl.title.trim(),
+      assignedTo: tpl.assigneeId ?? series.assignedTo,
+      assignedBy: series.assignedBy,
+      status: 'pending',
+      statusKey: 'pending',
+      priority: tpl.priority ?? series.priority,
+      parentTaskId: taskId,
+      recurringTaskId: series._id,
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
+
+  // ── Stamp checklist templates onto the generated task ──
+  for (const tpl of series.checklistTemplates ?? []) {
+    if (!tpl.title?.trim()) continue;
+    await ctx.db.insert('taskChecklistItems', {
+      taskId,
+      organizationId: series.organizationId,
+      title: tpl.title.trim(),
+      isDone: false,
+      order: 0,
+      createdBy: series.assignedBy,
+      createdAt: now,
+    });
+  }
 
   await ctx.db.patch(series._id, {
     lastGeneratedKey: today,

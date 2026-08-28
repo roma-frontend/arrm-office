@@ -167,7 +167,7 @@
     "analytics": "Analytik",
     "settings": "Einstellungen",
     "profile": "Profil",
-    "myPayroll": "Mein Gehalt",
+    "myPayroll": "My payroll",
     "notifications": "Benachrichtigungen",
     "help": "Hilfe",
     "logout": "Abmelden",
@@ -270,8 +270,7 @@
     "orgRequests": "Org-Anfragen",
     "trash": "Papierkorb",
     "landingEditor": "Landing-Editor",
-    "plans": "Tarife & Pläne",
-    "myPayroll": "My payroll"
+    "plans": "Tarife & Pläne"
   },
   "plan": {
     "upgrade": "Upgrade",
@@ -1225,7 +1224,13 @@
       "saveAssignment": "Zuweisung speichern"
     },
     "editEmployee": {
+      "errors": {
+        "cantEditOwnSalary": "Sie können Ihre eigene Vergütung nicht ändern",
+        "noPermission": "Sie sind nicht berechtigt, diesen Mitarbeiter zu bearbeiten.",
+        "salaryUpdateBlocked": "Vergütung konnte nicht aktualisiert werden"
+      },
       "failedToUpdate": "Mitarbeiter konnte nicht aktualisiert werden",
+      "salarySkippedForSelf": "Die übrigen Änderungen wurden gespeichert. Bitten Sie HR oder die Finanzabteilung, Ihr Gehalt zu aktualisieren.",
       "saveChanges": "Änderungen speichern",
       "title": "Mitarbeiter bearbeiten",
       "updatedSuccess": "Mitarbeiter erfolgreich aktualisiert"

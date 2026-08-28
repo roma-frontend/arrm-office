@@ -34,7 +34,11 @@ const itemVariants = {
 };
 
 export default function DashboardClient() {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['dashboard', 'common']);
+  // Namespace prefix is the new i18next convention: switching the hook
+  // above to a tuple tells i18next both namespaces are loaded for this
+  // component, so keys like `dashboard.stat.inOrganization` resolve
+  // without a per-page `ensureAppNamespaces` call.
   const user = useAuthUser();
 
   const [mounted, setMounted] = React.useState(false);

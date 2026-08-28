@@ -44,6 +44,8 @@ jest.mock('../../convex/_generated/api', () => ({
     },
     recurringTasks: {
       listRecurringTasks: { _name: 'listRecurringTasks' },
+      updateRecurringTaskStatus: { _name: 'updateRecurringTaskStatus' },
+      updateRecurringTask: { _name: 'updateRecurringTask' },
     },
     taskStatuses: {
       resolveForProject: { _name: 'resolveForProject' },

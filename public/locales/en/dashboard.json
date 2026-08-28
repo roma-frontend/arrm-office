@@ -482,5 +482,9 @@
     "viewAll": "View all",
     "search": "Search",
     "searchHint": "Search anything"
+  },
+  "stat": {
+    "inOrganization": "in the organization",
+    "needsDecision": "awaiting a decision"
   }
 }

@@ -388,6 +388,8 @@
         "description": "Ով պետք է կատարի այս խնդիրը:",
         "assigneeLabel": "Հանձնարարող",
         "assigneePlaceholder": "Ընտրել աշխատակից",
+        "departmentFilter": "Բաժին",
+        "allDepartments": "Բոլոր բաժինները",
         "coAssigneesLabel": "Ո՞վ է նաև աշխատում",
         "coAssigneesHint": "Ըստ ցանկության։ Պատասխանատուն մնում է վերևում նշված անձը։"
       },

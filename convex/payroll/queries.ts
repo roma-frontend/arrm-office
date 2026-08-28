@@ -239,6 +239,28 @@ export const getPayrollRunById = query({
   },
 });
 
+/**
+ * Look up a single payroll run by `organizationId + period`. The UI uses this
+ * to surface a "this run already exists" toast with a one-click open link
+ * when the create flow runs into the unique constraint.
+ */
+export const getPayrollRunByPeriod = query({
+  args: {
+    organizationId: v.id('organizations'),
+    period: v.string(),
+  },
+  handler: async (ctx, { organizationId, period }) => {
+    const requesterId = await callerId(ctx);
+    await requireOrgSupervisor(ctx, requesterId, organizationId);
+    return await ctx.db
+      .query('payrollRuns')
+      .withIndex('by_org_period', (q) =>
+        q.eq('organizationId', organizationId).eq('period', period),
+      )
+      .unique();
+  },
+});
+
 export const getPayslips = query({
   args: {
     organizationId: v.optional(v.id('organizations')),

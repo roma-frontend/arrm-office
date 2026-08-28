@@ -388,6 +388,8 @@
         "description": "Wer soll diese Aufgabe erledigen?",
         "assigneeLabel": "Zuständiger",
         "assigneePlaceholder": "Mitarbeiter auswählen",
+        "departmentFilter": "Abteilung",
+        "allDepartments": "Alle Abteilungen",
         "coAssigneesLabel": "Wer noch mitarbeitet",
         "coAssigneesHint": "Optional. Verantwortlich bleibt die Person oben."
       },
