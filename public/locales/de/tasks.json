@@ -194,7 +194,12 @@
     "sortAsc": "Aufsteigend — klicken für absteigend",
     "sortDesc": "Absteigend — klicken für aufsteigend",
     "allTasks": "Alle Aufgaben",
-    "recurringTasks": "↻ Wiederkehrend"
+    "recurringTasks": "↻ Wiederkehrend",
+    "alsoWorking": "Arbeitet ebenfalls daran",
+    "subtasks": "Unteraufgaben",
+    "checklist": "Checkliste",
+    "writeComment": "Kommentar schreiben",
+    "post": "Senden"
   },
   "tasksTable": {
     "label": "Aufgaben",
@@ -478,7 +483,12 @@
       "weekly": "Jede Woche am {{days}}",
       "monthly": "Monatlich am {{day}}."
     },
-    "seriesCannotOpen": "Wiederkehrende Serien werden im Tab Wiederkehrende Aufgaben verwaltet."
+    "seriesCannotOpen": "Wiederkehrende Serien werden im Tab Wiederkehrende Aufgaben verwaltet.",
+    "recurringBadge": "Wiederkehrend",
+    "status": "Status",
+    "schedule": "Zeitplan",
+    "generated": "Erzeugt",
+    "commentCount": "{{count}} Kommentare"
   },
   "task": {
     "createTask": "Aufgabe erstellen",
