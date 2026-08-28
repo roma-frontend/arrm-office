@@ -16,7 +16,7 @@
  * the sheet to the edit form without navigating away.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { useTranslation } from 'react-i18next';
 
@@ -54,6 +54,11 @@ export interface TaskSheetProps {
 export function TaskSheet({ taskId, onClose, taskTitle }: TaskSheetProps) {
   const { t } = useTranslation();
   const [editingId, setEditingId] = useState<Id<'tasks'> | null>(null);
+
+  // Reset edit mode when the task changes or the sheet closes.
+  useEffect(() => {
+    setEditingId(null);
+  }, [taskId]);
 
   const handleEdit = useCallback((id: Id<'tasks'>) => {
     setEditingId(id);

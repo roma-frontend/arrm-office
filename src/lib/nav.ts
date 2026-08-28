@@ -336,6 +336,7 @@ export const navItems: NavEntry[] = [
     roles: ['superadmin', 'admin', 'supervisor', 'employee', 'driver'],
     children: [
       { href: '/profile', labelKey: 'nav.profile', icon: User },
+      { href: '/me/payroll', labelKey: 'nav.myPayroll', icon: Wallet },
       { href: '/settings', labelKey: 'nav.settings', icon: Settings },
       {
         href: '/admin/ai-governance',

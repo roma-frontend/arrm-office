@@ -150,6 +150,89 @@ const ObjectiveLinkedKRField = ({
 };
 
 /**
+ * Assignee picker with department filter for supervisors.
+ *
+ * Supervisors can assign tasks to anyone in the organization, including
+ * colleagues from other departments. This component adds a department filter
+ * above the standard select so the supervisor can narrow the list.
+ */
+const AssigneeStepWithFilter = ({
+  employees,
+  defaultValue,
+}: {
+  employees:
+    | Array<{
+        _id: string;
+        name: string;
+        position?: string | null;
+        department?: string | null;
+      }>
+    | undefined;
+  defaultValue?: string;
+}) => {
+  const { t } = useTranslation();
+  const { stepData, updateStepData } = useWizardContext();
+  const deptFilter = (stepData._assigneeDeptFilter as string) ?? '__all__';
+
+  // Extract unique departments from the employee list
+  const departments = React.useMemo(() => {
+    if (!employees) return [];
+    const deptSet = new Set<string>();
+    for (const emp of employees) {
+      if (emp.department) deptSet.add(emp.department);
+    }
+    return [...deptSet].sort();
+  }, [employees]);
+
+  // Filter employees by selected department
+  const filteredEmployees = React.useMemo(() => {
+    if (!employees) return [];
+    if (deptFilter === '__all__') return employees;
+    return employees.filter((emp) => emp.department === deptFilter);
+  }, [employees, deptFilter]);
+
+  return (
+    <div className="space-y-4">
+      {departments.length > 1 && (
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium text-(--text-primary)">
+            {t('taskWizard.steps.assignee.departmentFilter', 'Department')}
+          </label>
+          <select
+            value={deptFilter}
+            onChange={(e) => updateStepData({ _assigneeDeptFilter: e.target.value })}
+            className="w-full rounded-lg border border-(--border) bg-(--card) px-3 py-2 text-sm text-(--text-primary) focus:outline-none focus:ring-2 focus:ring-(--primary)/30"
+          >
+            <option value="__all__">
+              {t('taskWizard.steps.assignee.allDepartments', 'All departments')} (
+              {employees?.length ?? 0})
+            </option>
+            {departments.map((dept) => (
+              <option key={dept} value={dept}>
+                {dept} ({employees?.filter((e) => e.department === dept).length ?? 0})
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+      <SelectStep
+        field="assigneeId"
+        label={t('taskWizard.steps.assignee.assigneeLabel')}
+        options={
+          filteredEmployees?.map((emp) => ({
+            value: emp._id,
+            label: `${emp.name}${emp.position ? ` — ${emp.position}` : ''}${emp.department ? ` (${emp.department})` : ''}`,
+          })) || []
+        }
+        placeholder={t('taskWizard.steps.assignee.assigneePlaceholder')}
+        defaultValue={defaultValue}
+        required
+      />
+    </div>
+  );
+};
+
+/**
  * Repeat rule fields, shown only once a frequency is chosen.
  *
  * Module scope for the same reason as `ObjectiveLinkedKRField`: declared inside
@@ -354,19 +437,7 @@ export function CreateTaskWizard({
             validation: (data: Record<string, unknown>) => !!data.assigneeId,
             content: (
               <div className="space-y-4">
-                <SelectStep
-                  field="assigneeId"
-                  label={t('taskWizard.steps.assignee.assigneeLabel')}
-                  options={
-                    availableEmployees?.map((emp) => ({
-                      value: emp._id,
-                      label: `${emp.name}${emp.position ? ` — ${emp.position}` : ''}${emp.department ? ` (${emp.department})` : ''}`,
-                    })) || []
-                  }
-                  placeholder={t('taskWizard.steps.assignee.assigneePlaceholder')}
-                  defaultValue={assigneeId}
-                  required
-                />
+                <AssigneeStepWithFilter employees={availableEmployees} defaultValue={assigneeId} />
                 <WizardCoAssignees organizationId={boardOrgId} people={availableEmployees} />
               </div>
             ),

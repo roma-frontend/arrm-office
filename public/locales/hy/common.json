@@ -167,6 +167,7 @@
     "analytics": "Վերլուծություն",
     "settings": "Կարգավորումներ",
     "profile": "Պրոֆիլ",
+    "myPayroll": "Իմ աշխատավարձը",
     "notifications": "Ծանուցումներ",
     "help": "Օգնություն",
     "logout": "Դուրս գալ",
@@ -269,7 +270,8 @@
     "orgRequests": "Կազմ. հայտեր",
     "trash": "Զամբյուղ",
     "landingEditor": "Լենդինգի խմբագրիչ",
-    "plans": "Սակագներ և պլաններ"
+    "plans": "Սակագներ և պլաններ",
+    "myPayroll": "My payroll"
   },
   "plan": {
     "upgrade": "Բարձրացնել սակագինը",

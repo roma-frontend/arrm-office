@@ -1135,21 +1135,12 @@ export const getUsersForAssignment = query({
       candidates = candidates.filter((u) => u._id === requester._id);
     }
 
-    // Supervisors can only assign within their own reporting branch. If the
-    // reporting lines are not filled in (no direct reports), fall back to
-    // people in the same department — never the whole organization.
+    // Supervisors can assign to anyone in the organization, including
+    // themselves and colleagues from other departments. The server enforces
+    // write permission via reporting line checks; the roster here is for the
+    // UI to let the supervisor pick a cross-department collaborator.
     if (requester.role === 'supervisor') {
-      const subordinates = await getSubordinateIds(ctx, requester._id, requester.organizationId);
-      if (subordinates.length > 0) {
-        const subtree = new Set<string>(subordinates);
-        candidates = candidates.filter((u) => subtree.has(u._id));
-      } else {
-        const callerDoc = await ctx.db.get(requester._id);
-        const department = callerDoc?.department;
-        candidates = department
-          ? candidates.filter((u) => u._id !== requester._id && u.department === department)
-          : [];
-      }
+      // No restriction — all org candidates remain available.
     }
 
     const userProfiles = await Promise.all(

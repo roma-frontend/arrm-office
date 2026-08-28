@@ -167,6 +167,7 @@
     "analytics": "Analytik",
     "settings": "Einstellungen",
     "profile": "Profil",
+    "myPayroll": "Mein Gehalt",
     "notifications": "Benachrichtigungen",
     "help": "Hilfe",
     "logout": "Abmelden",
@@ -269,7 +270,8 @@
     "orgRequests": "Org-Anfragen",
     "trash": "Papierkorb",
     "landingEditor": "Landing-Editor",
-    "plans": "Tarife & Pläne"
+    "plans": "Tarife & Pläne",
+    "myPayroll": "My payroll"
   },
   "plan": {
     "upgrade": "Upgrade",

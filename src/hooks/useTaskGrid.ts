@@ -207,9 +207,23 @@ export function useTaskGrid(scope: TaskGridScope, tasks: readonly GridSourceTask
 
   const handleSetStatus = useCallback(
     (taskId: string, statusKey: string) => {
-      void runWrite(() => setTaskStatusFor({ taskId: taskId as Id<'tasks'>, statusKey }));
+      // Recurring series IDs come from the `recurringTasks` table and cannot
+      // be passed to `v.id('tasks')` validators on `setTaskStatus`.
+      const isRecurring = (tasks ?? []).some(
+        (t) => t._type === 'recurring' && t._id === taskId,
+      );
+      if (isRecurring) {
+        void runWrite(() =>
+          updateRecurringTaskStatus({
+            seriesId: taskId as Id<'recurringTasks'>,
+            status: statusKey as 'pending' | 'in_progress' | 'review' | 'completed' | 'cancelled',
+          }),
+        );
+      } else {
+        void runWrite(() => setTaskStatusFor({ taskId: taskId as Id<'tasks'>, statusKey }));
+      }
     },
-    [runWrite, setTaskStatusFor],
+    [runWrite, setTaskStatusFor, updateRecurringTaskStatus, tasks],
   );
 
   /**

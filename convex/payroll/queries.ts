@@ -840,3 +840,88 @@ export const getAuditLog = query({
     return enriched.sort((a, b) => b.createdAt - a.createdAt);
   },
 });
+
+// ── My Payroll summary (employee self-service) ─────────────────────────────
+// Aggregates the current user's `payrollRecords` for a calendar year, month
+// by month, so the /me/payroll hero card and YTD bar chart can render
+// without an N+1 over the payslips list. If the user has no record for a
+// month we still emit a row with zeroed totals so the chart shows the full
+// calendar year; the UI distinguishes "no record" via `hasRecord`.
+export const getMyPayrollSummary = query({
+  args: {
+    year: v.optional(v.number()),
+  },
+  handler: async (ctx, { year }) => {
+    const requesterId = await callerId(ctx);
+    await requireUser(ctx, requesterId);
+
+    const targetYear = year ?? new Date().getFullYear();
+
+    const records = await ctx.db
+      .query('payrollRecords')
+      .withIndex('by_user', (q) => q.eq('userId', requesterId))
+      .collect();
+
+    const inYear = records.filter((r) => r.period.startsWith(`${targetYear}-`));
+
+    const months = Array.from({ length: 12 }, (_, i) => {
+      const month = `${targetYear}-${String(i + 1).padStart(2, '0')}`;
+      const record = inYear.find((r) => r.period === month) ?? null;
+      return {
+        month,
+        hasRecord: Boolean(record),
+        gross: record?.grossSalary ?? 0,
+        net: record?.netSalary ?? 0,
+        bonus: record?.bonuses ?? 0,
+        overtimeHours: record?.overtimeHours ?? 0,
+        overtimePay: record?.overtimePay ?? 0,
+        pension: record?.deductions?.pension ?? 0,
+        incomeTax: record?.deductions?.incomeTax ?? 0,
+        socialSecurity: record?.deductions?.socialSecurity ?? 0,
+        healthInsurance: record?.deductions?.healthInsurance ?? 0,
+        other: record?.deductions?.other ?? 0,
+        employerTotal: record?.totalCost ?? 0,
+        currency: record?.currency ?? 'AMD',
+        taxCountry: record?.taxCountry,
+        status: record?.status ?? null,
+      };
+    });
+
+    const present = months.filter((m) => m.hasRecord);
+    const sum = (
+      key:
+        | 'gross'
+        | 'net'
+        | 'bonus'
+        | 'pension'
+        | 'incomeTax'
+        | 'socialSecurity'
+        | 'healthInsurance'
+        | 'other'
+        | 'employerTotal',
+    ) => present.reduce((acc, m) => acc + m[key], 0);
+
+    const latest = present[present.length - 1] ?? null;
+
+    return {
+      year: targetYear,
+      months,
+      ytd: {
+        gross: sum('gross'),
+        net: sum('net'),
+        bonus: sum('bonus'),
+        pension: sum('pension'),
+        incomeTax: sum('incomeTax'),
+        socialSecurity: sum('socialSecurity'),
+        healthInsurance: sum('healthInsurance'),
+        other: sum('other'),
+        employerTotal: sum('employerTotal'),
+        netKept: sum('net') + sum('bonus'),
+        taxes: sum('incomeTax'),
+        mandatory: sum('pension') + sum('socialSecurity') + sum('healthInsurance'),
+        monthsWithPay: present.length,
+      },
+      latest,
+    };
+  },
+});

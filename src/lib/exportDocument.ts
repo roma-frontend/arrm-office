@@ -324,7 +324,7 @@ async function ensureDejaVu(pdfMake: any): Promise<boolean> {
 }
 
 /** Load pdfmake with a Unicode-capable font; returns the font family to use. */
-async function loadPdfMakeWithFonts(): Promise<{ pdfMake: any; font: string }> {
+export async function loadPdfMakeWithFonts(): Promise<{ pdfMake: any; font: string }> {
   const pdfMake: any = await loadPdfMake();
   // vfs_fonts registers the default Roboto font family used by pdfmake. In
   // pdfmake 0.3.x the module *is* the vfs map (top-level *.ttf keys); older
