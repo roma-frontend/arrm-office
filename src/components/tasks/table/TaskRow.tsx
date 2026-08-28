@@ -88,7 +88,6 @@ export interface TaskRowContext {
   onDeleteTask?: (taskId: string) => void;
 }
 
-
 /** The sticky lead cell: select, tick, title, subtask count. */
 function NameCell({
   task,
@@ -171,7 +170,6 @@ function NameCell({
         </span>
       )}
       {/* Three-dot menu — appears on row hover */}
-
     </div>
   );
 }

@@ -418,9 +418,15 @@ export default function CompensationClient() {
                               {/* Current Salary */}
                               {(record as Record<string, unknown>).currentBaseSalary ? (
                                 <div className="text-right hidden sm:block">
-                                  <p className="text-xs text-(--text-muted)">{t('compensation.currentSalary', 'Current')}</p>
+                                  <p className="text-xs text-(--text-muted)">
+                                    {t('compensation.currentSalary', 'Current')}
+                                  </p>
                                   <p className="text-sm font-medium text-(--text-primary)">
-                                    {formatCurrency((record as Record<string, unknown>).currentBaseSalary as number, (record as Record<string, unknown>).currentCurrency as string)}
+                                    {formatCurrency(
+                                      (record as Record<string, unknown>)
+                                        .currentBaseSalary as number,
+                                      (record as Record<string, unknown>).currentCurrency as string,
+                                    )}
                                   </p>
                                 </div>
                               ) : null}

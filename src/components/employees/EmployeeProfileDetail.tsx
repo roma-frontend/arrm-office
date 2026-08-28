@@ -113,9 +113,7 @@ export default function EmployeeProfileDetail({
   const profile = useQuery(api.employeeProfiles.getEmployeeProfile, { userId: employeeId });
   const salary = useQuery(api.employeeProfiles.getSalary, { userId: employeeId });
   const compensationHistory = useQuery(
-    employee?.organizationId
-      ? api.compensation.getCompensationHistory
-      : ('skip' as never),
+    employee?.organizationId ? api.compensation.getCompensationHistory : ('skip' as never),
     employee?.organizationId
       ? { organizationId: employee.organizationId as Id<'organizations'>, userId: employeeId }
       : ('skip' as never),
@@ -777,7 +775,9 @@ export default function EmployeeProfileDetail({
               {salary ? (
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   <div className="p-3 rounded-lg bg-(--background-subtle)">
-                    <p className="text-xs text-(--text-muted)">{t('payroll.baseSalary', 'Base Salary')}</p>
+                    <p className="text-xs text-(--text-muted)">
+                      {t('payroll.baseSalary', 'Base Salary')}
+                    </p>
                     <p className="text-xl font-bold text-(--text-primary)">
                       {salary.salaryCurrency ?? 'AMD'} {salary.baseSalary.toLocaleString()}
                     </p>
@@ -789,20 +789,26 @@ export default function EmployeeProfileDetail({
                     </p>
                   </div>
                   <div className="p-3 rounded-lg bg-(--background-subtle)">
-                    <p className="text-xs text-(--text-muted)">{t('payroll.overtimeHours', 'Overtime')}</p>
+                    <p className="text-xs text-(--text-muted)">
+                      {t('payroll.overtimeHours', 'Overtime')}
+                    </p>
                     <p className="text-xl font-bold text-(--text-primary)">
                       {salary.overtimeHours}h
                     </p>
                   </div>
                   <div className="p-3 rounded-lg bg-(--background-subtle)">
-                    <p className="text-xs text-(--text-muted)">{t('payroll.hourlyRate', 'Hourly Rate')}</p>
+                    <p className="text-xs text-(--text-muted)">
+                      {t('payroll.hourlyRate', 'Hourly Rate')}
+                    </p>
                     <p className="text-xl font-bold text-(--text-primary)">
                       {salary.salaryCurrency ?? 'AMD'} {salary.hourlyRate.toLocaleString()}
                     </p>
                   </div>
                 </div>
               ) : (
-                <p className="text-sm text-(--text-muted)">{t('employeeProfile.noSalaryData', 'No salary information available')}</p>
+                <p className="text-sm text-(--text-muted)">
+                  {t('employeeProfile.noSalaryData', 'No salary information available')}
+                </p>
               )}
             </CardContent>
           </Card>
@@ -840,8 +846,11 @@ export default function EmployeeProfileDetail({
                             {t(`compensation.${record.type}`, record.type)}
                           </p>
                           <p className="text-xs text-(--text-muted)">
-                            {format(new Date(record.effectiveFrom), 'MMM d, yyyy', { locale: dateFnsLocale })}
-                            {' · '}{t(`compensation.${record.frequency}`, record.frequency)}
+                            {format(new Date(record.effectiveFrom), 'MMM d, yyyy', {
+                              locale: dateFnsLocale,
+                            })}
+                            {' · '}
+                            {t(`compensation.${record.frequency}`, record.frequency)}
                           </p>
                         </div>
                       </div>
@@ -859,7 +868,9 @@ export default function EmployeeProfileDetail({
               ) : (
                 <div className="text-center py-6">
                   <DollarSign className="w-10 h-10 text-(--text-muted) mx-auto mb-2 opacity-30" />
-                  <p className="text-sm text-(--text-muted)">{t('employeeProfile.noCompensationRecords', 'No compensation records yet')}</p>
+                  <p className="text-sm text-(--text-muted)">
+                    {t('employeeProfile.noCompensationRecords', 'No compensation records yet')}
+                  </p>
                 </div>
               )}
             </CardContent>

@@ -480,7 +480,7 @@ export const submitRegistration = mutation({
 
     // Trim and validate against the host's configured fields — only
     // enforced when the registration form is actually visible.
-    const fields = registrationOn ? meeting.registrationFields ?? [] : [];
+    const fields = registrationOn ? (meeting.registrationFields ?? []) : [];
     const data: Record<string, string> = {
       fullName: fullName.trim(),
       email: (email ?? '').trim(),
@@ -716,5 +716,23 @@ export const createForRoomBooking = mutation({
       );
     }
     return { roomName, videoUrl: videoUrlForRoom(roomName) };
+  },
+});
+
+/**
+ * Write the admit timestamp + token back to a registration row so the
+ * visitor's lobby page can subscribe to their row and see the admit event.
+ */
+export const markRegistrationAdmitted = mutation({
+  args: {
+    registrationId: v.id('meetingRegistrations'),
+    admittedAt: v.number(),
+    admitToken: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.registrationId, {
+      admittedAt: args.admittedAt,
+      admitToken: args.admitToken,
+    });
   },
 });

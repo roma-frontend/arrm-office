@@ -23,12 +23,7 @@ import {
   ArrowRight,
   ChevronRight,
 } from 'lucide-react';
-import {
-  DashboardScreen,
-  AnalyticsScreen,
-  ChatScreen,
-  CalendarScreen,
-} from './HeroDemo';
+import { DashboardScreen, AnalyticsScreen, ChatScreen, CalendarScreen } from './HeroDemo';
 
 /* ── Types ───────────────────────────────────────────────────────────────── */
 
@@ -274,7 +269,8 @@ export function PlatformMegaMenuV2() {
           opacity: open ? 1 : 0,
           transform: open ? 'translateX(-50%) translateY(0)' : 'translateX(-50%) translateY(-6px)',
           pointerEvents: open ? 'auto' : 'none',
-          transition: 'opacity 0.22s cubic-bezier(0.22, 1, 0.36, 1), transform 0.22s cubic-bezier(0.22, 1, 0.36, 1)',
+          transition:
+            'opacity 0.22s cubic-bezier(0.22, 1, 0.36, 1), transform 0.22s cubic-bezier(0.22, 1, 0.36, 1)',
         }}
         role="menu"
         aria-hidden={!open}
@@ -311,7 +307,10 @@ export function PlatformMegaMenuV2() {
                     <p
                       className="text-sm font-semibold leading-tight"
                       style={{
-                        color: activeCategory === cat.key ? 'var(--text-primary)' : 'var(--text-secondary)',
+                        color:
+                          activeCategory === cat.key
+                            ? 'var(--text-primary)'
+                            : 'var(--text-secondary)',
                       }}
                     >
                       {tCat(cat.key)}
@@ -350,9 +349,7 @@ export function PlatformMegaMenuV2() {
                       <p className="text-sm font-medium text-(--text-primary) leading-tight">
                         {tItem(item.key)}
                       </p>
-                      <p className="text-xs text-(--text-muted) mt-0.5">
-                        {tDesc(item.key)}
-                      </p>
+                      <p className="text-xs text-(--text-muted) mt-0.5">{tDesc(item.key)}</p>
                     </div>
                     <ArrowRight
                       className="w-4 h-4 shrink-0 opacity-0 group-hover/item:opacity-100 transition-all duration-150 group-hover/item:translate-x-1"
@@ -387,7 +384,9 @@ export function PlatformMegaMenuV2() {
                   <span className="w-2 h-2 rounded-full bg-red-400" />
                   <span className="w-2 h-2 rounded-full bg-yellow-400" />
                   <span className="w-2 h-2 rounded-full bg-green-400" />
-                  <span className="flex-1 text-center text-[9px] font-medium text-(--text-muted)">Strata HR</span>
+                  <span className="flex-1 text-center text-[9px] font-medium text-(--text-muted)">
+                    Strata HR
+                  </span>
                 </div>
                 {/* Render the actual animated screen */}
                 <div className="overflow-hidden" style={{ minHeight: 280 }}>

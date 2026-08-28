@@ -359,9 +359,10 @@ export const updateSalary = mutation({
           status: 'approved',
           approvedBy: args.userId,
           approvedAt: now,
-          notes: oldSalary > 0
-            ? `Salary changed from ${oldSalary} to ${newSalary}`
-            : `Initial salary set to ${newSalary}`,
+          notes:
+            oldSalary > 0
+              ? `Salary changed from ${oldSalary} to ${newSalary}`
+              : `Initial salary set to ${newSalary}`,
           createdBy: args.userId,
           createdAt: now,
           updatedAt: now,

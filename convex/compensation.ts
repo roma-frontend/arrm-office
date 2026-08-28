@@ -430,9 +430,8 @@ export const approveCompensationRecord = mutation({
         .first();
 
       if (profile) {
-        const newBaseSalary = record.type === 'raise'
-          ? (profile.baseSalary ?? 0) + record.amount
-          : record.amount;
+        const newBaseSalary =
+          record.type === 'raise' ? (profile.baseSalary ?? 0) + record.amount : record.amount;
 
         await ctx.db.patch(profile._id, {
           baseSalary: newBaseSalary,

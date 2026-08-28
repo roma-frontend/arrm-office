@@ -171,7 +171,15 @@ export function SolutionsMenu() {
   const tItem = (key: string) => t(`landing.solutionsMenu.items.${key}`, key);
 
   return (
-    <div ref={rootRef} className="relative" onMouseEnter={() => { cancelClose(); setOpen(true); }} onMouseLeave={scheduleClose}>
+    <div
+      ref={rootRef}
+      className="relative"
+      onMouseEnter={() => {
+        cancelClose();
+        setOpen(true);
+      }}
+      onMouseLeave={scheduleClose}
+    >
       <button
         type="button"
         className="inline-flex items-center gap-1.5 text-sm font-medium transition-colors duration-200 focus:outline-none focus:underline underline-offset-4"
@@ -190,7 +198,8 @@ export function SolutionsMenu() {
           opacity: open ? 1 : 0,
           transform: open ? 'translateY(0)' : 'translateY(-6px)',
           pointerEvents: open ? 'auto' : 'none',
-          transition: 'opacity 0.22s cubic-bezier(0.22, 1, 0.36, 1), transform 0.22s cubic-bezier(0.22, 1, 0.36, 1)',
+          transition:
+            'opacity 0.22s cubic-bezier(0.22, 1, 0.36, 1), transform 0.22s cubic-bezier(0.22, 1, 0.36, 1)',
         }}
         role="menu"
         aria-hidden={!open}
@@ -225,7 +234,10 @@ export function SolutionsMenu() {
                   </span>
                   <p
                     className="text-sm font-semibold"
-                    style={{ color: activeGroup === group.key ? 'var(--text-primary)' : 'var(--text-secondary)' }}
+                    style={{
+                      color:
+                        activeGroup === group.key ? 'var(--text-primary)' : 'var(--text-secondary)',
+                    }}
                   >
                     {tGroup(group.key)}
                   </p>
@@ -243,7 +255,10 @@ export function SolutionsMenu() {
 
             {/* Center: items */}
             <div className="flex-1 p-5">
-              <p className="text-xs font-bold uppercase tracking-wider mb-4" style={{ color: 'var(--text-muted)' }}>
+              <p
+                className="text-xs font-bold uppercase tracking-wider mb-4"
+                style={{ color: 'var(--text-muted)' }}
+              >
                 {tGroup(active.key)}
               </p>
               <div className="space-y-1">
@@ -262,7 +277,9 @@ export function SolutionsMenu() {
                       >
                         {TEAM_ICONS[item.key] ?? <Briefcase className="w-4 h-4" />}
                       </span>
-                      <span className="text-sm font-medium text-(--text-primary)">{tItem(item.key)}</span>
+                      <span className="text-sm font-medium text-(--text-primary)">
+                        {tItem(item.key)}
+                      </span>
                     </div>
                     <ArrowRight
                       className="w-4 h-4 shrink-0 opacity-0 group-hover/item:opacity-100 transition-all duration-150 group-hover/item:translate-x-1"
@@ -287,7 +304,9 @@ export function SolutionsMenu() {
                 {active.key === 'byIndustry' && <Briefcase className="w-7 h-7" />}
               </span>
               <p className="text-sm font-bold text-(--text-primary) mb-1">{tGroup(active.key)}</p>
-              <p className="text-xs text-(--text-muted) mb-3">{t('landing.solutionsMenu.desc', 'Tailored for your team')}</p>
+              <p className="text-xs text-(--text-muted) mb-3">
+                {t('landing.solutionsMenu.desc', 'Tailored for your team')}
+              </p>
               <Link
                 href="/features"
                 className="inline-flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-xl transition-all duration-200 hover:scale-105"
@@ -318,11 +337,41 @@ type WhyItem = {
 };
 
 const WHY_ITEMS: WhyItem[] = [
-  { key: 'security', href: '/privacy', icon: <ShieldCheck className="w-5 h-5" />, color: '#10b981', bgColor: 'rgba(16, 185, 129, 0.1)' },
-  { key: 'pricing', href: '/#pricing', icon: <CreditCard className="w-5 h-5" />, color: '#3b82f6', bgColor: 'rgba(59, 130, 246, 0.1)' },
-  { key: 'integrations', href: '/features', icon: <Puzzle className="w-5 h-5" />, color: '#8b5cf6', bgColor: 'rgba(139, 92, 246, 0.1)' },
-  { key: 'customers', href: '/#testimonials', icon: <Heart className="w-5 h-5" />, color: '#ef4444', bgColor: 'rgba(239, 68, 68, 0.1)' },
-  { key: 'tour', href: '/#story', icon: <Play className="w-5 h-5" />, color: '#f59e0b', bgColor: 'rgba(245, 158, 11, 0.1)' },
+  {
+    key: 'security',
+    href: '/privacy',
+    icon: <ShieldCheck className="w-5 h-5" />,
+    color: '#10b981',
+    bgColor: 'rgba(16, 185, 129, 0.1)',
+  },
+  {
+    key: 'pricing',
+    href: '/#pricing',
+    icon: <CreditCard className="w-5 h-5" />,
+    color: '#3b82f6',
+    bgColor: 'rgba(59, 130, 246, 0.1)',
+  },
+  {
+    key: 'integrations',
+    href: '/features',
+    icon: <Puzzle className="w-5 h-5" />,
+    color: '#8b5cf6',
+    bgColor: 'rgba(139, 92, 246, 0.1)',
+  },
+  {
+    key: 'customers',
+    href: '/#testimonials',
+    icon: <Heart className="w-5 h-5" />,
+    color: '#ef4444',
+    bgColor: 'rgba(239, 68, 68, 0.1)',
+  },
+  {
+    key: 'tour',
+    href: '/#story',
+    icon: <Play className="w-5 h-5" />,
+    color: '#f59e0b',
+    bgColor: 'rgba(245, 158, 11, 0.1)',
+  },
 ];
 
 export function WhyMenu() {
@@ -333,7 +382,15 @@ export function WhyMenu() {
   const tItemDesc = (key: string) => t(`landing.whyMenu.items.${key}.desc`, '');
 
   return (
-    <div ref={rootRef} className="relative" onMouseEnter={() => { cancelClose(); setOpen(true); }} onMouseLeave={scheduleClose}>
+    <div
+      ref={rootRef}
+      className="relative"
+      onMouseEnter={() => {
+        cancelClose();
+        setOpen(true);
+      }}
+      onMouseLeave={scheduleClose}
+    >
       <button
         type="button"
         className="inline-flex items-center gap-1.5 text-sm font-medium transition-colors duration-200 focus:outline-none focus:underline underline-offset-4"
@@ -352,7 +409,8 @@ export function WhyMenu() {
           opacity: open ? 1 : 0,
           transform: open ? 'translateY(0)' : 'translateY(-6px)',
           pointerEvents: open ? 'auto' : 'none',
-          transition: 'opacity 0.22s cubic-bezier(0.22, 1, 0.36, 1), transform 0.22s cubic-bezier(0.22, 1, 0.36, 1)',
+          transition:
+            'opacity 0.22s cubic-bezier(0.22, 1, 0.36, 1), transform 0.22s cubic-bezier(0.22, 1, 0.36, 1)',
         }}
         role="menu"
         aria-hidden={!open}
@@ -380,7 +438,9 @@ export function WhyMenu() {
                   {item.icon}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-(--text-primary) leading-tight">{tItemTitle(item.key)}</p>
+                  <p className="text-sm font-semibold text-(--text-primary) leading-tight">
+                    {tItemTitle(item.key)}
+                  </p>
                   <p className="text-xs text-(--text-muted) mt-0.5">{tItemDesc(item.key)}</p>
                 </div>
                 <ArrowRight
@@ -409,12 +469,48 @@ type ResourceItem = {
 };
 
 const RESOURCE_ITEMS: ResourceItem[] = [
-  { key: 'story', href: '/#story', icon: <Play className="w-5 h-5" />, color: '#3b82f6', bgColor: 'rgba(59, 130, 246, 0.1)' },
-  { key: 'features', href: '/features', icon: <FileText className="w-5 h-5" />, color: '#10b981', bgColor: 'rgba(16, 185, 129, 0.1)' },
-  { key: 'testimonials', href: '/#testimonials', icon: <Heart className="w-5 h-5" />, color: '#ef4444', bgColor: 'rgba(239, 68, 68, 0.1)' },
-  { key: 'faq', href: '/#faq', icon: <HelpCircle className="w-5 h-5" />, color: '#f59e0b', bgColor: 'rgba(245, 158, 11, 0.1)' },
-  { key: 'careers', href: '/careers', icon: <GraduationCap className="w-5 h-5" />, color: '#8b5cf6', bgColor: 'rgba(139, 92, 246, 0.1)' },
-  { key: 'contact', href: '/contact', icon: <BookOpen className="w-5 h-5" />, color: '#06b6d4', bgColor: 'rgba(6, 182, 212, 0.1)' },
+  {
+    key: 'story',
+    href: '/#story',
+    icon: <Play className="w-5 h-5" />,
+    color: '#3b82f6',
+    bgColor: 'rgba(59, 130, 246, 0.1)',
+  },
+  {
+    key: 'features',
+    href: '/features',
+    icon: <FileText className="w-5 h-5" />,
+    color: '#10b981',
+    bgColor: 'rgba(16, 185, 129, 0.1)',
+  },
+  {
+    key: 'testimonials',
+    href: '/#testimonials',
+    icon: <Heart className="w-5 h-5" />,
+    color: '#ef4444',
+    bgColor: 'rgba(239, 68, 68, 0.1)',
+  },
+  {
+    key: 'faq',
+    href: '/#faq',
+    icon: <HelpCircle className="w-5 h-5" />,
+    color: '#f59e0b',
+    bgColor: 'rgba(245, 158, 11, 0.1)',
+  },
+  {
+    key: 'careers',
+    href: '/careers',
+    icon: <GraduationCap className="w-5 h-5" />,
+    color: '#8b5cf6',
+    bgColor: 'rgba(139, 92, 246, 0.1)',
+  },
+  {
+    key: 'contact',
+    href: '/contact',
+    icon: <BookOpen className="w-5 h-5" />,
+    color: '#06b6d4',
+    bgColor: 'rgba(6, 182, 212, 0.1)',
+  },
 ];
 
 export function ResourcesMenu({ activeSection = null }: { activeSection?: string | null }) {
@@ -441,7 +537,15 @@ export function ResourcesMenu({ activeSection = null }: { activeSection?: string
   };
 
   return (
-    <div ref={rootRef} className="relative" onMouseEnter={() => { cancelClose(); setOpen(true); }} onMouseLeave={scheduleClose}>
+    <div
+      ref={rootRef}
+      className="relative"
+      onMouseEnter={() => {
+        cancelClose();
+        setOpen(true);
+      }}
+      onMouseLeave={scheduleClose}
+    >
       <button
         type="button"
         className="inline-flex items-center gap-1.5 text-sm font-medium transition-colors duration-200 focus:outline-none focus:underline underline-offset-4"
@@ -463,7 +567,8 @@ export function ResourcesMenu({ activeSection = null }: { activeSection?: string
           opacity: open ? 1 : 0,
           transform: open ? 'translateY(0)' : 'translateY(-6px)',
           pointerEvents: open ? 'auto' : 'none',
-          transition: 'opacity 0.22s cubic-bezier(0.22, 1, 0.36, 1), transform 0.22s cubic-bezier(0.22, 1, 0.36, 1)',
+          transition:
+            'opacity 0.22s cubic-bezier(0.22, 1, 0.36, 1), transform 0.22s cubic-bezier(0.22, 1, 0.36, 1)',
         }}
         role="menu"
         aria-hidden={!open}
@@ -494,7 +599,9 @@ export function ResourcesMenu({ activeSection = null }: { activeSection?: string
                     {item.icon}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-(--text-primary) leading-tight">{tItemTitle(item.key)}</p>
+                    <p className="text-sm font-semibold text-(--text-primary) leading-tight">
+                      {tItemTitle(item.key)}
+                    </p>
                     <p className="text-xs text-(--text-muted) mt-0.5">{tDesc(item.key)}</p>
                   </div>
                   <ArrowRight

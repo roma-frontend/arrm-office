@@ -151,7 +151,8 @@ export function TaskContextMenu({
                   <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${p.color}`} />
                   {priorityLabel(p.key)}
                   {task.priority === p.key && <span className="ml-auto text-xs opacity-50">✓</span>}
-                </ContextMenuItem>              ))}
+                </ContextMenuItem>
+              ))}
             </ContextMenuSubContent>
           </ContextMenuSub>
         )}

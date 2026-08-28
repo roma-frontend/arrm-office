@@ -2659,7 +2659,6 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
                                   <span className="text-sm text-(--text-primary) truncate font-medium">
                                     {localizedTaskTitle(t, task)}
                                   </span>
-
                                 </div>
                                 {/* Cells, in the same order as the header */}
                                 {listColumnOrder.map(([key]) => {
@@ -2779,7 +2778,10 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
         taskId={sheetTask?.id ?? null}
         taskTitle={sheetTask?.title}
         initialEditing={sheetInitialEditing}
-        onClose={() => { setSheetTask(null); setSheetInitialEditing(false); }}
+        onClose={() => {
+          setSheetTask(null);
+          setSheetInitialEditing(false);
+        }}
       />
 
       {/* Recurring series detail + edit sheet */}
