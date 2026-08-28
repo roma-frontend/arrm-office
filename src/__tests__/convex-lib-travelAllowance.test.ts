@@ -37,7 +37,12 @@ describe('resolveTravelAllowance', () => {
   });
 
   it('returns 0 when policy is disabled', () => {
-    expect(resolveTravelAllowance({ enabled: false, staffAmount: 20000, contractorAmount: 12000 }, 'staff')).toBe(0);
+    expect(
+      resolveTravelAllowance(
+        { enabled: false, staffAmount: 20000, contractorAmount: 12000 },
+        'staff',
+      ),
+    ).toBe(0);
   });
 
   it('returns staffAmount for staff', () => {
@@ -59,7 +64,9 @@ describe('resolveTravelAllowanceWithOverride', () => {
   });
 
   it('returns override even when policy is disabled', () => {
-    expect(resolveTravelAllowanceWithOverride(DEFAULT_TRAVEL_ALLOWANCE_POLICY, 'staff', 15000)).toBe(15000);
+    expect(
+      resolveTravelAllowanceWithOverride(DEFAULT_TRAVEL_ALLOWANCE_POLICY, 'staff', 15000),
+    ).toBe(15000);
   });
 
   it('returns override of 0 (explicit opt-out)', () => {
@@ -71,7 +78,9 @@ describe('resolveTravelAllowanceWithOverride', () => {
   });
 
   it('falls back to disabled policy when override is undefined', () => {
-    expect(resolveTravelAllowanceWithOverride(DEFAULT_TRAVEL_ALLOWANCE_POLICY, 'staff', undefined)).toBe(0);
+    expect(
+      resolveTravelAllowanceWithOverride(DEFAULT_TRAVEL_ALLOWANCE_POLICY, 'staff', undefined),
+    ).toBe(0);
   });
 });
 

@@ -142,28 +142,43 @@ describe('windowCoversDay', () => {
 
   it('returns true when today is within a non-repeating window', () => {
     expect(
-      windowCoversDay({ ...nonRepeat, startDate: '2026-01-01', endDate: '2026-01-31' }, '2026-01-15'),
+      windowCoversDay(
+        { ...nonRepeat, startDate: '2026-01-01', endDate: '2026-01-31' },
+        '2026-01-15',
+      ),
     ).toBe(true);
   });
 
   it('returns false when today is before the window', () => {
     expect(
-      windowCoversDay({ ...nonRepeat, startDate: '2026-01-10', endDate: '2026-01-20' }, '2026-01-05'),
+      windowCoversDay(
+        { ...nonRepeat, startDate: '2026-01-10', endDate: '2026-01-20' },
+        '2026-01-05',
+      ),
     ).toBe(false);
   });
 
   it('returns false when today is after the window', () => {
     expect(
-      windowCoversDay({ ...nonRepeat, startDate: '2026-01-10', endDate: '2026-01-20' }, '2026-01-25'),
+      windowCoversDay(
+        { ...nonRepeat, startDate: '2026-01-10', endDate: '2026-01-20' },
+        '2026-01-25',
+      ),
     ).toBe(false);
   });
 
   it('returns true on start and end dates', () => {
     expect(
-      windowCoversDay({ ...nonRepeat, startDate: '2026-03-10', endDate: '2026-03-15' }, '2026-03-10'),
+      windowCoversDay(
+        { ...nonRepeat, startDate: '2026-03-10', endDate: '2026-03-15' },
+        '2026-03-10',
+      ),
     ).toBe(true);
     expect(
-      windowCoversDay({ ...nonRepeat, startDate: '2026-03-10', endDate: '2026-03-15' }, '2026-03-15'),
+      windowCoversDay(
+        { ...nonRepeat, startDate: '2026-03-10', endDate: '2026-03-15' },
+        '2026-03-15',
+      ),
     ).toBe(true);
   });
 
@@ -172,13 +187,19 @@ describe('windowCoversDay', () => {
 
     it('matches on the same month-day', () => {
       expect(
-        windowCoversDay({ ...yearly, startDate: '2020-06-15', endDate: '2020-06-20' }, '2026-06-17'),
+        windowCoversDay(
+          { ...yearly, startDate: '2020-06-15', endDate: '2020-06-20' },
+          '2026-06-17',
+        ),
       ).toBe(true);
     });
 
     it('does not match on a different month-day', () => {
       expect(
-        windowCoversDay({ ...yearly, startDate: '2020-06-15', endDate: '2020-06-20' }, '2026-07-17'),
+        windowCoversDay(
+          { ...yearly, startDate: '2020-06-15', endDate: '2020-06-20' },
+          '2026-07-17',
+        ),
       ).toBe(false);
     });
 

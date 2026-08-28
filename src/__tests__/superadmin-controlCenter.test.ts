@@ -62,10 +62,10 @@ describe('windowed (Control Center activity bucketing)', () => {
 
   it('handles mixed timestamps', () => {
     const rows = [
-      { createdAt: now - 10 * 60 * 1000 },  // 10 min → lastHour + last24h
-      { createdAt: now - 3 * HOUR },          // 3h → last24h
-      { createdAt: now - 25 * HOUR },         // 25h → prev24h
-      { createdAt: now - 50 * HOUR },         // 50h → ignored
+      { createdAt: now - 10 * 60 * 1000 }, // 10 min → lastHour + last24h
+      { createdAt: now - 3 * HOUR }, // 3h → last24h
+      { createdAt: now - 25 * HOUR }, // 25h → prev24h
+      { createdAt: now - 50 * HOUR }, // 50h → ignored
     ];
     const result = windowed(rows, now);
     expect(result.lastHour).toBe(1);
@@ -96,7 +96,20 @@ describe('windowed (Control Center activity bucketing)', () => {
 // GDPR USER_DATA_COLLECTIONS registry — test the structure/pattern.
 // The actual array is private, but we verify the expected coverage.
 describe('GDPR data collection coverage', () => {
-  const EXPECTED_MODULES = ['account', 'hr', 'finance', 'goals', 'learning', 'communication', 'fleet', 'meetings', 'productivity', 'recognition', 'security', 'compliance'];
+  const EXPECTED_MODULES = [
+    'account',
+    'hr',
+    'finance',
+    'goals',
+    'learning',
+    'communication',
+    'fleet',
+    'meetings',
+    'productivity',
+    'recognition',
+    'security',
+    'compliance',
+  ];
 
   it('covers all expected modules', () => {
     // These modules are hardcoded in gdprToolkit.ts and must stay in sync

@@ -205,11 +205,7 @@ describe('compareOrderKeys', () => {
   });
 
   it('falls back to createdAt for items without orderKey', () => {
-    const items = [
-      { createdAt: 3000 },
-      { createdAt: 1000 },
-      { createdAt: 2000 },
-    ];
+    const items = [{ createdAt: 3000 }, { createdAt: 1000 }, { createdAt: 2000 }];
     const sorted = items.sort(compareOrderKeys);
     expect(sorted.map((i) => i.createdAt)).toEqual([1000, 2000, 3000]);
   });

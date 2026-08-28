@@ -1,6 +1,4 @@
-import {
-  KNOWN_FEATURES,
-} from '../../convex/superadmin/featureToggles';
+import { KNOWN_FEATURES } from '../../convex/superadmin/featureToggles';
 
 describe('KNOWN_FEATURES', () => {
   it('is a non-empty array', () => {

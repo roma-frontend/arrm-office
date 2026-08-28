@@ -1,4 +1,7 @@
-import { generateTempPassword, DEFAULT_TEMP_PASSWORD_TTL_HOURS } from '../../convex/superadmin/tempPasswords';
+import {
+  generateTempPassword,
+  DEFAULT_TEMP_PASSWORD_TTL_HOURS,
+} from '../../convex/superadmin/tempPasswords';
 
 describe('DEFAULT_TEMP_PASSWORD_TTL_HOURS', () => {
   it('is 24 hours', () => {
