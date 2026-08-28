@@ -412,7 +412,7 @@
       "pinHint": "Enter last 4 of your ID",
       "pinSubmit": "Unlock",
       "pinError": "Wrong code",
-      "pinLocal": "Hint: last 4 chars of your id ({{hint}})",
+      "pinLocal": "Hinweis: die letzten 4 Zeichen Ihrer ID",
       "pdfTitle": "My payroll summary",
       "pdfPeriod": "Period: {{year}}",
       "pdfLatestLabel": "Latest month",

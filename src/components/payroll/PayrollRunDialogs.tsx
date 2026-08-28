@@ -2,8 +2,7 @@
 
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useMutation, useQuery } from 'convex/react';
-import { useRouter } from 'next/navigation';
+import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -206,18 +205,8 @@ export function CreatePayrollRunDialog({
   const user = useAuthStore((s) => s.user);
   const [submitting, setSubmitting] = useState(false);
   const [resetKey, setResetKey] = useState(0);
-  const [lookupPeriod, setLookupPeriod] = useState<string | null>(null);
-  const router = useRouter();
 
   const createRun = useMutation(api.payroll.mutations.createPayrollRun);
-  // Used to find the existing run when the create flow trips the unique
-  // constraint, so the toast can offer an "open" action that jumps
-  // straight to the existing record. Stays `null` (skip) until the user
-  // actually hits the duplicate-run branch.
-  const existingRun = useQuery(
-    api.payroll.queries.getPayrollRunByPeriod,
-    lookupPeriod ? { organizationId, period: lookupPeriod } : 'skip',
-  );
 
   const steps: WizardStep[] = [
     {
@@ -270,46 +259,15 @@ export function CreatePayrollRunDialog({
       setResetKey((k) => k + 1);
     } catch (error) {
       const message = error instanceof Error ? error.message : t('payroll.errorCreatingRun');
-      const lower = message.toLowerCase();
-      if (lower.includes('already exists')) {
-        // Look up the existing run so the toast can offer an "open" action.
-        setLookupPeriod(period);
-      } else if (lower.includes('not authenticated') || lower.includes('access denied')) {
-        toast.error(t('payroll.permissionDenied', 'You do not have permission to create a run.'));
-      } else if (lower.includes('quota')) {
-        toast.error(
-          t('payroll.quotaExceeded', {
-            defaultValue:
-              'Monthly run quota exceeded — upgrade your plan or cancel an existing run.',
-          }),
-        );
+      if (message === 'Payroll run for this period already exists') {
+        toast.error(t('payroll.runExists'));
       } else {
-        toast.error(message || t('payroll.errorCreatingRun'));
+        toast.error(message);
       }
     } finally {
       setSubmitting(false);
     }
   };
-
-  // When the lookup query resolves, swap the (still-pending) toast description
-  // for a definitive one with a working "open" action. We keep the original
-  // toast if the lookup came back null.
-  React.useEffect(() => {
-    if (!lookupPeriod || !existingRun) return;
-    toast.error(t('payroll.runExists'), {
-      duration: 8000,
-      description: t('payroll.runExistsDesc', {
-        defaultValue:
-          'A payroll run for {{period}} already exists. Opening it to calculate, approve or pay.',
-        period: lookupPeriod,
-      }),
-      action: {
-        label: t('payroll.openRun', 'Open'),
-        onClick: () => router.push(`/payroll/${existingRun._id}`),
-      },
-    });
-    setLookupPeriod(null);
-  }, [existingRun, lookupPeriod, router, t]);
 
   const now = new Date();
 

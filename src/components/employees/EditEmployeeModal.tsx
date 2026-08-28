@@ -677,22 +677,7 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
       clearDraft();
       onClose();
     } catch (err) {
-      // Translate known backend errors into friendly toasts so the user
-      // understands *why* the save failed without having to parse raw
-      // server text. Falls back to the server message for everything else.
-      const message = err instanceof Error ? err.message : '';
-      const friendly = message.toLowerCase().includes('your own compensation')
-        ? t('modals.editEmployee.errors.cantEditOwnSalary', {
-            defaultValue:
-              "You can't change your own compensation — contact your HR or finance team.",
-          })
-        : message.toLowerCase().includes('not authorized') ||
-            message.toLowerCase().includes('access denied')
-          ? t('modals.editEmployee.errors.noPermission', {
-              defaultValue: "You don't have permission to update this employee.",
-            })
-          : null;
-      toast.error(friendly ?? message ?? t('modals.editEmployee.failedToUpdate'));
+      toast.error(err instanceof Error ? err.message : t('modals.editEmployee.failedToUpdate'));
     } finally {
       setLoading(false);
     }
