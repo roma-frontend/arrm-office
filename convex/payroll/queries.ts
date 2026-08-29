@@ -870,6 +870,7 @@ export const getMyPayrollSummary = query({
       return {
         month,
         hasRecord: Boolean(record),
+        baseSalary: record?.baseSalary ?? 0,
         gross: record?.grossSalary ?? 0,
         net: record?.netSalary ?? 0,
         bonus: record?.bonuses ?? 0,

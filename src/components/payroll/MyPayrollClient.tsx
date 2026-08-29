@@ -56,6 +56,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import PayslipViewer from '@/components/payroll/PayslipViewer';
+import { PayRatesCard } from '@/components/payroll/PayRatesCard';
+import { PinLockScreen } from '@/components/payroll/PinLockScreen';
+import { derivePin, workingDaysForPeriod } from '@/lib/payrollRates';
 import { ensureAppNamespaces } from '@/i18n/config';
 import { toast } from 'sonner';
 import { exportMyPayslipPdf } from '@/lib/exportMyPayslip';
@@ -98,6 +101,19 @@ export function MyPayrollClient() {
 
   const [year, setYear] = useState(() => new Date().getFullYear());
   const [netHidden, setNetHidden] = useState(false);
+  // PIN-gate the page on first load. The unlock state is per-tab and
+  // per-user: a hard refresh re-locks the screen and the next person at
+  // the desk has to pass the check again.
+  const [unlocked, setUnlocked] = useState(false);
+  useEffect(() => {
+    if (typeof window === 'undefined' || !user?.id) return;
+    try {
+      const cached = sessionStorage.getItem('payroll_unlocked_for');
+      setUnlocked(cached === user.id);
+    } catch {
+      setUnlocked(false);
+    }
+  }, [user?.id]);
 
   const summary = useQuery(api.payroll.queries.getMyPayrollSummary, user?.id ? { year } : 'skip');
 
@@ -168,6 +184,22 @@ export function MyPayrollClient() {
       <div className="flex h-full min-h-[60vh] items-center justify-center">
         <ShieldLoader size="lg" />
       </div>
+    );
+  }
+
+  // Lock the dashboard until the user passes the 4-digit PIN check. The
+  // summary query keeps running in the background so when they unlock,
+  // the numbers are already in place — no extra round-trip wait.
+  if (!unlocked) {
+    return (
+      <PinLockScreen
+        userId={user.id}
+        userName={user.name}
+        email={user.email}
+        expectedPin={derivePin(user.id, user.email)}
+        onUnlock={() => setUnlocked(true)}
+        onCancel={() => window.history.back()}
+      />
     );
   }
 
@@ -284,6 +316,25 @@ export function MyPayrollClient() {
                 {netHidden
                   ? t('payroll.myPayroll.reveal', 'Reveal')
                   : t('payroll.myPayroll.hide', 'Hide')}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="gap-1.5 text-(--text-3)"
+                onClick={() => {
+                  try {
+                    sessionStorage.removeItem('payroll_unlocked_for');
+                  } catch {
+                    /* ignore */
+                  }
+                  setUnlocked(false);
+                }}
+                title={t('payroll.myPayroll.lockAgain', {
+                  defaultValue: 'Lock the screen so the next person has to enter the PIN again',
+                })}
+              >
+                <Lock className="h-3.5 w-3.5" />
+                {t('payroll.myPayroll.lock', { defaultValue: 'Lock' })}
               </Button>
               <Button
                 size="sm"
@@ -585,6 +636,26 @@ export function MyPayrollClient() {
         </Card>
       </motion.div>
 
+      {/* ── My rates: how every component is calculated ──────────────── */}
+      {currentMonth?.hasRecord && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.25 }}
+        >
+          <PayRatesCard
+            baseSalary={
+              typeof currentMonth === 'object' && 'baseSalary' in currentMonth
+                ? (currentMonth as { baseSalary: number }).baseSalary
+                : 0
+            }
+            workingDays={workingDaysForPeriod(currentMonth?.month ?? '')}
+            currency={ytdCurrency}
+            periodLabel={currentMonth?.month ?? ''}
+          />
+        </motion.div>
+      )}
+
       {/* ── Payslips list (reuse existing PayslipViewer) ──────────────── */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -622,17 +693,4 @@ function MiniStat({ label, value, icon }: { label: string; value: string; icon: 
       <p className="mt-1 text-base font-bold tabular-nums text-(--text-1)">{value}</p>
     </div>
   );
-}
-
-/**
- * Renders either the net amount or, when the user chose to lock the screen
- * behind a 4-digit pin, a small form. The "pin" is just the last 4 chars of
- * the user's own id — enough to defeat a casual shoulder-surfer, not
- * enough to be a real security boundary (the data is already theirs).
- */
-function PinOrAmount() {
-  // Pin-screen removed: it added friction without a real security benefit
-  // (the data is already the user's own). The Hide/Reveal toggle is enough
-  // to keep a shoulder-surfer honest.
-  return null;
 }
