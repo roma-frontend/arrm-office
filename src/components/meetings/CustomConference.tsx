@@ -1177,8 +1177,24 @@ export function CustomConference(props: ConferenceProps) {
     });
   };
 
-  const handleEndForAll = () => {
-    setLeaveDialog(null);
+  const handleEndForAll = async () => {
+    if (leaveDialog) setLeaveDialog(null);
+    // "End for everyone" must actually kick every other participant off
+    // the LiveKit server before the host leaves — otherwise the room
+    // keeps running with the original host gone and the next user to
+    // join inherits it. Server-side `RoomServiceClient.removeParticipant`
+    // is authoritative, so the ejected clients cannot opt out.
+    const others = participants.filter((p) => (p.identity || p.sid) !== localIdentity);
+    for (const p of others) {
+      const id = p.identity || p.sid;
+      if (!id) continue;
+      try {
+        await removeParticipant({ roomName, identity: id });
+      } catch {
+        // Keep going — we want to drop as many as possible even if a
+        // single identity has already disconnected.
+      }
+    }
     onLeave();
   };
 

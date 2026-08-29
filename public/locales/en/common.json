@@ -1855,7 +1855,8 @@
       "reserved": "Event saved · {{room}} reserved",
       "releasedWithEvent": "Event deleted · {{room}} released",
       "bookedByThisEvent": "Booked — this event",
-      "clear": "Book without a room"
+      "clear": "Book without a room",
+      "dateInPast": "You can\u2019t book a room in the past \u2014 pick a future date or time."
     },
     "contextMenu": {
       "newEvent": "New Event",
@@ -2729,6 +2730,7 @@
     "lobbySubmittedTitle": "Thanks — you're on the list",
     "lobbySubmittedDesc": "{{host}} has been notified. Please wait, you'll be admitted shortly.",
     "lobbyWaitHint": "Keep this page open — you'll be admitted automatically once the host approves.",
+    "lobbyRedirecting": "Taking you to the meeting…",
     "lobbyEmpty": "No one waiting right now",
     "lobbyWaiting": "{{count}} waiting",
     "lobbyFields": "Registration fields",

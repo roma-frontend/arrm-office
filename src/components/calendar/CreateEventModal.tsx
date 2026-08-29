@@ -815,6 +815,22 @@ export function CreateEventModal({
           }),
         );
         setStep('people');
+      } else if (
+        // `reserveRoom` rejects events whose start time is already in the
+        // past — usually because the user picked yesterday's date by
+        // accident. Surface a friendlier toast than the raw server
+        // message, and send them back to the date step so they can fix it.
+        message.toLowerCase().includes('in the past') ||
+        message.toLowerCase().includes('past date')
+      ) {
+        toast.error(
+          t('createMeeting.dateInPast', {
+            defaultValue:
+              'You can\u2019t book a room in the past \u2014 pick a future date or time.',
+          }),
+          { duration: 7000 },
+        );
+        setStep('details');
       } else {
         toast.error(message || 'Error');
       }

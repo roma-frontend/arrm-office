@@ -40,8 +40,10 @@ export function LobbyForm({
    * `false`, the form is a one-shot and the caller should advance to the
    * pre-join screen on submit. */
   waitingRoomEnabled: boolean;
-  /** Fired after a successful submit when there is no waiting room. */
-  onRegistered?: () => void;
+  /** Fired after a successful submit when there is no waiting room.
+   * The visitor's tracking id (from sessionStorage) is passed so the
+   * parent can mint the self-admit invite token against the same row. */
+  onRegistered?: (visitorId: string) => void;
   onCancel: () => void;
 }) {
   const { t } = useTranslation();
@@ -109,6 +111,13 @@ export function LobbyForm({
       });
       setTrackingId(vid ?? null);
       setSubmitted(true);
+      // For registration-only meetings, the form is the gate — hand the
+      // tracking id back to the parent so it can mint the invite token
+      // and bounce the visitor to the pre-join screen. For waiting-room
+      // meetings the host still has to press the admit button.
+      if (!waitingRoomEnabled && vid) {
+        onRegistered?.(vid);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -168,9 +177,8 @@ export function LobbyForm({
                   })
                 : waitingRoomEnabled
                   ? t('meetings.lobbySubmittedDesc', { host: hostName || t('meetings.theHost') })
-                  : t('meetings.lobbyRegisteredDesc', {
-                      defaultValue:
-                        'Thanks for registering. You can now join the meeting — see you inside.',
+                  : t('meetings.lobbyRedirecting', {
+                      defaultValue: 'Taking you to the meeting…',
                     })}
             </p>
             {admitted ? (
@@ -197,7 +205,10 @@ export function LobbyForm({
                 </Button>
               </>
             ) : (
-              <Button className="btn-gradient mt-5 w-full" onClick={() => onRegistered?.()}>
+              <Button
+                className="btn-gradient mt-5 w-full"
+                onClick={() => trackingId && onRegistered?.(trackingId)}
+              >
                 <CheckCircle2 className="mr-2 h-4 w-4" />
                 {t('meetings.lobbyContinue', { defaultValue: 'Join the meeting' })}
               </Button>

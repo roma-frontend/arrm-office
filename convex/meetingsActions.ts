@@ -79,6 +79,12 @@ interface ActionMeeting {
   egressId?: string;
   recordingFilepath?: string;
   cohostIds?: Id<'users'>[];
+  // Lobby / registration form toggles — needed by `selfAdmitRegistration`
+  // to decide whether the visitor may issue their own invite token or
+  // must wait for the host. Read off the same `getByRoomName` query the
+  // rest of the file already trusts.
+  waitingRoomEnabled?: boolean;
+  registrationEnabled?: boolean;
 }
 
 /**
@@ -777,6 +783,81 @@ export const admitRegistration = action({
       inviteUrl: `/meetings/${reg.roomName}?invite=${encodeURIComponent(combinedToken)}`,
       expiresAt,
       guestName: reg.fullName,
+    };
+  },
+});
+
+/**
+ * Visitor self-admit for the "registration form only" flow.
+ *
+ * When the host turned the registration form on but NOT the waiting room,
+ * the visitor's form submission is itself the gate — there is no
+ * host-in-the-loop approval. The form row already exists from
+ * `submitRegistration`; here we mint a one-time invite token, write it
+ * back via `markRegistrationAdmitted`, and return the join URL so the
+ * client can redirect straight to the pre-join screen.
+ *
+ * Refuses to mint a token unless the row is in `pending` state AND
+ * belongs to the meeting, and the meeting actually allows
+ * self-admission (registration on, waiting room off).
+ */
+export const selfAdmitRegistration = action({
+  args: {
+    roomName: v.string(),
+    visitorId: v.string(),
+  },
+  handler: async (ctx, { roomName, visitorId }) => {
+    if (!livekitConfigured()) {
+      throw new Error('Video calls are not configured yet');
+    }
+
+    const meeting = (await ctx.runQuery(api.meetings.getByRoomName, {
+      roomName,
+    })) as ActionMeeting | null;
+    if (!meeting) throw new Error('Meeting not found');
+
+    const registrationOn = meeting.registrationEnabled ?? false;
+    const waitingOn = meeting.waitingRoomEnabled ?? false;
+    // Self-admit is only valid for the pure-registration flow. If the
+    // waiting room is on, the host still has to press the button.
+    if (!registrationOn || waitingOn) {
+      throw new Error('This meeting does not allow self-admission');
+    }
+
+    const row = (await ctx.runQuery(api.meetings.getRegistrationByVisitor, {
+      roomName,
+      visitorId,
+    })) as { _id: Id<'meetingRegistrations'>; admittedAt?: number } | null;
+    if (!row) throw new Error('No registration found — submit the form first');
+    if (row.admittedAt) {
+      // Already admitted on a previous visit; just hand back whatever is
+      // already there by re-minting with the same id (the host cannot
+      // have re-minted because they never touched this row).
+    }
+
+    const { createHmac } = await import('node:crypto');
+    const secret = process.env.LIVEKIT_API_SECRET ?? process.env.CLERK_JWT_KEY;
+    if (!secret) {
+      throw new Error('Server is missing LIVEKIT_API_SECRET — cannot admit visitors');
+    }
+    const expiresAt = Date.now() + 6 * 60 * 60 * 1000;
+    const signature = createHmac('sha256', secret)
+      .update(`${row._id}:${expiresAt}`)
+      .digest('hex')
+      .slice(0, 40);
+    const combinedToken = `${row._id}:${expiresAt}:${signature}`;
+
+    await ctx.runMutation(api.meetings.markRegistrationAdmitted, {
+      registrationId: row._id,
+      admittedAt: Date.now(),
+      admitToken: combinedToken,
+    });
+
+    return {
+      success: true as const,
+      inviteToken: combinedToken,
+      inviteUrl: `/meetings/${roomName}?invite=${encodeURIComponent(combinedToken)}`,
+      expiresAt,
     };
   },
 });

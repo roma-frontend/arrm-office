@@ -94,6 +94,12 @@ export function MeetingRoomClient() {
   const inviteToken = searchParams?.get('invite') ?? undefined;
   const { user } = useAuthStore();
   const getJoinToken = useAction(api.meetingsActions.getJoinToken);
+  // Pure-registration flow: as soon as the visitor submits the form we
+  // self-mint an invite token (the form is the gate) and bounce them to
+  // `/meetings/{room}?invite=…` so the pre-join screen can authenticate
+  // them as a one-shot guest. Without this, the form has no way to grant
+  // access — `getJoinToken` requires either a real account or an invite.
+  const selfAdmit = useAction(api.meetingsActions.selfAdmitRegistration);
   const setStatus = useMutation(api.meetings.setStatus);
 
   // ── Room metadata ─────────────────────────────────────────────────────────
@@ -108,10 +114,6 @@ export function MeetingRoomClient() {
   const [token, setToken] = useState<string>();
   const [serverUrl, setServerUrl] = useState<string>();
   const [room, setRoom] = useState<Room>();
-  // After a registration-only lobby submit, the visitor advances to the
-  // pre-join screen via this local flag — must live above any early return
-  // so hooks fire in the same order every render.
-  const [registrationDone, setRegistrationDone] = useState(false);
   const roomRef = useRef<Room | null>(null);
   // Wall-clock second the call was joined; `elapsed` is the difference from it.
   // (Storing `Date.now()` directly here printed the epoch in the header clock.)
@@ -392,8 +394,7 @@ export function MeetingRoomClient() {
     meeting &&
     'waitingRoomEnabled' in meeting &&
     (meeting.waitingRoomEnabled || meeting.registrationEnabled) &&
-    isExternalUnauthed &&
-    !registrationDone,
+    isExternalUnauthed,
   );
 
   if (isLobbyUser) {
@@ -406,7 +407,25 @@ export function MeetingRoomClient() {
         fields={meeting.registrationFields ?? []}
         waitingRoomEnabled={Boolean(meeting.waitingRoomEnabled)}
         onCancel={() => router.push('/dashboard')}
-        onRegistered={isRegistrationOnly ? () => setRegistrationDone(true) : undefined}
+        onRegistered={
+          isRegistrationOnly
+            ? async (vid) => {
+                // Registration-only meetings: the form is the gate, so
+                // mint the invite token immediately and bounce the visitor
+                // straight to the pre-join screen. Without this step the
+                // visitor fills the form, gets a "thanks" page, and has
+                // no way to actually enter the room (no auth, no invite).
+                try {
+                  const { inviteUrl } = await selfAdmit({ roomName, visitorId: vid });
+                  window.location.assign(inviteUrl);
+                } catch (err) {
+                  toast.error(
+                    err instanceof Error ? err.message : 'Could not join the meeting',
+                  );
+                }
+              }
+            : undefined
+        }
       />
     );
   }

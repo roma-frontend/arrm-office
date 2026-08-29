@@ -1855,7 +1855,8 @@
       "reserved": "Termin gespeichert · {{room}} reserviert",
       "releasedWithEvent": "Termin gelöscht · {{room}} freigegeben",
       "bookedByThisEvent": "Reserviert — dieses Ereignis",
-      "clear": "Ohne Raum buchen"
+      "clear": "Ohne Raum buchen",
+      "dateInPast": "Ein Raum kann nicht in der Vergangenheit gebucht werden — wählen Sie ein zukünftiges Datum oder eine Uhrzeit."
     },
     "contextMenu": {
       "newEvent": "Neues Ereignis",
@@ -2793,7 +2794,8 @@
     "settingsSaved": "Settings saved",
     "lobbyAdmittedTitle": "You are in!",
     "lobbyAdmittedDesc": "The host admitted you. Open the link below to join the meeting.",
-    "lobbyJoin": "Join meeting"
+    "lobbyJoin": "Join meeting",
+    "lobbyRedirecting": "Taking you to the meeting…"
   },
   "billing": {
     "modules": {

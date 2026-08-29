@@ -603,6 +603,31 @@ export const getRegistrationById = query({
   },
 });
 
+/**
+ * Public — used by the self-admit path so a visitor with a valid
+ * `visitorId` (their sessionStorage tracking id) can re-enter the
+ * meeting after a refresh. Returns the row id + admit state; never
+ * leaks the admit token until `getJoinToken` has verified the
+ * visitor against it server-side.
+ */
+export const getRegistrationByVisitor = query({
+  args: {
+    roomName: v.string(),
+    visitorId: v.string(),
+  },
+  handler: async (ctx, { roomName, visitorId }) => {
+    const reg = await ctx.db
+      .query('meetingRegistrations')
+      .withIndex('by_visitor', (q) => q.eq('roomName', roomName).eq('visitorId', visitorId))
+      .first();
+    if (!reg) return null;
+    return {
+      _id: reg._id,
+      admittedAt: reg.admittedAt,
+    };
+  },
+});
+
 /** Host-only — admit a pending visitor. Moved to `meetingsActions.ts`
  * because signing the invite token needs `node:crypto`, which is only
  * available in the Node runtime. */
