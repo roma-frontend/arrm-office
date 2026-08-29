@@ -85,9 +85,15 @@ export const getByRoomName = query({
     if (caller) {
       if (!isSuperadmin(caller) && caller.organizationId !== meeting.organizationId) return null;
       const event = meeting.eventId ? await ctx.db.get(meeting.eventId) : null;
+      // Resolve the host's display name so the lobby greeting can address
+      // participants (e.g. "Ada will review your registration"). Skipping
+      // this for authenticated callers used to leave the banner blank for
+      // invited employees.
+      const host = await ctx.db.get(meeting.hostUserId);
       return {
         ...meeting,
         event,
+        hostName: host?.name ?? '',
         isOriginalHost: meeting.hostUserId === caller._id,
         isCohost: (meeting.cohostIds ?? []).includes(caller._id),
       };

@@ -2284,7 +2284,7 @@ export function CustomConference(props: ConferenceProps) {
               type="button"
               disabled={leaveDialog?.busy}
               onClick={handleEndForAll}
-              className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-200 transition hover:bg-red-500/20 disabled:opacity-50"
+              className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-500/20 disabled:opacity-50"
             >
               {t('meetings.leaveHostEndAll', {
                 defaultValue: 'End meeting for everyone',

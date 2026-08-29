@@ -182,7 +182,11 @@ export function MeetingRoomClient() {
       setJoinError(null);
       try {
         const args: { roomName: string; invite?: string } = { roomName };
-        if (inviteToken) args.invite = inviteToken;
+        // Authenticated users always go through the auth path so they keep
+        // their org identity / role in the LiveKit token. The `?invite=`
+        // token is only needed for unauthenticated guests — passing it
+        // would force a throwaway `guest_…` identity on a real account.
+        if (inviteToken && !user) args.invite = inviteToken;
         const { token: jwt, url } = await getJoinToken(args);
         const userChoices: LocalUserChoices = {
           username: displayName.trim() || user?.name || 'Participant',
@@ -382,20 +386,31 @@ export function MeetingRoomClient() {
     ('event' in meeting && meeting.event?.title) || eventTitle || t('meetings.untitled');
 
   // ── Lobby (waiting room / registration) ─────────────────────────────────
-  // External visitors without an invite land here when EITHER waiting room
-  // or registration is on. The two flags are independent:
+  // The lobby gates EVERYONE except the original organizer — including
+  // other employees of the org, co-hosts, and external visitors. Previously
+  // any authenticated member of the org was let through automatically,
+  // which let invited attendees skip the form. Now the host's toggles
+  // apply to everyone; the only way past the lobby is to be the
+  // `hostUserId` (organizer) or to carry a valid `?invite=` token from
+  // a host admit / self-admit.
+  //
+  // The two flags are independent:
   //   - waiting room on, registration off → "wait for admit" screen
-  //   - waiting room off, registration on → "fill form → continue" flow
+  //   - waiting room off, registration on → "fill form → self-admit" flow
   //   - both on → fill form, then wait for admit
-  // Once the form is submitted and there is no waiting room, the visitor
-  // advances to the pre-join screen via local state.
-  const isExternalUnauthed = !user && !inviteToken;
-  const isLobbyUser = Boolean(
+  const hasLobby = Boolean(
     meeting &&
     'waitingRoomEnabled' in meeting &&
-    (meeting.waitingRoomEnabled || meeting.registrationEnabled) &&
-    isExternalUnauthed,
+    (meeting.waitingRoomEnabled || meeting.registrationEnabled),
   );
+  const isOrganizer = Boolean(
+    user && meeting && 'hostUserId' in meeting && meeting.hostUserId === user.id,
+  );
+  // `inviteToken` is set either by the host clicking "Admit" in
+  // LobbyPanel (URL `?invite=…`) or by the self-admit action after the
+  // registration form is submitted. Either way it represents a valid
+  // one-shot grant that should bypass the lobby.
+  const isLobbyUser = Boolean(hasLobby && !isOrganizer && !inviteToken);
 
   if (isLobbyUser) {
     const isRegistrationOnly = !meeting.waitingRoomEnabled && meeting.registrationEnabled;
