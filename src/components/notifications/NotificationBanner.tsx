@@ -18,6 +18,8 @@ import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
 import { EventInviteButtons } from '@/components/calendar/EventInviteActions';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 const getRouteForType = (type: string): string => {
   const routes: Record<string, string> = {
@@ -147,11 +149,33 @@ export function NotificationBanner() {
           isInvite && meta.eventId ? (
             <EventInviteButtons
               eventId={meta.eventId}
-              onResponded={() => {
-                void markRead({
-                  notificationId: newNotification.id as Id<'notifications'>,
-                });
-                handleDismiss();
+              onResponded={async () => {
+                // Same bug as in the bell dropdown: the RSVP itself
+                // succeeds, but without an awaited read-patch the bell
+                // count stays wrong until the user clicks the row or the
+                // list re-validates. Await, then swallow any failure
+                // (dismissing the banner is more important than nagging
+                // about a read-patch hiccup), and only fall back to a
+                // toast on real failure.
+                try {
+                  await markRead({
+                    notificationId: newNotification.id as Id<'notifications'>,
+                  });
+                } catch (err) {
+                  logger.error(
+                    'Failed to mark invite notification read after RSVP',
+                    err,
+                  );
+                  toast.error(
+                    err instanceof Error
+                      ? err.message
+                      : t('notifications.markReadFailed', {
+                          defaultValue: 'Could not update the notification',
+                        }),
+                  );
+                } finally {
+                  handleDismiss();
+                }
               }}
             />
           ) : undefined

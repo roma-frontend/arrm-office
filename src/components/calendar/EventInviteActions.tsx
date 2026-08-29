@@ -31,14 +31,22 @@ export function EventInviteButtons({ eventId, onResponded, compact }: EventInvit
     if (busy) return;
     setBusy(response);
     try {
-      const result = await respond({
+      // The mutation may return `{ success: true }` or be refactored to
+      // return `void` — treat any non-`{ success: false }` outcome as
+      // success. Otherwise the user clicks the button, sees no toast, the
+      // parent never gets `onResponded`, and the entire invite surface
+      // (dropdown, banner, /calendar card) appears frozen — exactly the
+      // "click does nothing" report we are chasing.
+      const result: { success?: boolean } | null | undefined = await respond({
         eventId: eventId as Id<'calendarEvents'>,
         response,
       });
-      if (result.success) {
-        toast.success(t('rsvp.responseSaved'));
-        onResponded?.(response);
+      if (result && result.success === false) {
+        toast.error(t('rsvp.responseFailed'));
+        return;
       }
+      toast.success(t('rsvp.responseSaved'));
+      onResponded?.(response);
     } catch (err) {
       logger.error('RSVP failed', err);
       toast.error(t('rsvp.responseFailed'));

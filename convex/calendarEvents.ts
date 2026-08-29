@@ -276,6 +276,34 @@ export const respondToEventInvite = mutation({
     const now = Date.now();
     await ctx.db.patch(row._id, { response, respondedAt: now });
 
+    // The organizer notification (pushed when the event was created/sent)
+    // is now answered — mark the matching `calendar_invite` notifications
+    // for the *current viewer* as read so the bell + /calendar badges
+    // both drop on the same round-trip. Without this the bell stays at
+    // the old count until the user clicks the notification row, even
+    // though the answer is already recorded.
+    const inviteNotifications = await ctx.db
+      .query('notifications')
+      .withIndex('by_user', (q) => q.eq('userId', caller._id))
+      .collect();
+    for (const note of inviteNotifications) {
+      if (note.isRead) continue;
+      let parsed: { type?: string; eventId?: string } | null = null;
+      if (note.metadata) {
+        try {
+          parsed = JSON.parse(note.metadata);
+        } catch {
+          // Older rows may have stored metadata as a plain string — fall
+          // through and skip; no harm done, the user just keeps the badge
+          // for that one notification until they click the row.
+          parsed = null;
+        }
+      }
+      if (parsed?.type !== 'calendar_invite') continue;
+      if (parsed.eventId !== eventId) continue;
+      await ctx.db.patch(note._id, { isRead: true });
+    }
+
     await notify(ctx, {
       organizationId: event.organizationId,
       userId: event.createdBy,

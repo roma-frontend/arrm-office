@@ -57,6 +57,7 @@ import { useStatusUpdate } from '@/context/StatusUpdateContext';
 import { useScrollDirection } from '@/hooks/useScrollDirection';
 import { useNow } from '@/hooks/useNow';
 import { logger } from '@/lib/logger';
+import { toast } from 'sonner';
 import {
   notificationMessage,
   notificationTitle,
@@ -435,7 +436,36 @@ export function Navbar({ embedded = false }: { embedded?: boolean }) {
                     <div className="mt-1.5" onClick={(e) => e.stopPropagation()}>
                       <EventInviteButtons
                         eventId={n.relatedId}
-                        onResponded={() => void handleMarkRead(n._id)}
+                        onResponded={async () => {
+                          // The RSVP itself is already inside the
+                          // EventInviteButtons handler — its success toast
+                          // proves the server patched the attendee row.
+                          // What it can't do is collapse this dropdown or
+                          // clear the unread badge, so we have to do both
+                          // ourselves. Await the read-patch so the bell
+                          // count drops before the dropdown closes, and
+                          // surface a toast if the patch itself fails
+                          // (silent fire-and-forget here is exactly the
+                          // "I clicked and nothing happened" bug the
+                          // user hit).
+                          try {
+                            await handleMarkRead(n._id);
+                          } catch (err) {
+                            logger.error(
+                              'Failed to mark calendar-invite notification read',
+                              err,
+                            );
+                            toast.error(
+                              err instanceof Error
+                                ? err.message
+                                : t('notifications.markReadFailed', {
+                                    defaultValue: 'Could not update the notification',
+                                  }),
+                            );
+                          } finally {
+                            setShowNotifications(false);
+                          }
+                        }}
                       />
                     </div>
                   )}
