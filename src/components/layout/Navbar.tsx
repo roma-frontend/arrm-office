@@ -451,10 +451,7 @@ export function Navbar({ embedded = false }: { embedded?: boolean }) {
                           try {
                             await handleMarkRead(n._id);
                           } catch (err) {
-                            logger.error(
-                              'Failed to mark calendar-invite notification read',
-                              err,
-                            );
+                            logger.error('Failed to mark calendar-invite notification read', err);
                             toast.error(
                               err instanceof Error
                                 ? err.message

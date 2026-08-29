@@ -162,10 +162,7 @@ export function NotificationBanner() {
                     notificationId: newNotification.id as Id<'notifications'>,
                   });
                 } catch (err) {
-                  logger.error(
-                    'Failed to mark invite notification read after RSVP',
-                    err,
-                  );
+                  logger.error('Failed to mark invite notification read after RSVP', err);
                   toast.error(
                     err instanceof Error
                       ? err.message

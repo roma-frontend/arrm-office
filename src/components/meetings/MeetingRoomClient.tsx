@@ -434,9 +434,7 @@ export function MeetingRoomClient() {
                   const { inviteUrl } = await selfAdmit({ roomName, visitorId: vid });
                   window.location.assign(inviteUrl);
                 } catch (err) {
-                  toast.error(
-                    err instanceof Error ? err.message : 'Could not join the meeting',
-                  );
+                  toast.error(err instanceof Error ? err.message : 'Could not join the meeting');
                 }
               }
             : undefined
