@@ -726,12 +726,13 @@ describe('comment queries', () => {
     expect(page2.page[0]?.content).toBe('First comment');
   });
 
-  it('getTask returns null for a missing task', async () => {
+  it('getTask still returns soft-deleted task', async () => {
     const c = await seed();
     const taskId = await createTaskWithComment(c);
-    await c.t.run((ctx) => ctx.runMutation(api.tasks.deleteTask, { taskId }));
+    await c.t.withIdentity({ email: 'admin@acme.test' }).mutation(api.tasks.deleteTask, { taskId });
     const res = await c.t.run((ctx) => ctx.runQuery(api.tasks.getTask, { taskId }));
-    expect(res).toBeNull();
+    expect(res).not.toBeNull();
+    expect(res!.deletedAt).toBeDefined();
   });
 
   it('getTask enriches with comments and project name', async () => {
@@ -748,14 +749,13 @@ describe('comment queries', () => {
 
 // ── deleteTask / secureDeleteTask (cascade comments) ────────────────────────
 describe('deletion', () => {
-  it('deleteTask removes comments and the task itself', async () => {
+  it('deleteTask soft-deletes the task', async () => {
     const c = await seed();
     const taskId = await createTaskWithComment(c);
-    await c.t.run((ctx) => ctx.runMutation(api.tasks.deleteTask, { taskId }));
+    await c.t.withIdentity({ email: 'admin@acme.test' }).mutation(api.tasks.deleteTask, { taskId });
     const task = await c.t.run((ctx) => ctx.db.get(taskId));
-    expect(task).toBeNull();
-    const comments = await c.t.run((ctx) => ctx.db.query('taskComments').collect());
-    expect(comments).toHaveLength(0);
+    expect(task).not.toBeNull();
+    expect(task!.deletedAt).toBeDefined();
   });
 
   it('secureDeleteTask rejects unauthenticated callers', async () => {
@@ -776,26 +776,26 @@ describe('deletion', () => {
     ).rejects.toThrow('cross-organization');
   });
 
-  it('secureDeleteTask deletes comments and the task for a same-org admin', async () => {
+  it('secureDeleteTask soft-deletes the task for a same-org admin', async () => {
     const c = await seed();
     const taskId = await createTaskWithComment(c);
     await c.t
       .withIdentity({ email: 'admin@acme.test' })
       .mutation(api.tasks.secureDeleteTask, { taskId });
     const task = await c.t.run((ctx) => ctx.db.get(taskId));
-    expect(task).toBeNull();
-    const comments = await c.t.run((ctx) => ctx.db.query('taskComments').collect());
-    expect(comments).toHaveLength(0);
+    expect(task).not.toBeNull();
+    expect(task!.deletedAt).toBeDefined();
   });
 
-  it('secureDeleteTask lets a superadmin delete across organizations', async () => {
+  it('secureDeleteTask lets a superadmin soft-delete across organizations', async () => {
     const c = await seed();
     const taskId = await createTaskWithComment(c);
     await c.t
       .withIdentity({ email: 'super@acme.test' })
       .mutation(api.tasks.secureDeleteTask, { taskId });
     const task = await c.t.run((ctx) => ctx.db.get(taskId));
-    expect(task).toBeNull();
+    expect(task).not.toBeNull();
+    expect(task!.deletedAt).toBeDefined();
   });
 
   it('secureReassignTask rejects unauthenticated callers', async () => {

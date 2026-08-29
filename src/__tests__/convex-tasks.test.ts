@@ -486,17 +486,17 @@ describe('updateTaskStatus', () => {
 });
 
 describe('deleteTask', () => {
-  it('deletes comments then the task and audits', async () => {
-    const { ctx, get, remove, withIndex, take, insert } = makeCtx();
+  it('soft-deletes the task and audits', async () => {
+    mockGetAuthCaller.mockResolvedValueOnce(makeCaller('admin', ORG_A, ADMIN_ID));
+    const { ctx, get, patch, insert } = makeCtx();
     get.mockResolvedValueOnce(taskDoc({ assignedBy: ADMIN_ID }));
-    take.mockResolvedValueOnce([
-      { _id: 'comment_1', taskId: TASK_ID, authorId: USER_ID, content: 'c' },
-    ]);
 
     await handlers.deleteTask(ctx, { taskId: TASK_ID });
 
-    expect(remove).toHaveBeenCalledWith('comment_1');
-    expect(remove).toHaveBeenCalledWith(TASK_ID);
+    expect(patch).toHaveBeenCalledWith(
+      TASK_ID,
+      expect.objectContaining({ deletedAt: expect.any(Number) }),
+    );
     expect(insert).toHaveBeenCalledWith(
       'auditLogs',
       expect.objectContaining({ action: 'task_deleted' }),
@@ -504,6 +504,7 @@ describe('deleteTask', () => {
   });
 
   it('throws when the task does not exist', async () => {
+    mockGetAuthCaller.mockResolvedValueOnce(makeCaller('admin', ORG_A, ADMIN_ID));
     const { ctx, get } = makeCtx();
     get.mockResolvedValueOnce(null);
 
@@ -984,16 +985,17 @@ describe('secureDeleteTask', () => {
     expect(remove).not.toHaveBeenCalled();
   });
 
-  it('deletes the task and comments for an authorized caller', async () => {
+  it('soft-deletes the task for an authorized caller', async () => {
     mockGetAuthCaller.mockResolvedValue(makeCaller('admin', ORG_A, ADMIN_ID));
-    const { ctx, get, remove, take, insert } = makeCtx();
+    const { ctx, get, patch, insert } = makeCtx();
     get.mockResolvedValueOnce(taskDoc());
-    take.mockResolvedValueOnce([{ _id: 'c1', taskId: TASK_ID }]);
 
     await handlers.secureDeleteTask(ctx, { taskId: TASK_ID });
 
-    expect(remove).toHaveBeenCalledWith('c1');
-    expect(remove).toHaveBeenCalledWith(TASK_ID);
+    expect(patch).toHaveBeenCalledWith(
+      TASK_ID,
+      expect.objectContaining({ deletedAt: expect.any(Number) }),
+    );
     expect(insert).toHaveBeenCalledWith(
       'auditLogs',
       expect.objectContaining({ action: 'task_deleted', userId: ADMIN_ID }),

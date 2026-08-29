@@ -107,6 +107,7 @@ export const tasks = {
      * at this field keep behaving exactly as before.
      */
     archivedAt: v.optional(v.number()),
+    deletedAt: v.optional(v.number()),
     deadline: v.optional(v.number()),
     completedAt: v.optional(v.number()),
     tags: v.optional(v.array(v.string())),
@@ -147,6 +148,7 @@ export const tasks = {
     .index('by_project', ['projectId'])
     .index('by_recurring', ['recurringTaskId'])
     .index('by_parent', ['parentTaskId'])
+    .index('by_deleted', ['deletedAt'])
     /** Manual ordering within a project, read straight in `orderKey` order. */
     .index('by_project_order', ['projectId', 'orderKey']),
 

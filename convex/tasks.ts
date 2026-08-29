@@ -1,6 +1,12 @@
 import { v } from 'convex/values';
 import { ConvexError } from 'convex/values';
-import { mutation, query, type QueryCtx, type MutationCtx } from './_generated/server';
+import {
+  mutation,
+  query,
+  internalMutation,
+  type QueryCtx,
+  type MutationCtx,
+} from './_generated/server';
 import { paginationOptsValidator } from 'convex/server';
 import type { Doc, Id } from './_generated/dataModel';
 import { isSuperadmin } from './lib/auth';
@@ -662,22 +668,19 @@ export const deleteTask = mutation({
   args: { taskId: v.id('tasks') },
   handler: async (ctx, args) => {
     await assertModuleAccess(ctx, 'tasks');
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
     const task = await ctx.db.get(args.taskId);
     if (!task) throw new Error('Task not found');
+    await assertWritable(ctx, caller, task, 'You can only delete your own tasks');
 
-    // Delete comments first (capped: if a task has >SMALL_LIST_CAP comments,
-    // cascade is partial — acceptable trade-off per migration plan §3.4).
-    const comments = await ctx.db
-      .query('taskComments')
-      .withIndex('by_task', (q) => q.eq('taskId', args.taskId))
-      .take(SMALL_LIST_CAP);
-    for (const c of comments) await ctx.db.delete(c._id);
-    await ctx.db.delete(args.taskId);
+    // Soft-delete: set deletedAt instead of hard delete
+    await ctx.db.patch(args.taskId, { deletedAt: Date.now() } as any);
 
     // Audit log: task deleted
     await ctx.db.insert('auditLogs', {
       organizationId: task.organizationId,
-      userId: task.assignedBy,
+      userId: caller._id,
       action: 'task_deleted',
       target: args.taskId,
       details: JSON.stringify({ title: task.title, status: task.status }),
@@ -764,10 +767,13 @@ export const getTasksForEmployee = query({
       .order('desc')
       .take(DEFAULT_LIST_CAP);
 
+    // Exclude soft-deleted tasks
+    const activeTasks = tasks.filter((t) => !t.deletedAt);
+
     // Filter by organization (skip for superadmin)
-    let orgTasks = tasks;
+    let orgTasks = activeTasks;
     if (!userIsSuperadmin) {
-      orgTasks = tasks.filter(
+      orgTasks = activeTasks.filter(
         (task) => !employee.organizationId || task.organizationId === employee.organizationId,
       );
     }
@@ -826,6 +832,7 @@ export const getTasksAssignedBy = query({
     for (const task of [...assignedBySelf, ...subtreeTasks]) {
       if (seen.has(task._id)) continue;
       seen.add(task._id);
+      if (task.deletedAt) continue;
       if (
         userIsSuperadmin ||
         !supervisor.organizationId ||
@@ -861,17 +868,20 @@ async function fetchAllTasksForStaff(
 
   const tasks = await ctx.db.query('tasks').order('desc').take(DEFAULT_LIST_CAP);
 
+  // Exclude soft-deleted tasks
+  const activeTasks = tasks.filter((t) => !t.deletedAt);
+
   // Filter tasks by organization
-  let orgTasks = tasks;
+  let orgTasks = activeTasks;
   if (userIsSuperadmin) {
     // For superadmin: filter by selectedOrganizationId if provided
     if (selectedOrganizationId) {
-      orgTasks = tasks.filter((task) => task.organizationId === selectedOrganizationId);
+      orgTasks = activeTasks.filter((task) => task.organizationId === selectedOrganizationId);
     }
     // If no selectedOrganizationId, superadmin sees all tasks (no filter)
   } else {
     // For regular admin: filter by their organization
-    orgTasks = tasks.filter((task) => task.organizationId === requester.organizationId);
+    orgTasks = activeTasks.filter((task) => task.organizationId === requester.organizationId);
   }
 
   // Also include active recurring task series as visible "tasks" so they appear
@@ -987,6 +997,8 @@ export const getVisibleTasks = query({
       for (const task of [...assignedToTasks, ...assignedByTasks, ...coAssigneeTasks]) {
         if (seen.has(task._id)) continue;
         seen.add(task._id);
+        // Exclude soft-deleted tasks
+        if (task.deletedAt) continue;
         // A caller with an org only ever sees that org's tasks; an org-less
         // caller (unplaced account) only sees legacy tasks without an org.
         if (caller.organizationId) {
@@ -1061,9 +1073,129 @@ export const getTeamTasks = query({
           .take(SMALL_LIST_CAP),
       ),
     );
-    const teamTasks = tasksPerEmployee.flat();
+    const teamTasks = tasksPerEmployee.flat().filter((t) => !t.deletedAt);
 
     return enrichTasksWithUserData(ctx, teamTasks);
+  },
+});
+
+// ── Get soft-deleted tasks (Trash) ────────────────────────────────────────
+export const getDeletedTasks = query({
+  args: {},
+  handler: async (ctx) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return [];
+
+    const isStaff = caller.role === 'admin' || caller.role === 'supervisor' || isSuperadmin(caller);
+
+    // Use by_deleted index to efficiently query only soft-deleted tasks
+    const deletedTasks = await ctx.db
+      .query('tasks')
+      .withIndex('by_deleted', (q) => q.gt('deletedAt', 0))
+      .order('desc')
+      .take(DEFAULT_LIST_CAP)
+      .then((tasks) => {
+        if (isStaff) {
+          return tasks.filter(
+            (task) => !caller.organizationId || task.organizationId === caller.organizationId,
+          );
+        }
+        return tasks.filter(
+          (task) =>
+            task.assignedTo === caller._id ||
+            task.assignedBy === caller._id ||
+            (task.assigneeIds ?? []).includes(caller._id),
+        );
+      });
+
+    return enrichTasksWithUserData(ctx, deletedTasks);
+  },
+});
+
+// ── Get task activity (audit log) ─────────────────────────────────────────
+export const getTaskActivity = query({
+  args: { taskId: v.string() },
+  handler: async (ctx, args) => {
+    const logs = await ctx.db
+      .query('auditLogs')
+      .withIndex('by_target', (q) => q.eq('target', args.taskId))
+      .order('desc')
+      .take(100);
+
+    // Batch load users
+    const userIds = [...new Set(logs.map((l) => l.userId))];
+    const users = await Promise.all(userIds.map((id) => ctx.db.get(id)));
+    const userMap = new Map(users.filter((u) => u !== null).map((u) => [u!._id, u]));
+
+    return logs.map((log) => ({
+      ...log,
+      user: userMap.get(log.userId) ?? null,
+    }));
+  },
+});
+
+// ── Deadline reminders (cron) ───────────────────────────────────────────
+/**
+ * Find tasks due in the next 24h that are not completed/cancelled and send
+ * a notification to the assignee. One notification per task per day.
+ */
+export const sendDeadlineReminders = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const now = Date.now();
+    const oneDayFromNow = now + 24 * 60 * 60 * 1000;
+
+    // Scan all tasks with a deadline in the next 24h
+    const tasks = await ctx.db
+      .query('tasks')
+      .withIndex('by_deadline', (q) => q.gte('deadline', now).lte('deadline', oneDayFromNow))
+      .take(DEFAULT_LIST_CAP);
+
+    for (const task of tasks) {
+      if (task.deletedAt) continue;
+      if (task.status === 'completed' || task.status === 'cancelled') continue;
+
+      const assignee = await ctx.db.get(task.assignedTo);
+      if (!assignee) continue;
+
+      // Check if we already sent a reminder today
+      const todayStart = new Date(now).setHours(0, 0, 0, 0);
+      const existingLogs = await ctx.db
+        .query('auditLogs')
+        .withIndex('by_target', (q) => q.eq('target', task._id))
+        .order('desc')
+        .take(10);
+
+      const alreadyReminded = existingLogs.some(
+        (log) => log.action === 'task_deadline_reminder' && log.createdAt >= todayStart,
+      );
+      if (alreadyReminded) continue;
+
+      // Send notification
+      await notify(ctx, {
+        organizationId: task.organizationId,
+        userId: task.assignedTo,
+        type: 'system',
+        titleKey: 'notifications.titles.taskDeadline',
+        messageKey: 'notifications.messages.taskDeadline',
+        params: { taskTitle: task.title },
+        fallbackTitle: '⏰ Task deadline tomorrow',
+        fallbackMessage: `"${task.title}" is due tomorrow`,
+        relatedId: task._id,
+        route: '/tasks',
+        createdAt: now,
+      });
+
+      // Log the reminder
+      await ctx.db.insert('auditLogs', {
+        organizationId: task.organizationId,
+        userId: task.assignedTo,
+        action: 'task_deadline_reminder',
+        target: task._id,
+        details: JSON.stringify({ title: task.title, deadline: task.deadline }),
+        createdAt: now,
+      });
+    }
   },
 });
 
@@ -1508,12 +1640,8 @@ export const secureDeleteTask = mutation({
       throw new Error('Access denied: cross-organization operation');
     }
 
-    const comments = await ctx.db
-      .query('taskComments')
-      .withIndex('by_task', (q) => q.eq('taskId', taskId))
-      .take(SMALL_LIST_CAP);
-    for (const c of comments) await ctx.db.delete(c._id);
-    await ctx.db.delete(taskId);
+    // Soft-delete instead of hard delete
+    await ctx.db.patch(taskId, { deletedAt: Date.now() } as any);
 
     await ctx.db.insert('auditLogs', {
       organizationId: task.organizationId,
@@ -1994,14 +2122,9 @@ export const bulkDeleteTasks = mutation({
     let subtasksDeleted = 0;
     const titles: string[] = [];
 
-    /** Comments first, then the row — the cascade `deleteTask` also performs. */
+    /** Soft-delete the task instead of hard delete. */
     const deleteWithComments = async (id: Id<'tasks'>) => {
-      const comments = await ctx.db
-        .query('taskComments')
-        .withIndex('by_task', (q) => q.eq('taskId', id))
-        .take(SMALL_LIST_CAP);
-      for (const comment of comments) await ctx.db.delete(comment._id);
-      await ctx.db.delete(id);
+      await ctx.db.patch(id, { deletedAt: Date.now() } as any);
     };
 
     for (const taskId of args.taskIds) {
@@ -2462,5 +2585,30 @@ export const setWatching = mutation({
     await ctx.db.patch(args.taskId, { watcherIds });
 
     return { watching: args.watching, watcherIds };
+  },
+});
+
+// ── Restore soft-deleted task ───────────────────────────────────────────
+export const restoreTask = mutation({
+  args: { taskId: v.id('tasks') },
+  handler: async (ctx, args) => {
+    await assertModuleAccess(ctx, 'tasks');
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const task = await ctx.db.get(args.taskId);
+    if (!task) throw new Error('Task not found');
+    if (!task.deletedAt) throw new Error('Task is not deleted');
+    await assertWritable(ctx, caller, task, 'You can only restore your own tasks');
+
+    await ctx.db.patch(args.taskId, { deletedAt: undefined } as any);
+
+    await ctx.db.insert('auditLogs', {
+      organizationId: task.organizationId,
+      userId: caller._id,
+      action: 'task_restored',
+      target: args.taskId,
+      details: JSON.stringify({ title: task.title, status: task.status }),
+      createdAt: Date.now(),
+    });
   },
 });

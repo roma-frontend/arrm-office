@@ -1354,7 +1354,8 @@
       "onboarding_task_overdue": "Onboarding-Aufgabe überfällig",
       "offboarding_started": "Offboarding gestartet",
       "offboarding_last_day_soon": "Letzter Arbeitstag steht bevor",
-      "offboarding_completed": "Offboarding abgeschlossen"
+      "offboarding_completed": "Offboarding abgeschlossen",
+      "taskDeadline": "Aufgabendeadline morgen"
     },
     "messages": {
       "taskCompleted": "\"{{taskTitle}}\" wurde von {{userName}} abgeschlossen",
@@ -1372,6 +1373,7 @@
       "documentAwaitingSignature": "„{{title}}\" wartet auf Ihre Unterschrift. Öffnen Sie den Bereich E-Signaturen, um das Dokument zu prüfen und zu unterschreiben.",
       "equipmentAssigned": "{{assignerName}} hat Ihnen „{{assetName}}\" zugewiesen.",
       "warrantyExpiring": "Die Garantie für „{{assetName}}\" läuft in {{count}} Tag(en) ab.",
+      "taskDeadline": "\"{{taskTitle}}\" ist morgen fällig",
       "maintenanceDue": "Die geplante Wartung „{{description}}\" für {{assetName}} ist fällig.",
       "joinRequestNew": "{{name}} ({{email}}) möchte {{orgName}} beitreten.",
       "joinRequestNewWithMessage": "{{name}} ({{email}}) möchte {{orgName}} beitreten. Nachricht: {{message}}",
@@ -2985,5 +2987,7 @@
   "employeeSheet": {
     "linkCopied": "Profillink in die Zwischenablage kopiert",
     "share": "Profil teilen"
-  }
+  },
+  "undo": "Rückgängig",
+  "restore": "Wiederherstellen"
 }

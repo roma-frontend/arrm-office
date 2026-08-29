@@ -1354,7 +1354,8 @@
       "onboarding_task_overdue": "Onboarding Task Overdue",
       "offboarding_started": "Offboarding Started",
       "offboarding_last_day_soon": "Last Working Day Approaching",
-      "offboarding_completed": "Offboarding Completed"
+      "offboarding_completed": "Offboarding Completed",
+      "taskDeadline": "Task Deadline Tomorrow"
     },
     "messages": {
       "taskCompleted": "\"{{taskTitle}}\" has been completed by {{userName}}",
@@ -1372,6 +1373,7 @@
       "documentAwaitingSignature": "\"{{title}}\" is waiting for your signature. Open the E-Signatures section to review and sign it.",
       "equipmentAssigned": "You have been assigned \"{{assetName}}\" by {{assignerName}}.",
       "warrantyExpiring": "Warranty for \"{{assetName}}\" expires in {{count}} day(s).",
+      "taskDeadline": "\"{{taskTitle}}\" is due tomorrow",
       "maintenanceDue": "Scheduled maintenance \"{{description}}\" for {{assetName}} is due.",
       "joinRequestNew": "{{name}} ({{email}}) wants to join {{orgName}}.",
       "joinRequestNewWithMessage": "{{name}} ({{email}}) wants to join {{orgName}}. Message: {{message}}",
@@ -1856,7 +1858,7 @@
       "releasedWithEvent": "Event deleted · {{room}} released",
       "bookedByThisEvent": "Booked — this event",
       "clear": "Book without a room",
-      "dateInPast": "You can\u2019t book a room in the past \u2014 pick a future date or time."
+      "dateInPast": "You can’t book a room in the past — pick a future date or time."
     },
     "contextMenu": {
       "newEvent": "New Event",
@@ -2985,5 +2987,7 @@
   "employeeSheet": {
     "linkCopied": "Profile link copied to clipboard",
     "share": "Share profile"
-  }
+  },
+  "undo": "Undo",
+  "restore": "Restore"
 }

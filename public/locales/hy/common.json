@@ -1354,7 +1354,8 @@
       "onboarding_task_overdue": "Օնբորդինգի առաջադրանք ուշացել է",
       "offboarding_started": "Աշխատանքից ազատումը մեկնարկել է",
       "offboarding_last_day_soon": "Մոտենում է վերջին աշխատանքային օրը",
-      "offboarding_completed": "Աշխատանքից ազատումն ավարտված է"
+      "offboarding_completed": "Աշխատանքից ազատումն ավարտված է",
+      "taskDeadline": "Առաջադրանքի վերջնաժամկետը վաղը"
     },
     "messages": {
       "taskCompleted": "\"{{taskTitle}}\" առաջադրանքը ավարտվել է {{userName}}-ի կողմից",
@@ -1372,6 +1373,7 @@
       "documentAwaitingSignature": "«{{title}}»-ը սպասում է Ձեր ստորագրությանը։ Բացեք «Էլեկտրոնային ստորագրություններ» բաժինը՝ փաստաթուղթը դիտելու և ստորագրելու համար։",
       "equipmentAssigned": "{{assignerName}}-ը ձեզ հանձնեց «{{assetName}}»։",
       "warrantyExpiring": "«{{assetName}}»-ի երաշխիքը ավարտվում է {{count}} օրից։",
+      "taskDeadline": "\"{{taskTitle}}\"-ի ժամկետը լրանում է վաղը",
       "maintenanceDue": "{{assetName}}-ի պլանային սպասարկման «{{description}}» ժամանակն է։",
       "joinRequestNew": "{{name}} ({{email}}) ցանկանում է միանալ {{orgName}}-ին։",
       "joinRequestNewWithMessage": "{{name}} ({{email}}) ցանկանում է միանալ {{orgName}}-ին։ Հաղորդագրություն՝ {{message}}",
@@ -2985,5 +2987,7 @@
   "employeeSheet": {
     "linkCopied": "Պրոքինի հգումջու պականդենվել է",
     "share": "Փիսվել պրոքինու"
-  }
+  },
+  "undo": "Հետ",
+  "restore": "Վերականգնել"
 }

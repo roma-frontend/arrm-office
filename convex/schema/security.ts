@@ -62,7 +62,8 @@ export const security = {
     .index('by_user', ['userId'])
     .index('by_org_created', ['organizationId', 'createdAt'])
     .index('by_user_created', ['userId', 'createdAt'])
-    .index('by_action', ['action']),
+    .index('by_action', ['action'])
+    .index('by_target', ['target']),
 
   /**
    * Short-lived server-issued tokens that prove a Face ID descriptor was

@@ -174,8 +174,8 @@ export interface TaskViewState {
   q: string;
   /** Only tasks past their deadline that are still open. */
   overdue: boolean;
-  /** 'all' shows every task; 'recurring' shows only recurring series. */
-  tab: 'all' | 'recurring';
+  /** 'all' shows every task; 'recurring' shows only recurring series; 'trash' shows deleted tasks. */
+  tab: 'all' | 'recurring' | 'trash';
   /**
    * The saved view this state came from, or `''` for an unsaved one.
    *
@@ -409,7 +409,11 @@ export function decodeTaskView(search: string | URLSearchParams): TaskViewState 
     project: idOrAll(params.get('project'), ['none']),
     q: (params.get('q') ?? '').trim().slice(0, MAX_QUERY_LENGTH),
     overdue: params.get('overdue') === '1' || params.get('overdue') === 'true',
-    tab: (params.get('tab') === 'recurring' ? 'recurring' : 'all') as 'all' | 'recurring',
+    tab: (params.get('tab') === 'recurring'
+      ? 'recurring'
+      : params.get('tab') === 'trash'
+        ? 'trash'
+        : 'all') as 'all' | 'recurring' | 'trash',
     viewId: idOrEmpty(params.get('v')),
     showSubtasks: params.get('sub') !== '0',
     filters: decodeTaskFilters(params.get('f')),

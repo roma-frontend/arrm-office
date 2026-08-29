@@ -31,7 +31,6 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import {
   ArrowLeft,
-  Clock,
   FileText,
   CheckCircle,
   XCircle,
@@ -47,6 +46,7 @@ import {
   BellOff,
   FolderKanban,
   Users,
+  Clock,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { enUS, ru, hy } from 'date-fns/locale';
@@ -813,6 +813,9 @@ export default function TaskDetailClient({
         </CardContent>
       </Card>
 
+      {/* Activity Feed */}
+      <ActivityFeed taskId={taskId} />
+
       {/* Delete Confirmation Dialog */}
       <AlertDialog
         open={isDeleteDialogOpen}
@@ -844,5 +847,73 @@ export default function TaskDetailClient({
         </AlertDialogContent>
       </AlertDialog>
     </div>
+  );
+}
+
+// ── Activity Feed ─────────────────────────────────────────────────────────
+function ActivityFeed({ taskId }: { taskId: string }) {
+  const { t } = useTranslation();
+  const activity = useQuery(api.tasks.getTaskActivity, taskId ? { taskId } : 'skip');
+
+  if (!activity || activity.length === 0) return null;
+
+  const ACTION_LABELS: Record<string, string> = {
+    task_created: 'tasksClient.activityCreated',
+    task_updated: 'tasksClient.activityUpdated',
+    task_status_updated: 'tasksClient.activityStatusChanged',
+    task_deleted: 'tasksClient.activityDeleted',
+    task_restored: 'tasksClient.activityRestored',
+    task_comment_added: 'tasksClient.activityCommentAdded',
+    task_fields_updated: 'tasksClient.activityFieldsUpdated',
+    task_attachment_added: 'tasksClient.activityAttachmentAdded',
+    task_attachment_removed: 'tasksClient.activityAttachmentRemoved',
+    task_reassigned: 'tasksClient.activityReassigned',
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Clock className="h-5 w-5" />
+          {t('tasksClient.activity', 'Activity')}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ul className="space-y-3">
+          {activity.map((log) => {
+            const labelKey = ACTION_LABELS[log.action];
+            const label = labelKey
+              ? t(labelKey, log.action.replace(/_/g, ' '))
+              : log.action.replace(/_/g, ' ');
+            let details = '';
+            try {
+              if (log.details) {
+                const parsed = JSON.parse(log.details);
+                if (parsed.title) details = parsed.title;
+                else if (parsed.status) details = `${parsed.oldStatus || ''} → ${parsed.status}`;
+              }
+            } catch {
+              /* ignore */
+            }
+
+            return (
+              <li key={log._id} className="flex items-start gap-3 text-sm">
+                <span className="mt-0.5 h-2 w-2 shrink-0 rounded-full bg-(--brand)" />
+                <div className="min-w-0 flex-1">
+                  <span className="font-medium text-(--text-primary)">
+                    {log.user?.name ?? 'System'}
+                  </span>{' '}
+                  <span className="text-(--text-muted)">{label}</span>
+                  {details && <span className="ml-1 text-(--text-muted)">— {details}</span>}
+                </div>
+                <span className="shrink-0 text-xs text-(--text-muted)">
+                  {new Date(log.createdAt).toLocaleDateString()}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      </CardContent>
+    </Card>
   );
 }

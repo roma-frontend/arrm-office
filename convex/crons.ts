@@ -140,4 +140,9 @@ crons.interval(
   internal.superadmin.operatorToolsInternal.maintenanceSweep,
 );
 
+// Task deadline reminders — daily at 9:10 UTC, notify assignees of tasks due tomorrow.
+crons.daily('task-deadline-reminders', { hourUTC: 9, minuteUTC: 10 }, dispatch, {
+  jobKey: 'task-deadline-reminders',
+});
+
 export default crons;

@@ -1372,7 +1372,8 @@
       "onboarding_task_overdue": "Задача онбординга просрочена",
       "offboarding_started": "Начато увольнение",
       "offboarding_last_day_soon": "Приближается последний рабочий день",
-      "offboarding_completed": "Увольнение завершено"
+      "offboarding_completed": "Увольнение завершено",
+      "taskDeadline": "Крайний срок задачи завтра"
     },
     "messages": {
       "taskCompleted": "\"{{taskTitle}}\" завершена пользователем {{userName}}",
@@ -1390,6 +1391,7 @@
       "documentAwaitingSignature": "«{{title}}» ожидает вашей подписи. Откройте раздел «Электронные подписи», чтобы просмотреть и подписать документ.",
       "equipmentAssigned": "{{assignerName}} выдал вам «{{assetName}}».",
       "warrantyExpiring": "Гарантия на «{{assetName}}» истекает через {{count}} дн.",
+      "taskDeadline": "\"{{taskTitle}}\" — дедлайн завтра",
       "maintenanceDue": "Подошёл срок планового обслуживания «{{description}}» для {{assetName}}.",
       "joinRequestNew": "{{name}} ({{email}}) хочет присоединиться к {{orgName}}.",
       "joinRequestNewWithMessage": "{{name}} ({{email}}) хочет присоединиться к {{orgName}}. Сообщение: {{message}}",
@@ -1874,7 +1876,7 @@
       "releasedWithEvent": "Событие удалено · {{room}} освобождена",
       "bookedByThisEvent": "Забронирована — это событие",
       "clear": "Без комнаты",
-      "dateInPast": "Нельзя бронировать переговорку в прошлом \u2014 выберите будущую дату или время."
+      "dateInPast": "Нельзя бронировать переговорку в прошлом — выберите будущую дату или время."
     },
     "contextMenu": {
       "newEvent": "Новое событие",
@@ -3007,5 +3009,7 @@
   "employeeSheet": {
     "linkCopied": "Ссылка на профиль скопирована",
     "share": "Поделиться профилем"
-  }
+  },
+  "undo": "Отменить",
+  "restore": "Восстановить"
 }

@@ -145,6 +145,8 @@ interface TaskItem {
   recurringTaskId?: string | null;
   /** "recurring" when the row is a series (not a materialised task). */
   _type?: string;
+  subtaskCount?: number;
+  subtaskDoneCount?: number;
 }
 
 const STATUS_CONFIG: Record<
@@ -425,8 +427,23 @@ function TaskCardContent({
           )}
           {task.commentCount > 0 && (
             <span className="text-xs text-(--text-muted)">💬 {task.commentCount}</span>
-          )}
+          )}{' '}
           <DeadlineBadge deadline={task.deadline} status={task.status as Status} />
+          {(task.subtaskCount ?? 0) > 0 && (
+            <div className="flex items-center gap-1.5">
+              <div className="h-1.5 w-16 rounded-full bg-(--background-subtle) overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-(--brand) transition-all"
+                  style={{
+                    width: `${Math.round(((task.subtaskDoneCount ?? 0) / (task.subtaskCount ?? 1)) * 100)}%`,
+                  }}
+                />
+              </div>
+              <span className="text-xs text-(--text-muted)">
+                {task.subtaskDoneCount ?? 0}/{task.subtaskCount ?? 0}
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -1410,13 +1427,31 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
     [savedViews, patchView],
   );
 
+  // ── Soft-delete / restore mutations ──────────────────────────────────────
+  const deleteTaskMutation = useMutation(api.tasks.deleteTask);
+  const restoreTaskMutation = useMutation(api.tasks.restoreTask);
+
   /** Context menu: delete a single task. */
   const handleDeleteSingle = useCallback(
     (task: ContextTask) => {
-      if (!canManage) return;
-      void handleBulkDelete([task._id]);
+      const deletedTitle = task.title;
+      const deletedId = task._id;
+      void deleteTaskMutation({ taskId: deletedId as any }).then(() => {
+        toast.success(t('tasksClient.taskDeleted', 'Task deleted'), {
+          description: deletedTitle,
+          action: {
+            label: t('undo', 'Undo'),
+            onClick: () => {
+              void restoreTaskMutation({ taskId: deletedId as any }).then(() => {
+                toast.success(t('tasksClient.taskRestored', 'Task restored'));
+              });
+            },
+          },
+          duration: 8000,
+        });
+      });
     },
-    [canManage, handleBulkDelete],
+    [deleteTaskMutation, restoreTaskMutation, t],
   );
 
   /** Context menu: set priority. */
@@ -2080,6 +2115,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
         {[
           { key: 'all' as const, label: t('tasksClient.allTasks', 'All Tasks') },
           { key: 'recurring' as const, label: t('tasksClient.recurringTasks', '🔁 Recurring') },
+          { key: 'trash' as const, label: '🗑️ Trash' },
         ].map((tt) => (
           <button
             key={tt.key}
@@ -2170,6 +2206,33 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
             onChange={setFilters}
             activeCount={activeConditions}
           />
+          <button
+            onClick={() => {
+              const header = ['Title', 'Status', 'Priority', 'Assignee', 'Deadline', 'Project'];
+              const rows = tasks.map((t) => [
+                t.title,
+                t.status,
+                t.priority,
+                t.assignedToUser?.name ?? '',
+                t.deadline ? new Date(t.deadline).toISOString().split('T')[0] : '',
+                t.projectName ?? '',
+              ]);
+              const csv = [header, ...rows]
+                .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','))
+                .join('\n');
+              const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `tasks-${new Date().toISOString().split('T')[0]}.csv`;
+              a.click();
+              URL.revokeObjectURL(url);
+            }}
+            className="flex items-center gap-1 px-2 py-1.5 text-xs font-medium text-(--text-muted) hover:text-(--text-primary) hover:bg-(--background-subtle) rounded-lg transition-colors"
+            title={t('tasksClient.exportCsv', 'Export CSV')}
+          >
+            📥 {t('tasksClient.exportCsv', 'Export CSV')}
+          </button>
         </div>
 
         <div className="flex items-center gap-1 ml-auto overflow-x-auto scrollbar-width-none">
@@ -2355,6 +2418,15 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
           <div className="flex items-center justify-center py-20">
             <ShieldLoader size="lg" />
           </div>
+        ) : viewState.tab === 'trash' ? (
+          <DeletedTasksView
+            convexId={convexId}
+            onRestore={(taskId) => {
+              void restoreTaskMutation({ taskId: taskId as any }).then(() => {
+                toast.success(t('tasksClient.taskRestored', 'Task restored'));
+              });
+            }}
+          />
         ) : viewMode === 'kanban' ? (
           <DndContext
             sensors={sensors}
@@ -2829,5 +2901,73 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
     </div>
   );
 });
+
+// ── Deleted Tasks View (Trash) ──────────────────────────────────────────
+function DeletedTasksView({
+  convexId,
+  onRestore,
+}: {
+  convexId: string | null | undefined;
+  onRestore: (taskId: string) => void;
+}) {
+  const { t } = useTranslation();
+  const deletedTasks = useQuery(api.tasks.getDeletedTasks, convexId ? {} : 'skip');
+  const restoreTaskMutation = useMutation(api.tasks.restoreTask);
+
+  if (deletedTasks === undefined) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <ShieldLoader size="lg" />
+      </div>
+    );
+  }
+
+  if (deletedTasks.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <span className="text-4xl mb-3">🗑️</span>
+        <p className="font-medium text-(--text-secondary)">
+          {t('tasksClient.trashEmpty', 'Trash is empty')}
+        </p>
+        <p className="mt-1 text-sm text-(--text-muted)">
+          {t('tasksClient.trashEmptyDesc', 'Deleted tasks will appear here')}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-4 sm:p-6 space-y-2">
+      <p className="text-sm text-(--text-muted) mb-4">
+        {t('tasksClient.trashDesc', {
+          count: deletedTasks.length,
+          defaultValue: '{{count}} deleted task(s) — click Restore to bring back.',
+        })}
+      </p>
+      {deletedTasks.map((task: any) => (
+        <div
+          key={task._id}
+          className="flex items-center gap-3 p-3 rounded-xl border border-(--border) bg-(--card) hover:bg-(--background-subtle) transition-colors"
+        >
+          <span className="text-sm font-medium text-(--text-primary) truncate flex-1">
+            {task.title}
+          </span>
+          <span className="text-xs text-(--text-muted) shrink-0">
+            {task.assignedToUser?.name ?? '—'}
+          </span>
+          <span className="text-xs text-(--text-muted) shrink-0">
+            {new Date(task.deletedAt).toLocaleDateString()}
+          </span>
+          <button
+            onClick={() => onRestore(task._id)}
+            className="px-3 py-1.5 text-xs font-medium rounded-lg bg-(--brand) text-white hover:opacity-90 transition-opacity shrink-0"
+          >
+            {t('restore', 'Restore')}
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default TasksClient;
