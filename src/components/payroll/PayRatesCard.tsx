@@ -55,9 +55,9 @@ export function PayRatesCard({
 }: PayRatesCardProps) {
   const { t } = useTranslation();
   const rates: DerivedRates = deriveRates(baseSalary, workingDays);
-  const [openTile, setOpenTile] = useState<null | 'daily' | 'hourly' | 'vacation' | 'sick' | 'overtime'>(
-    null,
-  );
+  const [openTile, setOpenTile] = useState<
+    null | 'daily' | 'hourly' | 'vacation' | 'sick' | 'overtime'
+  >(null);
 
   if (!baseSalary || !workingDays) {
     return (
@@ -69,7 +69,8 @@ export function PayRatesCard({
           </CardTitle>
           <CardDescription>
             {t('payroll.myPayroll.ratesEmpty', {
-              defaultValue: 'Your rates will appear here once payroll for this month is calculated.',
+              defaultValue:
+                'Your rates will appear here once payroll for this month is calculated.',
             })}
           </CardDescription>
         </CardHeader>
@@ -130,7 +131,8 @@ export function PayRatesCard({
           </CardTitle>
           <CardDescription>
             {t('payroll.myPayroll.ratesDesc', {
-              defaultValue: 'How your pay is built — base / daily / hourly / vacation / sick / overtime',
+              defaultValue:
+                'How your pay is built — base / daily / hourly / vacation / sick / overtime',
               period: periodLabel,
             })}
           </CardDescription>
@@ -180,7 +182,14 @@ export function PayRatesCard({
           })}
         </div>
 
-        {openTile && <RateFormulaModal tile={openTile} rates={rates} currency={currency} onClose={() => setOpenTile(null)} />}
+        {openTile && (
+          <RateFormulaModal
+            tile={openTile}
+            rates={rates}
+            currency={currency}
+            onClose={() => setOpenTile(null)}
+          />
+        )}
       </CardContent>
     </Card>
   );
@@ -215,8 +224,7 @@ function RateFormulaModal({
             result: fmt(rates.dailyRate),
           }),
           note: t('payroll.myPayroll.noteDaily', {
-            defaultValue:
-              'Used for one full day of work, vacation, and most leave types.',
+            defaultValue: 'Used for one full day of work, vacation, and most leave types.',
           }),
         };
       case 'hourly':
@@ -233,8 +241,7 @@ function RateFormulaModal({
             result: fmt(rates.hourlyRate),
           }),
           note: t('payroll.myPayroll.noteHourly', {
-            defaultValue:
-              'Multiply by hours worked to get the gross pay for partial days.',
+            defaultValue: 'Multiply by hours worked to get the gross pay for partial days.',
           }),
         };
       case 'vacation':
@@ -249,8 +256,7 @@ function RateFormulaModal({
             result: fmt(rates.vacationDayRate),
           }),
           note: t('payroll.myPayroll.noteVacation', {
-            defaultValue:
-              'Annual, study, and family leave all pay at 100% of your daily rate.',
+            defaultValue: 'Annual, study, and family leave all pay at 100% of your daily rate.',
           }),
         };
       case 'sick':
@@ -285,8 +291,7 @@ function RateFormulaModal({
             result: fmt(rates.overtimeHourlyRate),
           }),
           note: t('payroll.myPayroll.noteOvertime', {
-            defaultValue:
-              'Night shifts and holidays pay at 2×, regular overtime at 1.5×.',
+            defaultValue: 'Night shifts and holidays pay at 2×, regular overtime at 1.5×.',
           }),
         };
     }

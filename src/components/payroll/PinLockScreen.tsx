@@ -216,12 +216,7 @@ export function PinLockScreen({
           >
             {t('payroll.myPayroll.pinUnlock', { defaultValue: 'Unlock' })}
           </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="flex-1"
-            onClick={onCancel}
-          >
+          <Button type="button" variant="outline" className="flex-1" onClick={onCancel}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             {t('payroll.myPayroll.back', { defaultValue: 'Back' })}
           </Button>
@@ -230,8 +225,7 @@ export function PinLockScreen({
         <p className="mt-5 flex items-center justify-center gap-1.5 text-[11px] text-(--text-4)">
           <ShieldCheck className="h-3 w-3" />
           {t('payroll.myPayroll.pinFooter', {
-            defaultValue:
-              'Your PIN is checked locally. We never send it anywhere.',
+            defaultValue: 'Your PIN is checked locally. We never send it anywhere.',
           })}
         </p>
         {email && (
