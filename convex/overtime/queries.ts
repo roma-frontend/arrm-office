@@ -196,13 +196,30 @@ export const getOvertimeStats = query({
     if (!caller)
       return { totalHours: 0, approvedHours: 0, pendingRequests: 0, approvedRequests: 0 };
 
-    const targetUserId = userId ?? caller._id;
     const monthPrefix = month ?? new Date().toISOString().substring(0, 7);
 
-    const requests = await ctx.db
-      .query('overtimeRequests')
-      .withIndex('by_user', (q) => q.eq('userId', targetUserId))
-      .collect();
+    // When no userId is given, the admin dashboard expects an org-wide
+    // summary so the numbers line up with the rows in the table below.
+    // For a plain employee the same empty arg means "me only".
+    let requests: Doc<'overtimeRequests'>[];
+    if (userId) {
+      requests = await ctx.db
+        .query('overtimeRequests')
+        .withIndex('by_user', (q) => q.eq('userId', userId))
+        .collect();
+    } else if (!isSuperadmin(caller) && caller.role !== 'admin' && caller.role !== 'supervisor') {
+      requests = await ctx.db
+        .query('overtimeRequests')
+        .withIndex('by_user', (q) => q.eq('userId', caller._id))
+        .collect();
+    } else if (caller.organizationId) {
+      requests = await ctx.db
+        .query('overtimeRequests')
+        .withIndex('by_org_created', (q) => q.eq('organizationId', caller.organizationId!))
+        .collect();
+    } else {
+      requests = await ctx.db.query('overtimeRequests').collect();
+    }
 
     const monthRequests = requests.filter((r) => r.date.startsWith(monthPrefix));
 
