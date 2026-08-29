@@ -34,6 +34,7 @@ const mockSubmit = jest.fn(async (_args: unknown) => ({
 }));
 jest.mock('convex/react', () => ({
   useMutation: () => mockSubmit,
+  useQuery: () => null,
 }));
 
 import { LobbyForm } from '@/components/meetings/LobbyForm';

@@ -736,3 +736,22 @@ export const markRegistrationAdmitted = mutation({
     });
   },
 });
+
+/**
+ * Public query for the visitor's lobby page. Returns the visitor's own
+ * registration row (if any) so the page can react live when the host
+ * admits them. Authless visitors pass their own `visitorId` from
+ * sessionStorage; the query looks it up by the indexed `by_visitor` key.
+ */
+export const getMyRegistration = query({
+  args: {
+    roomName: v.string(),
+    visitorId: v.string(),
+  },
+  handler: async (ctx, { roomName, visitorId }) => {
+    return await ctx.db
+      .query('meetingRegistrations')
+      .withIndex('by_visitor', (q) => q.eq('roomName', roomName).eq('visitorId', visitorId))
+      .first();
+  },
+});

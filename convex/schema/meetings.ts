@@ -106,5 +106,5 @@ export const meetings = {
   })
     .index('by_room', ['roomName'])
     .index('by_org', ['organizationId'])
-    .index('by_visitor', ['visitorId']),
+    .index('by_visitor', ['roomName', 'visitorId']),
 };

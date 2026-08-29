@@ -370,8 +370,14 @@ export function MeetingRoomClient() {
     );
   }
 
+  // Title priority: the calendar event title (authenticated caller) > the
+  // eventTitle we resolved on the public branch of getByRoomName > the
+  // generic placeholder. The public branch intentionally only returns the
+  // title (not the full event doc) so the lobby greeting still shows the
+  // meeting name without leaking other event fields.
+  const eventTitle = (meeting as { eventTitle?: string | null }).eventTitle;
   const meetingTitle =
-    'event' in meeting && meeting.event?.title ? meeting.event.title : t('meetings.untitled');
+    ('event' in meeting && meeting.event?.title) || eventTitle || t('meetings.untitled');
 
   // ── Lobby (waiting room / registration) ─────────────────────────────────
   // External visitors without an invite land here when EITHER waiting room

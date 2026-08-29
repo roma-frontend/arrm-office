@@ -13,7 +13,7 @@
 
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useMutation } from 'convex/react';
+import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Button } from '@/components/ui/button';
 import { ShieldCheck, Video, ArrowLeft, Loader2, CheckCircle2, Clock } from 'lucide-react';
@@ -52,9 +52,14 @@ export function LobbyForm({
   const [busy, setBusy] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Tracks which visitorId we submitted under so the live-admit subscription
+  // below can look the right row up. Stored on the parent form rather than
+  // sessionStorage so a hard refresh of the page after admission still
+  // shows the same lobby state instead of regenerating a new id.
+  const [trackingId, setTrackingId] = useState<string | null>(null);
 
   // Stable per-tab id used to dedupe refreshes server-side.
-  const visitorId = useCallback(() => {
+  const visitorId = useCallback((): string | undefined => {
     if (typeof window === 'undefined') return undefined;
     const key = `lobby_vid_${roomName}`;
     let id = window.sessionStorage.getItem(key);
@@ -92,6 +97,7 @@ export function LobbyForm({
       setError(err);
       return;
     }
+    const vid = visitorId();
     setBusy(true);
     try {
       await submit({
@@ -99,8 +105,9 @@ export function LobbyForm({
         fullName,
         email: want('email') ? email : undefined,
         phone: want('phone') ? phone : undefined,
-        visitorId: visitorId(),
+        visitorId: vid,
       });
+      setTrackingId(vid ?? null);
       setSubmitted(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -109,7 +116,22 @@ export function LobbyForm({
     }
   };
 
+  // Live admit signal: while we are sitting on the "wait for host" screen,
+  // poll the server for the row we just created. When `admittedAt` is set
+  // and `admitToken` is present, the host has admitted us and the join
+  // link is ready. Switch the screen to a single-click "Join meeting"
+  // banner instead of the static "wait" copy.
+  const myRegistration = useQuery(
+    api.meetings.getMyRegistration,
+    submitted && waitingRoomEnabled && trackingId ? { roomName, visitorId: trackingId } : 'skip',
+  );
+  const admittedToken =
+    submitted && waitingRoomEnabled && myRegistration?.admitToken
+      ? myRegistration.admitToken
+      : null;
+
   if (submitted) {
+    const admitted = Boolean(admittedToken);
     return (
       <div className="prejoin-screen relative flex min-h-screen flex-col bg-(--canvas) p-4 sm:p-6">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-[radial-gradient(800px_320px_at_50%_-10%,var(--brand-quiet),transparent)]" />
@@ -120,23 +142,50 @@ export function LobbyForm({
             transition={{ duration: 0.45, ease: 'easeOut' }}
             className="w-full rounded-3xl border border-(--border-default) bg-(--surface-1) p-7 text-center shadow-xl shadow-black/5"
           >
-            <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl bg-emerald-500/10">
-              <CheckCircle2 className="h-7 w-7 text-emerald-500" />
+            <div
+              className={cn(
+                'mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl',
+                admitted ? 'bg-emerald-500/10' : 'bg-amber-500/10',
+              )}
+            >
+              {admitted ? (
+                <CheckCircle2 className="h-7 w-7 text-emerald-500" />
+              ) : (
+                <Clock className="h-7 w-7 text-amber-500" />
+              )}
             </div>
             <h1 className="text-lg font-semibold text-(--text-1)">
-              {waitingRoomEnabled
-                ? t('meetings.lobbySubmittedTitle')
-                : t('meetings.lobbyRegisteredTitle', { defaultValue: 'You are registered' })}
+              {admitted
+                ? t('meetings.lobbyAdmittedTitle', { defaultValue: 'You are in!' })
+                : waitingRoomEnabled
+                  ? t('meetings.lobbySubmittedTitle')
+                  : t('meetings.lobbyRegisteredTitle', { defaultValue: 'You are registered' })}
             </h1>
             <p className="mt-2 text-sm text-(--text-3)">
-              {waitingRoomEnabled
-                ? t('meetings.lobbySubmittedDesc', { host: hostName || t('meetings.theHost') })
-                : t('meetings.lobbyRegisteredDesc', {
-                    defaultValue:
-                      'Thanks for registering. You can now join the meeting — see you inside.',
-                  })}
+              {admitted
+                ? t('meetings.lobbyAdmittedDesc', {
+                    defaultValue: 'The host admitted you. Open the link below to join the meeting.',
+                  })
+                : waitingRoomEnabled
+                  ? t('meetings.lobbySubmittedDesc', { host: hostName || t('meetings.theHost') })
+                  : t('meetings.lobbyRegisteredDesc', {
+                      defaultValue:
+                        'Thanks for registering. You can now join the meeting — see you inside.',
+                    })}
             </p>
-            {waitingRoomEnabled ? (
+            {admitted ? (
+              <Button
+                className="btn-gradient mt-5 w-full"
+                onClick={() => {
+                  if (admittedToken) {
+                    window.location.assign(`/meetings/${roomName}?invite=${admittedToken}`);
+                  }
+                }}
+              >
+                <CheckCircle2 className="mr-2 h-4 w-4" />
+                {t('meetings.lobbyJoin', { defaultValue: 'Join meeting' })}
+              </Button>
+            ) : waitingRoomEnabled ? (
               <>
                 <div className="mt-5 flex items-center justify-center gap-2 rounded-xl border border-(--border-default) bg-(--surface-2)/50 px-3 py-2.5 text-xs text-(--text-3)">
                   <Clock className="h-3.5 w-3.5" />

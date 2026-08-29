@@ -2790,7 +2790,10 @@
     "registrationToggle": "Registration form",
     "registrationHint": "External visitors fill out a form before joining. Responses are saved for the attendee report.",
     "waitingRoomHint": "External visitors must fill out a form and be admitted before joining.",
-    "settingsSaved": "Settings saved"
+    "settingsSaved": "Settings saved",
+    "lobbyAdmittedTitle": "You are in!",
+    "lobbyAdmittedDesc": "The host admitted you. Open the link below to join the meeting.",
+    "lobbyJoin": "Join meeting"
   },
   "billing": {
     "modules": {
