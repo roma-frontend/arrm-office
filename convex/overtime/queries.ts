@@ -4,6 +4,7 @@ import { query, type QueryCtx } from '../_generated/server';
 import type { Doc } from '../_generated/dataModel';
 import { isSuperadmin } from '../lib/auth';
 import { getProfile } from '../lib/userProfile';
+import { canAccessUser } from '../lib/rbac';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPER: Enrich overtime request with user data
@@ -137,10 +138,13 @@ export const getOvertimeForDate = query({
       .withIndex('by_date', (q) => q.eq('date', date))
       .collect();
 
-    // Filter by org
+    // Filter by role: superadmin sees all, staff sees org, employees only own
     const filtered = requests.filter((r) => {
       if (isSuperadmin(caller)) return true;
-      return r.organizationId === caller.organizationId;
+      if (caller.role === 'admin' || caller.role === 'supervisor') {
+        return r.organizationId === caller.organizationId;
+      }
+      return r.userId === caller._id;
     });
 
     return enrichOvertimeWithUserData(ctx, filtered);
@@ -203,6 +207,9 @@ export const getOvertimeStats = query({
     // For a plain employee the same empty arg means "me only".
     let requests: Doc<'overtimeRequests'>[];
     if (userId) {
+      if (!(await canAccessUser(ctx, caller._id, userId))) {
+        return { totalHours: 0, approvedHours: 0, pendingRequests: 0, approvedRequests: 0 };
+      }
       requests = await ctx.db
         .query('overtimeRequests')
         .withIndex('by_user', (q) => q.eq('userId', userId))

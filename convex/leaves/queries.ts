@@ -14,6 +14,7 @@ import { enrichLeavesWithUserData } from './helpers';
 import { isSuperadmin } from '../lib/auth';
 import { getProfile } from '../lib/userProfile';
 import { reviewRefusal } from './approval';
+import { canAccessUser } from '../lib/rbac';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET ALL LEAVES — scoped to caller's organization
@@ -222,6 +223,9 @@ export const getLeavesForDateRange = query({
 export const getUserLeaves = query({
   args: { userId: v.id('users') },
   handler: async (ctx, { userId }) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return [];
+    if (!(await canAccessUser(ctx, caller._id, userId))) return [];
     return await ctx.db
       .query('leaveRequests')
       .withIndex('by_user', (q) => q.eq('userId', userId))
@@ -373,29 +377,44 @@ export const getLeavesPagederated = query({
     const cursorCreationTime = args.cursor ? decodeCreationTimeCursor(args.cursor) : undefined;
     let items: Doc<'leaveRequests'>[] = [];
 
+    const isStaff = requester.role === 'admin' || requester.role === 'supervisor';
+
     if (isSuperadmin(requester)) {
       // Superadmin sees all
-      const query = ctx.db.query('leaveRequests').order('desc');
+      const q = ctx.db.query('leaveRequests').order('desc');
       if (cursorCreationTime !== undefined) {
-        items = await query
-          .filter((q) => q.lt(q.field('_creationTime'), cursorCreationTime))
+        items = await q
+          .filter((f) => f.lt(f.field('_creationTime'), cursorCreationTime))
           .take(normalizedPageSize + 1);
       } else {
-        items = await query.take(normalizedPageSize + 1);
+        items = await q.take(normalizedPageSize + 1);
       }
-    } else {
-      // Regular user - org scoped
+    } else if (isStaff) {
+      // Admin/supervisor: org-wide
       if (!requester.organizationId) return { items: [], hasMore: false };
-      const query = ctx.db
+      const q = ctx.db
         .query('leaveRequests')
-        .withIndex('by_org', (q) => q.eq('organizationId', requester.organizationId))
+        .withIndex('by_org', (o) => o.eq('organizationId', requester.organizationId!))
         .order('desc');
       if (cursorCreationTime !== undefined) {
-        items = await query
-          .filter((q) => q.lt(q.field('_creationTime'), cursorCreationTime))
+        items = await q
+          .filter((f) => f.lt(f.field('_creationTime'), cursorCreationTime))
           .take(normalizedPageSize + 1);
       } else {
-        items = await query.take(normalizedPageSize + 1);
+        items = await q.take(normalizedPageSize + 1);
+      }
+    } else {
+      // Employee/driver: only own leaves
+      const q = ctx.db
+        .query('leaveRequests')
+        .withIndex('by_user', (u) => u.eq('userId', requester._id))
+        .order('desc');
+      if (cursorCreationTime !== undefined) {
+        items = await q
+          .filter((f) => f.lt(f.field('_creationTime'), cursorCreationTime))
+          .take(normalizedPageSize + 1);
+      } else {
+        items = await q.take(normalizedPageSize + 1);
       }
     }
 

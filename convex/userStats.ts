@@ -4,6 +4,7 @@ import { MAX_PAGE_SIZE } from './pagination';
 import { getProfile } from './lib/userProfile';
 import { getAuthCaller } from './lib/getAuthCaller';
 import { isSuperadmin } from './lib/auth';
+import { canAccessUser } from './lib/rbac';
 
 /**
  * Get user statistics - UNIFIED VERSION matching mobile
@@ -11,6 +12,9 @@ import { isSuperadmin } from './lib/auth';
 export const getUserStats = query({
   args: { userId: v.id('users') },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return null;
+    if (!(await canAccessUser(ctx, caller._id, args.userId))) return null;
     const { userId } = args;
     const user = await ctx.db.get(userId);
     if (!user) {

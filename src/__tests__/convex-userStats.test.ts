@@ -14,6 +14,14 @@ jest.mock('../../convex/lib/userProfile', () => ({
   getProfile: jest.fn(),
 }));
 
+jest.mock('../../convex/lib/getAuthCaller', () => ({
+  getAuthCaller: jest.fn(),
+}));
+
+jest.mock('../../convex/lib/rbac', () => ({
+  canAccessUser: jest.fn().mockResolvedValue(true),
+}));
+
 let mockGetProfile: jest.Mock;
 let getUserStatsHandler: (ctx: any, args: any) => Promise<unknown>;
 
@@ -21,6 +29,17 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockGetProfile = jest.requireMock('../../convex/lib/userProfile').getProfile;
   mockGetProfile.mockReset();
+  const mockGetAuthCaller = jest.requireMock('../../convex/lib/getAuthCaller').getAuthCaller;
+  mockGetAuthCaller.mockReset();
+  mockGetAuthCaller.mockResolvedValue({
+    _id: 'user_1',
+    role: 'admin',
+    email: 'alice@example.com',
+    name: 'Alice',
+  });
+  const mockCanAccessUser = jest.requireMock('../../convex/lib/rbac').canAccessUser;
+  mockCanAccessUser.mockReset();
+  mockCanAccessUser.mockResolvedValue(true);
   jest.isolateModules(() => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const mod = require('../../convex/userStats');
@@ -62,6 +81,9 @@ function makeCtx({ leaves = [], tasks = [], messages = [] } = {}) {
           .mockReturnValueOnce(taskChain.query())
           .mockReturnValueOnce(msgChain.query()),
       },
+      auth: {
+        getUserIdentity: jest.fn().mockResolvedValue({ email: 'alice@example.com' }),
+      },
     },
     get,
   };
@@ -90,6 +112,13 @@ function msg(overrides: Record<string, unknown> = {}) {
 
 describe('getUserStats', () => {
   it('returns null when the user does not exist', async () => {
+    const mockGetAuthCaller = jest.requireMock('../../convex/lib/getAuthCaller').getAuthCaller;
+    mockGetAuthCaller.mockResolvedValue({
+      _id: 'user_1',
+      role: 'admin',
+      email: 'alice@example.com',
+      name: 'Alice',
+    });
     const { ctx, get } = makeCtx();
     get.mockResolvedValueOnce(null);
     const result = await getUserStatsHandler(ctx, { userId: 'ghost' });

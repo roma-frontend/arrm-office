@@ -3,6 +3,7 @@ import { getAuthCaller } from './lib/getAuthCaller';
 import { mutation, query, internalMutation } from './_generated/server';
 import { Id } from './_generated/dataModel';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
+import { isSuperadmin } from './lib/auth';
 import { getProfile } from './lib/userProfile';
 import { notify } from './lib/notify';
 import { assertModuleAccess } from './lib/entitlements';
@@ -110,6 +111,12 @@ export const getMyAssignments = query({
     ),
   },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return [];
+    const isSelf = caller._id === args.userId;
+    const isStaff = caller.role === 'admin' || caller.role === 'supervisor';
+    if (!isSelf && !isStaff && !isSuperadmin(caller)) return [];
+
     const assignments = await ctx.db
       .query('reviewAssignments')
       .withIndex('by_reviewer', (q) => q.eq('reviewerId', args.userId))

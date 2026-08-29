@@ -1,7 +1,7 @@
 import { v } from 'convex/values';
 import { query, type QueryCtx, type MutationCtx } from '../_generated/server';
 import { requireOrgAdmin, requireOrgSupervisor, requireUser } from '../lib/rbac';
-import { isSuperadminEmail } from '../lib/auth';
+import { isSuperadmin } from '../lib/auth';
 import { DEFAULT_LIST_CAP } from '../lib/limits';
 import { getProfile } from '../lib/userProfile';
 import { getAuthCaller } from '../lib/getAuthCaller';
@@ -249,7 +249,7 @@ export const getPayslips = query({
     const { organizationId, userId, period } = args;
     const requesterId = await callerId(ctx);
     const requester = await requireUser(ctx, requesterId);
-    const isSuper = isSuperadminEmail(requester.email);
+    const isSuper = isSuperadmin(requester);
     const isAdmin = requester.role === 'admin' || requester.role === 'supervisor';
 
     // Non-admin can only request their own payslips
@@ -332,7 +332,7 @@ export const getPayrollRecordById = query({
 
     const requesterId = await callerId(ctx);
     const requester = await requireUser(ctx, requesterId);
-    const isSuper = isSuperadminEmail(requester.email);
+    const isSuper = isSuperadmin(requester);
     const isOwner = record.userId === requesterId;
     const isOrgAdmin =
       record.organizationId !== undefined &&

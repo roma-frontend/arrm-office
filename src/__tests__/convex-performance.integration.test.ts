@@ -739,9 +739,9 @@ describe('getMyAssignments', () => {
       });
     });
     const activeCycleId = await createAndLaunch(c);
-    const res = await c.t.run((ctx) =>
-      ctx.runQuery(api.performance.getMyAssignments, { userId: c.employeeId }),
-    );
+    const res = await c.t
+      .withIdentity({ email: 'employee@acme.test' })
+      .run((ctx) => ctx.runQuery(api.performance.getMyAssignments, { userId: c.employeeId }));
     // employee reviews as reviewer: self (employee→employee) + peer (employee→peer)
     expect(res).toHaveLength(2);
     expect(res.every((a) => a.cycleStatus === 'active')).toBe(true);
@@ -754,12 +754,17 @@ describe('getMyAssignments', () => {
   it('filters by assignment status', async () => {
     const c = await seed();
     await createAndLaunch(c);
-    const res = await c.t.run((ctx) =>
-      ctx.runQuery(api.performance.getMyAssignments, { userId: c.employeeId, status: 'pending' }),
-    );
+    const res = await c.t
+      .withIdentity({ email: 'employee@acme.test' })
+      .run((ctx) =>
+        ctx.runQuery(api.performance.getMyAssignments, { userId: c.employeeId, status: 'pending' }),
+      );
     expect(res).toHaveLength(2);
-    const submitted = await c.t.run((ctx) =>
-      ctx.runQuery(api.performance.getMyAssignments, { userId: c.employeeId, status: 'submitted' }),
+    const submitted = await c.t.withIdentity({ email: 'employee@acme.test' }).run((ctx) =>
+      ctx.runQuery(api.performance.getMyAssignments, {
+        userId: c.employeeId,
+        status: 'submitted',
+      }),
     );
     expect(submitted).toHaveLength(0);
   });
@@ -777,9 +782,9 @@ describe('getMyAssignments', () => {
     await c.t.run(async (ctx) => {
       await ctx.db.patch(selfAss._id, { status: 'cancelled' });
     });
-    const res = await c.t.run((ctx) =>
-      ctx.runQuery(api.performance.getMyAssignments, { userId: c.employeeId }),
-    );
+    const res = await c.t
+      .withIdentity({ email: 'employee@acme.test' })
+      .run((ctx) => ctx.runQuery(api.performance.getMyAssignments, { userId: c.employeeId }));
     // only the peer assignment remains — the cancelled self one is hidden
     expect(res).toHaveLength(1);
     expect(res[0]?.type).toBe('peer');

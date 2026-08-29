@@ -4,6 +4,7 @@ import { isSuperadmin } from './lib/auth';
 import { DEFAULT_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
 import { getAuthCaller } from './lib/getAuthCaller';
+import { canAccessUser } from './lib/rbac';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET TODAY'S STATS FOR USER
@@ -11,6 +12,9 @@ import { getAuthCaller } from './lib/getAuthCaller';
 export const getTodayStats = query({
   args: { userId: v.id('users') },
   handler: async (ctx, { userId }) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return null;
+    if (!(await canAccessUser(ctx, caller._id, userId))) return null;
     const _now = Date.now();
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
@@ -99,6 +103,9 @@ export const getTodayStats = query({
 export const getTodayTasks = query({
   args: { userId: v.id('users') },
   handler: async (ctx, { userId }) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return [];
+    if (!(await canAccessUser(ctx, caller._id, userId))) return [];
     const tasks = await ctx.db
       .query('tasks')
       .withIndex('by_assigned_to', (q) => q.eq('assignedTo', userId))
@@ -237,6 +244,9 @@ export const interruptPomodoroSession = mutation({
 export const getActivePomodoroSession = query({
   args: { userId: v.id('users') },
   handler: async (ctx, { userId }) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return null;
+    if (!(await canAccessUser(ctx, caller._id, userId))) return null;
     const session = await ctx.db
       .query('pomodoroSessions')
       .filter((q) =>

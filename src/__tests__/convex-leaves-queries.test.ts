@@ -37,6 +37,10 @@ jest.mock('../../convex/leaves/helpers', () => ({
   enrichLeavesWithUserData: jest.fn(),
 }));
 
+jest.mock('../../convex/lib/rbac', () => ({
+  canAccessUser: jest.fn().mockResolvedValue(true),
+}));
+
 // ── Module under test ────────────────────────────────────────────────────────
 let mockGetAuthCaller: jest.Mock;
 let mockIsSuperadmin: jest.Mock;
@@ -380,6 +384,7 @@ describe('getLeavesForOrganization', () => {
 // ── getUserLeaves ────────────────────────────────────────────────────────────
 describe('getUserLeaves', () => {
   it('returns the raw leaves for the given user id', async () => {
+    mockGetAuthCaller.mockResolvedValue(makeCaller('admin'));
     const { ctx, chains } = makeCtx();
     const lCh = chain(chains, 'leaveRequests');
     lCh.take.mockResolvedValue([leaveDoc()]);
@@ -603,7 +608,7 @@ describe('getLeavesPagederated', () => {
     });
   });
 
-  it('org users page with the by_org index and a cursor filter', async () => {
+  it('employees page with the by_user index and a cursor filter', async () => {
     mockGetAuthCaller.mockResolvedValue(makeCaller('employee'));
     const { ctx, chains } = makeCtx();
     const lCh = chain(chains, 'leaveRequests');
@@ -615,12 +620,12 @@ describe('getLeavesPagederated', () => {
     })) as any;
 
     expect(res.items).toHaveLength(1);
-    expect(lCh.withIndex).toHaveBeenCalledWith('by_org', expect.any(Function));
+    expect(lCh.withIndex).toHaveBeenCalledWith('by_user', expect.any(Function));
     expect(lCh.filter).toHaveBeenCalled();
   });
 
   it('computes hasMore and the next cursor when a full page comes back', async () => {
-    mockGetAuthCaller.mockResolvedValue(makeCaller('employee'));
+    mockGetAuthCaller.mockResolvedValue(makeCaller('admin'));
     const { ctx, chains } = makeCtx();
     const lCh = chain(chains, 'leaveRequests');
     lCh.take.mockResolvedValue([
