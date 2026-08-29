@@ -168,14 +168,14 @@ export const checkConflictsForRequest = query({
   },
   handler: async (ctx, args) => {
     const caller = await getAuthCaller(ctx);
-    if (!caller) return [];
+    if (!caller) return { conflicts: [], hasCritical: false };
     if (
       caller._id !== args.userId &&
       !isSuperadmin(caller) &&
       caller.role !== 'admin' &&
       caller.role !== 'supervisor'
     )
-      return [];
+      return { conflicts: [], hasCritical: false };
     const conflicts: Conflict[] = [];
     const metadata = (args.metadata ?? {}) as RequestMetadata;
 
