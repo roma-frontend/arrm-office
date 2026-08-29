@@ -71,6 +71,7 @@ import { TeamPresence } from '@/components/productivity/TeamPresence';
 import { PomodoroTimer } from '@/components/productivity/PomodoroTimer';
 import { FocusMode } from '@/components/productivity/FocusMode';
 import { useActiveSection } from '@/hooks/useActiveSection';
+import { useGlobalShortcut } from '@/hooks/useGlobalShortcut';
 
 // Landing-only dynamic imports
 const LandingMobileMenu = dynamic(() => import('@/components/landing/MobileMenu'), {
@@ -285,6 +286,10 @@ export function Navbar({ embedded = false }: { embedded?: boolean }) {
   // Dashboard notifications
   const { notifications: sharedNotifications } = useNavBadges();
   const notifications = useMemo(() => sharedNotifications ?? [], [sharedNotifications]);
+
+  // Press `?` from anywhere on the dashboard to open the keyboard shortcut
+  // cheat sheet. The hook ignores the key when the user is typing.
+  useGlobalShortcut({ key: '?' }, () => setShowShortcutsModal(true));
   const markRead = useMutation(api.notifications.markAsRead);
   const markAllRead = useMutation(api.notifications.markAllAsRead);
   const updatePresence = useMutation(api.users.mutations.updatePresenceStatus);
@@ -942,7 +947,7 @@ export function Navbar({ embedded = false }: { embedded?: boolean }) {
                     <Keyboard className="w-4 h-4 text-(--text-muted)" />
                     <span>{t('shortcuts.keyboardShortcuts')}</span>
                     <kbd className="ml-auto px-1.5 py-0.5 text-[10px] font-mono bg-(--background-subtle) border border-(--border) rounded">
-                      ⌘/
+                      ?
                     </kbd>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-(--border)" />

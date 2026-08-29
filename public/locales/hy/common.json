@@ -1199,7 +1199,10 @@
     "requestLeave": "Հայտ արձակուրդի",
     "attendance": "Ներկայություն",
     "toggleNotifications": "Փոխարկել ծանուցումները",
-    "closeModal": "Փակել մոդալը"
+    "closeModal": "Փակել մոդալը",
+    "searchTasks": "Search tasks",
+    "aiAssistant": "AI assistant",
+    "showHelp": "Show this help"
   },
   "shortcuts": {
     "keyboardShortcuts": "Ստեղնաշարի կարճատներ",

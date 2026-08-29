@@ -5,6 +5,8 @@ import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
 import { notify } from './lib/notify';
 import { assertModuleAccess } from './lib/entitlements';
+import { getAuthCaller } from './lib/getAuthCaller';
+import { isSuperadminEmail } from './lib/auth';
 
 // Helper: compute KR completion percentage respecting direction
 function computeKRProgress(
@@ -163,11 +165,19 @@ export const getMyObjectives = query({
     userId: v.id('users'),
   },
   handler: async (ctx, args) => {
-    const { organizationId, userId } = args;
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return [];
+    const isSelf = caller._id === args.userId;
+    const isSuper = isSuperadminEmail(caller.email) || caller.role === 'superadmin';
+    const isStaff =
+      (caller.role === 'admin' || caller.role === 'supervisor') &&
+      caller.organizationId === args.organizationId;
+    if (!isSelf && !isSuper && !isStaff) return [];
+
     const objectives = await ctx.db
       .query('objectives')
       .withIndex('by_org_owner', (q) =>
-        q.eq('organizationId', organizationId).eq('ownerId', userId),
+        q.eq('organizationId', args.organizationId).eq('ownerId', args.userId),
       )
       .take(DEFAULT_LIST_CAP);
 
@@ -687,13 +697,22 @@ export const getRevieweeObjectivesWithReviews = query({
     periodEnd: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return null;
+    const isSelf = caller._id === args.userId;
+    const isSuper = isSuperadminEmail(caller.email) || caller.role === 'superadmin';
+    const isStaff =
+      (caller.role === 'admin' || caller.role === 'supervisor') &&
+      caller.organizationId === args.organizationId;
+    if (!isSelf && !isSuper && !isStaff) return null;
+
     const { organizationId, userId, periodStart, periodEnd } = args;
 
     // Get all objectives owned by this user
     const objectives = await ctx.db
       .query('objectives')
       .withIndex('by_org_owner', (q) =>
-        q.eq('organizationId', organizationId).eq('ownerId', userId),
+        q.eq('organizationId', args.organizationId).eq('ownerId', args.userId),
       )
       .take(DEFAULT_LIST_CAP);
 

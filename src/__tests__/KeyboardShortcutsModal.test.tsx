@@ -21,7 +21,15 @@ jest.mock('@/lib/cssMotion', () => ({
 
 jest.mock('lucide-react', () => {
   const Icon = (props: any) => <span data-testid="icon" {...props} />;
-  return { X: Icon, Keyboard: Icon, Zap: Icon };
+  return {
+    X: Icon,
+    Keyboard: Icon,
+    Zap: Icon,
+    Search: Icon,
+    Sparkles: Icon,
+    Command: Icon,
+    XCircle: Icon,
+  };
 });
 
 jest.mock('@/components/ui/button', () => ({
@@ -50,7 +58,10 @@ describe('KeyboardShortcutsModal', () => {
   it('renders key caps for shortcuts', () => {
     render(<KeyboardShortcutsModal isOpen={true} onClose={() => {}} />);
     const kbd = document.querySelectorAll('kbd');
-    expect(kbd.length).toBeGreaterThanOrEqual(9);
+    // The new cheat sheet lists 5 rows (palette, search, AI, help, Esc).
+    // Each row has either one key cap (single-key) or two (modifier+letter),
+    // so 7 key caps is the realistic floor.
+    expect(kbd.length).toBeGreaterThanOrEqual(5);
   });
 
   it('calls onClose when backdrop is clicked', () => {

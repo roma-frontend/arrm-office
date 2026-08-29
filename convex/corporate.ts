@@ -14,6 +14,7 @@ import { isSuperadmin } from './lib/auth';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
 import { notify } from './lib/notify';
+import { getAuthCaller } from './lib/getAuthCaller';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MANAGER APPROVAL WORKFLOW
@@ -171,12 +172,12 @@ export const rejectRequest = mutation({
  * Get pending approval requests for a manager
  */
 export const getPendingApprovals = query({
-  args: {
-    managerId: v.id('users'),
-  },
+  args: {},
   handler: async (ctx, args) => {
-    const { managerId } = args;
-    const manager = await ctx.db.get(managerId);
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return [];
+
+    const manager = caller;
     if (!manager) throw new Error('Manager not found');
 
     const managerIsSuperadmin = isSuperadmin(manager);

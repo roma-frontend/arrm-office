@@ -2,6 +2,8 @@ import { v } from 'convex/values';
 import { query } from './_generated/server';
 import { MAX_PAGE_SIZE } from './pagination';
 import { getProfile } from './lib/userProfile';
+import { getAuthCaller } from './lib/getAuthCaller';
+import { isSuperadmin } from './lib/auth';
 
 /**
  * Get user statistics - UNIFIED VERSION matching mobile

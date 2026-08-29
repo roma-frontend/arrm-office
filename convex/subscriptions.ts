@@ -1,6 +1,7 @@
 import { mutation, query } from './_generated/server';
 import { v } from 'convex/values';
 import { isSuperadmin } from './lib/auth';
+import { getAuthCaller } from './lib/getAuthCaller';
 import { DEFAULT_LIST_CAP, PLAN_EMPLOYEE_LIMITS } from './lib/limits';
 import { resolveBillingPlanLink } from './billing/plans';
 
@@ -142,6 +143,8 @@ export const saveContactInquiry = mutation({
 export const listInquiries = query({
   args: {},
   handler: async (ctx) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller || !isSuperadmin(caller)) return [];
     return ctx.db.query('contactInquiries').withIndex('by_created').order('desc').take(100);
   },
 });

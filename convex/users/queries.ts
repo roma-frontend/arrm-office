@@ -667,6 +667,9 @@ export const getUsersByDepartment = query({
 export const getPendingUserById = query({
   args: { userId: v.id('users') },
   handler: async (ctx, { userId }) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return null;
+    if (caller.role !== 'admin' && !isSuperadmin(caller)) return null;
     const user = await ctx.db.get(userId);
     if (!user) return null;
     return redactUser(user);

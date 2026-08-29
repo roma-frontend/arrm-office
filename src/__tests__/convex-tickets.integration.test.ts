@@ -539,16 +539,16 @@ describe('tickets.getMyTickets', () => {
       }),
     );
 
-    const res = await c.t.run((ctx) =>
-      ctx.runQuery(api.tickets.getMyTickets, { userId: c.superadminId }),
-    );
+    const res = await c.t
+      .withIdentity({ email: 'super@acme.test' })
+      .query(api.tickets.getMyTickets, { userId: c.superadminId });
     expect(res).toHaveLength(1);
     expect(res[0]?._id).toBe(other);
     expect(res[0]?.creatorName).toBe('Super 2');
 
-    const emp = await c.t.run((ctx) =>
-      ctx.runQuery(api.tickets.getMyTickets, { userId: c.employeeId }),
-    );
+    const emp = await c.t
+      .withIdentity({ email: 'employee@acme.test' })
+      .query(api.tickets.getMyTickets, { userId: c.employeeId });
     expect(emp).toHaveLength(1);
     expect(emp[0]?._id).toBe(mine);
   });

@@ -6,12 +6,18 @@ import { query } from './_generated/server';
 import { paginationOptsValidator } from 'convex/server';
 import { v } from 'convex/values';
 import type { Id } from './_generated/dataModel';
+import { getAuthCaller } from './lib/getAuthCaller';
+import { isSuperadminEmail } from './lib/auth';
 import { DEFAULT_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
 
 export const getConversations = query({
   args: { userId: v.id('users') },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return [];
+    if (caller._id !== args.userId && !isSuperadminEmail(caller.email) && caller.role !== 'admin')
+      return [];
     const conversations = await ctx.db
       .query('aiConversations')
       .withIndex('by_user', (q) => q.eq('userId', args.userId))
@@ -29,12 +35,15 @@ export const getConversations = query({
 export const listConversationsPaginated = query({
   args: { userId: v.id('users'), paginationOpts: paginationOptsValidator },
   handler: async (ctx, args) => {
-    const { userId, paginationOpts } = args;
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return { page: [], isDone: true, continueCursor: '' };
+    if (caller._id !== args.userId && !isSuperadminEmail(caller.email) && caller.role !== 'admin')
+      return { page: [], isDone: true, continueCursor: '' };
     return await ctx.db
       .query('aiConversations')
-      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .withIndex('by_user', (q) => q.eq('userId', args.userId))
       .order('desc')
-      .paginate(paginationOpts);
+      .paginate(args.paginationOpts);
   },
 });
 
@@ -109,6 +118,10 @@ export const getSharedConversation = query({
 export const getFullContext = query({
   args: { userId: v.id('users') },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return null;
+    if (caller._id !== args.userId && !isSuperadminEmail(caller.email) && caller.role !== 'admin')
+      return null;
     // Get user data
     const user = await ctx.db.get(args.userId);
     if (!user) throw new Error('User not found');

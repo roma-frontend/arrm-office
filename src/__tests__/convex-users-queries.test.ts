@@ -819,6 +819,7 @@ describe('getPendingUserById', () => {
   });
 
   it('returns the redacted user', async () => {
+    mockGetAuthCaller.mockResolvedValue(adminA);
     const h = makeCtx({ docs: { [employeeA._id]: employeeA } });
     expect(await queries.getPendingUserById.handler(h.ctx, { userId: employeeA._id })).toEqual(
       employeeA,

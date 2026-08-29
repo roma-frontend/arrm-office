@@ -475,7 +475,9 @@ describe('contact inquiries', () => {
       } as never);
     });
 
-    const res = await c.t.run((ctx) => ctx.runQuery(api.subscriptions.listInquiries, {}));
+    const res = await c.t
+      .withIdentity({ email: 'super@acme.test' })
+      .query(api.subscriptions.listInquiries, {});
     expect(res).toHaveLength(2);
     expect(res[0]?.name).toBe('New');
   });

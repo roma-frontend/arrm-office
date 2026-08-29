@@ -1,6 +1,8 @@
 import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
 import { SMALL_LIST_CAP } from './lib/limits';
+import { getAuthCaller } from './lib/getAuthCaller';
+import { isSuperadminEmail } from './lib/auth';
 
 // ── Add Manager Note ──────────────────────────────────────────────
 export const addNote = mutation({
@@ -64,8 +66,9 @@ export const getNotes = query({
     viewerId: v.id('users'),
   },
   handler: async (ctx, args) => {
-    const viewer = await ctx.db.get(args.viewerId);
-    if (!viewer) return [];
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return [];
+    const viewer = caller;
 
     const allNotes = await ctx.db
       .query('employeeNotes')
@@ -82,7 +85,7 @@ export const getNotes = query({
         (viewer.role === 'admin' || viewer.role === 'supervisor')
       )
         return true;
-      if (note.visibility === 'private' && note.authorId === args.viewerId) return true;
+      if (note.visibility === 'private' && note.authorId === caller._id) return true;
       return false;
     });
 
@@ -109,6 +112,15 @@ export const updateNote = mutation({
     tags: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const note = await ctx.db.get(args.noteId);
+    if (!note) throw new Error('Note not found');
+    const isSelf = note.authorId === caller._id;
+    const isSuper = isSuperadminEmail(caller.email);
+    if (!isSelf && !isSuper && caller.role !== 'admin' && caller.role !== 'supervisor')
+      throw new Error('Not authorized to edit this note');
+
     const updates: Record<string, unknown> = {};
 
     if (args.content !== undefined) {
@@ -149,6 +161,14 @@ export const updateNote = mutation({
 export const deleteNote = mutation({
   args: { noteId: v.id('employeeNotes') },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    const note = await ctx.db.get(args.noteId);
+    if (!note) return;
+    const isSelf = note.authorId === caller._id;
+    const isSuper = isSuperadminEmail(caller.email);
+    if (!isSelf && !isSuper && caller.role !== 'admin' && caller.role !== 'supervisor')
+      throw new Error('Not authorized to delete this note');
     await ctx.db.delete(args.noteId);
   },
 });
@@ -157,10 +177,25 @@ export const deleteNote = mutation({
 export const getNotesSummary = query({
   args: { employeeId: v.id('users') },
   handler: async (ctx, args) => {
-    const notes = await ctx.db
+    const caller = await getAuthCaller(ctx);
+    if (!caller)
+      return { total: 0, sentiment: { positive: 0, negative: 0, neutral: 0 }, byType: {} };
+    const allNotes = await ctx.db
       .query('employeeNotes')
       .withIndex('by_employee', (q) => q.eq('employeeId', args.employeeId))
       .take(SMALL_LIST_CAP);
+
+    const notes = allNotes.filter((n) => {
+      if (n.visibility === 'employee_visible') return true;
+      if (n.visibility === 'hr_only' && caller.role === 'admin') return true;
+      if (
+        n.visibility === 'manager_only' &&
+        (caller.role === 'admin' || caller.role === 'supervisor')
+      )
+        return true;
+      if (n.visibility === 'private' && n.authorId === caller._id) return true;
+      return false;
+    });
 
     const total = notes.length;
     const positive = notes.filter((n) => n.sentiment === 'positive').length;

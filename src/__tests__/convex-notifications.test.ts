@@ -6,6 +6,10 @@
 
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 
+jest.mock('../../convex/lib/getAuthCaller', () => ({
+  getAuthCaller: jest.fn().mockResolvedValue({ _id: 'user_1', role: 'employee' }),
+}));
+
 jest.mock('../../convex/_generated/server', () => ({
   mutation: ({ handler, args }: any) => ({ handler, args }),
   query: ({ handler, args }: any) => ({ handler, args }),

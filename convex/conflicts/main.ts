@@ -20,6 +20,8 @@ import type { QueryCtx } from '../_generated/server';
 import type { Id, Doc } from '../_generated/dataModel';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { getProfile } from '../lib/userProfile';
+import { getAuthCaller } from '../lib/getAuthCaller';
+import { isSuperadmin } from '../lib/auth';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TYPES
@@ -165,6 +167,15 @@ export const checkConflictsForRequest = query({
     metadata: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return [];
+    if (
+      caller._id !== args.userId &&
+      !isSuperadmin(caller) &&
+      caller.role !== 'admin' &&
+      caller.role !== 'supervisor'
+    )
+      return [];
     const conflicts: Conflict[] = [];
     const metadata = (args.metadata ?? {}) as RequestMetadata;
 

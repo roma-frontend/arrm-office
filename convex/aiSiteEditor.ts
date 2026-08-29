@@ -2,6 +2,8 @@ import { mutation, query } from './_generated/server';
 import { v } from 'convex/values';
 import { DEFAULT_LIST_CAP } from './lib/limits';
 import { assertModuleAccess } from './lib/entitlements';
+import { getAuthCaller } from './lib/getAuthCaller';
+import { isSuperadmin } from './lib/auth';
 
 // ── Get current month's usage for a user ──────────────────────────────────────
 export const getCurrentMonthUsage = query({
@@ -9,6 +11,10 @@ export const getCurrentMonthUsage = query({
     userId: v.id('users'),
   },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return { used: 0, limit: 0 };
+    if (caller._id !== args.userId && !isSuperadmin(caller) && caller.role !== 'admin')
+      return { used: 0, limit: 0 };
     const { userId } = args;
     const now = new Date();
     const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -55,6 +61,10 @@ export const canMakeEdit = query({
     ),
   },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return { allowed: false, reason: 'Not authenticated' };
+    if (caller._id !== args.userId && !isSuperadmin(caller) && caller.role !== 'admin')
+      return { allowed: false, reason: 'Not authorized' };
     const { userId, organizationId, editType } = args;
     // Get organization to check plan
     const org = await ctx.db.get(organizationId);

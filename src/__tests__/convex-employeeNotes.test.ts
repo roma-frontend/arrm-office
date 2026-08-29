@@ -5,6 +5,13 @@
 
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 
+jest.mock('../../convex/lib/getAuthCaller', () => ({
+  getAuthCaller: jest.fn(),
+}));
+jest.mock('../../convex/lib/auth', () => ({
+  isSuperadminEmail: jest.fn(() => false),
+}));
+
 jest.mock('../../convex/_generated/server', () => ({
   mutation: ({ handler, args }: any) => ({ handler, args }),
   query: ({ handler, args }: any) => ({ handler, args }),
@@ -29,11 +36,18 @@ beforeEach(() => {
   });
 });
 
-function makeInsertCtx() {
+function makeInsertCtx(callerOverride?: any) {
+  const { getAuthCaller } = require('../../convex/lib/getAuthCaller');
+  const caller = callerOverride ?? { _id: 'user_admin', role: 'admin', organizationId: 'org_1' };
+  getAuthCaller.mockResolvedValue(caller);
+  const { isSuperadminEmail } = require('../../convex/lib/auth');
+  isSuperadminEmail.mockReturnValue(caller?.role === 'superadmin');
+
   const insert = jest.fn();
   const patch = jest.fn();
   const del = jest.fn();
   const get = jest.fn();
+  get.mockResolvedValue({ _id: 'note_1', employeeId: 'user_emp', authorId: 'user_admin' });
   return { ctx: { db: { insert, patch, delete: del, get } }, insert, patch, del, get };
 }
 
@@ -142,6 +156,11 @@ describe('getNotes visibility filtering', () => {
   const q: any = { eq: (..._args: unknown[]) => q };
 
   function makeNotesCtx(notes: Record<string, unknown>[], viewer: any) {
+    const { getAuthCaller } = require('../../convex/lib/getAuthCaller');
+    getAuthCaller.mockResolvedValue(viewer);
+    const { isSuperadminEmail } = require('../../convex/lib/auth');
+    isSuperadminEmail.mockReturnValue(viewer?.role === 'superadmin');
+
     const get = jest.fn();
     const take = jest.fn().mockResolvedValue(notes);
     const order = jest.fn().mockReturnValue({ take });
@@ -174,7 +193,6 @@ describe('getNotes visibility filtering', () => {
     const { ctx } = makeNotesCtx(notes, viewerEmployee);
     // Author lookups for both notes
     (ctx.db.get as jest.Mock)
-      .mockResolvedValueOnce(viewerEmployee)
       .mockResolvedValueOnce({ _id: 'user_other', name: 'Bob' })
       .mockResolvedValueOnce({ _id: 'user_other2', name: 'Cara' });
 
@@ -190,15 +208,11 @@ describe('getNotes visibility filtering', () => {
   it('shows hr_only notes only to admins', async () => {
     const notes = [noteDoc({ visibility: 'hr_only' })];
     const { ctx } = makeNotesCtx(notes, viewerEmployee);
-    (ctx.db.get as jest.Mock).mockResolvedValueOnce(viewerEmployee);
-
     const result = await getNotesHandler(ctx, { employeeId: 'user_emp', viewerId: 'user_emp' });
     expect(result).toEqual([]);
 
     const adminCtx = makeNotesCtx(notes, viewerAdmin);
-    (adminCtx.ctx.db.get as jest.Mock)
-      .mockResolvedValueOnce(viewerAdmin)
-      .mockResolvedValueOnce(author);
+    (adminCtx.ctx.db.get as jest.Mock).mockResolvedValueOnce(author);
     const adminResult = (await getNotesHandler(adminCtx.ctx, {
       employeeId: 'user_emp',
       viewerId: 'user_admin',
@@ -209,9 +223,7 @@ describe('getNotes visibility filtering', () => {
   it('shows manager_only notes to admins and supervisors', async () => {
     const notes = [noteDoc({ visibility: 'manager_only' })];
     const supCtx = makeNotesCtx(notes, viewerSupervisor);
-    (supCtx.ctx.db.get as jest.Mock)
-      .mockResolvedValueOnce(viewerSupervisor)
-      .mockResolvedValueOnce(author);
+    (supCtx.ctx.db.get as jest.Mock).mockResolvedValueOnce(author);
     const supResult = (await getNotesHandler(supCtx.ctx, {
       employeeId: 'user_emp',
       viewerId: 'user_sup',
@@ -219,7 +231,6 @@ describe('getNotes visibility filtering', () => {
     expect(supResult).toHaveLength(1);
 
     const empCtx = makeNotesCtx(notes, viewerEmployee);
-    (empCtx.ctx.db.get as jest.Mock).mockResolvedValueOnce(viewerEmployee);
     const empResult = await getNotesHandler(empCtx.ctx, {
       employeeId: 'user_emp',
       viewerId: 'user_emp',
@@ -230,7 +241,6 @@ describe('getNotes visibility filtering', () => {
   it('shows private notes only to their author', async () => {
     const notes = [noteDoc({ visibility: 'private', authorId: 'user_other' })];
     const empCtx = makeNotesCtx(notes, viewerEmployee);
-    (empCtx.ctx.db.get as jest.Mock).mockResolvedValueOnce(viewerEmployee);
     const empResult = await getNotesHandler(empCtx.ctx, {
       employeeId: 'user_emp',
       viewerId: 'user_emp',
@@ -239,9 +249,7 @@ describe('getNotes visibility filtering', () => {
 
     const notesOwn = [noteDoc({ visibility: 'private', authorId: 'user_emp' })];
     const ownCtx = makeNotesCtx(notesOwn, viewerEmployee);
-    (ownCtx.ctx.db.get as jest.Mock)
-      .mockResolvedValueOnce(viewerEmployee)
-      .mockResolvedValueOnce({ _id: 'user_emp', name: 'Emp' });
+    (ownCtx.ctx.db.get as jest.Mock).mockResolvedValueOnce({ _id: 'user_emp', name: 'Emp' });
     const ownResult = (await getNotesHandler(ownCtx.ctx, {
       employeeId: 'user_emp',
       viewerId: 'user_emp',

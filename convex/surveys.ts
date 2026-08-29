@@ -7,6 +7,8 @@ import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
 import { notify } from './lib/notify';
 import { assertModuleAccess } from './lib/entitlements';
+import { getAuthCaller } from './lib/getAuthCaller';
+import { isSuperadmin } from './lib/auth';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // QUERIES
@@ -201,6 +203,10 @@ export const hasUserResponded = query({
     userId: v.id('users'),
   },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return false;
+    if (caller._id !== args.userId && !isSuperadmin(caller) && caller.role !== 'admin')
+      return false;
     const { surveyId, userId } = args;
     const existing = await ctx.db
       .query('surveyResponses')

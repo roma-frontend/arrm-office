@@ -12,6 +12,8 @@ import type { Id } from './_generated/dataModel';
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { notify } from './lib/notify';
 import { getProfile } from './lib/userProfile';
+import { getAuthCaller } from './lib/getAuthCaller';
+import { isSuperadmin } from './lib/auth';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // QUERIES
@@ -44,9 +46,11 @@ export const getMyJoinRequests = query({
     userId: v.id('users'),
   },
   handler: async (ctx, args) => {
-    const { userId } = args;
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return [];
+    if (caller._id !== args.userId && !isSuperadmin(caller) && caller.role !== 'admin') return [];
     // First get the user to get their email
-    const user = await ctx.db.get(userId);
+    const user = await ctx.db.get(args.userId);
     if (!user || !user.email) return [];
 
     const requests = await ctx.db

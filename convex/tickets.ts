@@ -13,6 +13,8 @@ import { getProfile } from './lib/userProfile';
 import { notify } from './lib/notify';
 import { logger } from '../src/lib/logger';
 import { assertModuleAccess } from './lib/entitlements';
+import { getAuthCaller } from './lib/getAuthCaller';
+import { isSuperadmin } from './lib/auth';
 
 // ─── CREATE TICKET ───────────────────────────────────────────────────────────
 export const createTicket = mutation({
@@ -625,6 +627,9 @@ export const bulkUpdateTickets = mutation({
 export const getMyTickets = query({
   args: { userId: v.id('users') },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return [];
+    if (caller._id !== args.userId && !isSuperadmin(caller) && caller.role !== 'admin') return [];
     // Capped at XLARGE. TODO: add by_creator/by_assignee index for proper scoped query.
     const tickets = await ctx.db.query('supportTickets').take(XLARGE_LIST_CAP);
 

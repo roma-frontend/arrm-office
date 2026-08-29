@@ -3,11 +3,23 @@ import { query } from './_generated/server';
 import type { Id } from './_generated/dataModel';
 import { DEFAULT_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
+import { getAuthCaller } from './lib/getAuthCaller';
+import { isSuperadmin } from './lib/auth';
 
 // ── Calculate Employee Score ──────────────────────────────────────────────
 export const calculateEmployeeScore = query({
   args: { userId: v.id('users') },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return null;
+    if (
+      caller._id !== args.userId &&
+      !isSuperadmin(caller) &&
+      caller.role !== 'admin' &&
+      caller.role !== 'supervisor'
+    )
+      return null;
+
     const user = await ctx.db.get(args.userId);
     if (!user) return null;
 

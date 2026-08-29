@@ -13,6 +13,8 @@ import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import type { Id, Doc } from './_generated/dataModel';
 import type { QueryCtx } from './_generated/server';
 import { getProfile } from './lib/userProfile';
+import { getAuthCaller } from './lib/getAuthCaller';
+import { isSuperadmin } from './lib/auth';
 
 // Types for AI responses
 interface DriverAvailability {
@@ -56,6 +58,15 @@ export const queryDriverAvailability = query({
     contextDate: v.optional(v.number()), // Reference date (default: now)
   },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return null;
+    if (
+      caller._id !== args.userId &&
+      !isSuperadmin(caller) &&
+      caller.role !== 'admin' &&
+      caller.role !== 'supervisor'
+    )
+      return null;
     const { organizationId, query, contextDate } = args;
     const now = contextDate || Date.now();
     const queryLower = query.toLowerCase();
@@ -126,6 +137,15 @@ export const getDriverScheduleWithSummary = query({
     endTime: v.number(),
   },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return null;
+    if (
+      caller._id !== args.userId &&
+      !isSuperadmin(caller) &&
+      caller.role !== 'admin' &&
+      caller.role !== 'supervisor'
+    )
+      return null;
     const { driverId, userId, startTime, endTime } = args;
     // Check calendar access
     const driver = await ctx.db.get(driverId);

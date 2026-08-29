@@ -1199,7 +1199,10 @@
     "requestLeave": "Urlaub beantragen",
     "attendance": "Anwesenheit",
     "toggleNotifications": "Benachrichtigungen ein-/ausblenden",
-    "closeModal": "Modal schließen"
+    "closeModal": "Modal schließen",
+    "searchTasks": "Search tasks",
+    "aiAssistant": "AI assistant",
+    "showHelp": "Show this help"
   },
   "shortcuts": {
     "keyboardShortcuts": "Tastenkombinationen",

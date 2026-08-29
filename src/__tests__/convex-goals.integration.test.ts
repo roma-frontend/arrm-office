@@ -22,6 +22,8 @@ const modules = {
   './lib/limits.ts': () => import('../../convex/lib/limits'),
   './lib/userProfile.ts': () => import('../../convex/lib/userProfile'),
   './lib/notify.ts': () => import('../../convex/lib/notify'),
+  './lib/getAuthCaller.ts': () => import('../../convex/lib/getAuthCaller'),
+  './lib/auth.ts': () => import('../../convex/lib/auth'),
 } as unknown as Record<string, () => Promise<unknown>>;
 
 type Ctx = Awaited<ReturnType<typeof seed>>;
@@ -799,12 +801,12 @@ describe('goals.getMyObjectives', () => {
     // Another objective owned by someone else
     await createObjective(c, { title: 'Not mine', ownerId: c.managerId });
 
-    const res = await c.t.run((ctx) =>
-      ctx.runQuery(api.goals.getMyObjectives, {
+    const res = await c.t
+      .withIdentity({ email: 'employee@acme.test' })
+      .query(api.goals.getMyObjectives, {
         organizationId: c.organizationId,
         userId: c.employeeId,
-      }),
-    );
+      });
     expect(res).toHaveLength(1);
     expect(res[0]?.title).toBe('My goal');
     expect(res[0]?.keyResultsCount).toBe(1);
@@ -812,12 +814,12 @@ describe('goals.getMyObjectives', () => {
 
   it('returns empty when the user has no objectives', async () => {
     const c = await seed();
-    const res = await c.t.run((ctx) =>
-      ctx.runQuery(api.goals.getMyObjectives, {
+    const res = await c.t
+      .withIdentity({ email: 'employee@acme.test' })
+      .query(api.goals.getMyObjectives, {
         organizationId: c.organizationId,
         userId: c.employeeId,
-      }),
-    );
+      });
     expect(res).toEqual([]);
   });
 });
@@ -957,12 +959,12 @@ describe('goals.getRevieweeObjectivesWithReviews', () => {
       await ctx.db.patch(cancelledId, { status: 'cancelled' });
     });
 
-    const res = await c.t.run((ctx) =>
-      ctx.runQuery(api.goals.getRevieweeObjectivesWithReviews, {
+    const res = await c.t
+      .withIdentity({ email: 'manager@acme.test' })
+      .query(api.goals.getRevieweeObjectivesWithReviews, {
         organizationId: c.organizationId,
         userId: c.employeeId,
-      }),
-    );
+      });
     expect(res).toHaveLength(1);
     expect(res[0]?.title).toBe('Review goal');
     expect(res[0]?.keyResultsCount).toBe(1);
@@ -984,13 +986,13 @@ describe('goals.getRevieweeObjectivesWithReviews', () => {
       periodEnd: 1_000_000_000_000 + 90 * 86400_000,
     });
 
-    const res = await c.t.run((ctx) =>
-      ctx.runQuery(api.goals.getRevieweeObjectivesWithReviews, {
+    const res = await c.t
+      .withIdentity({ email: 'manager@acme.test' })
+      .query(api.goals.getRevieweeObjectivesWithReviews, {
         organizationId: c.organizationId,
         userId: c.employeeId,
         periodStart: 1_800_000_000_000,
-      }),
-    );
+      });
     expect(res).toHaveLength(1);
     expect(res[0]?.title).toBe('In range');
   });
@@ -1010,12 +1012,12 @@ describe('goals.getRevieweeObjectivesWithReviews', () => {
       await ctx.db.patch(activeId, { progress: 50 });
     });
 
-    const res = await c.t.run((ctx) =>
-      ctx.runQuery(api.goals.getRevieweeObjectivesWithReviews, {
+    const res = await c.t
+      .withIdentity({ email: 'manager@acme.test' })
+      .query(api.goals.getRevieweeObjectivesWithReviews, {
         organizationId: c.organizationId,
         userId: c.employeeId,
-      }),
-    );
+      });
     expect(res[0]?.title).toBe('Active');
     expect(res[1]?.title).toBe('Completed');
   });

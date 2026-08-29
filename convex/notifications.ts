@@ -3,17 +3,19 @@ import { mutation, query } from './_generated/server';
 import { paginationOptsValidator } from 'convex/server';
 import { MAX_PAGE_SIZE } from './pagination';
 import { DEFAULT_LIST_CAP } from './lib/limits';
+import { getAuthCaller } from './lib/getAuthCaller';
 
 // ── Get notifications for a user (paginated) ───────────────────────────────
 export const listPaginated = query({
   args: { userId: v.id('users'), paginationOpts: paginationOptsValidator },
   handler: async (ctx, args) => {
-    const { userId, paginationOpts } = args;
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return { page: [], isDone: true, continueCursor: '' };
     return await ctx.db
       .query('notifications')
-      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .withIndex('by_user', (q) => q.eq('userId', caller._id))
       .order('desc')
-      .paginate(paginationOpts);
+      .paginate(args.paginationOpts);
   },
 });
 
@@ -21,10 +23,11 @@ export const listPaginated = query({
 export const getUserNotifications = query({
   args: { userId: v.id('users') },
   handler: async (ctx, args) => {
-    const { userId } = args;
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return [];
     return await ctx.db
       .query('notifications')
-      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .withIndex('by_user', (q) => q.eq('userId', caller._id))
       .order('desc')
       .take(50);
   },
@@ -34,10 +37,11 @@ export const getUserNotifications = query({
 export const getUnreadCount = query({
   args: { userId: v.id('users') },
   handler: async (ctx, args) => {
-    const { userId } = args;
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return 0;
     const unread = await ctx.db
       .query('notifications')
-      .withIndex('by_user_unread', (q) => q.eq('userId', userId).eq('isRead', false))
+      .withIndex('by_user_unread', (q) => q.eq('userId', caller._id).eq('isRead', false))
       .take(MAX_PAGE_SIZE);
     return Math.min(unread.length, MAX_PAGE_SIZE);
   },

@@ -8,6 +8,8 @@
 
 import { query, mutation } from './_generated/server';
 import { v } from 'convex/values';
+import { getAuthCaller } from './lib/getAuthCaller';
+import { isSuperadmin } from './lib/auth';
 
 /** Max facts kept per user; oldest are evicted once the cap is exceeded. */
 export const MEMORY_CAP = 30;
@@ -19,6 +21,9 @@ export const MEMORY_PER_REPLY = 5;
 export const listMemories = query({
   args: { userId: v.id('users') },
   handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) return [];
+    if (caller._id !== args.userId && !isSuperadmin(caller) && caller.role !== 'admin') return [];
     return await ctx.db
       .query('aiMemories')
       .withIndex('by_user', (q) => q.eq('userId', args.userId))
