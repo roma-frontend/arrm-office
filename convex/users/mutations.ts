@@ -148,6 +148,10 @@ export const createUser = mutation({
     // argument on `updateUser`, so a negotiated amount does not have to be set
     // in a second edit right after the hire.
     travelAllowance: v.optional(v.union(v.number(), v.null())),
+    /** ՀԾՀ — Armenian national ID / SSN (10-digit). */
+    nationalId: v.optional(v.string()),
+    /** Whether the employee has mandatory health insurance. */
+    healthInsured: v.optional(v.boolean()),
     // Registration / join date (ms epoch) — lets admins backdate employees who
     // were already working before the account was created (project handover).
     createdAt: v.optional(v.number()),
@@ -263,6 +267,8 @@ export const createUser = mutation({
       supervisorId: args.supervisorId,
       dateOfBirth: args.dateOfBirth,
       language: args.language,
+      nationalId: args.nationalId,
+      healthInsured: args.healthInsured,
       isActive: true,
       isApproved: true,
       approvedBy: adminId,
@@ -407,6 +413,10 @@ export const updateUser = mutation({
     // The three cases need to be distinguishable, which a bare
     // `v.optional(v.number())` cannot do — hence the explicit null.
     travelAllowance: v.optional(v.union(v.number(), v.null())),
+    /** ՀԾՀ — Armenian national ID / SSN (10-digit). */
+    nationalId: v.optional(v.string()),
+    /** Whether the employee has mandatory health insurance. */
+    healthInsured: v.optional(v.boolean()),
     // Registration / join date (ms epoch) — editable so admins can backdate
     // employees that have been working before the account was created.
     createdAt: v.optional(v.number()),

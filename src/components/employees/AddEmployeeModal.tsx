@@ -163,6 +163,10 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
    * the right-hand column. Defaults to the admin's current UI language.
    */
   const [documentLanguage, setDocumentLanguage] = useState<SupportedLocale>('ru');
+  /** ՀԾՀ — Armenian national ID / SSN (10-digit). */
+  const [nationalId, setNationalId] = useState('');
+  /** Whether the employee has mandatory health insurance. */
+  const [healthInsured, setHealthInsured] = useState(false);
   /** Generate the bilingual hiring packet right after the employee is created. */
   const [generatePacket, setGeneratePacket] = useState(true);
   const [taxIdVerifyStatus, setTaxIdVerifyStatus] = useState<
@@ -489,6 +493,8 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
         // to that amount from day one.
         travelAllowance: travelAllowance.trim() === '' ? null : Number(travelAllowance.trim()),
         language: documentLanguage,
+        nationalId: nationalId || undefined,
+        healthInsured: healthInsured,
         createdAt: registrationDate
           ? new Date(registrationDate + 'T00:00:00').getTime()
           : undefined,
@@ -1041,6 +1047,64 @@ export function AddEmployeeModal({ open, onClose }: AddEmployeeModalProps) {
                         'Auto-filled from the passport scan. Required by the personal data and biometric consent forms.',
                       )}
                     </p>
+                  </div>
+
+                  {/* ── National ID (ՀԾՀ) & Health Insurance ─────────── */}
+                  <div className="rounded-xl border border-(--border) bg-(--background-subtle) p-4 space-y-4">
+                    <div className="flex items-start gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                        <FileText className="w-4 h-4 text-primary" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium text-(--text-primary) text-sm">
+                          {t('employees.nationalIdSection', 'National ID & Insurance')}
+                        </p>
+                        <p className="text-xs text-(--text-muted)">
+                          {t(
+                            'employees.nationalIdSectionHint',
+                            'Armenian national ID and health insurance status',
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="employee-nationalId">
+                          {t('employees.nationalId', 'ՀԾՀ (National ID)')}
+                        </Label>
+                        <Input
+                          id="employee-nationalId"
+                          value={nationalId}
+                          onChange={(e) => setNationalId(e.target.value)}
+                          placeholder="10 digits"
+                          maxLength={10}
+                          pattern="\d{10}"
+                        />
+                        <p className="text-xs text-(--text-muted)">
+                          {t(
+                            'employees.nationalIdHint',
+                            '10-digit Armenian national identification number',
+                          )}
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={healthInsured}
+                            onChange={(e) => setHealthInsured(e.target.checked)}
+                            className="rounded border-(--border)"
+                          />
+                          {t('employees.healthInsured', 'Mandatory Health Insurance')}
+                        </Label>
+                        <p className="text-xs text-(--text-muted)">
+                          {t(
+                            'employees.healthInsuredHint',
+                            'Employee participates in mandatory health insurance',
+                          )}
+                        </p>
+                      </div>
+                    </div>
                   </div>
 
                   {/* ── Hiring document packet ──────────────────────────── */}

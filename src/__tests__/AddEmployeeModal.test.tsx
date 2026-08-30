@@ -561,8 +561,9 @@ describe('AddEmployeeModal', () => {
     // language select with ru/en/de options
     fireEvent.click(screen.getByTestId('select-option-en'));
     expect(screen.getByTestId('select-current-en')).toBeInTheDocument();
-    // unchecking the packet checkbox hides the preview
-    fireEvent.click(screen.getByRole('checkbox'));
+    // unchecking the packet checkbox hides the preview (last checkbox is the generatePacket toggle)
+    const checkboxes = screen.getAllByRole('checkbox');
+    fireEvent.click(checkboxes[checkboxes.length - 1]!);
     await waitFor(() => expect(screen.queryByText('required')).not.toBeInTheDocument());
   });
 
@@ -620,7 +621,9 @@ describe('AddEmployeeModal', () => {
     setupDepts();
     render(<AddEmployeeModal open onClose={jest.fn()} />);
     await toIdentityStep();
-    fireEvent.click(screen.getByRole('checkbox')); // generatePacket → off
+    // generatePacket → off (last checkbox is the generatePacket toggle)
+    const checkboxes = screen.getAllByRole('checkbox');
+    fireEvent.click(checkboxes[checkboxes.length - 1]!);
     next();
     fireEvent.click(submitButton());
     await waitFor(() => expect(mockMutations.createUser).toHaveBeenCalled());

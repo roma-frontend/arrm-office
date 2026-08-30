@@ -43,6 +43,7 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core';
+import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { toast } from 'sonner';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
@@ -875,6 +876,50 @@ function TaskRow({ task, onOpen }: { task: TaskItem; onOpen: () => void }) {
         </td>
       </tr>
     </>
+  );
+}
+
+/**
+ * A droppable section in list view — when a task is dragged over it,
+ * it highlights to show the user they can drop the task here to change
+ * its status.
+ */
+function DroppableListSection({ id, children }: { id: string; children: React.ReactNode }) {
+  const { isOver, setNodeRef } = useDroppable({
+    id,
+    data: { type: 'list-section' },
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`transition-colors ${isOver ? 'bg-(--brand-quiet)/50 ring-2 ring-inset ring-(--brand-outline) rounded-lg' : ''}`}
+    >
+      {children}
+    </div>
+  );
+}
+
+/**
+ * A list-view task row that is draggable. Wraps the existing grid row
+ * with `useDraggable` so the user can drag a task into a different status
+ * section — the same mental model as the Kanban board, expressed as rows.
+ */
+function DraggableListRow({ task, children }: { task: TaskItem; children: React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: task._id,
+    data: { status: task.status, type: 'list-row' },
+  });
+  const style: React.CSSProperties = {
+    transform: CSS.Translate.toString(transform),
+    opacity: isDragging ? 0.4 : 1,
+    zIndex: isDragging ? 50 : undefined,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
+      {children}
+    </div>
   );
 }
 
@@ -2768,225 +2813,265 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
           />
         ) : (
           /* ═══ List View — ClickUp Design ═══ */
-          <div className="flex flex-col min-h-0">
-            {/* Table Header */}
-            <div
-              style={listGridStyle}
-              className="grid border-b border-(--border) bg-(--background-subtle) sticky top-0 z-10 shrink-0"
-            >
+          <DndContext
+            sensors={sensors}
+            onDragStart={(e: DragStartEvent) => {
+              const task = tasks.find((t) => t._id === e.active.id);
+              setActiveTask(task ?? null);
+            }}
+            onDragEnd={(e: DragEndEvent) => {
+              const { active, over } = e;
+              setActiveTask(null);
+              if (!over || !convexId) return;
+              const task = tasks.find((t) => t._id === active.id);
+              if (!task) return;
+              const overData = over.data.current;
+              // If dropped on a droppable section, over.id is the status key
+              const overStatus =
+                overData?.type === 'list-section'
+                  ? (over.id as string)
+                  : (overData?.status as string | undefined);
+              if (!overStatus || task.status === overStatus) return;
+              handleSetStatus(task._id, overStatus);
+            }}
+          >
+            <div className="flex flex-col min-h-0">
+              {/* Table Header */}
               <div
-                className={`flex items-center gap-1 ${cellPad} cursor-pointer select-none text-xs font-semibold text-(--text-muted) hover:text-(--text-primary)`}
-                onClick={() => toggleSort('name')}
+                style={listGridStyle}
+                className="grid border-b border-(--border) bg-(--background-subtle) sticky top-0 z-10 shrink-0"
               >
-                {t('tasksClient.task', 'Name')}
-                <SortCaret active={sortBy === 'name'} dir={sortDir} />
-              </div>
-              {listColumnOrder.map(([key]) => (
                 <div
-                  key={key}
-                  className={`flex items-center gap-1 ${cellPad} text-xs font-semibold text-(--text-muted) ${
-                    key === 'project'
-                      ? ''
-                      : 'cursor-pointer select-none hover:text-(--text-primary)'
-                  }`}
-                  onClick={key === 'project' ? undefined : () => toggleSort(key)}
+                  className={`flex items-center gap-1 ${cellPad} cursor-pointer select-none text-xs font-semibold text-(--text-muted) hover:text-(--text-primary)`}
+                  onClick={() => toggleSort('name')}
                 >
-                  {key === 'deadline' && t('tasksClient.deadline', 'Due date')}
-                  {key === 'assignee' && t('tasksClient.assignee', 'Collaborators')}
-                  {key === 'project' && t('tasksClient.project', 'Projects')}
-                  {key === 'priority' && t('tasksClient.priority', 'Priority')}
-                  {key === 'status' && t('common.status', 'Status')}
-                  {key !== 'project' && <SortCaret active={sortBy === key} dir={sortDir} />}
+                  {t('tasksClient.task', 'Name')}
+                  <SortCaret active={sortBy === 'name'} dir={sortDir} />
                 </div>
-              ))}
-            </div>
-
-            {/* Sections */}
-            {tasks.length === 0 && rawTasks !== undefined ? (
-              <div className="py-20 text-center">
-                <p className="text-4xl mb-3">📋</p>
-                <p className="text-(--text-secondary) font-medium">
-                  {t('tasksClient.noTasksFound')}
-                </p>
-                <p className="text-(--text-muted) text-sm mt-1">
-                  {canManage ? t('tasksClient.createNewTask') : t('tasksClient.noTasksAssigned')}
-                </p>
-              </div>
-            ) : (
-              <>
-                {sections.map((section) => {
-                  const isCollapsed = collapsedSections.has(section.key);
-                  return (
-                    <div key={section.key}>
-                      {/* Section Header */}
-                      <button
-                        onClick={() => toggleSection(section.key)}
-                        className="w-full flex items-center gap-2 px-4 py-2 bg-(--background) hover:bg-(--background-subtle) transition-colors text-left border-b border-(--border)"
-                      >
-                        <svg
-                          className={`w-3.5 h-3.5 text-(--text-muted) transition-transform shrink-0 ${isCollapsed ? '' : 'rotate-90'}`}
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M9 5l7 7-7 7"
-                          />
-                        </svg>
-                        <span className="text-sm font-semibold text-(--text-primary)">
-                          {section.label}
-                        </span>
-                      </button>
-
-                      {/* Task Rows */}
-                      {!isCollapsed &&
-                        section.tasks.map((task) => {
-                          const statusCfg = STATUS_CONFIG[task.status as Status];
-                          const priorityCfg = PRIORITY_CONFIG[task.priority as Priority];
-                          return (
-                            <TaskContextMenu
-                              key={task._id}
-                              task={task as ContextTask}
-                              canManage={canManage}
-                              onOpen={(t) => openTask(t as any)}
-                              onEdit={handleContextMenuEdit}
-                              onRename={handleContextMenuRename}
-                              onSetStatus={handleSetStatus}
-                              onSetPriority={handleContextMenuPriority}
-                              onDelete={handleDeleteSingle}
-                              onToggleActive={handleToggleActive}
-                            >
-                              <div
-                                onClick={() => openTask(task)}
-                                style={listGridStyle}
-                                className="group/task grid border-b border-(--border) last:border-0 hover:bg-(--brand-quiet)/40 cursor-pointer transition-all duration-150 items-center"
-                              >
-                                {/* Name */}
-                                <div className={`flex items-center gap-2 ${cellPad} min-w-0`}>
-                                  {/* Clickable status circle — opens a status picker */}
-                                  <StatusCircleButton
-                                    task={task}
-                                    statuses={statuses}
-                                    onSetStatus={handleSetStatus}
-                                    canManage={canManage}
-                                  />
-                                  <span className="text-sm text-(--text-primary) truncate font-medium">
-                                    {localizedTaskTitle(t, task)}
-                                  </span>
-                                </div>
-                                {/* Cells, in the same order as the header */}
-                                {listColumnOrder.map(([key]) => {
-                                  if (key === 'deadline')
-                                    return (
-                                      <div key={key} className={cellPad}>
-                                        <DeadlineBadge
-                                          deadline={task.deadline}
-                                          status={task.status as Status}
-                                        />
-                                      </div>
-                                    );
-                                  if (key === 'assignee')
-                                    return (
-                                      <div
-                                        key={key}
-                                        className={`flex items-center gap-2 ${cellPad} min-w-0`}
-                                      >
-                                        <Avatar
-                                          name={task.assignedToUser?.name ?? '?'}
-                                          url={task.assignedToUser?.avatarUrl}
-                                          size="sm"
-                                        />
-                                        <span className="text-xs text-(--text-secondary) truncate">
-                                          {task.assignedToUser?.name ?? '—'}
-                                        </span>
-                                      </div>
-                                    );
-                                  if (key === 'project')
-                                    return (
-                                      <div key={key} className={`${cellPad} min-w-0 truncate`}>
-                                        <ProjectBadge
-                                          projectId={task.projectId}
-                                          projectName={task.projectName}
-                                          className="text-xs max-w-[140px]"
-                                        />
-                                      </div>
-                                    );
-                                  if (key === 'priority')
-                                    return (
-                                      <div key={key} className={cellPad}>
-                                        <span
-                                          className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${priorityCfg.bg} ${priorityCfg.color}`}
-                                        >
-                                          {priorityCfg.icon && <span>{priorityCfg.icon}</span>}
-                                          {t(priorityCfg.labelKey)}
-                                        </span>
-                                      </div>
-                                    );
-                                  return (
-                                    <div key={key} className={cellPad}>
-                                      <div className="flex items-center gap-1.5">
-                                        <span
-                                          className={`w-2 h-2 rounded-full shrink-0 ${statusCfg.dot}`}
-                                        />
-                                        <span className={`text-xs font-medium ${statusCfg.color}`}>
-                                          {statuses
-                                            ? statusLabel(
-                                                t,
-                                                resolveStatus(
-                                                  {
-                                                    status: task.status as any,
-                                                    statusKey: task.statusKey,
-                                                  },
-                                                  statuses,
-                                                ),
-                                              )
-                                            : t(statusCfg.labelKey)}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </TaskContextMenu>
-                          );
-                        })}
-
-                      {/* Add task placeholder */}
-                      {!isCollapsed && canCreate && (
-                        <button
-                          onClick={() => setShowCreate(true)}
-                          className="w-full px-4 py-2 pl-10 text-left text-sm text-(--text-muted) hover:text-(--brand-text) hover:bg-(--background-subtle) transition-colors border-b border-(--border)"
-                        >
-                          {t('tasksClient.addTaskPlaceholder', 'Add task...')}
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
-
-                {/* Add section */}
-                {canCreate && (
-                  <button
-                    onClick={() => setShowCreate(true)}
-                    className="w-full px-4 py-3 text-left text-sm font-medium text-(--text-muted) hover:text-(--brand-text) hover:bg-(--background-subtle) transition-colors flex items-center gap-2"
+                {listColumnOrder.map(([key]) => (
+                  <div
+                    key={key}
+                    className={`flex items-center gap-1 ${cellPad} text-xs font-semibold text-(--text-muted) ${
+                      key === 'project'
+                        ? ''
+                        : 'cursor-pointer select-none hover:text-(--text-primary)'
+                    }`}
+                    onClick={key === 'project' ? undefined : () => toggleSort(key)}
                   >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 4v16m8-8H4"
-                      />
-                    </svg>
-                    {t('tasksClient.addSection', 'Add section')}
-                  </button>
-                )}
-              </>
-            )}
-          </div>
+                    {key === 'deadline' && t('tasksClient.deadline', 'Due date')}
+                    {key === 'assignee' && t('tasksClient.assignee', 'Collaborators')}
+                    {key === 'project' && t('tasksClient.project', 'Projects')}
+                    {key === 'priority' && t('tasksClient.priority', 'Priority')}
+                    {key === 'status' && t('common.status', 'Status')}
+                    {key !== 'project' && <SortCaret active={sortBy === key} dir={sortDir} />}
+                  </div>
+                ))}
+              </div>
+
+              {/* Sections */}
+              {tasks.length === 0 && rawTasks !== undefined ? (
+                <div className="py-20 text-center">
+                  <p className="text-4xl mb-3">📋</p>
+                  <p className="text-(--text-secondary) font-medium">
+                    {t('tasksClient.noTasksFound')}
+                  </p>
+                  <p className="text-(--text-muted) text-sm mt-1">
+                    {canManage ? t('tasksClient.createNewTask') : t('tasksClient.noTasksAssigned')}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {sections.map((section) => {
+                    const isCollapsed = collapsedSections.has(section.key);
+                    return (
+                      <div key={section.key}>
+                        {/* Section Header */}
+                        <button
+                          onClick={() => toggleSection(section.key)}
+                          className="w-full flex items-center gap-2 px-4 py-2 bg-(--background) hover:bg-(--background-subtle) transition-colors text-left border-b border-(--border)"
+                        >
+                          <svg
+                            className={`w-3.5 h-3.5 text-(--text-muted) transition-transform shrink-0 ${isCollapsed ? '' : 'rotate-90'}`}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                          <span className="text-sm font-semibold text-(--text-primary)">
+                            {section.label}
+                          </span>
+                        </button>
+
+                        {/* Task Rows — each section is a droppable zone */}
+                        {!isCollapsed && (
+                          <DroppableListSection id={section.key}>
+                            {section.tasks.map((task) => {
+                              const statusCfg = STATUS_CONFIG[task.status as Status];
+                              const priorityCfg = PRIORITY_CONFIG[task.priority as Priority];
+                              return (
+                                <DraggableListRow key={task._id} task={task}>
+                                  <TaskContextMenu
+                                    key={task._id}
+                                    task={task as ContextTask}
+                                    canManage={canManage}
+                                    onOpen={(t) => openTask(t as any)}
+                                    onEdit={handleContextMenuEdit}
+                                    onRename={handleContextMenuRename}
+                                    onSetStatus={handleSetStatus}
+                                    onSetPriority={handleContextMenuPriority}
+                                    onDelete={handleDeleteSingle}
+                                    onToggleActive={handleToggleActive}
+                                  >
+                                    <div
+                                      onClick={() => openTask(task)}
+                                      style={listGridStyle}
+                                      className="group/task grid border-b border-(--border) last:border-0 hover:bg-(--brand-quiet)/40 cursor-pointer transition-all duration-150 items-center"
+                                    >
+                                      {/* Name */}
+                                      <div className={`flex items-center gap-2 ${cellPad} min-w-0`}>
+                                        {/* Clickable status circle — opens a status picker */}
+                                        <StatusCircleButton
+                                          task={task}
+                                          statuses={statuses}
+                                          onSetStatus={handleSetStatus}
+                                          canManage={canManage}
+                                        />
+                                        <span className="text-sm text-(--text-primary) truncate font-medium">
+                                          {localizedTaskTitle(t, task)}
+                                        </span>
+                                      </div>
+                                      {/* Cells, in the same order as the header */}
+                                      {listColumnOrder.map(([key]) => {
+                                        if (key === 'deadline')
+                                          return (
+                                            <div key={key} className={cellPad}>
+                                              <DeadlineBadge
+                                                deadline={task.deadline}
+                                                status={task.status as Status}
+                                              />
+                                            </div>
+                                          );
+                                        if (key === 'assignee')
+                                          return (
+                                            <div
+                                              key={key}
+                                              className={`flex items-center gap-2 ${cellPad} min-w-0`}
+                                            >
+                                              <Avatar
+                                                name={task.assignedToUser?.name ?? '?'}
+                                                url={task.assignedToUser?.avatarUrl}
+                                                size="sm"
+                                              />
+                                              <span className="text-xs text-(--text-secondary) truncate">
+                                                {task.assignedToUser?.name ?? '—'}
+                                              </span>
+                                            </div>
+                                          );
+                                        if (key === 'project')
+                                          return (
+                                            <div
+                                              key={key}
+                                              className={`${cellPad} min-w-0 truncate`}
+                                            >
+                                              <ProjectBadge
+                                                projectId={task.projectId}
+                                                projectName={task.projectName}
+                                                className="text-xs max-w-[140px]"
+                                              />
+                                            </div>
+                                          );
+                                        if (key === 'priority')
+                                          return (
+                                            <div key={key} className={cellPad}>
+                                              <span
+                                                className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${priorityCfg.bg} ${priorityCfg.color}`}
+                                              >
+                                                {priorityCfg.icon && (
+                                                  <span>{priorityCfg.icon}</span>
+                                                )}
+                                                {t(priorityCfg.labelKey)}
+                                              </span>
+                                            </div>
+                                          );
+                                        return (
+                                          <div key={key} className={cellPad}>
+                                            <div className="flex items-center gap-1.5">
+                                              <span
+                                                className={`w-2 h-2 rounded-full shrink-0 ${statusCfg.dot}`}
+                                              />
+                                              <span
+                                                className={`text-xs font-medium ${statusCfg.color}`}
+                                              >
+                                                {statuses
+                                                  ? statusLabel(
+                                                      t,
+                                                      resolveStatus(
+                                                        {
+                                                          status: task.status as any,
+                                                          statusKey: task.statusKey,
+                                                        },
+                                                        statuses,
+                                                      ),
+                                                    )
+                                                  : t(statusCfg.labelKey)}
+                                              </span>
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </TaskContextMenu>
+                                </DraggableListRow>
+                              );
+                            })}
+                          </DroppableListSection>
+                        )}
+
+                        {/* Add task placeholder */}
+                        {!isCollapsed && canCreate && (
+                          <button
+                            onClick={() => setShowCreate(true)}
+                            className="w-full px-4 py-2 pl-10 text-left text-sm text-(--text-muted) hover:text-(--brand-text) hover:bg-(--background-subtle) transition-colors border-b border-(--border)"
+                          >
+                            {t('tasksClient.addTaskPlaceholder', 'Add task...')}
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {/* Add section */}
+                  {canCreate && (
+                    <button
+                      onClick={() => setShowCreate(true)}
+                      className="w-full px-4 py-3 text-left text-sm font-medium text-(--text-muted) hover:text-(--brand-text) hover:bg-(--background-subtle) transition-colors flex items-center gap-2"
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 4v16m8-8H4"
+                        />
+                      </svg>
+                      {t('tasksClient.addSection', 'Add section')}
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+          </DndContext>
         )}
       </div>
 

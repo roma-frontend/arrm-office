@@ -84,6 +84,8 @@ export interface Employee {
   sickLeaveBalance: number;
   familyLeaveBalance: number;
   createdAt?: number;
+  nationalId?: string;
+  healthInsured?: boolean;
 }
 
 interface EditEmployeeModalProps {
@@ -201,6 +203,8 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
       employee.travelAllowanceOverride !== undefined
         ? String(employee.travelAllowanceOverride)
         : '',
+    nationalId: employee.nationalId ?? '',
+    healthInsured: employee.healthInsured ?? false,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -268,6 +272,8 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
         employee.travelAllowanceOverride !== undefined
           ? String(employee.travelAllowanceOverride)
           : '',
+      nationalId: employee.nationalId ?? '',
+      healthInsured: employee.healthInsured ?? false,
     }),
     [employee, legacyDepartmentId, legacyPositionId, currentSalary],
   );
@@ -605,6 +611,8 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
         createdAt: form.registrationDate
           ? new Date(form.registrationDate + 'T00:00:00').getTime()
           : undefined,
+        nationalId: form.nationalId || undefined,
+        healthInsured: form.healthInsured,
       });
       // Compensation is written only when it actually changed. Sending it on
       // every save bumped `salaryUpdatedAt` for unrelated edits, and now that
@@ -1167,6 +1175,52 @@ export function EditEmployeeModal({ employee, open, onClose }: EditEmployeeModal
                   {errors.travelAllowance && (
                     <p className="text-xs text-(--danger-text)">{errors.travelAllowance}</p>
                   )}
+                </div>
+
+                {/* ՀԾՀ (National ID) */}
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">
+                    {t('employees.nationalId', 'ՀԾՀ (National ID)')}
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={10}
+                    pattern="\d{10}"
+                    value={form.nationalId}
+                    onChange={(e) => setForm((p) => ({ ...p, nationalId: e.target.value }))}
+                    placeholder="10 digits"
+                    className="w-full px-3 py-2 rounded-xl border text-sm outline-none transition-all"
+                    style={{
+                      background: 'var(--input)',
+                      borderColor: 'var(--border)',
+                      color: 'var(--text-primary)',
+                    }}
+                  />
+                  <p className="text-xs text-(--text-muted)">
+                    {t(
+                      'employees.nationalIdHint',
+                      '10-digit Armenian national identification number',
+                    )}
+                  </p>
+                </div>
+
+                {/* Health Insurance */}
+                <div className="space-y-1.5">
+                  <label className="flex items-center gap-2 text-sm font-medium">
+                    <input
+                      type="checkbox"
+                      checked={form.healthInsured}
+                      onChange={(e) => setForm((p) => ({ ...p, healthInsured: e.target.checked }))}
+                      className="rounded border-(--border)"
+                    />
+                    {t('employees.healthInsured', 'Mandatory Health Insurance')}
+                  </label>
+                  <p className="text-xs text-(--text-muted)">
+                    {t(
+                      'employees.healthInsuredHint',
+                      'Employee participates in mandatory health insurance',
+                    )}
+                  </p>
                 </div>
               </motion.div>
             )}

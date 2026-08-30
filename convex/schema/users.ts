@@ -18,6 +18,8 @@ export const users = {
     externalId: v.optional(v.string()),
     /** Which provider `externalId` belongs to — ids are only unique per source. */
     externalSource: v.optional(v.string()),
+    /** ՀԾՀ — Armenian national ID / SSN (10-digit). Used to identify employees across HR systems. */
+    nationalId: v.optional(v.string()),
     role: v.union(
       v.literal('superadmin'),
       v.literal('admin'),
