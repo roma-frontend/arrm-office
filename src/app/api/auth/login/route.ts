@@ -356,21 +356,25 @@ export async function POST(req: NextRequest) {
       }
 
       // ── Create JWT ───────────────────────────────────────────────────────────
-      const jwt = await signJWT({
-        userId: result.userId,
-        name: result.name,
-        email: result.email,
-        role: result.role,
-        organizationId: result.organizationId,
-        organizationSlug: result.organizationSlug,
-        organizationName: result.organizationName,
-        isApproved: result.isApproved,
-        department: result.department,
-        position: result.position,
-        employeeType: result.employeeType,
-        avatar: result.avatarUrl,
-        mustChangePassword: !!result.mustChangePassword,
-      });
+      const jwt = await signJWT(
+        {
+          userId: result.userId,
+          name: result.name,
+          email: result.email,
+          role: result.role,
+          organizationId: result.organizationId,
+          organizationSlug: result.organizationSlug,
+          organizationName: result.organizationName,
+          isApproved: result.isApproved,
+          department: result.department,
+          position: result.position,
+          employeeType: result.employeeType,
+          avatar: result.avatarUrl,
+          mustChangePassword: !!result.mustChangePassword,
+        },
+        '7d',
+        req,
+      );
 
       const response = NextResponse.json({
         success: true,

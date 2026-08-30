@@ -51,8 +51,61 @@ export interface JWTPayload {
   };
 }
 
-export async function signJWT(payload: JWTPayload, expiresIn: string = '7d'): Promise<string> {
-  return await new SignJWT({ ...payload })
+/**
+ * Read and verify the current `hr-auth-token` from a request's cookies.
+ * Returns the payload if it verifies and contains an active impersonation
+ * block; returns null otherwise (no cookie, invalid signature, or no
+ * impersonation marker). Used by signJWT helpers to preserve the marker
+ * across any JWT re-sign — without this, every auth-bridge re-issue
+ * (oauth-session, profile/update, refresh, etc.) silently strips the
+ * impersonation and the superadmin falls back to their own identity.
+ */
+/**
+ * Minimal structural type for anything that exposes a Next.js-style cookies
+ * jar: both `NextRequest.cookies` and `ReadonlyRequestCookies` from
+ * `next/headers` satisfy it. Using a structural type instead of importing
+ * the concrete classes keeps this helper usable from both API routes and
+ * server actions.
+ */
+interface CookieJarLike {
+  get?: (name: string) => { value?: string } | undefined;
+  cookies?: { get: (name: string) => { value?: string } | undefined };
+}
+
+export async function readActiveImpersonation(
+  jarLike: CookieJarLike,
+): Promise<JWTPayload['impersonation'] | null> {
+  const token = (jarLike.cookies ?? (jarLike as { get?: CookieJarLike['get'] }))?.get?.(
+    'hr-auth-token',
+  )?.value;
+  if (!token) return null;
+  const existing = await verifyJWT(token);
+  if (!existing?.impersonation?.active) return null;
+  if (existing.impersonation.expiresAt <= Date.now()) return null;
+  return existing.impersonation;
+}
+
+/**
+ * Sign a session JWT for the given payload. If the request already carries
+ * an active impersonation marker, it is preserved on the new token unless
+ * the caller explicitly passes `impersonation: undefined`. This makes every
+ * downstream auth route (`oauth-session`, `profile/update`, `face-login`,
+ * `imid-callback`, etc.) impersonation-safe by default — they don't have to
+ * remember to forward the field, and a forgotten `signJWT(...)` call in a
+ * new route can't silently end the impersonation.
+ */
+export async function signJWT(
+  payload: JWTPayload,
+  expiresIn: string = '7d',
+  jarLike?: CookieJarLike,
+): Promise<string> {
+  let impersonation = payload.impersonation;
+  if (!impersonation && jarLike) {
+    const existing = await readActiveImpersonation(jarLike);
+    if (existing) impersonation = existing;
+  }
+  const finalPayload: JWTPayload = impersonation ? { ...payload, impersonation } : payload;
+  return await new SignJWT({ ...finalPayload })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime(expiresIn)
@@ -71,13 +124,20 @@ export async function verifyJWT(token: string): Promise<JWTPayload | null> {
 export async function signConvexJWT(
   payload: JWTPayload,
   expiresIn: string = '7d',
+  jarLike?: CookieJarLike,
 ): Promise<string> {
   const rawKey = process.env.CONVEX_AUTH_PRIVATE_KEY;
   if (!rawKey) throw new Error('CONVEX_AUTH_PRIVATE_KEY is not set');
   const siteUrl = process.env.CONVEX_SITE_URL || process.env.NEXT_PUBLIC_CONVEX_SITE_URL;
   if (!siteUrl) throw new Error('CONVEX_SITE_URL is not set');
   const pk = await importPKCS8(rawKey.replace(/\\n/g, '\n'), 'RS256');
-  return new SignJWT({ ...payload })
+  let impersonation = payload.impersonation;
+  if (!impersonation && jarLike) {
+    const existing = await readActiveImpersonation(jarLike);
+    if (existing) impersonation = existing;
+  }
+  const finalPayload: JWTPayload = impersonation ? { ...payload, impersonation } : payload;
+  return new SignJWT({ ...finalPayload })
     .setProtectedHeader({ alg: 'RS256' })
     .setIssuer(siteUrl)
     .setAudience('convex')

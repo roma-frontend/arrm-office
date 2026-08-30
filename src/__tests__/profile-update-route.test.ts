@@ -136,9 +136,15 @@ describe('POST /api/profile/update', () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ success: true });
     // The cookie must carry the Convex _id — never the provider subject.
-    expect(signJWT).toHaveBeenCalledWith(expect.objectContaining({ userId: 'users_convex123' }));
+    expect(signJWT).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: 'users_convex123' }),
+      expect.anything(),
+      expect.anything(),
+    );
     expect(signJWT).not.toHaveBeenCalledWith(
       expect.objectContaining({ userId: 'provider-subject-uuid' }),
+      expect.anything(),
+      expect.anything(),
     );
     expect(res.cookies.set).toHaveBeenCalledWith(
       'hr-auth-token',
@@ -185,7 +191,11 @@ describe('POST /api/profile/update', () => {
     expect(res.status).toBe(200);
     expect(auth).not.toHaveBeenCalled();
     expect(verifyJWT).toHaveBeenCalledWith('existing-jwt');
-    expect(signJWT).toHaveBeenCalledWith(expect.objectContaining({ userId: 'users_existing' }));
+    expect(signJWT).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: 'users_existing' }),
+      expect.anything(),
+      expect.anything(),
+    );
     expect(res.cookies.set).toHaveBeenCalledWith(
       'hr-auth-token',
       'refreshed-jwt',

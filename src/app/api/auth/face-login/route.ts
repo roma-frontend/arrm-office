@@ -153,20 +153,24 @@ export async function POST(request: NextRequest) {
     }
 
     // Issue app JWT
-    const jwt = await signJWT({
-      userId: result.userId,
-      name: result.name,
-      email: result.email,
-      role: result.role as JWTPayload['role'],
-      organizationId: result.organizationId,
-      organizationSlug: result.organizationSlug,
-      organizationName: result.organizationName,
-      isApproved: result.isApproved,
-      department: result.department,
-      position: result.position,
-      employeeType: result.employeeType as JWTPayload['employeeType'] | undefined,
-      avatar: result.avatarUrl,
-    });
+    const jwt = await signJWT(
+      {
+        userId: result.userId,
+        name: result.name,
+        email: result.email,
+        role: result.role as JWTPayload['role'],
+        organizationId: result.organizationId,
+        organizationSlug: result.organizationSlug,
+        organizationName: result.organizationName,
+        isApproved: result.isApproved,
+        department: result.department,
+        position: result.position,
+        employeeType: result.employeeType as JWTPayload['employeeType'] | undefined,
+        avatar: result.avatarUrl,
+      },
+      '7d',
+      request,
+    );
 
     const secure = process.env.NODE_ENV === 'production';
 

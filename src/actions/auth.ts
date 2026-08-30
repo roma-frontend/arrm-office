@@ -217,21 +217,25 @@ export async function registerAction(formData: FormData) {
     // Subscription linking is optional — user can still register
   }
 
-  const jwt = await signJWT({
-    userId: loginResult.userId,
-    name: loginResult.name,
-    email: loginResult.email,
-    role: loginResult.role,
-    organizationId: loginResult.organizationId,
-    organizationSlug: loginResult.organizationSlug,
-    organizationName: loginResult.organizationName,
-    department: loginResult.department,
-    position: loginResult.position,
-    employeeType: loginResult.employeeType,
-    avatar: loginResult.avatarUrl,
-  });
-
   const cookieStore = await cookies();
+  const jwt = await signJWT(
+    {
+      userId: loginResult.userId,
+      name: loginResult.name,
+      email: loginResult.email,
+      role: loginResult.role,
+      organizationId: loginResult.organizationId,
+      organizationSlug: loginResult.organizationSlug,
+      organizationName: loginResult.organizationName,
+      department: loginResult.department,
+      position: loginResult.position,
+      employeeType: loginResult.employeeType,
+      avatar: loginResult.avatarUrl,
+    },
+    '7d',
+    cookieStore,
+  );
+
   cookieStore.set('hr-auth-token', jwt, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -335,25 +339,29 @@ export async function loginAction(
 
     log.debug('Creating JWT token', { userId: result.userId, name: result.name });
 
-    const jwt = await signJWT({
-      userId: result.userId,
-      name: result.name,
-      email: result.email,
-      role: result.role,
-      organizationId: result.organizationId,
-      organizationSlug: result.organizationSlug,
-      organizationName: result.organizationName,
-      isApproved: result.isApproved,
-      department: result.department,
-      position: result.position,
-      employeeType: result.employeeType,
-      avatar: result.avatarUrl,
-    });
+    const cookieStore = await cookies();
+    const jwt = await signJWT(
+      {
+        userId: result.userId,
+        name: result.name,
+        email: result.email,
+        role: result.role,
+        organizationId: result.organizationId,
+        organizationSlug: result.organizationSlug,
+        organizationName: result.organizationName,
+        isApproved: result.isApproved,
+        department: result.department,
+        position: result.position,
+        employeeType: result.employeeType,
+        avatar: result.avatarUrl,
+      },
+      '7d',
+      cookieStore,
+    );
     log.debug('JWT token created successfully');
 
     log.debug('Setting authentication cookies');
 
-    const cookieStore = await cookies();
     cookieStore.set('hr-auth-token', jwt, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -469,24 +477,23 @@ export async function updateSessionProfileAction(userId: string, name: string, e
       throw new Error('Unauthorized');
     }
 
-    const newJwt = await signJWT({
-      userId: payload.userId,
-      name,
-      email,
-      role: payload.role,
-      organizationId: payload.organizationId,
-      organizationSlug: payload.organizationSlug,
-      organizationName: payload.organizationName,
-      department: payload.department,
-      position: payload.position,
-      employeeType: payload.employeeType,
-      avatar: payload.avatar,
-      // Preserve the impersonation block — without this, any profile/avatar
-      // refresh during impersonation strips the marker and the rest of the
-      // stack (banner, guards, convex-token) treats the session as a normal
-      // login for the target user.
-      impersonation: payload.impersonation,
-    });
+    const newJwt = await signJWT(
+      {
+        userId: payload.userId,
+        name,
+        email,
+        role: payload.role,
+        organizationId: payload.organizationId,
+        organizationSlug: payload.organizationSlug,
+        organizationName: payload.organizationName,
+        department: payload.department,
+        position: payload.position,
+        employeeType: payload.employeeType,
+        avatar: payload.avatar,
+      },
+      '7d',
+      cookieStore,
+    );
 
     cookieStore.set('hr-auth-token', newJwt, {
       httpOnly: true,
@@ -511,19 +518,23 @@ export async function updateSessionAvatarAction(userId: string, avatarUrl: strin
   if (!payload || payload.userId !== userId) throw new Error('Unauthorized');
 
   // Update JWT with new avatar
-  const newJwt = await signJWT({
-    userId: payload.userId,
-    name: payload.name,
-    email: payload.email,
-    role: payload.role,
-    organizationId: payload.organizationId,
-    organizationSlug: payload.organizationSlug,
-    organizationName: payload.organizationName,
-    department: payload.department,
-    position: payload.position,
-    employeeType: payload.employeeType,
-    avatar: avatarUrl,
-  });
+  const newJwt = await signJWT(
+    {
+      userId: payload.userId,
+      name: payload.name,
+      email: payload.email,
+      role: payload.role,
+      organizationId: payload.organizationId,
+      organizationSlug: payload.organizationSlug,
+      organizationName: payload.organizationName,
+      department: payload.department,
+      position: payload.position,
+      employeeType: payload.employeeType,
+      avatar: avatarUrl,
+    },
+    '7d',
+    cookieStore,
+  );
 
   cookieStore.set('hr-auth-token', newJwt, {
     httpOnly: true,

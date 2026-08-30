@@ -88,20 +88,24 @@ export async function GET(request: NextRequest) {
     };
 
     // ── 2. Sign a proper JWT ──────────────────────────────────────────────
-    const jwt = await signJWT({
-      userId: user.userId,
-      name: user.name,
-      email: user.email,
-      role: user.role as 'admin' | 'supervisor' | 'employee' | 'superadmin' | 'driver',
-      organizationId: user.organizationId,
-      organizationSlug: user.organizationSlug,
-      organizationName: user.organizationName,
-      department: user.department,
-      position: user.position,
-      employeeType: (user.employeeType as 'staff' | 'contractor') ?? 'staff',
-      avatar: user.avatarUrl,
-      isApproved: user.isApproved,
-    });
+    const jwt = await signJWT(
+      {
+        userId: user.userId,
+        name: user.name,
+        email: user.email,
+        role: user.role as 'admin' | 'supervisor' | 'employee' | 'superadmin' | 'driver',
+        organizationId: user.organizationId,
+        organizationSlug: user.organizationSlug,
+        organizationName: user.organizationName,
+        department: user.department,
+        position: user.position,
+        employeeType: (user.employeeType as 'staff' | 'contractor') ?? 'staff',
+        avatar: user.avatarUrl,
+        isApproved: user.isApproved,
+      },
+      '7d',
+      request,
+    );
 
     // ── 3. Build redirect target ──────────────────────────────────────────
     // Note: needsApproval is handled by the early return above (line ~35),

@@ -38,16 +38,20 @@ export const POST = withCsrfProtection(async (request: NextRequest) => {
         return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
       }
 
-      jwt = await signJWT({
-        userId: convexUserId,
-        name: session.user.name || name,
-        email: sessionEmail,
-        role: (session.user.role as JWTPayload['role']) || 'employee',
-        department: session.user.department,
-        position: session.user.position,
-        employeeType: session.user.employeeType as JWTPayload['employeeType'],
-        avatar: session.user.avatar,
-      });
+      jwt = await signJWT(
+        {
+          userId: convexUserId,
+          name: session.user.name || name,
+          email: sessionEmail,
+          role: (session.user.role as JWTPayload['role']) || 'employee',
+          department: session.user.department,
+          position: session.user.position,
+          employeeType: session.user.employeeType as JWTPayload['employeeType'],
+          avatar: session.user.avatar,
+        },
+        '7d',
+        request,
+      );
     }
 
     if (!jwt) {
@@ -60,16 +64,20 @@ export const POST = withCsrfProtection(async (request: NextRequest) => {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
     }
 
-    const newJwt = await signJWT({
-      userId: payload.userId,
-      name,
-      email,
-      role: payload.role,
-      department: payload.department,
-      position: payload.position,
-      employeeType: payload.employeeType,
-      avatar: payload.avatar,
-    });
+    const newJwt = await signJWT(
+      {
+        userId: payload.userId,
+        name,
+        email,
+        role: payload.role,
+        department: payload.department,
+        position: payload.position,
+        employeeType: payload.employeeType,
+        avatar: payload.avatar,
+      },
+      '7d',
+      request,
+    );
 
     const response = NextResponse.json({ success: true });
 

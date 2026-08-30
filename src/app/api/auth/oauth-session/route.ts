@@ -149,19 +149,23 @@ export async function POST(req: NextRequest) {
     });
 
     // Create JWT — getPublicUserByEmail returns the safe public projection
-    const jwt = await signJWT({
-      userId: userResult._id,
-      name: userResult.name,
-      email: userResult.email,
-      role: userResult.role as JWTPayload['role'],
-      organizationId: userResult.organizationId ?? undefined,
-      organizationSlug: loginResult.organizationSlug,
-      organizationName: loginResult.organizationName,
-      department: userResult.department ?? undefined,
-      position: userResult.position ?? undefined,
-      employeeType: userResult.employeeType as JWTPayload['employeeType'] | undefined,
-      avatar: userResult.avatarUrl ?? avatarUrl,
-    });
+    const jwt = await signJWT(
+      {
+        userId: userResult._id,
+        name: userResult.name,
+        email: userResult.email,
+        role: userResult.role as JWTPayload['role'],
+        organizationId: userResult.organizationId ?? undefined,
+        organizationSlug: loginResult.organizationSlug,
+        organizationName: loginResult.organizationName,
+        department: userResult.department ?? undefined,
+        position: userResult.position ?? undefined,
+        employeeType: userResult.employeeType as JWTPayload['employeeType'] | undefined,
+        avatar: userResult.avatarUrl ?? avatarUrl,
+      },
+      '7d',
+      req,
+    );
 
     logger.log('[oauth-session] ✅ JWT created for user:', {
       userId: userResult._id,

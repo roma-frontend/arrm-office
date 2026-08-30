@@ -47,16 +47,20 @@ export async function POST(request: NextRequest) {
     }
 
     // Create JWT token
-    const jwt = await signJWT({
-      userId,
-      name: name ?? '',
-      email,
-      role: role ?? 'employee',
-      department,
-      position,
-      employeeType,
-      avatar,
-    });
+    const jwt = await signJWT(
+      {
+        userId,
+        name: name ?? '',
+        email,
+        role: role ?? 'employee',
+        department,
+        position,
+        employeeType,
+        avatar,
+      },
+      '7d',
+      request,
+    );
 
     // Create session token
     const sessionToken = crypto.randomUUID();

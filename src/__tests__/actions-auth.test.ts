@@ -355,6 +355,8 @@ describe('updateSessionProfileAction', () => {
     expect(result).toEqual({ success: true });
     expect(signJWT).toHaveBeenCalledWith(
       expect.objectContaining({ name: 'Alice', email: 'alice@new.test' }),
+      expect.anything(),
+      expect.anything(),
     );
     expect(cookieStore.set).toHaveBeenCalledWith(
       'hr-auth-token',
@@ -397,6 +399,8 @@ describe('updateSessionAvatarAction', () => {
     expect(result).toEqual({ success: true, avatar: 'https://cdn/avatar.png' });
     expect(signJWT).toHaveBeenCalledWith(
       expect.objectContaining({ avatar: 'https://cdn/avatar.png' }),
+      expect.anything(),
+      expect.anything(),
     );
   });
 });
