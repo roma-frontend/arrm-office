@@ -68,6 +68,11 @@ jest.mock('../../convex/_generated/api', () => ({
       },
     },
     users: { queries: { getUserById: { _name: 'getUserById' } } },
+    attendance: {
+      mutations: {
+        refreshHrAssistantDigest: { _name: 'refreshHrAssistantDigest' },
+      },
+    },
   },
 }));
 

@@ -197,3 +197,42 @@ export const rejectAttendanceEntry = mutation({
     });
   },
 });
+
+/**
+ * On-demand digest refresh for the HR Assistant channel. Admin-only because
+ * the bot posts into the org-wide channel and a spam button would be a
+ * nuisance for everyone in it.
+ *
+ * The bot lazy-provisions the channel and its members on the first render,
+ * so this single button covers three jobs:
+ *   1. Bring the digest up to date after a flurry of approvals.
+ *   2. Backfill the channel for an org that hasn't been picked up by the
+ *      midnight cron yet.
+ *   3. Re-publish if the digest message was deleted by accident.
+ */
+export const refreshHrAssistantDigest = mutation({
+  args: {
+    date: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    if (caller.role !== 'admin' && caller.role !== 'superadmin') {
+      throw new Error('Only admins can refresh the HR Assistant digest');
+    }
+    if (!caller.organizationId) {
+      throw new Error('Caller does not belong to an organization');
+    }
+
+    const date = args.date ?? new Date().toISOString().slice(0, 10);
+    await ctx.runMutation(internal.attendance.bot.seedHrAssistantMembers, {
+      organizationId: caller.organizationId,
+    });
+    await ctx.scheduler.runAfter(0, internal.attendance.bot.renderAndPostDigest, {
+      organizationId: caller.organizationId,
+      date,
+      trigger: 'approval',
+    });
+    return { scheduledFor: date };
+  },
+});

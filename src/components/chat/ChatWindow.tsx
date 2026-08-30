@@ -22,6 +22,7 @@ import {
   Mic,
   ChevronDown,
   Image as ImageIcon,
+  RefreshCw,
 } from 'lucide-react';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import Link from 'next/link';
@@ -101,6 +102,7 @@ export const ChatWindow = React.memo(function ChatWindow({
   const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [showBgPicker, setShowBgPicker] = useState(false);
+  const [refreshingDigest, setRefreshingDigest] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesParentRef = useRef<HTMLDivElement>(null);
@@ -184,6 +186,20 @@ export const ChatWindow = React.memo(function ChatWindow({
   const scheduleMessage = useMutation(api.chat.mutations.scheduleMessage);
   const markAsRead = useMutation(api.chat.mutations.markAsRead);
   const setTyping = useMutation(api.chat.mutations.setTyping);
+  const refreshHrAssistantDigest = useMutation(api.attendance.mutations.refreshHrAssistantDigest);
+
+  const handleRefreshHrAssistantDigest = useCallback(async () => {
+    setRefreshingDigest(true);
+    try {
+      await refreshHrAssistantDigest({});
+      toast.success(t('chat.refreshHrAssistantDigestSuccess', 'Attendance digest updated'));
+    } catch (err) {
+      logger.error('[ChatWindow] Failed to refresh HR Assistant digest:', err);
+      toast.error(t('chat.refreshHrAssistantDigestError', 'Failed to refresh digest'));
+    } finally {
+      setRefreshingDigest(false);
+    }
+  }, [refreshHrAssistantDigest, t]);
 
   const conv = conversation?.find((c) => c != null && c._id === conversationId) ?? null;
   const otherUser = conv?.type === 'direct' ? conv.otherUser : null;
@@ -768,6 +784,31 @@ export const ChatWindow = React.memo(function ChatWindow({
                 </button>
               </>
             )}
+            {/* HR Assistant: admin-only "Refresh digest" button. Posts a fresh
+                attendance snapshot into this channel for today — useful when a
+                flurry of approvals landed without the cron-driven re-render,
+                or when the digest message was deleted by accident. */}
+            {conv?.name === 'HR Assistant' &&
+              (currentUser?.role === 'admin' || currentUser?.role === 'superadmin') && (
+                <button
+                  onClick={handleRefreshHrAssistantDigest}
+                  disabled={refreshingDigest}
+                  className="w-10 h-10 flex items-center justify-center rounded-lg transition-all disabled:opacity-50"
+                  style={{ color: 'var(--text-muted)' }}
+                  onMouseEnter={(e) => {
+                    if (refreshingDigest) return;
+                    e.currentTarget.style.background = 'var(--sidebar-item-hover)';
+                    e.currentTarget.style.color = 'var(--primary)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.color = 'var(--text-muted)';
+                  }}
+                  title={t('chat.refreshHrAssistantDigest', 'Refresh attendance digest')}
+                >
+                  <RefreshCw className={cn('w-4 h-4', refreshingDigest && 'animate-spin')} />
+                </button>
+              )}
             <button
               onClick={() => setShowSearch(!showSearch)}
               className="w-10 h-10 flex items-center justify-center rounded-lg transition-all"

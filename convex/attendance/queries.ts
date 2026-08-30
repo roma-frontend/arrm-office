@@ -50,9 +50,10 @@ export const pendingApprovals = query({
     if (!caller) return [];
     if (!caller.organizationId) return [];
     const visibleUserIds = await getVisibleUserIdsForCaller(ctx, caller);
+    const orgId = caller.organizationId;
     const rows = await ctx.db
       .query('attendanceEntries')
-      .withIndex('by_org', (q) => q.eq('organizationId', caller.organizationId))
+      .withIndex('by_org', (q) => q.eq('organizationId', orgId))
       .collect();
     return rows.filter((r) => r.status === 'pending' && visibleUserIds.has(r.userId));
   },

@@ -323,7 +323,7 @@ export const renderAndPostDigest = internalMutation({
       await ctx.db.patch(conversation!._id, {
         lastMessageAt: now,
         lastMessageText: digest.body,
-        lastMessageSenderId: botUser._id,
+        lastMessageSenderId: botUser,
       });
       return { posted: true as const, updated: true };
     }
@@ -331,7 +331,7 @@ export const renderAndPostDigest = internalMutation({
     const messageId = await ctx.db.insert('chatMessages', {
       conversationId: conversation!._id,
       organizationId: args.organizationId,
-      senderId: botUser._id,
+      senderId: botUser,
       type: 'system',
       content: digest.body,
       isServiceBroadcast: true,
@@ -349,7 +349,7 @@ export const renderAndPostDigest = internalMutation({
     await ctx.db.patch(conversation!._id, {
       lastMessageAt: now,
       lastMessageText: digest.body,
-      lastMessageSenderId: botUser._id,
+      lastMessageSenderId: botUser,
     });
     return { posted: true as const, updated: false };
   },
