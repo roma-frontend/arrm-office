@@ -12,8 +12,10 @@ import { DEFAULT_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits';
  * - superadmin: sees all orgs (returns undefined orgId filter)
  * - admin: sees only their own org
  */
-async function requireAdmin(ctx: QueryCtx, adminId: Id<'users'>) {
-  const user = (await ctx.db.get(adminId)) as Doc<'users'> | null;
+async function requireAdmin(ctx: QueryCtx) {
+  const caller = await getAuthCaller(ctx);
+  if (!caller) throw new Error('Not authenticated');
+  const user = caller as Doc<'users'> | typeof caller;
   if (!user) {
     throw new Error('User not found');
   }
@@ -31,7 +33,6 @@ async function requireAdmin(ctx: QueryCtx, adminId: Id<'users'>) {
 
 export const createGdprRequest = mutation({
   args: {
-    adminId: v.id('users'),
     userId: v.id('users'),
     requestType: v.union(
       v.literal('data_access'),
@@ -44,7 +45,7 @@ export const createGdprRequest = mutation({
     details: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { user, orgId } = await requireAdmin(ctx, args.adminId);
+    const { user, orgId } = await requireAdmin(ctx);
 
     const targetUser = await ctx.db.get(args.userId);
     if (!targetUser) throw new Error('User not found');
@@ -77,7 +78,6 @@ export const createGdprRequest = mutation({
 
 export const updateGdprRequestStatus = mutation({
   args: {
-    adminId: v.id('users'),
     requestId: v.id('gdprRequests'),
     status: v.union(
       v.literal('pending'),
@@ -88,7 +88,7 @@ export const updateGdprRequestStatus = mutation({
     rejectionReason: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { user, orgId } = await requireAdmin(ctx, args.adminId);
+    const { user, orgId } = await requireAdmin(ctx);
 
     const request = await ctx.db.get(args.requestId);
     if (!request) {
@@ -127,13 +127,12 @@ export const updateGdprRequestStatus = mutation({
 
 export const getGdprRequests = query({
   args: {
-    adminId: v.id('users'),
     userId: v.optional(v.id('users')),
     status: v.optional(v.string()),
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const { orgId } = await requireAdmin(ctx, args.adminId);
+    const { orgId } = await requireAdmin(ctx);
 
     // Scope by org via by_org index when admin is non-superadmin; else capped full-table.
     let requests = orgId
@@ -186,10 +185,10 @@ export const getGdprRequests = query({
 
 // ── Paginated GDPR Requests ───────────────────────────────────────────────────
 export const listGdprRequestsPaginated = query({
-  args: { adminId: v.id('users'), paginationOpts: paginationOptsValidator },
+  args: { paginationOpts: paginationOptsValidator },
   handler: async (ctx, args) => {
-    const { adminId, paginationOpts } = args;
-    const { orgId } = await requireAdmin(ctx, adminId);
+    const { paginationOpts } = args;
+    const { orgId } = await requireAdmin(ctx);
 
     const result = orgId
       ? await ctx.db
@@ -228,7 +227,6 @@ export const listGdprRequestsPaginated = query({
 
 export const grantConsent = mutation({
   args: {
-    adminId: v.id('users'),
     userId: v.id('users'),
     consentType: v.string(),
     ipAddress: v.optional(v.string()),
@@ -237,7 +235,7 @@ export const grantConsent = mutation({
     metadata: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { user, orgId } = await requireAdmin(ctx, args.adminId);
+    const { user, orgId } = await requireAdmin(ctx);
 
     const targetUser = await ctx.db.get(args.userId);
     if (!targetUser) throw new Error('User not found');
@@ -292,12 +290,11 @@ export const grantConsent = mutation({
 
 export const withdrawConsent = mutation({
   args: {
-    adminId: v.id('users'),
     userId: v.id('users'),
     consentType: v.string(),
   },
   handler: async (ctx, args) => {
-    const { user, orgId } = await requireAdmin(ctx, args.adminId);
+    const { user, orgId } = await requireAdmin(ctx);
 
     const existing = await ctx.db
       .query('consentRecords')
@@ -334,11 +331,10 @@ export const withdrawConsent = mutation({
 
 export const getUserConsents = query({
   args: {
-    adminId: v.id('users'),
     userId: v.optional(v.id('users')),
   },
   handler: async (ctx, args) => {
-    const { orgId } = await requireAdmin(ctx, args.adminId);
+    const { orgId } = await requireAdmin(ctx);
 
     // Scope by org via by_org index when admin is non-superadmin; else capped full-table.
     let consents = orgId
@@ -358,11 +354,9 @@ export const getUserConsents = query({
 });
 
 export const getOrgConsentStats = query({
-  args: {
-    adminId: v.id('users'),
-  },
+  args: {},
   handler: async (ctx, args) => {
-    const { orgId } = await requireAdmin(ctx, args.adminId);
+    const { orgId } = await requireAdmin(ctx);
     if (!orgId) throw new Error('Admin must belong to an organization');
 
     const allConsents = await ctx.db
@@ -389,7 +383,6 @@ export const getOrgConsentStats = query({
 
 export const logDataAccess = mutation({
   args: {
-    adminId: v.id('users'),
     userId: v.id('users'),
     accessType: v.union(
       v.literal('view'),
@@ -403,7 +396,7 @@ export const logDataAccess = mutation({
     ipAddress: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { user, orgId } = await requireAdmin(ctx, args.adminId);
+    const { user, orgId } = await requireAdmin(ctx);
 
     const targetUser = await ctx.db.get(args.userId);
     if (!targetUser) throw new Error('User not found');
@@ -438,12 +431,11 @@ export const logDataAccess = mutation({
 
 export const getDataAccessLogs = query({
   args: {
-    adminId: v.id('users'),
     userId: v.optional(v.id('users')),
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const { orgId } = await requireAdmin(ctx, args.adminId);
+    const { orgId } = await requireAdmin(ctx);
 
     // Scope by org via by_org index when admin is non-superadmin; else capped full-table.
     let logs = orgId
@@ -487,10 +479,10 @@ export const getDataAccessLogs = query({
 
 // ── Paginated Data Access Logs ────────────────────────────────────────────────
 export const listDataAccessLogsPaginated = query({
-  args: { adminId: v.id('users'), paginationOpts: paginationOptsValidator },
+  args: { paginationOpts: paginationOptsValidator },
   handler: async (ctx, args) => {
-    const { adminId, paginationOpts } = args;
-    const { orgId } = await requireAdmin(ctx, adminId);
+    const { paginationOpts } = args;
+    const { orgId } = await requireAdmin(ctx);
 
     const result = orgId
       ? await ctx.db
@@ -525,7 +517,6 @@ export const listDataAccessLogsPaginated = query({
 
 export const createPolicy = mutation({
   args: {
-    adminId: v.id('users'),
     title: v.string(),
     description: v.optional(v.string()),
     policyType: v.union(
@@ -539,7 +530,7 @@ export const createPolicy = mutation({
     version: v.string(),
   },
   handler: async (ctx, args) => {
-    const { user, orgId } = await requireAdmin(ctx, args.adminId);
+    const { user, orgId } = await requireAdmin(ctx);
     if (!orgId) throw new Error('Admin must belong to an organization');
 
     const policyId = await ctx.db.insert('compliancePolicies', {
@@ -572,7 +563,6 @@ export const createPolicy = mutation({
 
 export const updatePolicy = mutation({
   args: {
-    adminId: v.id('users'),
     policyId: v.id('compliancePolicies'),
     title: v.optional(v.string()),
     description: v.optional(v.string()),
@@ -582,7 +572,7 @@ export const updatePolicy = mutation({
     effectiveUntil: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const { user, orgId } = await requireAdmin(ctx, args.adminId);
+    const { user, orgId } = await requireAdmin(ctx);
 
     const policy = await ctx.db.get(args.policyId);
     if (!policy) {
@@ -618,11 +608,10 @@ export const updatePolicy = mutation({
 
 export const getPolicies = query({
   args: {
-    adminId: v.id('users'),
     policyType: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { orgId } = await requireAdmin(ctx, args.adminId);
+    const { orgId } = await requireAdmin(ctx);
 
     // Scope by org via by_org index when admin is non-superadmin; else capped full-table.
     let policies = orgId
@@ -662,11 +651,10 @@ export const getPolicies = query({
 
 export const deletePolicy = mutation({
   args: {
-    adminId: v.id('users'),
     policyId: v.id('compliancePolicies'),
   },
   handler: async (ctx, args) => {
-    const { user, orgId } = await requireAdmin(ctx, args.adminId);
+    const { user, orgId } = await requireAdmin(ctx);
 
     const policy = await ctx.db.get(args.policyId);
     if (!policy) {
@@ -694,11 +682,9 @@ export const deletePolicy = mutation({
 // ── Compliance Dashboard Stats ────────────────────────────────────────────────
 
 export const getComplianceStats = query({
-  args: {
-    adminId: v.id('users'),
-  },
+  args: {},
   handler: async (ctx, args) => {
-    const { orgId } = await requireAdmin(ctx, args.adminId);
+    const { orgId } = await requireAdmin(ctx);
 
     // Scope all counts by org via by_org indexes when admin is non-superadmin;
     // else capped full-table reads at XLARGE.

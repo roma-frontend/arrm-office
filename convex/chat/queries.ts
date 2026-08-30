@@ -25,6 +25,12 @@ export const getMyConversations = query({
   },
   handler: async (ctx, args) => {
     if (!(await isFeatureEnabledForCaller(ctx, 'chat.realtime'))) return [];
+    const caller = await getAuthCaller(ctx);
+    if (
+      !caller ||
+      (caller._id !== args.userId && caller.role !== 'admin' && caller.role !== 'superadmin')
+    )
+      return [];
     // Step 1: Get all memberships for this user
     const memberships = await ctx.db
       .query('chatMembers')
@@ -313,6 +319,12 @@ export const getMessages = query({
   },
   handler: async (ctx, args) => {
     if (!(await isFeatureEnabledForCaller(ctx, 'chat.realtime'))) return [];
+    const caller = await getAuthCaller(ctx);
+    if (
+      !caller ||
+      (caller._id !== args.userId && caller.role !== 'admin' && caller.role !== 'superadmin')
+    )
+      return [];
     const limit = args.limit ?? 50;
 
     // Verify membership
@@ -370,6 +382,12 @@ export const listMessagesPaginated = query({
   handler: async (ctx, { conversationId, userId, paginationOpts }) => {
     if (!(await isFeatureEnabledForCaller(ctx, 'chat.realtime')))
       return { page: [], isDone: true, continueCursor: '' };
+    const caller = await getAuthCaller(ctx);
+    if (
+      !caller ||
+      (caller._id !== userId && caller.role !== 'admin' && caller.role !== 'superadmin')
+    )
+      return { page: [], isDone: true, continueCursor: '' };
     const membership = await ctx.db
       .query('chatMembers')
       .withIndex('by_conversation_user', (q) =>
@@ -424,6 +442,12 @@ export const getTotalUnread = query({
   },
   handler: async (ctx, args) => {
     if (!(await isFeatureEnabledForCaller(ctx, 'chat.realtime'))) return 0;
+    const caller = await getAuthCaller(ctx);
+    if (
+      !caller ||
+      (caller._id !== args.userId && caller.role !== 'admin' && caller.role !== 'superadmin')
+    )
+      return 0;
     const memberships = await ctx.db
       .query('chatMembers')
       .withIndex('by_user', (q) => q.eq('userId', args.userId))
@@ -447,6 +471,12 @@ export const getTypingUsers = query({
   },
   handler: async (ctx, args) => {
     if (!(await isFeatureEnabledForCaller(ctx, 'chat.realtime'))) return [];
+    const caller = await getAuthCaller(ctx);
+    if (
+      !caller ||
+      (caller._id !== args.currentUserId && caller.role !== 'admin' && caller.role !== 'superadmin')
+    )
+      return [];
     const cutoff = Date.now() - 5000; // 5 seconds TTL
     const typing = await ctx.db
       .query('chatTyping')
@@ -473,6 +503,12 @@ export const searchMessages = query({
   },
   handler: async (ctx, args) => {
     if (!(await isFeatureEnabledForCaller(ctx, 'chat.realtime'))) return [];
+    const caller = await getAuthCaller(ctx);
+    if (
+      !caller ||
+      (caller._id !== args.userId && caller.role !== 'admin' && caller.role !== 'superadmin')
+    )
+      return [];
     const membership = await ctx.db
       .query('chatMembers')
       .withIndex('by_conversation_user', (q) =>
@@ -570,6 +606,12 @@ export const getUnreadConversations = query({
   },
   handler: async (ctx, args) => {
     if (!(await isFeatureEnabledForCaller(ctx, 'chat.realtime'))) return [];
+    const caller = await getAuthCaller(ctx);
+    if (
+      !caller ||
+      (caller._id !== args.userId && caller.role !== 'admin' && caller.role !== 'superadmin')
+    )
+      return [];
     const members = await ctx.db
       .query('chatMembers')
       .filter((q) =>
@@ -601,6 +643,12 @@ export const getGroupConversations = query({
   },
   handler: async (ctx, args) => {
     if (!(await isFeatureEnabledForCaller(ctx, 'chat.realtime'))) return [];
+    const caller = await getAuthCaller(ctx);
+    if (
+      !caller ||
+      (caller._id !== args.userId && caller.role !== 'admin' && caller.role !== 'superadmin')
+    )
+      return [];
     const members = await ctx.db
       .query('chatMembers')
       .filter((q) =>
@@ -633,6 +681,12 @@ export const getPinnedConversations = query({
   },
   handler: async (ctx, args) => {
     if (!(await isFeatureEnabledForCaller(ctx, 'chat.realtime'))) return [];
+    const caller = await getAuthCaller(ctx);
+    if (
+      !caller ||
+      (caller._id !== args.userId && caller.role !== 'admin' && caller.role !== 'superadmin')
+    )
+      return [];
     const members = await ctx.db
       .query('chatMembers')
       .filter((q) =>
@@ -663,6 +717,12 @@ export const getArchivedConversations = query({
   },
   handler: async (ctx, args) => {
     if (!(await isFeatureEnabledForCaller(ctx, 'chat.realtime'))) return [];
+    const caller = await getAuthCaller(ctx);
+    if (
+      !caller ||
+      (caller._id !== args.userId && caller.role !== 'admin' && caller.role !== 'superadmin')
+    )
+      return [];
     const members = await ctx.db
       .query('chatMembers')
       .filter((q) =>

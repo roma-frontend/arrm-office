@@ -3,6 +3,7 @@ import { mutation, query } from '../_generated/server';
 import type { Id } from '../_generated/dataModel';
 import { assertFeatureEnabled, isFeatureEnabledForCaller } from '../superadmin/featureToggles';
 import { MAX_PAGE_SIZE } from '../pagination';
+import { getAuthCaller } from '../lib/getAuthCaller';
 
 // ─── CALLS ────────────────────────────────────────────────────────────────────
 
@@ -211,6 +212,12 @@ export const getIncomingCalls = query({
   },
   handler: async (ctx, args) => {
     if (!(await isFeatureEnabledForCaller(ctx, 'chat.realtime'))) return null;
+    const caller = await getAuthCaller(ctx);
+    if (
+      !caller ||
+      (caller._id !== args.userId && caller.role !== 'admin' && caller.role !== 'superadmin')
+    )
+      return null;
     // Find all active/ringing calls in this organization where user is a participant but not initiator
     const calls = await ctx.db
       .query('chatCalls')

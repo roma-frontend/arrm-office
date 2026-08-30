@@ -5,6 +5,7 @@ import type { Id } from '../_generated/dataModel';
 import { isFeatureEnabledForCaller } from '../superadmin/featureToggles';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { getProfile } from '../lib/userProfile';
+import { getAuthCaller } from '../lib/getAuthCaller';
 
 /**
  * Helper to batch-load users and their leave status
@@ -67,6 +68,15 @@ export const getUserPresenceStatus = query({
   args: { userId: v.id('users') },
   handler: async (ctx, args) => {
     if (!(await isFeatureEnabledForCaller(ctx, 'chat.realtime'))) return null;
+    const caller = await getAuthCaller(ctx);
+    if (
+      !caller ||
+      (caller._id !== args.userId &&
+        caller.role !== 'admin' &&
+        caller.role !== 'superadmin' &&
+        caller.role !== 'supervisor')
+    )
+      return null;
     const user = await ctx.db.get(args.userId);
     if (!user) return null;
 

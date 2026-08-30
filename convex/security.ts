@@ -23,8 +23,10 @@ import {
  * - superadmin: sees all orgs (returns undefined orgId filter)
  * - admin: sees only their own org
  */
-async function requireAdmin(ctx: QueryCtx | MutationCtx, adminId: Id<'users'>) {
-  const user = await ctx.db.get(adminId);
+async function requireAdmin(ctx: QueryCtx | MutationCtx) {
+  const caller = await getAuthCaller(ctx);
+  if (!caller) throw new Error('Not authenticated');
+  const user = await ctx.db.get(caller._id);
   if (!user) {
     throw new Error('User not found');
   }
@@ -396,12 +398,11 @@ export const getLoginStats = query({
 // ── Get recent audit logs ─────────────────────────────────────────────────────
 export const getRecentAuditLogs = query({
   args: {
-    adminId: v.id('users'),
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const { adminId, limit = 50 } = args;
-    const { orgId } = await requireAdmin(ctx, adminId);
+    const { limit = 50 } = args;
+    const { orgId } = await requireAdmin(ctx);
 
     let logs;
     if (orgId) {
@@ -436,12 +437,11 @@ export const getRecentAuditLogs = query({
 /** Paginated audit logs for compliance page */
 export const listAuditLogsPaginated = query({
   args: {
-    adminId: v.id('users'),
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
-    const { adminId, paginationOpts } = args;
-    const { orgId } = await requireAdmin(ctx, adminId);
+    const { paginationOpts } = args;
+    const { orgId } = await requireAdmin(ctx);
 
     const result = orgId
       ? await ctx.db
