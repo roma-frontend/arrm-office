@@ -481,6 +481,11 @@ export async function updateSessionProfileAction(userId: string, name: string, e
       position: payload.position,
       employeeType: payload.employeeType,
       avatar: payload.avatar,
+      // Preserve the impersonation block — without this, any profile/avatar
+      // refresh during impersonation strips the marker and the rest of the
+      // stack (banner, guards, convex-token) treats the session as a normal
+      // login for the target user.
+      impersonation: payload.impersonation,
     });
 
     cookieStore.set('hr-auth-token', newJwt, {

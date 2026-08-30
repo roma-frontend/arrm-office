@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { signJWT, type JWTPayload } from '@/lib/jwt';
+import { signJWT, verifyJWT, type JWTPayload } from '@/lib/jwt';
 import { logger } from '@/lib/logger';
 
 const CONVEX_URL = process.env.NEXT_PUBLIC_CONVEX_URL!;
@@ -72,6 +72,26 @@ export async function POST(req: NextRequest) {
 
     if (!email) {
       return NextResponse.json({ error: 'Email required' }, { status: 400 });
+    }
+
+    // Guard: never overwrite an active impersonation session. The
+    // oauth-session bridge (called by useAuthSync when the NextAuth session
+    // arrives) would otherwise re-sign a JWT for the superadmin's own email
+    // and clobber the impersonation token currently sitting in hr-auth-token.
+    // Without this, superadmins see their own data instead of the target's
+    // — the bug only reproduces in production because the prod bundle
+    // hydrates the Zustand persist store faster than dev, so the client-side
+    // guard fires after the request has already left.
+    const existingJwt = req.cookies.get('hr-auth-token')?.value;
+    if (existingJwt) {
+      const existing = await verifyJWT(existingJwt);
+      if (existing?.impersonation?.active) {
+        logger.warn(
+          '[oauth-session] Refusing to overwrite active impersonation JWT for superadmin:',
+          existing.impersonation.superadmin.email,
+        );
+        return NextResponse.json({ error: 'Impersonation session in progress' }, { status: 409 });
+      }
     }
 
     const emailLower = email.toLowerCase().trim();
