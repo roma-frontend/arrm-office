@@ -115,26 +115,23 @@ export default function ComplianceClient() {
     el.scrollBy({ left: dir === 'left' ? -150 : 150, behavior: 'smooth' });
   };
 
-  const adminId = user?.id as Id<'users'> | undefined;
+  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
 
-  const stats = useQuery(api.compliance.getComplianceStats, adminId ? { adminId } : 'skip');
+  const stats = useQuery(api.compliance.getComplianceStats, isAdmin ? {} : 'skip');
   const {
     results: auditLogs,
     status: auditStatus,
     loadMore: loadMoreAudit,
-  } = usePaginatedQuery(api.security.listAuditLogsPaginated, adminId ? { adminId } : 'skip', {
+  } = usePaginatedQuery(api.security.listAuditLogsPaginated, isAdmin ? {} : 'skip', {
     initialNumItems: 50,
   });
-  const gdprRequests = useQuery(
-    api.compliance.getGdprRequests,
-    adminId ? { adminId, limit: 100 } : 'skip',
-  );
-  const consents = useQuery(api.compliance.getUserConsents, adminId ? { adminId } : 'skip');
+  const gdprRequests = useQuery(api.compliance.getGdprRequests, isAdmin ? { limit: 100 } : 'skip');
+  const consents = useQuery(api.compliance.getUserConsents, isAdmin ? {} : 'skip');
   const dataAccessLogs = useQuery(
     api.compliance.getDataAccessLogs,
-    adminId ? { adminId, limit: 100 } : 'skip',
+    isAdmin ? { limit: 100 } : 'skip',
   );
-  const policies = useQuery(api.compliance.getPolicies, adminId ? { adminId } : 'skip');
+  const policies = useQuery(api.compliance.getPolicies, isAdmin ? {} : 'skip');
 
   if (!user) {
     return (

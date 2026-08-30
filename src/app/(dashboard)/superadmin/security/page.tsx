@@ -241,10 +241,7 @@ export default function SecurityDashboard() {
 
   const settings = useQuery(api.security.getAllSettings);
   const loginStats = useQuery(api.security.getLoginStats, { hours: 24 });
-  const auditLogs = useQuery(
-    api.security.getRecentAuditLogs,
-    user ? { adminId: user.id as Id<'users'>, limit: 50 } : 'skip',
-  );
+  const auditLogs = useQuery(api.security.getRecentAuditLogs, user ? { limit: 50 } : 'skip');
   const suspendedUsers = useQuery(api.security.getSuspendedUsers);
   const toggleSetting = useMutation(api.security.toggleSetting);
 
