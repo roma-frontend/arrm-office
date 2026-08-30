@@ -368,6 +368,23 @@ export const updateObjective = mutation({
         v.literal('cancelled'),
       ),
     ),
+    level: v.optional(v.union(v.literal('company'), v.literal('team'), v.literal('individual'))),
+    department: v.optional(v.string()),
+    periodType: v.optional(
+      v.union(
+        v.literal('Q1'),
+        v.literal('Q2'),
+        v.literal('Q3'),
+        v.literal('Q4'),
+        v.literal('H1'),
+        v.literal('H2'),
+        v.literal('FY'),
+      ),
+    ),
+    periodYear: v.optional(v.number()),
+    periodStart: v.optional(v.number()),
+    periodEnd: v.optional(v.number()),
+    ownerId: v.optional(v.id('users')),
   },
   handler: async (ctx, args) => {
     await assertModuleAccess(ctx, 'goals');
@@ -379,6 +396,13 @@ export const updateObjective = mutation({
     if (updates.title !== undefined) patch.title = updates.title;
     if (updates.description !== undefined) patch.description = updates.description;
     if (updates.status !== undefined) patch.status = updates.status;
+    if (updates.level !== undefined) patch.level = updates.level;
+    if (updates.department !== undefined) patch.department = updates.department;
+    if (updates.periodType !== undefined) patch.periodType = updates.periodType;
+    if (updates.periodYear !== undefined) patch.periodYear = updates.periodYear;
+    if (updates.periodStart !== undefined) patch.periodStart = updates.periodStart;
+    if (updates.periodEnd !== undefined) patch.periodEnd = updates.periodEnd;
+    if (updates.ownerId !== undefined) patch.ownerId = updates.ownerId;
 
     await ctx.db.patch(objectiveId, patch);
   },

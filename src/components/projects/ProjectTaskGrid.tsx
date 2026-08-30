@@ -37,6 +37,7 @@ import { ViewTabs } from '@/components/tasks/ViewTabs';
 import { useTaskGrid } from '@/hooks/useTaskGrid';
 import { useTaskViewPreferences } from '@/hooks/useTaskViewPreferences';
 import { applyTaskFilters } from '@/lib/taskFilters';
+import type { ContextTask } from '@/components/tasks/TaskContextMenu';
 import {
   DEFAULT_TASK_VIEW,
   fromSavedView,
@@ -69,6 +70,16 @@ interface ProjectTaskGridProps {
   /** Bulk actions and adding a column: staff only. */
   canManage: boolean;
   onOpenTask: (taskId: string, title: string) => void;
+  /** Context menu callbacks — wired from the parent project page. */
+  contextMenu?: {
+    canManage: boolean;
+    onEdit: (task: ContextTask) => void;
+    onRename?: (task: ContextTask) => void;
+    onSetStatus: (taskId: string, statusKey: string) => void;
+    onSetPriority: (taskId: string, priority: string) => void;
+    onDelete: (task: ContextTask) => void;
+    onToggleActive?: (task: ContextTask) => void;
+  };
 }
 
 /**
@@ -88,6 +99,7 @@ export function ProjectTaskGrid({
   canEdit,
   canManage,
   onOpenTask,
+  contextMenu,
 }: ProjectTaskGridProps) {
   const { t, i18n } = useTranslation();
   const [view, setView] = useState<TaskViewState>(PROJECT_DEFAULT_VIEW);
@@ -299,6 +311,7 @@ export function ProjectTaskGrid({
           {...(canManage
             ? { addColumnSlot: <AddFieldPopover onSubmit={handleCreateField} /> }
             : {})}
+          contextMenu={contextMenu}
           emptyState={
             <div className="py-14 text-center">
               <p className="mb-2 text-3xl">📋</p>

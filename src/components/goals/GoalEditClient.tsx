@@ -27,12 +27,16 @@ import { convexIdFromParam } from '@/lib/convexIds';
 const STATUSES = ['draft', 'active', 'completed', 'cancelled'] as const;
 type Status = (typeof STATUSES)[number];
 
+const LEVELS = ['company', 'team', 'individual'] as const;
+type Level = (typeof LEVELS)[number];
+
+const PERIODS = ['Q1', 'Q2', 'Q3', 'Q4', 'H1', 'H2', 'FY'] as const;
+type PeriodType = (typeof PERIODS)[number];
+
 /**
- * /goals/[id]/edit — the destination of the pencil button on a goal. The route
- * did not exist, so that button led to a 404.
- *
- * Only the fields `goals.updateObjective` accepts are editable here; key results
- * are maintained from the detail page via check-ins.
+ * /goals/[id]/edit — fully editable objective form.
+ * All fields are editable by all roles: title, description, status, level,
+ * department, period, and owner.
  */
 export default function GoalEditClient() {
   const params = useParams();
@@ -42,18 +46,32 @@ export default function GoalEditClient() {
 
   const goal = useQuery(api.goals.getObjective, objectiveId ? { objectiveId } : 'skip');
   const updateObjective = useMutation(api.goals.updateObjective);
+  const users = useQuery(api.users.queries.getAllUsers, {});
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState<Status>('active');
+  const [level, setLevel] = useState<Level>('individual');
+  const [department, setDepartment] = useState('');
+  const [periodType, setPeriodType] = useState<PeriodType>('Q1');
+  const [periodYear, setPeriodYear] = useState(new Date().getFullYear());
+  const [periodStart, setPeriodStart] = useState('');
+  const [periodEnd, setPeriodEnd] = useState('');
+  const [ownerId, setOwnerId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (!goal) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- initialize the edit form from the query result
     setTitle(goal.title ?? '');
     setDescription(goal.description ?? '');
     setStatus((goal.status as Status) || 'active');
+    setLevel((goal.level as Level) || 'individual');
+    setDepartment(goal.department ?? '');
+    setPeriodType((goal.periodType as PeriodType) || 'Q1');
+    setPeriodYear(goal.periodYear ?? new Date().getFullYear());
+    setPeriodStart(goal.periodStart ? new Date(goal.periodStart).toISOString().slice(0, 10) : '');
+    setPeriodEnd(goal.periodEnd ? new Date(goal.periodEnd).toISOString().slice(0, 10) : '');
+    setOwnerId(goal.ownerId ?? '');
   }, [goal]);
 
   if (objectiveId === null || goal === null) {
@@ -92,6 +110,13 @@ export default function GoalEditClient() {
         title: title.trim(),
         description: description.trim() || undefined,
         status,
+        level,
+        department: level === 'team' ? department.trim() || undefined : undefined,
+        periodType,
+        periodYear,
+        periodStart: periodStart ? new Date(periodStart).getTime() : undefined,
+        periodEnd: periodEnd ? new Date(periodEnd).getTime() : undefined,
+        ownerId: ownerId ? (ownerId as Id<'users'>) : undefined,
       });
       toast.success(t('goals.saved', 'Objective saved'));
       router.push(goalUrl);
@@ -125,6 +150,7 @@ export default function GoalEditClient() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Title */}
             <div className="space-y-2">
               <Label htmlFor="goal-title">{t('goals.wizard.titleLabel')}</Label>
               <Input
@@ -136,6 +162,7 @@ export default function GoalEditClient() {
               />
             </div>
 
+            {/* Description */}
             <div className="space-y-2">
               <Label htmlFor="goal-description">{t('goals.wizard.description')}</Label>
               <Textarea
@@ -147,6 +174,7 @@ export default function GoalEditClient() {
               />
             </div>
 
+            {/* Status */}
             <div className="space-y-2">
               <Label htmlFor="goal-status">{t('goals.statusLabel')}</Label>
               <Select value={status} onValueChange={(value) => setStatus(value as Status)}>
@@ -162,6 +190,112 @@ export default function GoalEditClient() {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Level */}
+            <div className="space-y-2">
+              <Label htmlFor="goal-level">{t('goals.wizard.level', 'Level')}</Label>
+              <Select value={level} onValueChange={(value) => setLevel(value as Level)}>
+                <SelectTrigger id="goal-level">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {LEVELS.map((value) => (
+                    <SelectItem key={value} value={value}>
+                      {t(`goals.level.${value}`, value.charAt(0).toUpperCase() + value.slice(1))}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Department (team level only) */}
+            {level === 'team' && (
+              <div className="space-y-2">
+                <Label htmlFor="goal-department">
+                  {t('goals.wizard.department', 'Department')}
+                </Label>
+                <Input
+                  id="goal-department"
+                  value={department}
+                  onChange={(event) => setDepartment(event.target.value)}
+                  placeholder={t('goals.wizard.departmentPlaceholder', 'e.g. Engineering')}
+                />
+              </div>
+            )}
+
+            {/* Period */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="goal-period">{t('goals.wizard.periodType', 'Period')}</Label>
+                <Select
+                  value={periodType}
+                  onValueChange={(value) => setPeriodType(value as PeriodType)}
+                >
+                  <SelectTrigger id="goal-period">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PERIODS.map((value) => (
+                      <SelectItem key={value} value={value}>
+                        {value}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="goal-year">{t('goals.wizard.periodYear', 'Year')}</Label>
+                <Input
+                  id="goal-year"
+                  type="number"
+                  value={periodYear}
+                  onChange={(event) => setPeriodYear(parseInt(event.target.value, 10))}
+                  min={2020}
+                  max={2050}
+                />
+              </div>
+            </div>
+
+            {/* Period dates */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="goal-start">{t('goals.wizard.periodStart', 'Start Date')}</Label>
+                <Input
+                  id="goal-start"
+                  type="date"
+                  value={periodStart}
+                  onChange={(event) => setPeriodStart(event.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="goal-end">{t('goals.wizard.periodEnd', 'End Date')}</Label>
+                <Input
+                  id="goal-end"
+                  type="date"
+                  value={periodEnd}
+                  onChange={(event) => setPeriodEnd(event.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Owner */}
+            {users && users.length > 0 && (
+              <div className="space-y-2">
+                <Label htmlFor="goal-owner">{t('goals.wizard.owner', 'Owner')}</Label>
+                <Select value={ownerId} onValueChange={(value) => setOwnerId(value)}>
+                  <SelectTrigger id="goal-owner">
+                    <SelectValue placeholder={t('goals.wizard.selectOwner', 'Select owner')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {users.map((user) => (
+                      <SelectItem key={user._id} value={user._id}>
+                        {user.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="flex justify-end gap-3 pt-2">
               <Button type="button" variant="outline" onClick={() => router.push(goalUrl)}>

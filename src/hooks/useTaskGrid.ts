@@ -39,6 +39,8 @@ export interface GridSourceTask {
   assignedToUser?: { _id?: string; name?: string; avatarUrl?: string | null } | null;
   /** "recurring" when the row is a series (not a materialised task). */
   _type?: string;
+  /** Current status key, used for undo toast. */
+  status?: string;
 }
 
 export interface TaskGridScope {
@@ -209,6 +211,10 @@ export function useTaskGrid(scope: TaskGridScope, tasks: readonly GridSourceTask
 
   const handleSetStatus = useCallback(
     (taskId: string, statusKey: string) => {
+      // Find the task's current status before changing it, so we can offer undo.
+      const task = (tasks ?? []).find((t) => t._id === taskId);
+      const previousStatus = task?.status as string | undefined;
+
       // Recurring series IDs come from the `recurringTasks` table and cannot
       // be passed to `v.id('tasks')` validators on `setTaskStatus`.
       const isRecurring = (tasks ?? []).some((t) => t._type === 'recurring' && t._id === taskId);
@@ -220,10 +226,48 @@ export function useTaskGrid(scope: TaskGridScope, tasks: readonly GridSourceTask
           }),
         );
       } else {
-        void runWrite(() => setTaskStatusFor({ taskId: taskId as Id<'tasks'>, statusKey }));
+        void runWrite(() => setTaskStatusFor({ taskId: taskId as Id<'tasks'>, statusKey })).then(
+          () => {
+            // Show undo toast only when the status actually changed
+            if (previousStatus && previousStatus !== statusKey) {
+              const statusNames: Record<string, string> = {
+                pending: t('tasks.status.pending'),
+                in_progress: t('tasks.status.inProgress'),
+                review: t('tasks.status.review'),
+                completed: t('tasks.status.completed'),
+                cancelled: t('tasks.status.cancelled'),
+              };
+              const from = statusNames[previousStatus] ?? previousStatus;
+              const to = statusNames[statusKey] ?? statusKey;
+              toast(
+                t('tasksClient.statusChanged', {
+                  from,
+                  to,
+                  defaultValue: `Status changed: ${from} → ${to}`,
+                }),
+                {
+                  duration: 8000,
+                  action: {
+                    label: t('tasksClient.undo', 'Undo'),
+                    onClick: () => {
+                      void runWrite(() =>
+                        setTaskStatusFor({
+                          taskId: taskId as Id<'tasks'>,
+                          statusKey: previousStatus,
+                        }),
+                      );
+                      toast.success(t('tasksClient.statusReverted', 'Status reverted'));
+                    },
+                  },
+                  dismissible: true,
+                },
+              );
+            }
+          },
+        );
       }
     },
-    [runWrite, setTaskStatusFor, updateRecurringTaskStatus, tasks],
+    [runWrite, setTaskStatusFor, updateRecurringTaskStatus, tasks, t],
   );
 
   /**

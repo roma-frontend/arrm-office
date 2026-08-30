@@ -89,6 +89,7 @@ import { ShareViewMenu } from './ShareViewMenu';
 import { CustomizeViewMenu } from './CustomizeViewMenu';
 import { TaskStatsBar, type TaskStatItem } from './TaskStatsBar';
 import { TaskFilterChips, type TaskFilterChip } from './TaskFilterChips';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 // ── The table view ─────────────────────────────────────────────────────────
 // The grid and its toolbar are their own modules; this file wires them to the
 // board's state and to Convex. Nothing below is loaded by the kanban or the
@@ -306,16 +307,116 @@ function SortCaret({ active, dir }: { active: boolean; dir: 'asc' | 'desc' }) {
   );
 }
 
+function StatusCircleButton({
+  task,
+  statuses,
+  onSetStatus,
+  canManage,
+}: {
+  task: TaskItem;
+  statuses?: readonly import('../../../convex/lib/taskStatus').TaskStatusDef[];
+  onSetStatus: (taskId: string, statusKey: string) => void;
+  canManage: boolean;
+}) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const resolvedStatus = statuses
+    ? resolveStatus({ status: task.status as any, statusKey: task.statusKey }, statuses)
+    : null;
+  const statusCfg = STATUS_CONFIG[(resolvedStatus?.key ?? task.status) as Status];
+  if (!canManage) {
+    return (
+      <span
+        className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${
+          task.status === 'completed'
+            ? 'border-(--success-solid) bg-(--success-solid)'
+            : statusCfg.dot.replace('bg-', 'border-')
+        }`}
+      >
+        {task.status === 'completed' && (
+          <svg
+            className="w-2.5 h-2.5 text-white"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+          </svg>
+        )}
+      </span>
+    );
+  }
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setOpen(true);
+          }}
+          className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center cursor-pointer hover:scale-125 transition-transform ${
+            task.status === 'completed'
+              ? 'border-(--success-solid) bg-(--success-solid)'
+              : statusCfg.dot.replace('bg-', 'border-')
+          }`}
+          title={t('tasksClient.changeStatus', 'Change status')}
+        >
+          {task.status === 'completed' && (
+            <svg
+              className="w-2.5 h-2.5 text-white"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={3}
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+          )}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" side="bottom" className="w-44 p-1.5 z-[9999]">
+        <div className="max-h-64 overflow-y-auto">
+          {(Object.entries(STATUS_CONFIG) as [Status, typeof statusCfg][]).map(([key, cfg]) => (
+            <button
+              key={key}
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onSetStatus(task._id, key);
+                setOpen(false);
+              }}
+              disabled={task.status === key}
+              className="flex items-center gap-2 w-full px-2 py-1.5 rounded-md text-xs hover:bg-(--background-subtle) disabled:opacity-50 disabled:cursor-default transition-colors"
+            >
+              <span className={`w-2 h-2 rounded-full shrink-0 ${cfg.dot}`} />
+              <span className={cfg.color}>{t(cfg.labelKey)}</span>
+              {task.status === key && <span className="ml-auto text-xs opacity-50">✓</span>}
+            </button>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 function TaskCardContent({
   task,
   isDragging = false,
   statuses,
+  onSetStatus,
 }: {
   task: TaskItem;
   isDragging?: boolean;
   statuses?: readonly import('../../../convex/lib/taskStatus').TaskStatusDef[];
+  onSetStatus?: (taskId: string, statusKey: string) => void;
 }) {
   const { t } = useTranslation();
+  const [statusPickerOpen, setStatusPickerOpen] = useState(false);
   const resolvedStatus = statuses
     ? resolveStatus({ status: task.status as any, statusKey: task.statusKey }, statuses)
     : null;
@@ -350,11 +451,51 @@ function TaskCardContent({
             {priorityCfg.icon} {t(priorityCfg.labelKey)}
           </span>
         </div>
-        <span
-          className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusCfg.bg} ${statusCfg.color}`}
-        >
-          {resolvedStatus ? statusLabel(t, resolvedStatus) : t(statusCfg.labelKey)}
-        </span>
+        {onSetStatus ? (
+          <Popover open={statusPickerOpen} onOpenChange={setStatusPickerOpen}>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setStatusPickerOpen(true);
+                }}
+                className={`text-xs font-medium px-2 py-0.5 rounded-full cursor-pointer hover:opacity-80 transition-opacity ${statusCfg.bg} ${statusCfg.color}`}
+              >
+                {resolvedStatus ? statusLabel(t, resolvedStatus) : t(statusCfg.labelKey)}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="end" side="bottom" className="w-44 p-1.5 z-[9999]">
+              <div className="max-h-64 overflow-y-auto">
+                {(Object.entries(STATUS_CONFIG) as [Status, typeof statusCfg][]).map(
+                  ([key, cfg]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSetStatus(task._id, key);
+                        setStatusPickerOpen(false);
+                      }}
+                      disabled={task.status === key}
+                      className="flex items-center gap-2 w-full px-2 py-1.5 rounded-md text-xs hover:bg-(--background-subtle) disabled:opacity-50 disabled:cursor-default transition-colors"
+                    >
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${cfg.dot}`} />
+                      <span className={cfg.color}>{t(cfg.labelKey)}</span>
+                      {task.status === key && <span className="ml-auto text-xs opacity-50">✓</span>}
+                    </button>
+                  ),
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
+        ) : (
+          <span
+            className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusCfg.bg} ${statusCfg.color}`}
+          >
+            {resolvedStatus ? statusLabel(t, resolvedStatus) : t(statusCfg.labelKey)}
+          </span>
+        )}
       </div>
       <p
         className={`font-semibold text-sm leading-snug line-clamp-2 ${isDragging ? 'text-(--brand-text)' : 'text-(--text-primary)'}`}
@@ -454,10 +595,12 @@ function DraggableTaskCard({
   task,
   onOpen,
   statuses,
+  onSetStatus,
 }: {
   task: TaskItem;
   onOpen: () => void;
   statuses?: readonly import('../../../convex/lib/taskStatus').TaskStatusDef[];
+  onSetStatus?: (taskId: string, statusKey: string) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: task._id,
@@ -479,7 +622,12 @@ function DraggableTaskCard({
         onOpen();
       }}
     >
-      <TaskCardContent task={task} isDragging={isDragging} statuses={statuses} />
+      <TaskCardContent
+        task={task}
+        isDragging={isDragging}
+        statuses={statuses}
+        onSetStatus={onSetStatus}
+      />
 
       {/* Drag overlay - visible on hover */}
       <div className="absolute inset-0 rounded-2xl bg-(--background)/40 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-200 flex items-center justify-center pointer-events-none">
@@ -509,11 +657,13 @@ function DroppableKanbanColumn({
   onOpen,
   statuses,
   contextMenu,
+  onSetStatus,
 }: {
   status: Status;
   tasks: TaskItem[];
   onOpen: (t: TaskItem) => void;
   statuses?: readonly import('../../../convex/lib/taskStatus').TaskStatusDef[];
+  onSetStatus?: (taskId: string, statusKey: string) => void;
   contextMenu?: {
     canManage: boolean;
     onEdit: (t: ContextTask) => void;
@@ -561,7 +711,12 @@ function DroppableKanbanColumn({
               onDelete={contextMenu.onDelete}
               onToggleActive={contextMenu.onToggleActive}
             >
-              <DraggableTaskCard task={task} onOpen={() => onOpen(task)} statuses={statuses} />
+              <DraggableTaskCard
+                task={task}
+                onOpen={() => onOpen(task)}
+                statuses={statuses}
+                onSetStatus={onSetStatus}
+              />
             </TaskContextMenu>
           ) : (
             <DraggableTaskCard
@@ -569,6 +724,7 @@ function DroppableKanbanColumn({
               task={task}
               onOpen={() => onOpen(task)}
               statuses={statuses}
+              onSetStatus={onSetStatus}
             />
           ),
         )}
@@ -2517,6 +2673,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
                   tasks={tasksByStatus[status]}
                   onOpen={(task) => openTask(task)}
                   statuses={statuses}
+                  onSetStatus={canManage ? handleSetStatus : undefined}
                   contextMenu={
                     canManage
                       ? {
@@ -2709,25 +2866,13 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
                               >
                                 {/* Name */}
                                 <div className={`flex items-center gap-2 ${cellPad} min-w-0`}>
-                                  <span
-                                    className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${task.status === 'completed' ? 'border-(--success-solid) bg-(--success-solid)' : 'border-(--text-muted)'}`}
-                                  >
-                                    {task.status === 'completed' && (
-                                      <svg
-                                        className="w-2.5 h-2.5 text-white"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                      >
-                                        <path
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          strokeWidth={3}
-                                          d="M5 13l4 4L19 7"
-                                        />
-                                      </svg>
-                                    )}
-                                  </span>
+                                  {/* Clickable status circle — opens a status picker */}
+                                  <StatusCircleButton
+                                    task={task}
+                                    statuses={statuses}
+                                    onSetStatus={handleSetStatus}
+                                    canManage={canManage}
+                                  />
                                   <span className="text-sm text-(--text-primary) truncate font-medium">
                                     {localizedTaskTitle(t, task)}
                                   </span>

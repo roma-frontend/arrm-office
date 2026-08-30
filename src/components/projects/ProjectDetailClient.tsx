@@ -18,6 +18,7 @@ import { TaskSheet } from '@/components/tasks/TaskSheet';
 import { TaskEditSheet } from '@/components/tasks/TaskEditSheet';
 import { ProjectEditSheet } from '@/components/projects/ProjectEditSheet';
 import { ProjectTaskGrid } from '@/components/projects/ProjectTaskGrid';
+import type { ContextTask } from '@/components/tasks/TaskContextMenu';
 import { ArrowLeft, Calendar, Users, CheckCircle2, Trash2, Pencil, Plus } from 'lucide-react';
 
 type LabelStyle = { label: string; color: string };
@@ -60,18 +61,52 @@ export default function ProjectDetailClient({
   const [selectedTask, setSelectedTask] = useState<{ id: Id<'tasks'>; title: string } | null>(null);
   const [editingTask, setEditingTask] = useState<{ id: Id<'tasks'>; title: string } | null>(null);
 
-  if (!project) return <ShieldLoader />;
+  const setTaskStatus = useMutation(api.tasks.setTaskStatus);
+  const bulkUpdateTasks = useMutation(api.tasks.bulkUpdateTasks);
+  const bulkDeleteTasks = useMutation(api.tasks.bulkDeleteTasks);
 
-  /**
-   * What the viewer may do to the grid.
-   *
-   * The same split as the board: staff manage, an employee may still create and
-   * edit their own work (the server enforces which rows), a driver reads. Every
-   * write is checked again server-side — this only decides which affordances are
-   * worth drawing.
-   */
   const canManage = userRole === 'admin' || userRole === 'supervisor' || userRole === 'superadmin';
   const canEdit = canManage || userRole === 'employee';
+
+  const handleContextMenuSetStatus = React.useCallback(
+    (taskId: string, statusKey: string) => {
+      void setTaskStatus({ taskId: taskId as Id<'tasks'>, statusKey });
+    },
+    [setTaskStatus],
+  );
+
+  const handleContextMenuSetPriority = React.useCallback(
+    (taskId: string, priority: string) => {
+      void bulkUpdateTasks({
+        taskIds: [taskId as Id<'tasks'>],
+        patch: { priority: priority as 'low' | 'medium' | 'high' | 'urgent' },
+      });
+    },
+    [bulkUpdateTasks],
+  );
+
+  const handleContextMenuEdit = React.useCallback((task: ContextTask) => {
+    setEditingTask({ id: task._id as Id<'tasks'>, title: task.title });
+  }, []);
+
+  const handleContextMenuDelete = React.useCallback(
+    (task: ContextTask) => {
+      void bulkDeleteTasks({ taskIds: [task._id as Id<'tasks'>] });
+    },
+    [bulkDeleteTasks],
+  );
+
+  const projectContextMenu = canManage
+    ? {
+        canManage,
+        onEdit: handleContextMenuEdit,
+        onSetStatus: handleContextMenuSetStatus,
+        onSetPriority: handleContextMenuSetPriority,
+        onDelete: handleContextMenuDelete,
+      }
+    : undefined;
+
+  if (!project) return <ShieldLoader />;
 
   /**
    * `getProject` returns recurring series next to the tasks. The grid takes both
@@ -160,7 +195,7 @@ export default function ProjectDetailClient({
           <CardContent className="p-4 text-center">
             <Users className="w-5 h-5 mx-auto mb-1 text-(--brand-text)" />
             <p className="text-xl font-bold">{project.members?.length ?? 0}</p>
-            <p className="text-xs text-(--text-muted)">{t('projects.members', 'Members')}</p>
+            <p className="text-xs text-(--text-muted)">{t('projects.assignees', 'Assignees')}</p>
           </CardContent>
         </Card>
         <Card>
@@ -205,6 +240,7 @@ export default function ProjectDetailClient({
           canEdit={canEdit}
           canManage={canManage}
           onOpenTask={(id, title) => setSelectedTask({ id: id as Id<'tasks'>, title })}
+          contextMenu={projectContextMenu}
         />
 
         {/* Recurring series are not rows in the grid — a series lives in
@@ -242,7 +278,7 @@ export default function ProjectDetailClient({
       {/* Members Section */}
       {project.members && project.members.length > 0 && (
         <div>
-          <h2 className="text-lg font-semibold mb-3">{t('projects.members', 'Members')}</h2>
+          <h2 className="text-lg font-semibold mb-3">{t('projects.assignees', 'Assignees')}</h2>
           <div className="flex flex-wrap gap-2">
             {project.members.map((member) => (
               <Badge key={member._id} variant="secondary" className="text-sm px-3 py-1.5">
