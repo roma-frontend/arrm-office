@@ -194,7 +194,21 @@ function makeCtx() {
       return chains.get(table)!;
     }),
   };
-  return { ctx: { db }, get, insert, patch, remove, chains, db };
+  // Approve-leave now triggers the HR Assistant digest through
+  // ctx.runMutation / ctx.scheduler.runAfter. The tests only assert on
+  // leaves side-effects, so the digest side-channels are no-ops.
+  const runMutation = jest.fn().mockResolvedValue(undefined);
+  const runQuery = jest.fn().mockResolvedValue(undefined);
+  const scheduler = { runAfter: jest.fn().mockResolvedValue(undefined) };
+  return {
+    ctx: { db, runMutation, runQuery, scheduler },
+    get,
+    insert,
+    patch,
+    remove,
+    chains,
+    db,
+  };
 }
 
 function chain(chains: Map<string, ReturnType<typeof makeChain>>, table: string) {

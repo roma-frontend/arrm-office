@@ -145,4 +145,13 @@ crons.daily('task-deadline-reminders', { hourUTC: 9, minuteUTC: 10 }, dispatch, 
   jobKey: 'task-deadline-reminders',
 });
 
+// HR Assistant daily attendance digest — fires at 00:00 UTC so every org
+// has a fresh per-day digest in the HR Assistant channel by the time their
+// first employee opens the app. Approval-time triggers (in
+// attendance/leaveBridge) handle in-day updates so the channel stays
+// current without spamming more cron ticks.
+crons.daily('attendance-daily-digest', { hourUTC: 0, minuteUTC: 0 }, dispatch, {
+  jobKey: 'attendance-daily-digest',
+});
+
 export default crons;

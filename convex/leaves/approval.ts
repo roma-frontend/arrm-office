@@ -53,7 +53,10 @@ export interface ApprovalRoute {
   notifyIds: Id<'users'>[];
 }
 
-/** Active holders of `leave.approve.org` in an organization (HR / admins). */
+/** Active holders of `leave.approve.org` in an organization (HR / admins).
+ *  System accounts (the HR Assistant bot per org, plus any other email-isolated
+ *  internal accounts) never appear in this list: they exist to act, never to
+ *  be acted on, so they must not be routed an approval. */
 async function orgWideApprovers(
   ctx: Pick<QueryCtx, 'db'>,
   organizationId: Id<'organizations'> | undefined,
@@ -63,7 +66,23 @@ async function orgWideApprovers(
     .query('users')
     .withIndex('by_org_role', (q) => q.eq('organizationId', organizationId).eq('role', 'admin'))
     .take(SMALL_LIST_CAP);
-  return admins.filter((u) => u.isActive && hasCapability(u, 'leave.approve.org'));
+  return admins.filter(
+    (u) =>
+      u.isActive &&
+      hasCapability(u, 'leave.approve.org') &&
+      // Bot accounts are namespaced under `+<purpose>-bot@<id>.internal` —
+      // never a real human login. Strip them so the bot can't end up on a
+      // leave-approval recipient list or show up in any HR UI.
+      !isSystemAccountEmail(u.email),
+  );
+}
+
+/** True for the email-shaped accounts used by internal automations (HR
+ *  Assistant bot, future moderation bots, etc.) — anything that lives under
+ *  the `.internal` namespace. Kept loose on purpose so we don't have to
+ *  thread a flag through every bot provisioning path. */
+function isSystemAccountEmail(email: string | undefined): boolean {
+  return !!email && email.endsWith('.internal');
 }
 
 /**

@@ -58,6 +58,7 @@ import { operatorTools } from './operatorTools';
 import { meetings } from './meetings';
 import { billing } from './billing';
 import { overtime } from './overtime';
+import { attendance } from './attendance';
 
 export default defineSchema({
   ...organizations,
@@ -119,6 +120,7 @@ export default defineSchema({
   ...meetings,
   ...billing,
   ...overtime,
+  ...attendance,
 });
 
 export {

@@ -2,6 +2,7 @@ import { v } from 'convex/values';
 import { getAuthCaller } from '../lib/getAuthCaller';
 import { mutation, type MutationCtx } from '../_generated/server';
 import type { Doc, Id } from '../_generated/dataModel';
+import { internal } from '../_generated/api';
 import { isSuperadmin, isSuperadminEmail } from '../lib/auth';
 import { MAX_PAGE_SIZE } from '../pagination';
 import { DEFAULT_LIST_CAP } from '../lib/limits';
@@ -346,6 +347,29 @@ export const approveLeave = mutation({
       }),
       createdAt: now,
     });
+
+    // Refresh the HR Assistant digest for every day this leave covers, so
+    // the in-app chat shows the approved absence immediately rather than
+    // waiting for the next midnight cron. Daily iteration is bounded by
+    // the leave's day count; in practice leaves last < 30 days.
+    if (leave.organizationId) {
+      await ctx.runMutation(internal.attendance.bot.seedHrAssistantMembers, {
+        organizationId: leave.organizationId,
+      });
+      const start = new Date(`${leave.startDate}T00:00:00Z`);
+      const end = new Date(`${leave.endDate}T00:00:00Z`);
+      const days: string[] = [];
+      for (let d = new Date(start); d <= end; d.setUTCDate(d.getUTCDate() + 1)) {
+        days.push(d.toISOString().slice(0, 10));
+      }
+      for (const day of days) {
+        await ctx.scheduler.runAfter(0, internal.attendance.bot.renderAndPostDigest, {
+          organizationId: leave.organizationId,
+          date: day,
+          trigger: 'approval',
+        });
+      }
+    }
 
     return leaveId;
   },
