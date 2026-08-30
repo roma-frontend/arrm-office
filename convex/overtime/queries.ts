@@ -4,7 +4,7 @@ import { query, type QueryCtx } from '../_generated/server';
 import type { Doc } from '../_generated/dataModel';
 import { isSuperadmin } from '../lib/auth';
 import { getProfile } from '../lib/userProfile';
-import { canAccessUser } from '../lib/rbac';
+import { canAccessUser, getVisibleUserIdsForCaller } from '../lib/rbac';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPER: Enrich overtime request with user data
@@ -92,7 +92,7 @@ export const getPendingOvertimeForManager = query({
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// GET ALL OVERTIME REQUESTS — org-scoped, for admin view
+// GET ALL OVERTIME REQUESTS — scoped to caller's visibility
 // ─────────────────────────────────────────────────────────────────────────────
 export const getAllOvertimeRequests = query({
   args: {},
@@ -104,13 +104,24 @@ export const getAllOvertimeRequests = query({
 
     if (isSuperadmin(caller)) {
       requests = await ctx.db.query('overtimeRequests').order('desc').take(200);
-    } else if (caller.role === 'admin' || caller.role === 'supervisor') {
+    } else if (caller.role === 'admin') {
+      // Admin sees the whole org.
       if (!caller.organizationId) return [];
       requests = await ctx.db
         .query('overtimeRequests')
         .withIndex('by_org_created', (q) => q.eq('organizationId', caller.organizationId!))
         .order('desc')
         .take(200);
+    } else if (caller.role === 'supervisor') {
+      // Supervisor sees the org queue trimmed to their reporting subtree.
+      if (!caller.organizationId) return [];
+      const visibleUserIds = await getVisibleUserIdsForCaller(ctx, caller);
+      const orgRequests = await ctx.db
+        .query('overtimeRequests')
+        .withIndex('by_org_created', (q) => q.eq('organizationId', caller.organizationId!))
+        .order('desc')
+        .take(200);
+      requests = orgRequests.filter((r) => visibleUserIds.has(r.userId));
     } else {
       // Employee: only own requests
       requests = await ctx.db
@@ -138,11 +149,15 @@ export const getOvertimeForDate = query({
       .withIndex('by_date', (q) => q.eq('date', date))
       .collect();
 
-    // Filter by role: superadmin sees all, staff sees org, employees only own
+    // Filter by role: superadmin sees all, admin sees the full org,
+    // supervisor sees only their reporting subtree, employees only own.
+    const visibleUserIds =
+      caller.role === 'supervisor' ? await getVisibleUserIdsForCaller(ctx, caller) : null;
     const filtered = requests.filter((r) => {
       if (isSuperadmin(caller)) return true;
-      if (caller.role === 'admin' || caller.role === 'supervisor') {
-        return r.organizationId === caller.organizationId;
+      if (caller.role === 'admin') return r.organizationId === caller.organizationId;
+      if (caller.role === 'supervisor') {
+        return r.organizationId === caller.organizationId && visibleUserIds!.has(r.userId);
       }
       return r.userId === caller._id;
     });
@@ -167,12 +182,20 @@ export const getOvertimeForDateRange = query({
     let allRequests: Doc<'overtimeRequests'>[];
     if (isSuperadmin(caller)) {
       allRequests = await ctx.db.query('overtimeRequests').take(500);
-    } else if (caller.role === 'admin' || caller.role === 'supervisor') {
+    } else if (caller.role === 'admin') {
       if (!caller.organizationId) return [];
       allRequests = await ctx.db
         .query('overtimeRequests')
         .withIndex('by_org_created', (q) => q.eq('organizationId', caller.organizationId!))
         .take(500);
+    } else if (caller.role === 'supervisor') {
+      if (!caller.organizationId) return [];
+      const visibleUserIds = await getVisibleUserIdsForCaller(ctx, caller);
+      const orgRequests = await ctx.db
+        .query('overtimeRequests')
+        .withIndex('by_org_created', (q) => q.eq('organizationId', caller.organizationId!))
+        .take(500);
+      allRequests = orgRequests.filter((r) => visibleUserIds.has(r.userId));
     } else {
       allRequests = await ctx.db
         .query('overtimeRequests')
@@ -214,7 +237,22 @@ export const getOvertimeStats = query({
         .query('overtimeRequests')
         .withIndex('by_user', (q) => q.eq('userId', userId))
         .collect();
-    } else if (!isSuperadmin(caller) && caller.role !== 'admin' && caller.role !== 'supervisor') {
+    } else if (caller.role === 'supervisor') {
+      // Supervisor's own stats are over their reporting subtree (themselves
+      // included) — the same visibility scope every other team-scoped view
+      // uses on this page.
+      const visibleUserIds = await getVisibleUserIdsForCaller(ctx, caller);
+      const orgRequests = caller.organizationId
+        ? await ctx.db
+            .query('overtimeRequests')
+            .withIndex('by_org_created', (q) => q.eq('organizationId', caller.organizationId!))
+            .collect()
+        : await ctx.db
+            .query('overtimeRequests')
+            .withIndex('by_user', (q) => q.eq('userId', caller._id))
+            .collect();
+      requests = orgRequests.filter((r) => visibleUserIds.has(r.userId));
+    } else if (!isSuperadmin(caller) && caller.role !== 'admin') {
       requests = await ctx.db
         .query('overtimeRequests')
         .withIndex('by_user', (q) => q.eq('userId', caller._id))
@@ -263,6 +301,12 @@ export const getUnreadOvertimeCount = query({
       )
       .collect();
 
+    // Supervisor's badge must reflect only requests in their reporting
+    // subtree; an admin sees the full org queue.
+    if (caller.role === 'supervisor') {
+      const visibleUserIds = await getVisibleUserIdsForCaller(ctx, caller);
+      return pending.filter((r) => !r.isRead && visibleUserIds.has(r.userId)).length;
+    }
     return pending.filter((r) => !r.isRead).length;
   },
 });

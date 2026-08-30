@@ -204,7 +204,7 @@ export default function ProbationCard({ employeeId }: ProbationCardProps) {
         )}
 
         {!active && probation.outcomeNote && (
-          <p className="text-xs text-(--text-muted)">{probation.outcomeNote}</p>
+          <p className="text-xs text-(--text-muted)">{t(probation.outcomeNote)}</p>
         )}
         {!active && probation.completedAt && (
           <p className="text-[11px] text-(--text-muted)">

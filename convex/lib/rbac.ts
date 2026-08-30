@@ -11,7 +11,7 @@ import type { QueryCtx, MutationCtx } from '../_generated/server';
 import type { Id } from '../_generated/dataModel';
 import { isSuperadmin as isSuperadminRole } from './auth';
 import { hasCapability } from './capabilities';
-import { isAncestorOf } from './reportingLine';
+import { isAncestorOf, getSubordinateIds } from './reportingLine';
 
 /**
  * Role order for the coarse tier checks below.
@@ -278,4 +278,54 @@ export function withRBAC<Args extends { userId: Id<'users'> }, Result>(
 
     return handler(ctx, args);
   };
+}
+
+/**
+ * Visibility scope for a caller — used by leaves/overtimes/calendar/etc.
+ * queries to filter what they return. Resolves to a Set of user ids whose
+ * data the caller may see; queries then intersect their result set with it.
+ *
+ * - `superadmin`: every user in every org (cross-tenant reads allowed).
+ * - `admin`: every user in the caller's organization.
+ * - `supervisor`: caller + their reporting subtree, scoped to the same org.
+ * - `employee`/`driver`: caller only.
+ *
+ * The supervisor case is the one this function exists for: previously
+ * supervisors received the full org queue (everyone in `by_org`) because
+ * the visibility check was only role-based. That leaked activity across
+ * the reporting line, so the leaf queries are being migrated to use this
+ * helper instead. Admin stays org-wide because HR genuinely needs to see
+ * the whole org queue.
+ *
+ * During superadmin impersonation the requester's role is the impersonated
+ * user's role (resolved from the JWT), so an admin impersonating a
+ * supervisor immediately drops to subtree visibility — the right thing,
+ * because the impersonation frame must not silently widen the caller's
+ * authority.
+ */
+export async function getVisibleUserIdsForCaller(
+  ctx: QueryCtx | MutationCtx,
+  caller: { _id: Id<'users'>; role: Role; organizationId?: Id<'organizations'> },
+): Promise<Set<Id<'users'>>> {
+  if (caller.role === 'superadmin') {
+    const all = await ctx.db.query('users').collect();
+    return new Set(all.map((u) => u._id));
+  }
+
+  if (caller.role === 'admin') {
+    if (!caller.organizationId) return new Set([caller._id]);
+    const orgUsers = await ctx.db
+      .query('users')
+      .withIndex('by_org', (q) => q.eq('organizationId', caller.organizationId!))
+      .collect();
+    return new Set(orgUsers.map((u) => u._id));
+  }
+
+  if (caller.role === 'supervisor') {
+    const subordinateIds = await getSubordinateIds(ctx, caller._id, caller.organizationId);
+    return new Set([caller._id, ...subordinateIds]);
+  }
+
+  // employee / driver — only their own data
+  return new Set([caller._id]);
 }

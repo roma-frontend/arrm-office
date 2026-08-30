@@ -39,6 +39,15 @@ jest.mock('../../convex/leaves/helpers', () => ({
 
 jest.mock('../../convex/lib/rbac', () => ({
   canAccessUser: jest.fn().mockResolvedValue(true),
+  // The visibility helper is now used by every list query to scope leaves
+  // to a caller's reporting subtree (admins keep the org queue, supervisors
+  // see only their own + subordinates). Default to "everyone visible" so
+  // the pre-existing scoping assertions still apply; per-test overrides
+  // narrow it to a specific set.
+  getVisibleUserIdsForCaller: jest.fn().mockImplementation(async () => {
+    const all = new Set<string>();
+    return all;
+  }),
 }));
 
 // ── Module under test ────────────────────────────────────────────────────────
@@ -46,6 +55,7 @@ let mockGetAuthCaller: jest.Mock;
 let mockIsSuperadmin: jest.Mock;
 let mockGetProfile: jest.Mock;
 let mockEnrich: jest.Mock;
+let mockGetVisibleUserIdsForCaller: jest.Mock;
 
 type Handler = (ctx: any, args: any) => Promise<unknown>;
 const handlers: Record<string, Handler> = {};
@@ -56,12 +66,31 @@ beforeEach(() => {
   mockIsSuperadmin = jest.requireMock('../../convex/lib/auth').isSuperadmin;
   mockGetProfile = jest.requireMock('../../convex/lib/userProfile').getProfile;
   mockEnrich = jest.requireMock('../../convex/leaves/helpers').enrichLeavesWithUserData;
+  mockGetVisibleUserIdsForCaller =
+    jest.requireMock('../../convex/lib/rbac').getVisibleUserIdsForCaller;
   mockGetAuthCaller.mockReset();
   mockIsSuperadmin.mockReset();
   mockGetProfile.mockReset();
   mockEnrich.mockReset();
+  mockGetVisibleUserIdsForCaller.mockReset();
   // Identity enrichment: tests assert on the raw leave rows.
   mockEnrich.mockImplementation(async (_ctx: any, leaves: unknown[]) => leaves);
+  // Visibility default: superadmin/admin see everything; supervisor and
+  // employee/driver are restricted by the per-test makeCaller scope. Tests
+  // that need a narrower view override the implementation explicitly.
+  mockGetVisibleUserIdsForCaller.mockImplementation(
+    async (_ctx: any, caller: { role: string; _id: string; organizationId?: string }) => {
+      if (caller.role === 'superadmin' || caller.role === 'admin') {
+        return new Set([caller._id, USER_ID, ADMIN_ID, 'other_user']);
+      }
+      if (caller.role === 'supervisor') {
+        // Supervisors see their direct reports by default; tests that need to
+        // deny a specific employee override the mock.
+        return new Set([caller._id, USER_ID]);
+      }
+      return new Set([caller._id]);
+    },
+  );
   jest.isolateModules(() => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const mod = require('../../convex/leaves/queries');
@@ -420,12 +449,22 @@ describe('getPendingLeaves', () => {
     expect(mockEnrich).toHaveBeenCalledWith(ctx, expect.any(Array), false);
   });
 
-  it('throws for a user without an organization', async () => {
-    mockGetAuthCaller.mockResolvedValue(callerWithoutOrg('employee', USER_ID));
+  it('throws for an admin without an organization', async () => {
+    // An admin or supervisor with no organization cannot be associated with
+    // an org queue, so the query refuses rather than silently returning the
+    // wrong data. Employees with no org now return an empty list instead
+    // (they have no review queue to leak from).
+    mockGetAuthCaller.mockResolvedValue(callerWithoutOrg('admin', USER_ID));
     const { ctx } = makeCtx();
     await expect(handlers.getPendingLeaves(ctx, {})).rejects.toThrow(
       'User does not belong to an organization',
     );
+  });
+
+  it('returns empty for an employee without an organization', async () => {
+    mockGetAuthCaller.mockResolvedValue(callerWithoutOrg('employee', USER_ID));
+    const { ctx } = makeCtx();
+    await expect(handlers.getPendingLeaves(ctx, {})).resolves.toEqual([]);
   });
 
   it('reads the org pending queue by status index', async () => {

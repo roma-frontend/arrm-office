@@ -478,6 +478,44 @@ describe('leaves queue queries', () => {
     expect(employeeView[0].userId).toBe(c.employeeId);
   });
 
+  it('supervisor sees own + subordinate leaves only — not other admins/org staff', async () => {
+    const c = await seed();
+    // Employee reports to the supervisor — supervisor must see this.
+    await createLeaveRequest(c, asEmployee, c.employeeId);
+    // Admin does not report to the supervisor — supervisor must NOT see this.
+    await createLeaveRequest(c, asAdmin, c.adminId);
+
+    const supervisorView = await asSupervisor(c).query(api.leaves.getAllLeaves, {});
+
+    // Only the employee who reports to the supervisor is in scope.
+    expect(supervisorView).toHaveLength(1);
+    expect(supervisorView[0].userId).toBe(c.employeeId);
+  });
+
+  it('supervisor pending count excludes leaves from outside their reporting line', async () => {
+    const c = await seed();
+    await createLeaveRequest(c, asEmployee, c.employeeId); // in scope
+    await createLeaveRequest(c, asAdmin, c.adminId); // out of scope
+
+    const supervisorUnread = await asSupervisor(c).query(api.leaves.getUnreadCount, {});
+    const adminUnread = await asAdmin(c).query(api.leaves.getUnreadCount, {});
+
+    // Supervisor sees only their direct report's pending request.
+    expect(supervisorUnread).toBe(1);
+    // Admin still sees the full org queue.
+    expect(adminUnread).toBe(2);
+  });
+
+  it('getLeaveById denies a supervisor who has no reporting-line path to the leave owner', async () => {
+    const c = await seed();
+    const adminLeaveId = await createLeaveRequest(c, asAdmin, c.adminId);
+
+    const view = await asSupervisor(c).query(api.leaves.getLeaveById, {
+      leaveId: adminLeaveId,
+    });
+    expect(view).toBeNull();
+  });
+
   it('counts pending leaves as unread for staff', async () => {
     const c = await seed();
     await createLeaveRequest(c, asEmployee, c.employeeId);
