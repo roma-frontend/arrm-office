@@ -505,9 +505,11 @@ export const seedHrAssistantMembers = internalMutation({
  */
 export const runDailyDigest = internalAction({
   args: { date: v.optional(v.string()) },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<{ ok: true; date: string; organizations: number }> => {
     const date = args.date ?? new Date().toISOString().slice(0, 10);
-    const orgs = await ctx.runQuery(internal.attendance.bot.listActiveOrgs);
+    const orgs: Array<Id<'organizations'>> = await ctx.runQuery(
+      internal.attendance.bot.listActiveOrgs,
+    );
     for (const orgId of orgs) {
       // Make sure the channel exists and every active employee is a member
       // before posting — the first cron run after a new org provisions the
