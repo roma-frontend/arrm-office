@@ -1,8 +1,11 @@
-{
+﻿{
   "tasks": {
     "onboardingPrefix": "Ադապտացիա",
     "taskCompleted": "Առաջադրանք ավարտված! 🎉",
     "taskReopened": "Առաջադրանքը վերաբացվել է",
+    "statusUpdated": "Status updated",
+    "statusReverted": "Status reverted",
+    "statusRevertFailed": "Failed to revert status",
     "status": {
       "pending": "Սպասում",
       "inProgress": "Գործընթացում",
@@ -110,7 +113,8 @@
     "title": "Վերնագիր",
     "taskNotFound": "Առաջադրանքը չի գտնվել",
     "taskSaved": "Առաջադրանքը թարմացվել է",
-    "statusUpdated": "Կարգավիճակը թարմացվել է",
+    "statusUpdated": "Կարադավհարհարվհ",
+    "statusReverted": "Կարադավհարհարվհ",
     "noComments": "Դեռ մեկնաբանություններ չկան",
     "commentPlaceholder": "Գրեք մեկնաբանություն...",
     "postComment": "Ուղարկել",

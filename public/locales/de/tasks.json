@@ -111,6 +111,7 @@
     "taskNotFound": "Aufgabe nicht gefunden",
     "taskSaved": "Aufgabe aktualisiert",
     "statusUpdated": "Status aktualisiert",
+    "statusReverted": "Status zurückgesetzt",
     "noComments": "Noch keine Kommentare",
     "commentPlaceholder": "Kommentar schreiben...",
     "postComment": "Senden",

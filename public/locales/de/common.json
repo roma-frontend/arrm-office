@@ -37,6 +37,7 @@
     "register": "Registrieren",
     "save": "Änderungen speichern",
     "cancel": "Abbrechen",
+    "undo": "Rückgängig",
     "delete": "Löschen",
     "view": "Ansehen",
     "viewProfile": "Profil ansehen",
@@ -1788,7 +1789,13 @@
     }
   },
   "employees": {
-    "loadingProfile": "Profil wird geladen..."
+    "loadingProfile": "Profil wird geladen...",
+    "nationalId": "ՀԾՀ (National-ID)",
+    "nationalIdHint": "10-stellige armenische nationaler Identifikationsnummer",
+    "nationalIdSection": "National-ID & Versicherung",
+    "nationalIdSectionHint": "Armenische National-ID und Krankenversicherungsstatus",
+    "healthInsured": "Pflichtkrankenversicherung",
+    "healthInsuredHint": "Mitarbeiter ist in der Pflichtkrankenversicherung versichert"
   },
   "quickStats": {
     "active": "aktiv"

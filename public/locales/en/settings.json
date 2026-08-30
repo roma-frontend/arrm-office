@@ -615,7 +615,7 @@
     "deleteConfirm": "Delete this project? All linked tasks will be unlinked.",
     "deleted": "Project deleted",
     "tasks": "Tasks",
-    "members": "Members",
+    "assignees": "Assignees",
     "noTasks": "No tasks yet",
     "addTask": "Add Task",
     "overallProgress": "Overall Progress",

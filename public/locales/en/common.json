@@ -37,6 +37,7 @@
     "register": "Register",
     "save": "Save",
     "cancel": "Cancel",
+    "undo": "Undo",
     "delete": "Delete",
     "view": "View",
     "viewProfile": "View Profile",
@@ -1788,7 +1789,13 @@
     }
   },
   "employees": {
-    "loadingProfile": "Loading employee profile..."
+    "loadingProfile": "Loading employee profile...",
+    "nationalId": "ՀԾՀ (National ID)",
+    "nationalIdHint": "10-digit Armenian national identification number",
+    "nationalIdSection": "National ID & Insurance",
+    "nationalIdSectionHint": "Armenian national ID and health insurance status",
+    "healthInsured": "Mandatory Health Insurance",
+    "healthInsuredHint": "Employee participates in mandatory health insurance"
   },
   "quickStats": {
     "active": "active"

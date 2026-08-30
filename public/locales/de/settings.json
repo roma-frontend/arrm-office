@@ -615,7 +615,7 @@
     "deleteConfirm": "Projekt löschen? Alle Aufgaben werden entkoppelt.",
     "deleted": "Projekt gelöscht",
     "tasks": "Aufgaben",
-    "members": "Mitglieder",
+    "assignees": "Zugewiesene",
     "noTasks": "Noch keine Aufgaben",
     "addTask": "Aufgabe hinzufügen",
     "overallProgress": "Gesamtfortschritt",
