@@ -61,7 +61,7 @@ export async function GET() {
   }
 
   try {
-    const convexToken = await signConvexJWT(payload);
+    const convexToken = await signConvexJWT(payload, '7d', jar);
     return NextResponse.json({ token: convexToken });
   } catch (err) {
     logger.error('[convex-token] failed to sign Convex JWT:', err);
