@@ -255,13 +255,15 @@ export default function EmployeeProfileDetail({
   const documents = profile?.documents ?? [];
   const biography = profile?.profile?.biography;
   const hasIdentity = Boolean(
-    profile?.profile &&
-    (profile.profile.passportNumber ||
-      profile.profile.passportIssuedBy ||
-      profile.profile.passportIssueDate ||
-      profile.profile.passportExpiryDate ||
-      profile.profile.socialCardNumber ||
-      profile.profile.nationality),
+    (profile?.profile &&
+      (profile.profile.passportNumber ||
+        profile.profile.passportIssuedBy ||
+        profile.profile.passportIssueDate ||
+        profile.profile.passportExpiryDate ||
+        profile.profile.socialCardNumber ||
+        profile.profile.nationality)) ||
+    // SSN and health insurance are on the employee object, not the profile
+    (canViewSensitive && ((employee as any)?.nationalId || (employee as any)?.healthInsured)),
   );
   const hasBiography = Boolean(biography?.skills?.length || biography?.languages?.length);
 
