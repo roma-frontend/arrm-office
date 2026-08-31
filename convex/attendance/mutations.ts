@@ -354,7 +354,8 @@ export const ensureHrAssistantMembership = mutation({
       });
     }
 
-    // 5. Add all org users who are missing
+    // 5. Add all ACTIVE org users who are missing
+    //    Exclude: superadmins, inactive users, and bot accounts
     const orgUsers = await ctx.db
       .query('users')
       .withIndex('by_org', (q) => q.eq('organizationId', orgId))
@@ -369,6 +370,12 @@ export const ensureHrAssistantMembership = mutation({
     let added = 0;
     for (const u of orgUsers) {
       if (memberIds.has(u._id)) continue;
+      // Skip superadmins — they manage across orgs, not members
+      if (u.role === 'superadmin') continue;
+      // Skip inactive / deleted users
+      if (u.isActive === false) continue;
+      // Skip bot accounts (email starts with +)
+      if (u.email.startsWith('+')) continue;
       await ctx.db.insert('chatMembers', {
         conversationId: canonical._id,
         userId: u._id,
@@ -379,6 +386,14 @@ export const ensureHrAssistantMembership = mutation({
         joinedAt: now,
       });
       added++;
+    }
+
+    // 6. Clean up stale memberships (inactive / superadmin / bot users)
+    for (const m of existingMembers) {
+      const user = await ctx.db.get(m.userId);
+      if (!user || user.role === 'superadmin' || user.isActive === false || user.email.startsWith('+')) {
+        await ctx.db.delete(m._id);
+      }
     }
 
     return { ok: true, channelId: canonical._id, migrated: allHrChannels.length - 1, added };
