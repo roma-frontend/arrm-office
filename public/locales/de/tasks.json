@@ -75,6 +75,7 @@
     "description": "Beschreibung",
     "assignedTo": "Zuständiger",
     "assignedBy": "Zugewiesen von",
+    "changeStatus": "Status ändern",
     "tags": "Tags",
     "moveTo": "Verschieben nach",
     "noDescription": "Keine Beschreibung hinzugefügt",

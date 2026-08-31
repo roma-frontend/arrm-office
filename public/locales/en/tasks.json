@@ -77,6 +77,7 @@
     "description": "Description",
     "assignedTo": "Assigned To",
     "assignedBy": "Assigned By",
+    "changeStatus": "Change status",
     "tags": "Tags",
     "alsoWorking": "Also working on this",
     "subtasks": "Subtasks",

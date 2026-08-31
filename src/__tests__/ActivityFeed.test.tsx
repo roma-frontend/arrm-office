@@ -156,10 +156,10 @@ describe('ActivityFeed', () => {
     expect(screen.getByTestId('loader')).toBeInTheDocument();
   });
 
-  it('skips the query for non-privileged roles and shows the loader', () => {
+  it('skips the query for non-privileged roles and shows empty state', () => {
     mockUser = { id: 'u1', role: 'employee', organizationId: 'o1' };
     render(<ActivityFeed />);
-    expect(screen.getByTestId('loader')).toBeInTheDocument();
+    expect(screen.getByText('No recent activity')).toBeInTheDocument();
   });
 
   it('shows the loader when the user has no id', () => {

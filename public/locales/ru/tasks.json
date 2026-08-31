@@ -77,6 +77,7 @@
     "description": "Описание",
     "assignedTo": "Назначено на",
     "assignedBy": "Назначено",
+    "changeStatus": "Изменить статус",
     "tags": "Теги",
     "moveTo": "Переместить в",
     "noDescription": "Описание не добавлено",

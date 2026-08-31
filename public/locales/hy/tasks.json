@@ -75,6 +75,7 @@
     "description": "Նկարագրություն",
     "assignedTo": "Նշանակված",
     "assignedBy": "Նշանակված",
+    "changeStatus": "Փոխել կարգավիճակը",
     "tags": "Պիտակներ",
     "moveTo": "Տեղափոխել",
     "noDescription": "Նկարագրություն ավելացված չի",
