@@ -1405,16 +1405,30 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
   // When navigated from a notification with ?highlight=<taskId>, the
   // matching row blinks for 4 seconds so the user spots it immediately.
   const [highlightTaskId, setHighlightTaskId] = useState<string | null>(null);
+  const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const startHighlight = useCallback((taskId: string) => {
+    if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+    setHighlightTaskId(taskId);
+    highlightTimerRef.current = setTimeout(() => setHighlightTaskId(null), 4000);
+  }, []);
   useEffect(() => {
+    // Check on mount
     const params = new URLSearchParams(window.location.search);
     const hl = params.get('highlight');
-    if (hl) {
-      setHighlightTaskId(hl);
-      // Clear highlight after animation
-      const timer = setTimeout(() => setHighlightTaskId(null), 4000);
-      return () => clearTimeout(timer);
-    }
-  }, []);
+    if (hl) startHighlight(hl);
+    // Poll URL every 500ms to detect changes from router.push()
+    // (popstate only fires for browser back/forward, not Next.js router)
+    let lastSearch = window.location.search;
+    const interval = setInterval(() => {
+      if (window.location.search !== lastSearch) {
+        lastSearch = window.location.search;
+        const p = new URLSearchParams(window.location.search);
+        const h = p.get('highlight');
+        if (h) startHighlight(h);
+      }
+    }, 500);
+    return () => clearInterval(interval);
+  }, [startHighlight]);
 
   useEffect(() => {
     const mainEl = mainRef.current;
