@@ -1631,6 +1631,29 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
     rawTasksWithOptimistic,
   );
 
+  // Auto-clean optimistic status entries once the Convex query delivers the
+  // updated task with the expected status.  Without this, stale optimistic
+  // entries would linger until the next drag or page navigation.
+  useEffect(() => {
+    if (!rawTasks || optimisticStatuses.size === 0) return;
+    let changed = false;
+    const next = new Map(optimisticStatuses);
+    for (const [taskId, optStatus] of optimisticStatuses) {
+      const serverTask = rawTasks.find((t) => t._id === taskId);
+      if (serverTask) {
+        const resolved = statuses
+          ? resolveStatus({ status: serverTask.status as any, statusKey: serverTask.statusKey }, statuses)
+          : null;
+        const serverKey = (resolved?.key ?? serverTask.status) as Status;
+        if (serverKey === optStatus) {
+          next.delete(taskId);
+          changed = true;
+        }
+      }
+    }
+    if (changed) setOptimisticStatuses(next);
+  }, [rawTasks, optimisticStatuses, statuses]);
+
   // ── Saved views ────────────────────────────────────────────────────────────
   /** `taskViews.type` names the modes differently: the kanban is a "board". */
   const savedViewType = viewMode === 'kanban' ? 'board' : viewMode;
@@ -2337,14 +2360,13 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
               t('tasks.status.moved', { status: t(STATUS_CONFIG[newStatus].labelKey) }),
               { duration: 2000 },
             );
-            setOptimisticStatuses((prev) => {
-              const next = new Map(prev);
-              next.delete(task._id as string);
-              return next;
-            });
+            // Don't clear optimistic here — let Convex reactivity deliver the
+            // updated task. The useOptimisticStatusSync effect below will
+            // automatically remove the entry once rawTasks catches up.
           })
           .catch(() => {
             toast.error(t('tasks.failedToUpdateStatus'));
+            // On error, revert the optimistic status so the card jumps back.
             setOptimisticStatuses((prev) => {
               const next = new Map(prev);
               next.delete(task._id as string);
@@ -2367,14 +2389,13 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
             t('tasks.status.moved', { status: t(STATUS_CONFIG[newStatus].labelKey) }),
             { duration: 2000 },
           );
-          setOptimisticStatuses((prev) => {
-            const next = new Map(prev);
-            next.delete(task._id as string);
-            return next;
-          });
+          // Don't clear optimistic here — let Convex reactivity deliver the
+          // updated task. The useOptimisticStatusSync effect below will
+          // automatically remove the entry once rawTasks catches up.
         })
         .catch(() => {
           toast.error(t('tasks.failedToUpdateStatus'));
+          // On error, revert the optimistic status so the card jumps back.
           setOptimisticStatuses((prev) => {
             const next = new Map(prev);
             next.delete(task._id as string);
