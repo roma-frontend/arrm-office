@@ -74,6 +74,24 @@ function subtitleOf(user: AssigneeOption): string {
   return [user.position, user.department].filter(Boolean).join(' · ');
 }
 
+/** Unique departments extracted from candidates. */
+function uniqueDepartments(candidates: AssigneeOption[]): string[] {
+  const set = new Set<string>();
+  for (const c of candidates) {
+    if (c.department) set.add(c.department);
+  }
+  return [...set].sort((a, b) => a.localeCompare(b));
+}
+
+/** Sort candidates by position (lexicographic — role titles are conventional), then name. */
+function sortByPositionThenName(arr: AssigneeOption[]): AssigneeOption[] {
+  return [...arr].sort((a, b) => {
+    const pa = (a.position ?? '').localeCompare(b.position ?? '');
+    if (pa !== 0) return pa;
+    return a.name.localeCompare(b.name);
+  });
+}
+
 function AssigneeAvatar({ user, className }: { user: AssigneeOption; className?: string }) {
   return (
     <Avatar className={cn('h-6 w-6', className)}>
@@ -96,6 +114,7 @@ export function AssigneePicker({
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [deptFilter, setDeptFilter] = useState<string>('all');
 
   const roster = useQuery(
     api.tasks.getUsersForAssignment,
@@ -121,7 +140,7 @@ export function AssigneePicker({
       });
     }
     if (primary) byId.delete(primary._id);
-    return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name));
+    return sortByPositionThenName([...byId.values()]);
   }, [roster, known, primary]);
 
   const selectedIds = useMemo(() => new Set(value), [value]);
@@ -139,15 +158,21 @@ export function AssigneePicker({
     [selectedIds, candidates, t],
   );
 
+  const departments = useMemo(() => uniqueDepartments(candidates), [candidates]);
+
   const visible = useMemo(() => {
     const needle = search.trim().toLowerCase();
-    if (needle === '') return candidates;
-    return candidates.filter((user) =>
+    let list = candidates;
+    if (deptFilter !== 'all') {
+      list = list.filter((u) => u.department === deptFilter);
+    }
+    if (needle === '') return list;
+    return list.filter((user) =>
       [user.name, user.position, user.department]
         .filter(Boolean)
         .some((field) => String(field).toLowerCase().includes(needle)),
     );
-  }, [candidates, search]);
+  }, [candidates, search, deptFilter]);
 
   const full = selectedIds.size >= max;
 
@@ -215,6 +240,36 @@ export function AssigneePicker({
                 className="w-full rounded-md border border-(--border) bg-(--background) py-1.5 pr-2 pl-7 text-xs outline-none focus:ring-2 focus:ring-(--primary)/30"
               />
             </div>
+
+            {departments.length > 1 && (
+              <div className="mb-1.5 flex flex-wrap gap-1">
+                <button
+                  type="button"
+                  onClick={() => setDeptFilter('all')}
+                  className={`rounded-full border px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                    deptFilter === 'all'
+                      ? 'border-(--brand-outline) bg-(--brand-quiet) text-(--brand-text)'
+                      : 'border-(--border) text-(--text-3) hover:text-(--text-1)'
+                  }`}
+                >
+                  {t('common.all', 'All')}
+                </button>
+                {departments.map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => setDeptFilter(d === deptFilter ? 'all' : d)}
+                    className={`rounded-full border px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                      deptFilter === d
+                        ? 'border-(--brand-outline) bg-(--brand-quiet) text-(--brand-text)'
+                        : 'border-(--border) text-(--text-3) hover:text-(--text-1)'
+                    }`}
+                  >
+                    {d}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {full && (
               <p className="px-2 py-1 text-[11px] text-(--warning-text)">

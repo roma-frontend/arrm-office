@@ -13,7 +13,7 @@
  * chrome for both.
  */
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CalendarDays, Flag, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -125,36 +125,77 @@ export function StatusTick({
   readOnly?: boolean;
   label: string;
 }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
   const current = resolveStatus({ status, statusKey }, statuses);
   const done = isClosedType(current.type);
-  const target = done
+  const reopenTarget = done
     ? statuses.find((definition) => !isClosedType(definition.type))
-    : statuses.find((definition) => definition.type === 'done');
+    : null;
 
+  // When the circle is empty (not done), clicking opens a status picker popover.
+  // When the circle is filled (done), clicking quickly reopens the task.
+  if (!done) {
+    return (
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            disabled={readOnly}
+            aria-label={label}
+            title={label}
+            onClick={(event) => {
+              event.stopPropagation();
+              if (!readOnly) setOpen(true);
+            }}
+            className={cn(
+              'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors',
+              'border-(--text-muted) hover:border-(--brand-solid)',
+              readOnly && 'cursor-default',
+            )}
+          />
+        </PopoverTrigger>
+        <PopoverContent align="start" side="right" className="w-56 p-1.5 z-[9999]">
+          <div className="max-h-64 overflow-y-auto">
+            {statuses.map((definition) => (
+              <PickerRow
+                key={definition.key}
+                selected={definition.key === current.key}
+                onSelect={() => {
+                  if (definition.key !== current.key) onPick(definition.key);
+                  setOpen(false);
+                }}
+              >
+                <OptionChip label={statusLabel(t, definition)} color={definition.color} />
+              </PickerRow>
+            ))}
+          </div>
+        </PopoverContent>
+      </Popover>
+    );
+  }
+
+  // Done state — single click reopens
   return (
     <button
       type="button"
-      disabled={readOnly || !target}
+      disabled={readOnly || !reopenTarget}
       aria-pressed={done}
       aria-label={label}
       title={label}
       onClick={(event) => {
         event.stopPropagation();
-        if (target) onPick(target.key);
+        if (reopenTarget) onPick(reopenTarget.key);
       }}
       className={cn(
         'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors',
-        done
-          ? 'border-(--success-solid) bg-(--success-solid) text-white'
-          : 'border-(--text-muted) hover:border-(--success-solid)',
-        (readOnly || !target) && 'cursor-default',
+        'border-(--success-solid) bg-(--success-solid) text-white',
+        (readOnly || !reopenTarget) && 'cursor-default',
       )}
     >
-      {done && (
-        <svg className="h-2.5 w-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-        </svg>
-      )}
+      <svg className="h-2.5 w-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+      </svg>
     </button>
   );
 }
@@ -299,9 +340,12 @@ export function DeadlineCell({
   const [open, setOpen] = useState(false);
   const { t } = useTranslation();
 
+  // Capture now once per render without calling Date.now() in the IIFE
+  const nowMs = useMemo(() => Date.now(), []);
+
   const tone = (() => {
     if (deadline === undefined || closed) return 'text-(--text-secondary)';
-    const days = Math.ceil((deadline - Date.now()) / 86_400_000);
+    const days = Math.ceil((deadline - nowMs) / 86_400_000);
     if (days < 0) return 'text-(--danger-text) font-medium';
     if (days <= 2) return 'text-(--warning-text) font-medium';
     return 'text-(--text-secondary)';

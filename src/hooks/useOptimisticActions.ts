@@ -12,6 +12,8 @@ import { useOptimistic, useCallback, useState, startTransition } from 'react';
 import { useMutation } from 'convex/react';
 import { api } from '@/../convex/_generated/api';
 import type { Id } from '@/../convex/_generated/dataModel';
+import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 // -----------------------------------------------------------------------------
 // Chat: Optimistic Send Message
@@ -387,6 +389,7 @@ interface OptimisticTaskUpdate {
 }
 
 export function useOptimisticTaskStatus() {
+  const { t } = useTranslation();
   const updateTaskStatus = useMutation(api.tasks.updateTaskStatus);
   const [error, setError] = useState<string | null>(null);
 
@@ -412,13 +415,34 @@ export function useOptimisticTaskStatus() {
         await updateTaskStatus({ taskId, status, userId });
 
         setError(null);
+
+        // Show undo toast — does not auto-close, user must dismiss manually or click Undo
+        toast.success(t('tasks.statusUpdated', 'Status updated'), {
+          duration: Infinity,
+          action: {
+            label: t('common.undo', 'Undo'),
+            onClick: async () => {
+              try {
+                await updateTaskStatus({
+                  taskId,
+                  status: oldStatus as 'pending' | 'in_progress' | 'review' | 'completed' | 'cancelled',
+                  userId,
+                });
+                toast.success(t('tasks.statusReverted', 'Status reverted'));
+              } catch {
+                toast.error(t('tasks.statusRevertFailed', 'Failed to revert status'));
+              }
+            },
+          },
+        });
+
         return true;
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to update task status');
         throw err;
       }
     },
-    [updateTaskStatus, setOptimisticUpdate],
+    [updateTaskStatus, setOptimisticUpdate, t],
   );
 
   return {

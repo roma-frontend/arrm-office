@@ -905,7 +905,7 @@ function DroppableListSection({ id, children }: { id: string; children: React.Re
  * with `useDraggable` so the user can drag a task into a different status
  * section — the same mental model as the Kanban board, expressed as rows.
  */
-function DraggableListRow({ task, children }: { task: TaskItem; children: React.ReactNode }) {
+function DraggableListRow({ task, children, isHighlighted }: { task: TaskItem; children: React.ReactNode; isHighlighted?: boolean }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: task._id,
     data: { status: task.status, type: 'list-row' },
@@ -917,7 +917,13 @@ function DraggableListRow({ task, children }: { task: TaskItem; children: React.
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...listeners}
+      {...attributes}
+      className={isHighlighted ? 'animate-task-highlight' : undefined}
+    >
       {children}
     </div>
   );
@@ -1390,6 +1396,21 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
   // `/` is the search shortcut everywhere else in this app; the hook ignores it
   // while the user is already typing in a field.
   useGlobalShortcut({ key: '/' }, () => searchRef.current?.focus());
+
+  // ── Notification highlight ─────────────────────────────────────
+  // When navigated from a notification with ?highlight=<taskId>, the
+  // matching row blinks for 4 seconds so the user spots it immediately.
+  const [highlightTaskId, setHighlightTaskId] = useState<string | null>(null);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const hl = params.get('highlight');
+    if (hl) {
+      setHighlightTaskId(hl);
+      // Clear highlight after animation
+      const timer = setTimeout(() => setHighlightTaskId(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   useEffect(() => {
     const mainEl = mainRef.current;
@@ -2915,7 +2936,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
                               const statusCfg = STATUS_CONFIG[task.status as Status];
                               const priorityCfg = PRIORITY_CONFIG[task.priority as Priority];
                               return (
-                                <DraggableListRow key={task._id} task={task}>
+                                <DraggableListRow key={task._id} task={task} isHighlighted={task._id === highlightTaskId}>
                                   <TaskContextMenu
                                     key={task._id}
                                     task={task as ContextTask}

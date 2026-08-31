@@ -449,6 +449,62 @@ export const updateLeaveBalance = mutation({
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
+// SYNC ALL BALANCES
+// Resets every active employee's balances to match the current
+// `leaveTypeConfigs.defaultDaysPerYear`. Only admins may call this.
+// ═══════════════════════════════════════════════════════════════════════════
+
+import { getStartingLeaveBalances } from './lib/leaveBalances';
+
+export const syncAllBalances = mutation({
+  args: { organizationId: v.id('organizations') },
+  handler: async (ctx, { organizationId }) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    if (!canAdminOrg(caller, organizationId)) {
+      throw new Error('Only admins of this organization can sync leave balances');
+    }
+
+    const targetBalances = await getStartingLeaveBalances(ctx, organizationId);
+
+    const employees = await ctx.db
+      .query('users')
+      .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
+      .filter((q) => q.and(q.neq(q.field('role'), 'superadmin'), q.eq(q.field('isActive'), true)))
+      .take(1000);
+
+    let updated = 0;
+    for (const emp of employees) {
+      const patch: Record<string, number> = {};
+      for (const [field, target] of Object.entries(targetBalances)) {
+        const current = (emp as unknown as Record<string, number | undefined>)[field] ?? 0;
+        if (current !== target) {
+          patch[field] = target;
+        }
+      }
+      if (Object.keys(patch).length > 0) {
+        await patchProfile(ctx, emp._id, patch);
+        updated++;
+      }
+    }
+
+    await ctx.db.insert('auditLogs', {
+      organizationId,
+      userId: caller._id,
+      action: 'leave_balances_synced',
+      details: JSON.stringify({
+        targetBalances,
+        employeesUpdated: updated,
+        totalEmployees: employees.length,
+      }),
+      createdAt: Date.now(),
+    });
+
+    return { updated, total: employees.length, targetBalances };
+  },
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
 // DEFAULTS
 // ═══════════════════════════════════════════════════════════════════════════
 

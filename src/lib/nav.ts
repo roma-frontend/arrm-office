@@ -224,7 +224,7 @@ export const navItems: NavEntry[] = [
     href: '/payroll',
     labelKey: 'nav.finance',
     icon: Wallet,
-    roles: ['superadmin', 'admin', 'supervisor'],
+    roles: ['superadmin', 'admin'],
     children: [
       { href: '/payroll', labelKey: 'nav.payroll', icon: Wallet },
       { href: '/compensation', labelKey: 'nav.compensation', icon: DollarSign },
@@ -232,7 +232,7 @@ export const navItems: NavEntry[] = [
         href: '/expenses',
         labelKey: 'nav.expenses',
         icon: Receipt,
-        roles: ['superadmin', 'admin', 'supervisor'],
+        roles: ['superadmin', 'admin'],
       },
     ],
   },

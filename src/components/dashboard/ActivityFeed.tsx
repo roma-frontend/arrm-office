@@ -524,13 +524,24 @@ export default function ActivityFeed({ limit = 8, showViewAll = true }: Activity
     user?.id && canViewAuditLogs ? {} : 'skip',
   ) as AuditLogEntry[] | undefined;
 
+  // When the query is skipped (non-admin users), treat as empty rather than loading forever
+  const effectiveAuditLogs = canViewAuditLogs ? auditLogs : [];
+
+  const [loadTimedOut, setLoadTimedOut] = React.useState(false);
+  React.useEffect(() => {
+    if (!canViewAuditLogs || auditLogs !== undefined) return;
+    const timer = setTimeout(() => setLoadTimedOut(true), 8000);
+    return () => clearTimeout(timer);
+  }, [canViewAuditLogs, auditLogs]);
+
   const allActivities = useMemo(() => {
-    if (!auditLogs) return undefined;
+    if (canViewAuditLogs && !auditLogs && !loadTimedOut) return undefined;
+    if (!effectiveAuditLogs || effectiveAuditLogs.length === 0) return [];
 
     const activities: Activity[] = [];
 
     // Convert audit logs to activities
-    for (const log of auditLogs) {
+    for (const log of effectiveAuditLogs) {
       try {
         const rawDetails: unknown = log.details ? JSON.parse(log.details) : {};
         const details = (rawDetails && typeof rawDetails === 'object' ? rawDetails : {}) as Record<
@@ -577,7 +588,7 @@ export default function ActivityFeed({ limit = 8, showViewAll = true }: Activity
     activities.sort((a, b) => b.timestamp - a.timestamp);
 
     return activities.slice(0, limit);
-  }, [auditLogs, limit, t]);
+  }, [effectiveAuditLogs, canViewAuditLogs, auditLogs, loadTimedOut, limit, t]);
 
   return (
     <Card className="h-full border-(--border) overflow-hidden glass-panel">

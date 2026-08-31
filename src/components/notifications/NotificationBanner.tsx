@@ -76,6 +76,7 @@ export function NotificationBanner() {
     type: string;
     route?: string;
     metadata?: string;
+    relatedId?: string;
   } | null>(null);
 
   useEffect(() => {
@@ -110,6 +111,7 @@ export function NotificationBanner() {
           type: latest.type,
           route: latest.route || getRouteForType(latest.type),
           metadata: latest.metadata,
+          relatedId: latest.relatedId,
         });
       }
     }
@@ -181,7 +183,13 @@ export function NotificationBanner() {
           label: t('banners.view', 'View'),
           onClick: () => {
             handleDismiss();
-            router.push(newNotification.route || '/dashboard');
+            const target = newNotification.route || '/dashboard';
+            // Pass relatedId as query param for task highlighting
+            if (newNotification.relatedId && target === '/tasks') {
+              router.push(`${target}?highlight=${newNotification.relatedId}`);
+            } else {
+              router.push(target);
+            }
           },
         }}
       />

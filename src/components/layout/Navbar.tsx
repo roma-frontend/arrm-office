@@ -153,7 +153,13 @@ export function notificationTarget(n: NotificationItem, role?: string): string |
   if (n.relatedId?.startsWith('support_ticket:')) {
     return role === 'superadmin' ? '/superadmin/support' : '/help';
   }
-  return n.route ?? NOTIFICATION_ROUTES[n.type] ?? null;
+  const base = n.route ?? NOTIFICATION_ROUTES[n.type] ?? null;
+  if (!base) return null;
+  // Pass relatedId as highlight param for task notifications
+  if (base === '/tasks' && n.relatedId) {
+    return `${base}?highlight=${n.relatedId}`;
+  }
+  return base;
 }
 
 function PresenceEmoji({ emoji }: { emoji: string }) {

@@ -2999,5 +2999,11 @@
     "share": "Profil teilen"
   },
   "undo": "Rückgängig",
-  "restore": "Wiederherstellen"
+  "restore": "Wiederherstellen",
+  "taskPanels.departmentFilter": "Abteilung",
+  "common.all": "Alle",
+  "admin.leaveSettings.syncBalances": "🔄 Alle Salden synchronisieren",
+  "admin.leaveSettings.syncHint": "Setzt alle Mitarbeitersalden auf die oben konfigurierten Standardtage zurück",
+  "admin.leaveSettings.synced": "Salden für {{updated}} Mitarbeiter synchronisiert",
+  "common.loading": "Laden…"
 }

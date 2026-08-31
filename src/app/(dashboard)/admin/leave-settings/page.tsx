@@ -146,6 +146,26 @@ export default function LeaveSettingsPage() {
 
   const leaveTypes = Object.entries(LEAVE_TYPE_META);
 
+  const syncBalances = useMutation(api.leaveSettings.syncAllBalances);
+  const [syncing, setSyncing] = useState(false);
+
+  const handleSyncBalances = async () => {
+    if (!organizationId) return;
+    setSyncing(true);
+    try {
+      const result = await syncBalances({ organizationId });
+      toast.success(
+        t('admin.leaveSettings.synced', 'Balances synced for {{updated}} employees', {
+          updated: result.updated,
+        }),
+      );
+    } catch (e) {
+      toast.error(String(e));
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="sticky top-0 z-10 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 bg-(--background)/95 backdrop-blur border-b border-(--border)">
@@ -159,6 +179,24 @@ export default function LeaveSettingsPage() {
               'Configure leave types, approval workflows, and balances',
             )}
           </p>
+        </div>
+        <div className="mt-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSyncBalances}
+            disabled={syncing || !organizationId}
+          >
+            {syncing
+              ? t('common.loading', 'Loading…')
+              : t('admin.leaveSettings.syncBalances', '🔄 Sync All Balances')}
+          </Button>
+          <span className="ml-2 text-xs text-(--text-muted)">
+            {t(
+              'admin.leaveSettings.syncHint',
+              'Resets all employee balances to match the default days configured above',
+            )}
+          </span>
         </div>
       </div>
 

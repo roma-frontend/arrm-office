@@ -2999,5 +2999,7 @@
     "share": "Փիսվել պրոքինու"
   },
   "undo": "Հետ",
-  "restore": "Վերականգնել"
+  "restore": "Վերականգնել",
+  "taskPanels.departmentFilter": "Բաժին",
+  "common.all": "Բոլորը"
 }

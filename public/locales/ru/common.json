@@ -3021,5 +3021,11 @@
     "share": "Поделиться профилем"
   },
   "undo": "Отменить",
-  "restore": "Восстановить"
+  "restore": "Восстановить",
+  "taskPanels.departmentFilter": "Отдел",
+  "common.all": "Все",
+  "admin.leaveSettings.syncBalances": "🔄 Синхронизировать все балансы",
+  "admin.leaveSettings.syncHint": "Сбрасывает балансы всех сотрудников по умолчанию согласно настройкам выше",
+  "admin.leaveSettings.synced": "Балансы синхронизированы для {{updated}} сотрудников",
+  "common.loading": "Загрузка…"
 }

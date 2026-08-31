@@ -2999,5 +2999,11 @@
     "share": "Share profile"
   },
   "undo": "Undo",
-  "restore": "Restore"
+  "restore": "Restore",
+  "taskPanels.departmentFilter": "Department",
+  "common.all": "All",
+  "admin.leaveSettings.syncBalances": "🔄 Sync All Balances",
+  "admin.leaveSettings.syncHint": "Resets all employee balances to match the default days configured above",
+  "admin.leaveSettings.synced": "Balances synced for {{updated}} employees",
+  "common.loading": "Loading…"
 }

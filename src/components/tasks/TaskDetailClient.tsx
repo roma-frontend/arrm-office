@@ -331,6 +331,7 @@ export default function TaskDetailClient({
 
   const handleStatusChange = async (status: string) => {
     if (!user?.id || !taskId || statusUpdating) return;
+    const previousStatus = task.status;
     setStatusUpdating(true);
     try {
       await updateStatus({
@@ -338,7 +339,25 @@ export default function TaskDetailClient({
         status: status as 'pending' | 'in_progress' | 'review' | 'completed',
         userId: user.id as Id<'users'>,
       });
-      toast.success(t('tasksClient.statusUpdated', 'Status updated'));
+      // Show undo toast — does not auto-close, user must dismiss manually or click Undo
+      toast.success(t('tasksClient.statusUpdated', 'Status updated'), {
+        duration: Infinity,
+        action: {
+          label: t('common.undo', 'Undo'),
+          onClick: async () => {
+            try {
+              await updateStatus({
+                taskId,
+                status: previousStatus as 'pending' | 'in_progress' | 'review' | 'completed',
+                userId: user.id as Id<'users'>,
+              });
+              toast.success(t('tasksClient.statusReverted', 'Status reverted'));
+            } catch {
+              toast.error(t('common.error', 'Something went wrong'));
+            }
+          },
+        },
+      });
     } catch (error) {
       logger.error('Failed to update status', error);
       toast.error(t('common.error', 'Something went wrong'));
