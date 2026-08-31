@@ -48,6 +48,11 @@ jest.mock('../../convex/_generated/api', () => ({
       },
       calls: { initiateCall: { _name: 'initiateCall' } },
     },
+    attendance: {
+      mutations: {
+        ensureHrAssistantMembership: { _name: 'ensureHrAssistantMembership' },
+      },
+    },
   },
 }));
 

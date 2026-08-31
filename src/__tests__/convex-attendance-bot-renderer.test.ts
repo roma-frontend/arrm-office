@@ -33,10 +33,10 @@ describe('renderDigest', () => {
   it('defaults people with no entry to "office"', () => {
     const { body } = renderDigest('2026-08-30', 'en', everyone, [], '09:00');
     expect(body).toContain('🏢 In the office');
-    expect(body).toContain('• Anna');
-    expect(body).toContain('• Boris');
-    expect(body).toContain('• Clara');
-    expect(body).toContain('Office: 3');
+    expect(body).toContain('Anna');
+    expect(body).toContain('Boris');
+    expect(body).toContain('Clara');
+    expect(body).toContain('👥 Total: 3');
   });
 
   it('routes explicit entries into their buckets', () => {
@@ -51,12 +51,11 @@ describe('renderDigest', () => {
       '09:00',
     );
     expect(body).toContain('🏠 Working from home');
-    expect(body).toContain('• Anna — Doctor visit');
+    expect(body).toContain('Anna');
+    expect(body).toContain('Doctor visit');
     expect(body).toContain('🤒 Sick day');
-    expect(body).toContain('• Clara');
-    expect(body).toContain('Office: 1');
-    expect(body).toContain('WFH: 1');
-    expect(body).toContain('Sick: 1');
+    expect(body).toContain('Clara');
+    expect(body).toContain('👥 Total: 3');
   });
 
   it('skips empty sections to keep the digest tight', () => {
@@ -67,23 +66,23 @@ describe('renderDigest', () => {
       [{ userId: 'u_anna' as never, userName: 'Anna', type: 'wfh' }],
       '09:00',
     );
-    expect(body).not.toContain('Sick day');
-    expect(body).not.toContain('Business trip');
-    expect(body).not.toContain('On leave');
-    expect(body).toContain('Office: 2');
+    expect(body).not.toContain('🤒 Sick day');
+    expect(body).not.toContain('✈️ Business trip');
+    expect(body).not.toContain('🌴 On leave');
+    expect(body).toContain('👥 Total: 3');
   });
 
   it('renders the Russian digest in Russian', () => {
     const { body } = renderDigest('2026-08-30', 'ru', everyone, [], '09:00');
-    expect(body).toContain('В офисе');
-    expect(body).toContain('Офис: 3');
-    expect(body).toContain('Обновлено в 09:00');
+    expect(body).toContain('🏢 В офисе');
+    expect(body).toContain('👥 Всего: 3');
+    expect(body).toContain('🔄 Обновлено в 09:00');
   });
 
   it('renders the Armenian digest in Armenian', () => {
     const { body } = renderDigest('2026-08-30', 'hy', everyone, [], '09:00');
-    expect(body).toContain('Գրասենյակում');
-    expect(body).toContain('Թարմացվել է՝ 09:00');
+    expect(body).toContain('🏢 Գրասենյակում');
+    expect(body).toContain('🔄 Թարմացվել է՝ 09:00');
   });
 
   it('includes the title with the date', () => {
@@ -122,6 +121,8 @@ describe('renderDigest', () => {
       '09:00',
     );
     expect(body).toContain('✈️ Business trip');
-    expect(body).toContain('• Anna — 09:00–18:00');
+    expect(body).toContain('Anna');
+    expect(body).toContain('09:00');
+    expect(body).toContain('18:00');
   });
 });

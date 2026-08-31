@@ -535,7 +535,7 @@ export const MessageBubble = React.memo(function MessageBubble({
               </div>
 
               {/* Message content */}
-              <p className="text-sm leading-relaxed">{cleanContent}</p>
+              <p className="text-sm leading-relaxed whitespace-pre-line">{cleanContent}</p>
 
               {/* Timestamp */}
               <div className="mt-2 text-xs" style={{ color: 'var(--text-muted)' }}>
