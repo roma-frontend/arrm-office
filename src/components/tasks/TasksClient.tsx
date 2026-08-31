@@ -1495,6 +1495,8 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
   );
 
   const rawTasks = visibleTasks;
+  const rawTasksRef = useRef(rawTasks);
+  rawTasksRef.current = rawTasks;
 
   // Active recurring series, shown as a compact strip above the board. The
   // query scopes server-side: managers see every series in the org, everyone
@@ -1634,35 +1636,48 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
   );
 
   // Auto-clean optimistic status entries:
-  // 1. When Convex delivers the updated task (server matches optimistic)
-  // 2. When the entry expires (10s) — handles Undo clicks where the server
-  //    reverts but the optimistic entry would otherwise linger.
+  // 1. Server matches optimistic → Convex delivered the update, safe to remove
+  // 2. Server differs AND entry >1s old → mutation completed and either Convex
+  //    delivered the confirmed status or the user clicked Undo (revert)
+  // 3. Hard expiry at 3s via interval — ensures Undo always works
   useEffect(() => {
-    if (!rawTasks || optimisticStatuses.size === 0) return;
-    const now = Date.now();
-    const STALE_MS = 10_000;
-    let changed = false;
-    const next = new Map(optimisticStatuses);
-    for (const [taskId, entry] of optimisticStatuses) {
-      const serverTask = rawTasks.find((t) => t._id === taskId);
-      if (serverTask) {
-        const resolved = statuses
-          ? resolveStatus({ status: serverTask.status as any, statusKey: serverTask.statusKey }, statuses)
-          : null;
-        const serverKey = (resolved?.key ?? serverTask.status) as Status;
-        // Clean up if server caught up (matches) OR if entry is stale (>10s)
-        if (serverKey === entry.status || now - entry.at > STALE_MS) {
-          next.delete(taskId);
-          changed = true;
+    if (optimisticStatuses.size === 0) return;
+    const GRACE_MS = 1_000;   // wait for mutation to complete
+    const MAX_AGE_MS = 3_000; // hard expiry — ensures Undo always works
+    const interval = setInterval(() => {
+      setOptimisticStatuses((prev) => {
+        if (prev.size === 0) return prev;
+        const now = Date.now();
+        let changed = false;
+        const next = new Map(prev);
+        for (const [taskId, entry] of prev) {
+          const age = now - entry.at;
+          if (age > MAX_AGE_MS) {
+            next.delete(taskId);
+            changed = true;
+            continue;
+          }
+          // Also check server data for faster cleanup
+          const serverTask = rawTasksRef.current?.find((t) => t._id === taskId);
+          if (serverTask) {
+            const resolved = statuses
+              ? resolveStatus({ status: serverTask.status as any, statusKey: serverTask.statusKey }, statuses)
+              : null;
+            const serverKey = (resolved?.key ?? serverTask.status) as Status;
+            if (
+              serverKey === entry.status || // Convex delivered confirmed status
+              (serverKey !== entry.status && age > GRACE_MS) // revert happened
+            ) {
+              next.delete(taskId);
+              changed = true;
+            }
+          }
         }
-      } else if (now - entry.at > STALE_MS) {
-        // Task disappeared from query and entry is old — clean up
-        next.delete(taskId);
-        changed = true;
-      }
-    }
-    if (changed) setOptimisticStatuses(next);
-  }, [rawTasks, optimisticStatuses, statuses]);
+        return changed ? next : prev;
+      });
+    }, 500); // check every 500ms
+    return () => clearInterval(interval);
+  }, [optimisticStatuses.size, statuses]);
 
   // ── Saved views ────────────────────────────────────────────────────────────
   /** `taskViews.type` names the modes differently: the kanban is a "board". */
