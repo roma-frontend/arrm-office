@@ -289,7 +289,7 @@ export const buildDigest = internalQuery({
 
     const refreshedAt = new Date().toISOString().slice(11, 16); // HH:MM
     const roster = everyone
-      .filter((u) => u.isActive !== false)
+      .filter((u) => u.isActive !== false && u.role !== 'superadmin' && !u.email.startsWith('+'))
       .map((u) => ({ id: u._id, name: u.name }));
     const { title, body } = renderDigest(args.date, locale, roster, liteEntries, refreshedAt);
 
