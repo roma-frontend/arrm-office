@@ -201,7 +201,8 @@
       "pensionFormula": "Kapitalisierte Rente",
       "totalDeductions": "Gesamtabzüge",
       "netFormula": "Nettogehalt",
-      "employerTotal": "Gesamtkosten für Arbeitgeber"
+      "employerTotal": "Gesamtkosten für Arbeitgeber",
+      "button": "Aufschlüsselung anzeigen"
     },
     "details": "Details",
     "actions": "Aktionen",

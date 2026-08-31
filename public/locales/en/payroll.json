@@ -205,7 +205,8 @@
       "pensionFormula": "Funded Pension",
       "totalDeductions": "Total Deductions",
       "netFormula": "Net Pay",
-      "employerTotal": "Employer Total Cost"
+      "employerTotal": "Employer Total Cost",
+      "button": "View Breakdown"
     },
     "details": "Details",
     "actions": "Actions",
