@@ -194,7 +194,7 @@ export default function ProjectDetailClient({
         <Card>
           <CardContent className="p-4 text-center">
             <Users className="w-5 h-5 mx-auto mb-1 text-(--brand-text)" />
-            <p className="text-xl font-bold">{project.members?.length ?? 0}</p>
+            <p className="text-xl font-bold">{project.assigneeCount ?? project.members?.length ?? 0}</p>
             <p className="text-xs text-(--text-muted)">{t('projects.assignees', 'Assignees')}</p>
           </CardContent>
         </Card>
