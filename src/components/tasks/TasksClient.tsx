@@ -324,17 +324,19 @@ function StatusCircleButton({
   const resolvedStatus = statuses
     ? resolveStatus({ status: task.status as any, statusKey: task.statusKey }, statuses)
     : null;
-  const statusCfg = STATUS_CONFIG[(resolvedStatus?.key ?? task.status) as Status];
+  const resolvedKey = (resolvedStatus?.key ?? task.status) as Status;
+  const statusCfg = STATUS_CONFIG[resolvedKey];
+  const isCompleted = resolvedKey === 'completed';
   if (!canManage) {
     return (
       <span
         className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${
-          task.status === 'completed'
+          isCompleted
             ? 'border-(--success-solid) bg-(--success-solid)'
             : statusCfg.dot.replace('bg-', 'border-')
         }`}
       >
-        {task.status === 'completed' && (
+        {isCompleted && (
           <svg
             className="w-2.5 h-2.5 text-white"
             fill="none"
@@ -357,13 +359,13 @@ function StatusCircleButton({
             setOpen(true);
           }}
           className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center cursor-pointer hover:scale-125 transition-transform ${
-            task.status === 'completed'
+            isCompleted
               ? 'border-(--success-solid) bg-(--success-solid)'
               : statusCfg.dot.replace('bg-', 'border-')
           }`}
           title={t('tasksClient.changeStatus', 'Change status')}
         >
-          {task.status === 'completed' && (
+          {isCompleted && (
             <svg
               className="w-2.5 h-2.5 text-white"
               fill="none"
@@ -391,12 +393,12 @@ function StatusCircleButton({
                 onSetStatus(task._id, key);
                 setOpen(false);
               }}
-              disabled={task.status === key}
+              disabled={resolvedKey === key}
               className="flex items-center gap-2 w-full px-2 py-1.5 rounded-md text-xs hover:bg-(--background-subtle) disabled:opacity-50 disabled:cursor-default transition-colors"
             >
               <span className={`w-2 h-2 rounded-full shrink-0 ${cfg.dot}`} />
               <span className={cfg.color}>{t(cfg.labelKey)}</span>
-              {task.status === key && <span className="ml-auto text-xs opacity-50">✓</span>}
+              {resolvedKey === key && <span className="ml-auto text-xs opacity-50">✓</span>}
             </button>
           ))}
         </div>
@@ -1503,7 +1505,9 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
     return rawTasks.map((task) => {
       const optimisticStatus = optimisticStatuses.get(task._id);
       if (optimisticStatus) {
-        return { ...task, status: optimisticStatus };
+        // Override BOTH status (canonical) and statusKey so that resolveStatus
+        // sees the new key first and places the card in the correct column.
+        return { ...task, status: optimisticStatus, statusKey: optimisticStatus };
       }
       return task;
     });
@@ -2256,6 +2260,133 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
     [sections, exportRow, boardTitle, shareLink, t],
   );
 
+  // ── Stable DnD callbacks for the List view ──────────────────────────────
+  // Extracted from inline arrows so that @dnd-kit's internal useLayoutEffect
+  // never sees a changing dependency array.
+  const handleListDragStart = useCallback(
+    (e: DragStartEvent) => {
+      const task = tasks.find((t) => t._id === e.active.id);
+      setActiveTask(task ?? null);
+    },
+    [tasks],
+  );
+
+  const handleListDragEnd = useCallback(
+    (e: DragEndEvent) => {
+      const { active, over } = e;
+      setActiveTask(null);
+      if (!over || !convexId) return;
+      const task = tasks.find((t) => t._id === active.id);
+      if (!task) return;
+      const overData = over.data.current;
+      // If dropped on a droppable section, over.id is the status key
+      const overStatus =
+        overData?.type === 'list-section'
+          ? (over.id as string)
+          : (overData?.status as string | undefined);
+      if (!overStatus) return;
+      // Resolve the task's current status through org definitions so
+      // custom statuses are compared against the right canonical key.
+      const resolvedCurrent = statuses
+        ? resolveStatus({ status: task.status as any, statusKey: task.statusKey }, statuses)
+        : null;
+      const currentStatusKey = (resolvedCurrent?.key ?? task.status) as Status;
+      if (currentStatusKey === overStatus) return;
+      // Set optimistic status for instant UI feedback (same as Kanban).
+      flushSync(() => {
+        setOptimisticStatuses((prev) => {
+          const next = new Map(prev);
+          next.set(task._id as string, overStatus as Status);
+          return next;
+        });
+      });
+      handleSetStatus(task._id, overStatus);
+    },
+    [tasks, statuses, convexId, setOptimisticStatuses, handleSetStatus],
+  );
+
+  // Kanban-specific drag end: handles recurring tasks and uses column ID as status.
+  const handleKanbanDragEnd = useCallback(
+    (e: DragEndEvent) => {
+      const { active, over } = e;
+      setActiveTask(null);
+      if (!over || !convexId) return;
+      const newStatus = over.id as Status;
+      const task = tasks.find((t) => t._id === active.id);
+      if (!task) return;
+      // Resolve the task's current status through org definitions so
+      // custom statuses are compared against the right canonical key.
+      const resolvedCurrent = statuses
+        ? resolveStatus({ status: task.status as any, statusKey: task.statusKey }, statuses)
+        : null;
+      const currentStatusKey = (resolvedCurrent?.key ?? task.status) as Status;
+      if (currentStatusKey === newStatus) return;
+      // Recurring tasks live in recurringTasks table — use dedicated mutation.
+      if ((task as TaskItem)._type === 'recurring') {
+        flushSync(() => {
+          setOptimisticStatuses((prev) => {
+            const next = new Map(prev);
+            next.set(task._id as string, newStatus);
+            return next;
+          });
+        });
+        setActiveTask(null);
+        updateRecurringOptimistic(task._id as unknown as Id<'recurringTasks'>, newStatus)
+          .then(() => {
+            toast.success(
+              t('tasks.status.moved', { status: t(STATUS_CONFIG[newStatus].labelKey) }),
+              { duration: 2000 },
+            );
+            setOptimisticStatuses((prev) => {
+              const next = new Map(prev);
+              next.delete(task._id as string);
+              return next;
+            });
+          })
+          .catch(() => {
+            toast.error(t('tasks.failedToUpdateStatus'));
+            setOptimisticStatuses((prev) => {
+              const next = new Map(prev);
+              next.delete(task._id as string);
+              return next;
+            });
+          });
+        return;
+      }
+      flushSync(() => {
+        setOptimisticStatuses((prev) => {
+          const next = new Map(prev);
+          next.set(task._id as string, newStatus);
+          return next;
+        });
+      });
+      setActiveTask(null);
+      updateOptimistic(task._id as Id<'tasks'>, newStatus, convexId, currentStatusKey)
+        .then(() => {
+          toast.success(
+            t('tasks.status.moved', { status: t(STATUS_CONFIG[newStatus].labelKey) }),
+            { duration: 2000 },
+          );
+          setOptimisticStatuses((prev) => {
+            const next = new Map(prev);
+            next.delete(task._id as string);
+            return next;
+          });
+        })
+        .catch(() => {
+          toast.error(t('tasks.failedToUpdateStatus'));
+          setOptimisticStatuses((prev) => {
+            const next = new Map(prev);
+            next.delete(task._id as string);
+            return next;
+          });
+        });
+    },
+    [tasks, statuses, convexId, setOptimisticStatuses, handleSetStatus, updateOptimistic, updateRecurringOptimistic, t],
+  );
+
+  const handleDndCancel = useCallback(() => setActiveTask(null), []);
+
   return (
     <div className="flex flex-col h-full min-h-0">
       {/* ═══ Page Header ═══ */}
@@ -2652,84 +2783,9 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
         ) : viewMode === 'kanban' ? (
           <DndContext
             sensors={sensors}
-            onDragStart={(e: DragStartEvent) => {
-              const task = tasks.find((t) => t._id === e.active.id);
-              setActiveTask(task ?? null);
-            }}
-            onDragEnd={(e: DragEndEvent) => {
-              const { active, over } = e;
-              if (!over || !convexId) {
-                setActiveTask(null);
-                return;
-              }
-              const newStatus = over.id as Status;
-              const task = tasks.find((t) => t._id === active.id);
-              if (!task || task.status === newStatus) {
-                setActiveTask(null);
-                return;
-              }
-              // Recurring tasks live in recurringTasks table — use dedicated mutation.
-              if ((task as TaskItem)._type === 'recurring') {
-                flushSync(() => {
-                  setOptimisticStatuses((prev) => {
-                    const next = new Map(prev);
-                    next.set(task._id as string, newStatus);
-                    return next;
-                  });
-                });
-                setActiveTask(null);
-                updateRecurringOptimistic(task._id as unknown as Id<'recurringTasks'>, newStatus)
-                  .then(() => {
-                    toast.success(
-                      t('tasks.status.moved', { status: t(STATUS_CONFIG[newStatus].labelKey) }),
-                      { duration: 2000 },
-                    );
-                    setOptimisticStatuses((prev) => {
-                      const next = new Map(prev);
-                      next.delete(task._id as string);
-                      return next;
-                    });
-                  })
-                  .catch(() => {
-                    toast.error(t('tasks.failedToUpdateStatus'));
-                    setOptimisticStatuses((prev) => {
-                      const next = new Map(prev);
-                      next.delete(task._id as string);
-                      return next;
-                    });
-                  });
-                return;
-              }
-              flushSync(() => {
-                setOptimisticStatuses((prev) => {
-                  const next = new Map(prev);
-                  next.set(task._id as string, newStatus);
-                  return next;
-                });
-              });
-              setActiveTask(null);
-              updateOptimistic(task._id as Id<'tasks'>, newStatus, convexId, task.status)
-                .then(() => {
-                  toast.success(
-                    t('tasks.status.moved', { status: t(STATUS_CONFIG[newStatus].labelKey) }),
-                    { duration: 2000 },
-                  );
-                  setOptimisticStatuses((prev) => {
-                    const next = new Map(prev);
-                    next.delete(task._id as string);
-                    return next;
-                  });
-                })
-                .catch(() => {
-                  toast.error(t('tasks.failedToUpdateStatus'));
-                  setOptimisticStatuses((prev) => {
-                    const next = new Map(prev);
-                    next.delete(task._id as string);
-                    return next;
-                  });
-                });
-            }}
-            onDragCancel={() => setActiveTask(null)}
+            onDragStart={handleListDragStart}
+            onDragEnd={handleKanbanDragEnd}
+            onDragCancel={handleDndCancel}
           >
             <div ref={kanbanScrollRef} className="flex gap-4 overflow-x-auto p-4 sm:p-6">
               {visibleBoardColumns.map((status) => (
@@ -2782,6 +2838,12 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
           /* Handed the same `tasks` the list and the kanban get, so all three
              views agree about what is on the board; the grid only differs in
              what it lets you do to a row without opening it. */
+          <DndContext
+            sensors={sensors}
+            onDragStart={handleListDragStart}
+            onDragEnd={handleListDragEnd}
+            onDragCancel={handleDndCancel}
+          >
           <TaskTable
             tasks={tasks}
             statuses={statuses}
@@ -2832,29 +2894,14 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
               </div>
             }
           />
+          </DndContext>
         ) : (
           /* ═══ List View — ClickUp Design ═══ */
           <DndContext
             sensors={sensors}
-            onDragStart={(e: DragStartEvent) => {
-              const task = tasks.find((t) => t._id === e.active.id);
-              setActiveTask(task ?? null);
-            }}
-            onDragEnd={(e: DragEndEvent) => {
-              const { active, over } = e;
-              setActiveTask(null);
-              if (!over || !convexId) return;
-              const task = tasks.find((t) => t._id === active.id);
-              if (!task) return;
-              const overData = over.data.current;
-              // If dropped on a droppable section, over.id is the status key
-              const overStatus =
-                overData?.type === 'list-section'
-                  ? (over.id as string)
-                  : (overData?.status as string | undefined);
-              if (!overStatus || task.status === overStatus) return;
-              handleSetStatus(task._id, overStatus);
-            }}
+            onDragStart={handleListDragStart}
+            onDragEnd={handleListDragEnd}
+            onDragCancel={handleDndCancel}
           >
             <div className="flex flex-col min-h-0">
               {/* Table Header */}
