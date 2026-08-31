@@ -191,7 +191,7 @@ export const ChatWindow = React.memo(function ChatWindow({
   const handleRefreshHrAssistantDigest = useCallback(async () => {
     setRefreshingDigest(true);
     try {
-      await refreshHrAssistantDigest({});
+      await refreshHrAssistantDigest({ organizationId });
       toast.success(t('chat.refreshHrAssistantDigestSuccess', 'Attendance digest updated'));
     } catch (err) {
       logger.error('[ChatWindow] Failed to refresh HR Assistant digest:', err);
@@ -199,7 +199,7 @@ export const ChatWindow = React.memo(function ChatWindow({
     } finally {
       setRefreshingDigest(false);
     }
-  }, [refreshHrAssistantDigest, t]);
+  }, [refreshHrAssistantDigest, organizationId, t]);
 
   const conv = conversation?.find((c) => c != null && c._id === conversationId) ?? null;
   const otherUser = conv?.type === 'direct' ? conv.otherUser : null;

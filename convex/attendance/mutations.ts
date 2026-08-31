@@ -207,13 +207,14 @@ export const rejectAttendanceEntry = mutation({
  * are no internal-mutation cross-calls that can silently fail.
  */
 export const ensureHrAssistantMembership = mutation({
-  args: {},
-  handler: async (ctx) => {
+  args: {
+    organizationId: v.optional(v.id('organizations')),
+  },
+  handler: async (ctx, args) => {
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
-    if (!caller.organizationId) return { ok: false, reason: 'no-org' };
-
-    const orgId = caller.organizationId;
+    const orgId = args.organizationId ?? caller.organizationId;
+    if (!orgId) return { ok: false, reason: 'no-org' };
     const now = Date.now();
 
     // 1. Find ALL HR Assistant channels for this org (including deleted ones)
@@ -399,6 +400,7 @@ export const ensureHrAssistantMembership = mutation({
 export const refreshHrAssistantDigest = mutation({
   args: {
     date: v.optional(v.string()),
+    organizationId: v.optional(v.id('organizations')),
   },
   handler: async (ctx, args) => {
     const caller = await getAuthCaller(ctx);
@@ -406,16 +408,17 @@ export const refreshHrAssistantDigest = mutation({
     if (caller.role !== 'admin' && caller.role !== 'superadmin') {
       throw new Error('Only admins can refresh the HR Assistant digest');
     }
-    if (!caller.organizationId) {
+    const orgId = args.organizationId ?? caller.organizationId;
+    if (!orgId) {
       throw new Error('Caller does not belong to an organization');
     }
 
     const date = args.date ?? new Date().toISOString().slice(0, 10);
     await ctx.runMutation(internal.attendance.bot.seedHrAssistantMembers, {
-      organizationId: caller.organizationId,
+      organizationId: orgId,
     });
     await ctx.scheduler.runAfter(0, internal.attendance.bot.renderAndPostDigest, {
-      organizationId: caller.organizationId,
+      organizationId: orgId,
       date,
       trigger: 'approval',
     });

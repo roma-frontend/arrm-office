@@ -174,10 +174,11 @@ export default function ChatClient({
   // (checks before inserting) so duplicate calls are safe.
   const ensureHrMembership = useMutation(api.attendance.mutations.ensureHrAssistantMembership);
   useEffect(() => {
-    ensureHrMembership({}).then((r) => {
+    if (!effectiveOrgId) return; // superadmin must select an org first
+    ensureHrMembership({ organizationId: effectiveOrgId }).then((r) => {
       if (r && !r.migrated) console.warn('[ChatClient] HR migration skipped:', r);
     }).catch((e) => console.error('[ChatClient] HR migration error:', e));
-  }, [ensureHrMembership]);
+  }, [ensureHrMembership, effectiveOrgId]);
 
   // When deselecting on mobile
   const handleBack = useCallback(() => {
