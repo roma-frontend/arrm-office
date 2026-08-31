@@ -472,7 +472,8 @@ export const seedHrAssistantMembers = internalMutation({
     const conversation = await findOrCreateHrAssistantChannel(ctx, args.organizationId);
 
     // Clean up duplicate HR Assistant channels created by the isDeleted bug.
-    // Soft-delete any extra channels so only the canonical one remains.
+    // Migrate memberships from old channels to the canonical one, then
+    // soft-delete the old channels so only the canonical one remains.
     const allChannels = await ctx.db
       .query('chatConversations')
       .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
@@ -487,6 +488,25 @@ export const seedHrAssistantMembers = internalMutation({
     const now = Date.now();
     for (const ch of allChannels) {
       if (ch._id !== conversation!._id) {
+        // Migrate memberships from the old channel to the canonical one
+        const oldMemberships = await ctx.db
+          .query('chatMembers')
+          .withIndex('by_conversation', (q) => q.eq('conversationId', ch._id))
+          .collect();
+        const canonicalMembers = await ctx.db
+          .query('chatMembers')
+          .withIndex('by_conversation', (q) => q.eq('conversationId', conversation!._id))
+          .collect();
+        const canonicalIds = new Set(canonicalMembers.map((m) => m.userId));
+        for (const m of oldMemberships) {
+          if (canonicalIds.has(m.userId)) {
+            // Already a member of canonical — just delete the old membership
+            await ctx.db.delete(m._id);
+          } else {
+            // Move membership to canonical channel
+            await ctx.db.patch(m._id, { conversationId: conversation!._id });
+          }
+        }
         await ctx.db.patch(ch._id, { isDeleted: true, deletedAt: now });
       }
     }

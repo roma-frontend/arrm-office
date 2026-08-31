@@ -52,6 +52,7 @@ export const getMyConversations = query({
       const membership = memberships[idx];
       if (!conv || !membership) return;
       if (membership?.isDeleted) return;
+      if (conv.isDeleted) return;
 
       // If superadmin AND organization is selected, filter by that org
       if (userIsSuperadmin && args.organizationId) {

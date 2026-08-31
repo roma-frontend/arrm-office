@@ -663,9 +663,12 @@ export const ChatWindow = React.memo(function ChatWindow({
 
   const canSend = (input.trim().length > 0 || pendingFiles.length > 0) && !sending;
 
-  // Check if current user can send messages (not blocked from System Announcements)
+  // Check if current user can send messages (not blocked from System Announcements or HR Assistant)
   const isSystemAnnouncementsChannel = conv?.name === 'System Announcements';
-  const canUserSendMessage = !isSystemAnnouncementsChannel || currentUser?.role === 'superadmin';
+  const isHrAssistantChannel = conv?.name === 'HR Assistant';
+  const isReadOnlyChannel = isSystemAnnouncementsChannel || isHrAssistantChannel;
+  // HR Assistant is read-only for ALL users — only superadmins can write to System Announcements
+  const canUserSendMessage = isHrAssistantChannel ? false : (!isReadOnlyChannel || currentUser?.role === 'superadmin');
 
   // Resolve chat background
   const chatBg =
@@ -747,8 +750,8 @@ export const ChatWindow = React.memo(function ChatWindow({
           </div>
 
           <div className="flex items-center gap-1">
-            {/* Disable calls for System Announcements channel */}
-            {conv?.name !== 'System Announcements' && (
+            {/* Disable calls for read-only channels (System Announcements, HR Assistant) */}
+            {!isReadOnlyChannel && (
               <>
                 <button
                   onClick={() => handleStartCall('audio')}
