@@ -668,7 +668,9 @@ export const ChatWindow = React.memo(function ChatWindow({
   const isHrAssistantChannel = conv?.name === 'HR Assistant';
   const isReadOnlyChannel = isSystemAnnouncementsChannel || isHrAssistantChannel;
   // HR Assistant is read-only for ALL users — only superadmins can write to System Announcements
-  const canUserSendMessage = isHrAssistantChannel ? false : (!isReadOnlyChannel || currentUser?.role === 'superadmin');
+  const canUserSendMessage = isHrAssistantChannel
+    ? false
+    : !isReadOnlyChannel || currentUser?.role === 'superadmin';
 
   // Resolve chat background
   const chatBg =

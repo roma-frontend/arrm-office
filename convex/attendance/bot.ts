@@ -496,12 +496,7 @@ export const seedHrAssistantMembers = internalMutation({
     const allChannels = await ctx.db
       .query('chatConversations')
       .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
-      .filter((q) =>
-        q.and(
-          q.eq(q.field('type'), 'group'),
-          q.eq(q.field('name'), 'HR Assistant'),
-        ),
-      )
+      .filter((q) => q.and(q.eq(q.field('type'), 'group'), q.eq(q.field('name'), 'HR Assistant')))
       .collect();
     const now = Date.now();
     for (const ch of allChannels) {

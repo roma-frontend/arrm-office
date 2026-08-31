@@ -915,7 +915,15 @@ function DroppableListSection({ id, children }: { id: string; children: React.Re
  * with `useDraggable` so the user can drag a task into a different status
  * section — the same mental model as the Kanban board, expressed as rows.
  */
-function DraggableListRow({ task, children, isHighlighted }: { task: TaskItem; children: React.ReactNode; isHighlighted?: boolean }) {
+function DraggableListRow({
+  task,
+  children,
+  isHighlighted,
+}: {
+  task: TaskItem;
+  children: React.ReactNode;
+  isHighlighted?: boolean;
+}) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: task._id,
     data: { status: task.status, type: 'list-row' },
@@ -1461,7 +1469,9 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
     useSensor(TouchSensor, { activationConstraint: { delay: 1000, tolerance: 5 } }),
   );
 
-  const [optimisticStatuses, setOptimisticStatuses] = useState<Map<string, { status: Status; at: number }>>(new Map());
+  const [optimisticStatuses, setOptimisticStatuses] = useState<
+    Map<string, { status: Status; at: number }>
+  >(new Map());
 
   /**
    * Open a task in the panel instead of navigating.
@@ -1661,7 +1671,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
   // 3. Hard expiry at 3s via interval — ensures Undo always works
   useEffect(() => {
     if (optimisticStatuses.size === 0) return;
-    const GRACE_MS = 1_000;   // wait for mutation to complete
+    const GRACE_MS = 1_000; // wait for mutation to complete
     const MAX_AGE_MS = 3_000; // hard expiry — ensures Undo always works
     const interval = setInterval(() => {
       setOptimisticStatuses((prev) => {
@@ -1680,7 +1690,10 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
           const serverTask = rawTasksRef.current?.find((t) => t._id === taskId);
           if (serverTask) {
             const resolved = statuses
-              ? resolveStatus({ status: serverTask.status as any, statusKey: serverTask.statusKey }, statuses)
+              ? resolveStatus(
+                  { status: serverTask.status as any, statusKey: serverTask.statusKey },
+                  statuses,
+                )
               : null;
             const serverKey = (resolved?.key ?? serverTask.status) as Status;
             if (
@@ -2864,57 +2877,59 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
             onDragEnd={handleListDragEnd}
             onDragCancel={handleDndCancel}
           >
-          <TaskTable
-            tasks={tasks}
-            statuses={statuses}
-            fields={fields}
-            users={cellUsers}
-            view={viewState}
-            layout={prefs.table}
-            density={prefs.density}
-            canEdit={canCreate}
-            lang={i18n.language}
-            projectName={projectNameOf}
-            highlightTaskId={highlightTaskId}
-            onOpenTask={(taskId) => {
-              const task = tasks.find((candidate) => candidate._id === taskId);
-              if (task) openTask(task);
-            }}
-            onSetStatus={handleSetStatus}
-            onPatchTask={handlePatchTask}
-            onSetField={handleSetField}
-            onSort={toggleSort}
-            onResizeColumn={setColumnWidth}
-            onReorderColumns={setColumnOrder}
-            onAddTask={canCreate ? handleAddTask : undefined}
-            onBulkPatch={canManage ? handleBulkPatch : undefined}
-            onBulkDelete={canManage ? handleBulkDelete : undefined}
-            addColumnSlot={canManage ? <AddFieldPopover onSubmit={handleCreateField} /> : undefined}
-            contextMenu={
-              canManage
-                ? {
-                    canManage,
-                    onEdit: handleContextMenuEdit,
-                    onRename: handleContextMenuRename,
-                    onSetStatus: handleSetStatus,
-                    onSetPriority: handleContextMenuPriority,
-                    onDelete: handleDeleteSingle,
-                    onToggleActive: handleToggleActive,
-                  }
-                : undefined
-            }
-            emptyState={
-              <div className="py-20 text-center">
-                <p className="mb-3 text-4xl">📋</p>
-                <p className="font-medium text-(--text-secondary)">
-                  {t('tasksClient.noTasksFound')}
-                </p>
-                <p className="mt-1 text-sm text-(--text-muted)">
-                  {canManage ? t('tasksClient.createNewTask') : t('tasksClient.noTasksAssigned')}
-                </p>
-              </div>
-            }
-          />
+            <TaskTable
+              tasks={tasks}
+              statuses={statuses}
+              fields={fields}
+              users={cellUsers}
+              view={viewState}
+              layout={prefs.table}
+              density={prefs.density}
+              canEdit={canCreate}
+              lang={i18n.language}
+              projectName={projectNameOf}
+              highlightTaskId={highlightTaskId}
+              onOpenTask={(taskId) => {
+                const task = tasks.find((candidate) => candidate._id === taskId);
+                if (task) openTask(task);
+              }}
+              onSetStatus={handleSetStatus}
+              onPatchTask={handlePatchTask}
+              onSetField={handleSetField}
+              onSort={toggleSort}
+              onResizeColumn={setColumnWidth}
+              onReorderColumns={setColumnOrder}
+              onAddTask={canCreate ? handleAddTask : undefined}
+              onBulkPatch={canManage ? handleBulkPatch : undefined}
+              onBulkDelete={canManage ? handleBulkDelete : undefined}
+              addColumnSlot={
+                canManage ? <AddFieldPopover onSubmit={handleCreateField} /> : undefined
+              }
+              contextMenu={
+                canManage
+                  ? {
+                      canManage,
+                      onEdit: handleContextMenuEdit,
+                      onRename: handleContextMenuRename,
+                      onSetStatus: handleSetStatus,
+                      onSetPriority: handleContextMenuPriority,
+                      onDelete: handleDeleteSingle,
+                      onToggleActive: handleToggleActive,
+                    }
+                  : undefined
+              }
+              emptyState={
+                <div className="py-20 text-center">
+                  <p className="mb-3 text-4xl">📋</p>
+                  <p className="font-medium text-(--text-secondary)">
+                    {t('tasksClient.noTasksFound')}
+                  </p>
+                  <p className="mt-1 text-sm text-(--text-muted)">
+                    {canManage ? t('tasksClient.createNewTask') : t('tasksClient.noTasksAssigned')}
+                  </p>
+                </div>
+              }
+            />
           </DndContext>
         ) : (
           /* ═══ List View — ClickUp Design ═══ */
@@ -3000,8 +3015,12 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
                                     d="M9 5l7 7-7 7"
                                   />
                                 </svg>
-                                <span className={cn(CHIP_BASE, chipClasses.chip, 'uppercase')}>{section.label}</span>
-                                <span className="shrink-0 text-xs tabular-nums text-(--text-muted)">{section.tasks.length}</span>
+                                <span className={cn(CHIP_BASE, chipClasses.chip, 'uppercase')}>
+                                  {section.label}
+                                </span>
+                                <span className="shrink-0 text-xs tabular-nums text-(--text-muted)">
+                                  {section.tasks.length}
+                                </span>
                               </button>
                               {canCreate && (
                                 <button
@@ -3024,7 +3043,11 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
                               const statusCfg = STATUS_CONFIG[task.status as Status];
                               const priorityCfg = PRIORITY_CONFIG[task.priority as Priority];
                               return (
-                                <DraggableListRow key={task._id} task={task} isHighlighted={task._id === highlightTaskId}>
+                                <DraggableListRow
+                                  key={task._id}
+                                  task={task}
+                                  isHighlighted={task._id === highlightTaskId}
+                                >
                                   <TaskContextMenu
                                     key={task._id}
                                     task={task as ContextTask}

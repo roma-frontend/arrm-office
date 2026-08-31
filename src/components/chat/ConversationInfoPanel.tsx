@@ -165,23 +165,24 @@ export function ConversationInfoPanel({
               {t('chat.members')} ({members?.length ?? 0})
             </p>
             {/* Hide add-member for HR Assistant and System Announcements (read-only channels) */}
-            {conversation?.name !== 'HR Assistant' && conversation?.name !== 'System Announcements' && (
-            <button
-              onClick={() => setShowAddMember(!showAddMember)}
-              className="w-6 h-6 flex items-center justify-center rounded-lg transition-all hover:scale-105 active:scale-95"
-              style={{
-                background: showAddMember ? 'var(--primary)' : 'var(--sidebar-item-hover)',
-                color: showAddMember ? 'white' : 'var(--text-muted)',
-                cursor: 'pointer',
-                position: 'relative',
-                zIndex: 100,
-                flexShrink: 0,
-              }}
-              title={t('chat.addMembers')}
-            >
-              <Plus className="w-3.5 h-3.5" />
-            </button>
-            )}
+            {conversation?.name !== 'HR Assistant' &&
+              conversation?.name !== 'System Announcements' && (
+                <button
+                  onClick={() => setShowAddMember(!showAddMember)}
+                  className="w-6 h-6 flex items-center justify-center rounded-lg transition-all hover:scale-105 active:scale-95"
+                  style={{
+                    background: showAddMember ? 'var(--primary)' : 'var(--sidebar-item-hover)',
+                    color: showAddMember ? 'white' : 'var(--text-muted)',
+                    cursor: 'pointer',
+                    position: 'relative',
+                    zIndex: 100,
+                    flexShrink: 0,
+                  }}
+                  title={t('chat.addMembers')}
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                </button>
+              )}
           </div>
 
           {/* Add member UI */}

@@ -3171,10 +3171,19 @@ html.cookie-consent-given .cookie-banner-root {
 
 /* ── Task highlight animation (notification click → blink) ─────────── */
 @keyframes taskHighlight {
-  0%, 100% { background-color: transparent; }
-  25% { background-color: var(--brand, #6366f1)1a; }
-  50% { background-color: var(--brand, #6366f1)30; }
-  75% { background-color: var(--brand, #6366f1)1a; }
+  0%,
+  100% {
+    background-color: transparent;
+  }
+  25% {
+    background-color: var(--brand, #6366f1) 1a;
+  }
+  50% {
+    background-color: var(--brand, #6366f1) 30;
+  }
+  75% {
+    background-color: var(--brand, #6366f1) 1a;
+  }
 }
 .animate-task-highlight {
   animation: taskHighlight 1s ease-in-out 4;

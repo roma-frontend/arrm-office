@@ -129,9 +129,7 @@ export function StatusTick({
   const [open, setOpen] = useState(false);
   const current = resolveStatus({ status, statusKey }, statuses);
   const done = isClosedType(current.type);
-  const reopenTarget = done
-    ? statuses.find((definition) => !isClosedType(definition.type))
-    : null;
+  const reopenTarget = done ? statuses.find((definition) => !isClosedType(definition.type)) : null;
 
   // When the circle is empty (not done), clicking opens a status picker popover.
   // When the circle is filled (done), clicking quickly reopens the task.

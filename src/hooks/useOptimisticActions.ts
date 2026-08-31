@@ -425,7 +425,12 @@ export function useOptimisticTaskStatus() {
               try {
                 await updateTaskStatus({
                   taskId,
-                  status: oldStatus as 'pending' | 'in_progress' | 'review' | 'completed' | 'cancelled',
+                  status: oldStatus as
+                    | 'pending'
+                    | 'in_progress'
+                    | 'review'
+                    | 'completed'
+                    | 'cancelled',
                   userId,
                 });
                 toast.success(t('tasks.statusReverted', 'Status reverted'));

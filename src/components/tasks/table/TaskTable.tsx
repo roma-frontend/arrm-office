@@ -400,28 +400,25 @@ function DraggableTaskRowWrapper({
     position: 'relative' as const,
   };
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className={isHighlighted ? 'animate-task-highlight' : undefined}>
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className={isHighlighted ? 'animate-task-highlight' : undefined}
+    >
       <TaskRow task={task} ctx={ctx} selected={selected} />
     </div>
   );
 }
 
-function DroppableTableSection({
-  id,
-  children,
-}: {
-  id: string;
-  children: React.ReactNode;
-}) {
+function DroppableTableSection({ id, children }: { id: string; children: React.ReactNode }) {
   const { isOver, setNodeRef } = useDroppable({
     id,
     data: { type: 'list-section' },
   });
   return (
-    <div
-      ref={setNodeRef}
-      className={isOver ? 'bg-(--brand-quiet)/30 rounded-lg' : ''}
-    >
+    <div ref={setNodeRef} className={isOver ? 'bg-(--brand-quiet)/30 rounded-lg' : ''}>
       {children}
     </div>
   );
@@ -780,7 +777,12 @@ export function TaskTable({
                     onSetPriority={contextMenu?.onSetPriority ?? (() => {})}
                     onDelete={contextMenu?.onDelete ?? (() => {})}
                   >
-                    <DraggableTaskRowWrapper task={task} ctx={rowContext} selected={selected.has(task._id)} isHighlighted={task._id === highlightTaskId} />
+                    <DraggableTaskRowWrapper
+                      task={task}
+                      ctx={rowContext}
+                      selected={selected.has(task._id)}
+                      isHighlighted={task._id === highlightTaskId}
+                    />
                   </TaskContextMenu>
                 ))}
 

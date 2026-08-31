@@ -40,7 +40,10 @@
       "email": "E-Mail",
       "phone": "Telefon"
     },
-    "title": "Aufgaben"
+    "title": "Aufgaben",
+    "statusUpdated": "Status aktualisiert",
+    "statusReverted": "Status rückgängig gemacht",
+    "statusRevertFailed": "Status-Rücknahme fehlgeschlagen"
   },
   "tasksPage": {
     "title": "Aufgaben",
