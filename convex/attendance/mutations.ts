@@ -221,12 +221,7 @@ export const ensureHrAssistantMembership = mutation({
     const allHrChannels = await ctx.db
       .query('chatConversations')
       .withIndex('by_org', (q) => q.eq('organizationId', orgId))
-      .filter((q) =>
-        q.and(
-          q.eq(q.field('type'), 'group'),
-          q.eq(q.field('name'), 'HR Assistant'),
-        ),
-      )
+      .filter((q) => q.and(q.eq(q.field('type'), 'group'), q.eq(q.field('name'), 'HR Assistant')))
       .collect();
 
     // 2. Find or create the canonical (non-deleted) channel
@@ -389,9 +384,16 @@ export const ensureHrAssistantMembership = mutation({
     }
 
     // 6. Clean up stale memberships (inactive / superadmin / bot users)
+    //    Never remove the current caller — they just got added in step 4.
     for (const m of existingMembers) {
+      if (m.userId === caller._id) continue;
       const user = await ctx.db.get(m.userId);
-      if (!user || user.role === 'superadmin' || user.isActive === false || user.email.startsWith('+')) {
+      if (
+        !user ||
+        user.role === 'superadmin' ||
+        user.isActive === false ||
+        user.email.startsWith('+')
+      ) {
         await ctx.db.delete(m._id);
       }
     }

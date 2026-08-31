@@ -11,6 +11,7 @@ import {
   MoreHorizontal,
   ChevronLeft,
   ChevronRight,
+  Calculator,
 } from 'lucide-react';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -35,6 +36,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import Link from 'next/link';
+import PayrollBreakdownSheet from '@/components/payroll/PayrollBreakdownSheet';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -75,6 +77,8 @@ export default function PayrollRecordsTable() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [page, setPage] = useState(1);
+  const [breakdownRecord, setBreakdownRecord] = useState<Record<string, unknown> | null>(null);
+  const [breakdownOpen, setBreakdownOpen] = useState(false);
 
   const records = useQuery(
     api.payroll.queries.getPayrollRecords,
@@ -238,6 +242,15 @@ export default function PayrollRecordsTable() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setBreakdownRecord(record);
+                                setBreakdownOpen(true);
+                              }}
+                            >
+                              <Calculator className="w-4 h-4 mr-2" />
+                              {t('payroll.breakdown.button', 'View Breakdown')}
+                            </DropdownMenuItem>
                             <DropdownMenuItem asChild>
                               <Link href={`/payroll/${record.payrollRunId || record._id}`}>
                                 <Eye className="w-4 h-4 mr-2" />
@@ -257,6 +270,16 @@ export default function PayrollRecordsTable() {
               <FileText className="w-12 h-12 mx-auto mb-4 opacity-30" />
               <p>{t('payroll.noRecords')}</p>
             </div>
+          )}
+
+          {/* Breakdown Sheet */}
+          {breakdownRecord && (
+            <PayrollBreakdownSheet
+              open={breakdownOpen}
+              onOpenChange={setBreakdownOpen}
+              record={breakdownRecord as any}
+              employeeName={(breakdownRecord as any).user?.name}
+            />
           )}
 
           {totalPages > 1 && (

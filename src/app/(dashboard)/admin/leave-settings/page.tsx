@@ -66,6 +66,9 @@ export default function LeaveSettingsPage() {
   const upsertConfig = useMutation(api.leaveSettings.upsertLeaveTypeConfig);
   const initializeDefaults = useMutation(api.leaveSettings.initializeDefaultLeaveTypes);
 
+  const syncBalances = useMutation(api.leaveSettings.syncAllBalances);
+  const [syncing, setSyncing] = useState(false);
+
   // Auto-initialize defaults if no configs exist
   React.useEffect(() => {
     if (configs && configs.length === 0 && organizationId) {
@@ -145,9 +148,6 @@ export default function LeaveSettingsPage() {
   };
 
   const leaveTypes = Object.entries(LEAVE_TYPE_META);
-
-  const syncBalances = useMutation(api.leaveSettings.syncAllBalances);
-  const [syncing, setSyncing] = useState(false);
 
   const handleSyncBalances = async () => {
     if (!organizationId) return;

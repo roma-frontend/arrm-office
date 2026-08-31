@@ -1,12 +1,19 @@
-import nextDynamic from 'next/dynamic';
-import { Skeleton } from '@/components/ui/skeleton';
+'use client';
 
-export const dynamic = 'force-dynamic';
+import { useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 
-const GoalEditClient = nextDynamic(() => import('@/components/goals/GoalEditClient'), {
-  loading: () => <Skeleton className="h-96 w-full" />,
-});
-
+/**
+ * /goals/[id]/edit — redirects to the goal detail page.
+ * The edit form is now a sheet opened from the detail view.
+ */
 export default function GoalEditPage() {
-  return <GoalEditClient />;
+  const params = useParams();
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace(`/goals/${params.id}`);
+  }, [params.id, router]);
+
+  return null;
 }

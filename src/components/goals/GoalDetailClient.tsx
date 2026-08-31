@@ -37,6 +37,7 @@ import { format } from 'date-fns';
 import { enUS, ru, hy } from 'date-fns/locale';
 import { Progress } from '@/components/ui/progress';
 import { NewTaskSheet } from '@/components/tasks/NewTaskSheet';
+import GoalEditSheet from '@/components/goals/GoalEditSheet';
 
 const StatusBadge = ({ status }: { status: string }) => {
   const { t } = useTranslation();
@@ -91,6 +92,7 @@ export default function GoalDetailClient() {
   const [isCompleting, setIsCompleting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [newTaskOpen, setNewTaskOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
 
   const goal = useQuery(api.goals.getObjective, { objectiveId: goalId });
   const currentUser = useQuery(
@@ -179,7 +181,7 @@ export default function GoalDetailClient() {
           <Button
             variant="outline"
             size="icon"
-            onClick={() => router.push(`/goals/${goalId}/edit`)}
+            onClick={() => setEditOpen(true)}
           >
             <Pencil className="h-4 w-4" />
           </Button>
@@ -581,6 +583,13 @@ export default function GoalDetailClient() {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit goal in a slide-over sheet */}
+      <GoalEditSheet
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        objectiveId={goalId}
+      />
 
       {/* Add task in a slide-over, not a full page: the goal stays put. */}
       <NewTaskSheet
