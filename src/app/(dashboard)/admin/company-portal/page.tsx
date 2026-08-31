@@ -229,9 +229,7 @@ export default function CompanyPortalPage() {
   const totalLeaveTypes = leaveConfigs?.length ?? 0;
   const totalHolidays = holidays?.length ?? 0;
 
-  const visibleCards = PORTAL_CARDS.filter(
-    (card) => !card.roles || card.roles.includes(userRole),
-  );
+  const visibleCards = PORTAL_CARDS.filter((card) => !card.roles || card.roles.includes(userRole));
 
   const stats = [
     {
@@ -276,7 +274,8 @@ export default function CompanyPortalPage() {
           </div>
           {org && (
             <Badge variant="outline" className="text-xs shrink-0 mt-1">
-              {org.plan?.charAt(0).toUpperCase()}{org.plan?.slice(1)}
+              {org.plan?.charAt(0).toUpperCase()}
+              {org.plan?.slice(1)}
             </Badge>
           )}
         </div>
@@ -303,7 +302,10 @@ export default function CompanyPortalPage() {
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {visibleCards.map((card) => {
-            const Icon = card.icon as React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
+            const Icon = card.icon as React.ComponentType<{
+              className?: string;
+              style?: React.CSSProperties;
+            }>;
             return (
               <Link key={card.href + card.titleKey} href={card.href} className="group">
                 <Card className="h-full border border-(--border) bg-(--card) hover:border-(--brand-outline) hover:shadow-md transition-all duration-200 cursor-pointer">

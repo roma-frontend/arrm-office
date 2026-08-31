@@ -174,11 +174,14 @@ export default function ChatClient({
   // (checks before inserting) so duplicate calls are safe.
   const ensureHrMembership = useMutation(api.attendance.mutations.ensureHrAssistantMembership);
   useEffect(() => {
-    if (!effectiveOrgId) return; // superadmin must select an org first
-    ensureHrMembership({ organizationId: effectiveOrgId }).then((r) => {
+    // Always use orgId (from page props) — it's always set because the
+    // page redirects when organizationId is missing. effectiveOrgId can be
+    // undefined for superadmin with no org selected, which caused the HR
+    // Assistant channel to never be provisioned for admins.
+    ensureHrMembership({ organizationId: orgId }).then((r) => {
       if (r && !r.migrated) console.warn('[ChatClient] HR migration skipped:', r);
     }).catch((e) => console.error('[ChatClient] HR migration error:', e));
-  }, [ensureHrMembership, effectiveOrgId]);
+  }, [ensureHrMembership, orgId]);
 
   // When deselecting on mobile
   const handleBack = useCallback(() => {

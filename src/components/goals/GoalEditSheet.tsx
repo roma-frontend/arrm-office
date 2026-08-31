@@ -12,12 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import {
   Select,
   SelectContent,
@@ -55,10 +50,7 @@ export default function GoalEditSheet({
 }: GoalEditSheetProps) {
   const { t } = useTranslation();
 
-  const goal = useQuery(
-    api.goals.getObjective,
-    objectiveId ? { objectiveId } : 'skip',
-  );
+  const goal = useQuery(api.goals.getObjective, objectiveId ? { objectiveId } : 'skip');
   const updateObjective = useMutation(api.goals.updateObjective);
   const users = useQuery(api.users.queries.getAllUsers, {});
 
@@ -84,12 +76,8 @@ export default function GoalEditSheet({
     setDepartment(goal.department ?? '');
     setPeriodType((goal.periodType as PeriodType) || 'Q1');
     setPeriodYear(goal.periodYear ?? new Date().getFullYear());
-    setPeriodStart(
-      goal.periodStart ? new Date(goal.periodStart).toISOString().slice(0, 10) : '',
-    );
-    setPeriodEnd(
-      goal.periodEnd ? new Date(goal.periodEnd).toISOString().slice(0, 10) : '',
-    );
+    setPeriodStart(goal.periodStart ? new Date(goal.periodStart).toISOString().slice(0, 10) : '');
+    setPeriodEnd(goal.periodEnd ? new Date(goal.periodEnd).toISOString().slice(0, 10) : '');
     setOwnerId(goal.ownerId ?? '');
   }, [goal]);
 
@@ -145,7 +133,10 @@ export default function GoalEditSheet({
             <Skeleton className="h-32 w-full" />
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="flex flex-col h-full mt-6 space-y-5 overflow-y-auto max-h-[calc(100vh-120px)] px-4">
+          <form
+            onSubmit={handleSubmit}
+            className="flex flex-col h-full mt-6 space-y-5 overflow-y-auto max-h-[calc(100vh-120px)] px-4"
+          >
             {/* Title */}
             <div className="space-y-2">
               <Label htmlFor="goal-title">{t('goals.wizard.titleLabel')}</Label>
@@ -295,11 +286,7 @@ export default function GoalEditSheet({
 
             {/* Actions */}
             <div className="flex justify-end gap-3 pt-4 border-t border-(--border) mt-auto">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-              >
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 {t('common.cancel')}
               </Button>
               <Button type="submit" disabled={isSubmitting || !title.trim()}>

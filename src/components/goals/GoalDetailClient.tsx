@@ -178,11 +178,7 @@ export default function GoalDetailClient() {
               {isCompleting ? t('common.saving') : t('goals.markComplete')}
             </Button>
           )}
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setEditOpen(true)}
-          >
+          <Button variant="outline" size="icon" onClick={() => setEditOpen(true)}>
             <Pencil className="h-4 w-4" />
           </Button>
           <Button variant="outline" size="icon" onClick={handleDelete} disabled={isDeleting}>
@@ -585,11 +581,7 @@ export default function GoalDetailClient() {
       </Card>
 
       {/* Edit goal in a slide-over sheet */}
-      <GoalEditSheet
-        open={editOpen}
-        onOpenChange={setEditOpen}
-        objectiveId={goalId}
-      />
+      <GoalEditSheet open={editOpen} onOpenChange={setEditOpen} objectiveId={goalId} />
 
       {/* Add task in a slide-over, not a full page: the goal stays put. */}
       <NewTaskSheet

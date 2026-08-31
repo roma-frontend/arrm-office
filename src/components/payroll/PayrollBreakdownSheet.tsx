@@ -17,12 +17,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -127,9 +122,7 @@ function BreakdownRow({
         )}
         <div className="min-w-0">
           <p className="text-sm font-medium text-(--text-primary) truncate">{label}</p>
-          {description && (
-            <p className="text-[11px] text-(--text-muted) truncate">{description}</p>
-          )}
+          {description && <p className="text-[11px] text-(--text-muted) truncate">{description}</p>}
         </div>
       </div>
       <p
@@ -215,9 +208,7 @@ export default function PayrollBreakdownSheet({
             <Calculator className="w-5 h-5 text-(--brand-text)" />
             {t('payroll.breakdown.title', 'Payroll Breakdown')}
           </SheetTitle>
-          {employeeName && (
-            <p className="text-sm text-(--text-muted)">{employeeName}</p>
-          )}
+          {employeeName && <p className="text-sm text-(--text-muted)">{employeeName}</p>}
         </SheetHeader>
 
         <div className="mt-6 space-y-6 overflow-y-auto max-h-[calc(100vh-120px)] px-4">
@@ -498,7 +489,8 @@ export default function PayrollBreakdownSheet({
                       {t('payroll.breakdown.formula.grossCalc', 'Base Salary + Bonuses + Overtime')}
                     </p>
                     <p>
-                      {formatCurrency(baseSalary, currency)} + {formatCurrency(bonuses, currency)} + {formatCurrency(overtimePay, currency)} ={' '}
+                      {formatCurrency(baseSalary, currency)} + {formatCurrency(bonuses, currency)} +{' '}
+                      {formatCurrency(overtimePay, currency)} ={' '}
                       <span className="font-bold text-(--text-primary)">
                         {formatCurrency(gross, currency)}
                       </span>
@@ -512,8 +504,8 @@ export default function PayrollBreakdownSheet({
                     {isArmenia && incomeTaxRate ? (
                       <>
                         <p>
-                          Gross × {((1 - incomeTaxRate) * 100).toFixed(0)}% = {formatCurrency(gross, currency)} ×{' '}
-                          {(1 - incomeTaxRate).toFixed(2)}
+                          Gross × {((1 - incomeTaxRate) * 100).toFixed(0)}% ={' '}
+                          {formatCurrency(gross, currency)} × {(1 - incomeTaxRate).toFixed(2)}
                         </p>
                         <p>
                           ={' '}
@@ -524,7 +516,10 @@ export default function PayrollBreakdownSheet({
                       </>
                     ) : (
                       <p>
-                        {t('payroll.breakdown.formula.incomeTaxProgressive', 'Progressive brackets applied to taxable income')}
+                        {t(
+                          'payroll.breakdown.formula.incomeTaxProgressive',
+                          'Progressive brackets applied to taxable income',
+                        )}
                       </p>
                     )}
                   </div>
@@ -533,11 +528,10 @@ export default function PayrollBreakdownSheet({
                     <p className="text-(--text-primary) font-semibold font-sans">
                       {t('payroll.breakdown.formula.net', 'Net Formula')}
                     </p>
+                    <p>Gross − Total Deductions = Net</p>
                     <p>
-                      Gross − Total Deductions = Net
-                    </p>
-                    <p>
-                      {formatCurrency(gross, currency)} − {formatCurrency(deductions?.total ?? 0, currency)} ={' '}
+                      {formatCurrency(gross, currency)} −{' '}
+                      {formatCurrency(deductions?.total ?? 0, currency)} ={' '}
                       <span className="font-bold text-green-600">
                         {formatCurrency(net, currency)}
                       </span>
