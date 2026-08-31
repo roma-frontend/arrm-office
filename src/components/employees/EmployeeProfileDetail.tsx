@@ -146,6 +146,7 @@ export default function EmployeeProfileDetail({
   // / deleteUser, so the UI no longer shows Edit for cross-org employees.
   const isSameOrg =
     !!currentUser?.organizationId && currentUser.organizationId === employee?.organizationId;
+  const canViewSensitive = currentUser?.role === 'admin' || currentUser?.role === 'superadmin';
   const canEdit = (isAdminOrSupervisor && isSameOrg) || isSuperadmin;
   const canDelete = canEdit && !isTargetSuperadmin && employeeId !== currentUser?.id;
   // Rating is a reporting-line decision, not a rank one: a manager rates their
@@ -565,6 +566,15 @@ export default function EmployeeProfileDetail({
                       label: t('employees.passportExpiryDate'),
                       value: profile.profile.passportExpiryDate,
                     },
+                    // Admin/superadmin only: ՀԾՀ (national ID / SSN)
+                    ...(canViewSensitive
+                      ? [
+                          {
+                            label: t('employees.nationalId', 'ՀԾՀ (National ID)'),
+                            value: (employee as any)?.nationalId,
+                          },
+                        ]
+                      : []),
                   ]
                     .filter((f) => f.value)
                     .map((f, i) => (
@@ -573,6 +583,27 @@ export default function EmployeeProfileDetail({
                         <p className="font-medium text-(--text-primary)">{f.value}</p>
                       </div>
                     ))}
+                  {/* Admin/superadmin only: Health insurance status */}
+                  {canViewSensitive && (
+                    <div>
+                      <p className="text-sm text-(--text-muted)">
+                        {t('employees.healthInsured', 'Mandatory Health Insurance')}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
+                            (employee as any)?.healthInsured
+                              ? 'bg-(--success-quiet) text-(--success-text) border border-(--success-outline)'
+                              : 'bg-(--background-subtle) text-(--text-muted) border border-(--border)'
+                          }`}
+                        >
+                          {(employee as any)?.healthInsured
+                            ? t('common.yes', 'Yes')
+                            : t('common.no', 'No')}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
