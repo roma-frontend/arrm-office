@@ -169,6 +169,17 @@ export default function ChatClient({
     t,
   ]);
 
+  // Ensure HR Assistant channel memberships are migrated on load.
+  // This handles the case where old (deleted) channels had memberships
+  // but the canonical channel had none.
+  const ensureHrMembership = useMutation(api.attendance.mutations.ensureHrAssistantMembership);
+  const hrMigrationDone = useRef(false);
+  useEffect(() => {
+    if (hrMigrationDone.current) return;
+    hrMigrationDone.current = true;
+    void ensureHrMembership({}).catch(() => {});
+  }, [ensureHrMembership]);
+
   // When deselecting on mobile
   const handleBack = useCallback(() => {
     setChatVisible(false);

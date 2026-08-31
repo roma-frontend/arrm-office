@@ -199,6 +199,24 @@ export const rejectAttendanceEntry = mutation({
 });
 
 /**
+ * Ensure the current user is a member of the HR Assistant channel.
+ * Called by the frontend on chat page load. Handles migration of
+ * memberships from old (deleted) channels to the canonical one.
+ */
+export const ensureHrAssistantMembership = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    if (!caller.organizationId) return { migrated: false };
+    await ctx.runMutation(internal.attendance.bot.seedHrAssistantMembers, {
+      organizationId: caller.organizationId,
+    });
+    return { migrated: true };
+  },
+});
+
+/**
  * On-demand digest refresh for the HR Assistant channel. Admin-only because
  * the bot posts into the org-wide channel and a spam button would be a
  * nuisance for everyone in it.
