@@ -5,7 +5,7 @@
  */
 import { v } from 'convex/values';
 import { mutation } from '../_generated/server';
-import type { Id } from '../_generated/dataModel';
+import type { Id, Doc } from '../_generated/dataModel';
 import { internal } from '../_generated/api';
 import { getAuthCaller } from '../lib/getAuthCaller';
 import { canAccessUser } from '../lib/rbac';
@@ -199,24 +199,168 @@ export const rejectAttendanceEntry = mutation({
 });
 
 /**
- * Ensure the current user is a member of the HR Assistant channel.
- * Called by the frontend on chat page load. Handles migration of
- * memberships from old (deleted) channels to the canonical one.
+ * Self-contained migration: ensure the caller is a member of the HR
+ * Assistant channel.  Handles the case where old duplicate channels were
+ * soft-deleted and memberships are stuck on deleted channels.
+ *
+ * Does NOT call seedHrAssistantMembers — does everything inline so there
+ * are no internal-mutation cross-calls that can silently fail.
  */
 export const ensureHrAssistantMembership = mutation({
   args: {},
   handler: async (ctx) => {
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
-    if (!caller.organizationId) return { migrated: false, reason: 'no-org' };
-    try {
-      const result = await ctx.runMutation(internal.attendance.bot.seedHrAssistantMembers, {
-        organizationId: caller.organizationId,
+    if (!caller.organizationId) return { ok: false, reason: 'no-org' };
+
+    const orgId = caller.organizationId;
+    const now = Date.now();
+
+    // 1. Find ALL HR Assistant channels for this org (including deleted ones)
+    const allHrChannels = await ctx.db
+      .query('chatConversations')
+      .withIndex('by_org', (q) => q.eq('organizationId', orgId))
+      .filter((q) =>
+        q.and(
+          q.eq(q.field('type'), 'group'),
+          q.eq(q.field('name'), 'HR Assistant'),
+        ),
+      )
+      .collect();
+
+    // 2. Find or create the canonical (non-deleted) channel
+    let canonical = allHrChannels.find((ch) => !ch.isDeleted);
+
+    if (!canonical) {
+      // No active channel exists — create one
+      // First ensure a bot user exists
+      const botEmail = `+hr-assistant-bot@${orgId}.internal`;
+      let botUser = await ctx.db
+        .query('users')
+        .withIndex('by_email', (q) => q.eq('email', botEmail))
+        .first();
+      if (!botUser) {
+        const botId = await ctx.db.insert('users', {
+          email: botEmail,
+          name: 'HR Assistant',
+          passwordHash: 'no-login-bot-account',
+          role: 'admin',
+          organizationId: orgId,
+          department: 'HR',
+          position: 'Assistant',
+          employeeType: 'staff',
+          isApproved: true,
+          isActive: true,
+          paidLeaveBalance: 0,
+          sickLeaveBalance: 0,
+          familyLeaveBalance: 0,
+          createdAt: now,
+          updatedAt: now,
+        });
+        botUser = await ctx.db.get(botId);
+      }
+
+      const chId = await ctx.db.insert('chatConversations', {
+        organizationId: orgId,
+        type: 'group',
+        name: 'HR Assistant',
+        description: 'Daily attendance digest',
+        createdBy: botUser!._id,
+        createdAt: now,
+        updatedAt: now,
       });
-      return { migrated: true, ...result };
-    } catch (err: any) {
-      return { migrated: false, error: err?.message ?? String(err) };
+
+      // Add bot as owner
+      await ctx.db.insert('chatMembers', {
+        conversationId: chId,
+        userId: botUser!._id,
+        organizationId: orgId,
+        role: 'owner',
+        unreadCount: 0,
+        isMuted: false,
+        joinedAt: now,
+      });
+
+      canonical = (await ctx.db.get(chId))!;
     }
+
+    // 3. Migrate memberships from ALL old channels (including deleted) to canonical
+    for (const ch of allHrChannels) {
+      if (ch._id === canonical._id) continue;
+
+      const oldMemberships = await ctx.db
+        .query('chatMembers')
+        .withIndex('by_conversation', (q) => q.eq('conversationId', ch._id))
+        .collect();
+
+      const canonicalMembers = await ctx.db
+        .query('chatMembers')
+        .withIndex('by_conversation', (q) => q.eq('conversationId', canonical._id))
+        .collect();
+      const canonicalUserIds = new Set(canonicalMembers.map((m) => m.userId));
+
+      for (const m of oldMemberships) {
+        if (canonicalUserIds.has(m.userId)) {
+          await ctx.db.delete(m._id);
+        } else {
+          await ctx.db.patch(m._id, { conversationId: canonical._id });
+        }
+      }
+
+      // Soft-delete if not already
+      if (!ch.isDeleted) {
+        await ctx.db.patch(ch._id, { isDeleted: true, deletedAt: now });
+      }
+    }
+
+    // 4. Ensure the current user is a member
+    const callerMembership = await ctx.db
+      .query('chatMembers')
+      .withIndex('by_conversation_user', (q) =>
+        q.eq('conversationId', canonical._id).eq('userId', caller._id),
+      )
+      .first();
+
+    if (!callerMembership) {
+      await ctx.db.insert('chatMembers', {
+        conversationId: canonical._id,
+        userId: caller._id,
+        organizationId: orgId,
+        role: 'member',
+        unreadCount: 0,
+        isMuted: false,
+        joinedAt: now,
+      });
+    }
+
+    // 5. Add all org users who are missing
+    const orgUsers = await ctx.db
+      .query('users')
+      .withIndex('by_org', (q) => q.eq('organizationId', orgId))
+      .collect();
+
+    const existingMembers = await ctx.db
+      .query('chatMembers')
+      .withIndex('by_conversation', (q) => q.eq('conversationId', canonical._id))
+      .collect();
+    const memberIds = new Set(existingMembers.map((m) => m.userId));
+
+    let added = 0;
+    for (const u of orgUsers) {
+      if (memberIds.has(u._id)) continue;
+      await ctx.db.insert('chatMembers', {
+        conversationId: canonical._id,
+        userId: u._id,
+        organizationId: orgId,
+        role: 'member',
+        unreadCount: 0,
+        isMuted: false,
+        joinedAt: now,
+      });
+      added++;
+    }
+
+    return { ok: true, channelId: canonical._id, migrated: allHrChannels.length - 1, added };
   },
 });
 
