@@ -63,6 +63,8 @@ import {
 import { TaskRow, type TaskRowContext, type TaskRowPatch, type TaskTableRow } from './TaskRow';
 import { TaskContextMenu, type ContextTask } from '../TaskContextMenu';
 import type { TaskCellUser } from './cells/cellChrome';
+import { useDraggable, useDroppable } from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
 
 export type { TaskTableRow, TaskRowPatch } from './TaskRow';
 
@@ -112,6 +114,8 @@ export interface TaskTableProps {
   addColumnSlot?: ReactNode;
   /** Shown instead of the sections when there is nothing to show. */
   emptyState?: ReactNode;
+  /** Task id to highlight (from notification navigation). */
+  highlightTaskId?: string | null;
   /** Context menu handlers — when provided, each task row gets a right-click menu. */
   contextMenu?: {
     canManage: boolean;
@@ -373,6 +377,56 @@ function AddTaskRow({
   );
 }
 
+// ── DnD wrappers for table rows and sections ─────────────────────────────
+function DraggableTaskRowWrapper({
+  task,
+  ctx,
+  selected,
+  isHighlighted,
+}: {
+  task: TaskTableRow;
+  ctx: TaskRowContext;
+  selected: boolean;
+  isHighlighted?: boolean;
+}) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: task._id,
+    data: { status: task.status },
+  });
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    opacity: isDragging ? 0.4 : 1,
+    zIndex: isDragging ? 50 : undefined,
+    position: 'relative' as const,
+  };
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className={isHighlighted ? 'animate-task-highlight' : undefined}>
+      <TaskRow task={task} ctx={ctx} selected={selected} />
+    </div>
+  );
+}
+
+function DroppableTableSection({
+  id,
+  children,
+}: {
+  id: string;
+  children: React.ReactNode;
+}) {
+  const { isOver, setNodeRef } = useDroppable({
+    id,
+    data: { type: 'list-section' },
+  });
+  return (
+    <div
+      ref={setNodeRef}
+      className={isOver ? 'bg-(--brand-quiet)/30 rounded-lg' : ''}
+    >
+      {children}
+    </div>
+  );
+}
+
 // ── The grid ───────────────────────────────────────────────────────────────
 export function TaskTable({
   tasks,
@@ -398,6 +452,7 @@ export function TaskTable({
   onBulkDelete,
   addColumnSlot,
   emptyState,
+  highlightTaskId,
   contextMenu,
 }: TaskTableProps) {
   const { t } = useTranslation();
@@ -713,7 +768,7 @@ export function TaskTable({
             )}
 
             {!isCollapsed && (
-              <>
+              <DroppableTableSection id={sectionKey}>
                 {section.tasks.map((task) => (
                   <TaskContextMenu
                     key={task._id}
@@ -725,7 +780,7 @@ export function TaskTable({
                     onSetPriority={contextMenu?.onSetPriority ?? (() => {})}
                     onDelete={contextMenu?.onDelete ?? (() => {})}
                   >
-                    <TaskRow task={task} ctx={rowContext} selected={selected.has(task._id)} />
+                    <DraggableTaskRowWrapper task={task} ctx={rowContext} selected={selected.has(task._id)} isHighlighted={task._id === highlightTaskId} />
                   </TaskContextMenu>
                 ))}
 
@@ -747,7 +802,7 @@ export function TaskTable({
                     {t('tasksTable.addTask', 'Add Task')}
                   </button>
                 )}
-              </>
+              </DroppableTableSection>
             )}
           </div>
         );

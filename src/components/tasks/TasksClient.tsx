@@ -601,11 +601,13 @@ function DraggableTaskCard({
   onOpen,
   statuses,
   onSetStatus,
+  isHighlighted,
 }: {
   task: TaskItem;
   onOpen: () => void;
   statuses?: readonly import('../../../convex/lib/taskStatus').TaskStatusDef[];
   onSetStatus?: (taskId: string, statusKey: string) => void;
+  isHighlighted?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: task._id,
@@ -621,7 +623,7 @@ function DraggableTaskCard({
       style={style}
       {...listeners}
       {...attributes}
-      className="relative group cursor-grab active:cursor-grabbing"
+      className={`relative group cursor-grab active:cursor-grabbing ${isHighlighted ? 'animate-task-highlight' : ''}`}
       onClick={(e) => {
         e.stopPropagation();
         onOpen();
@@ -663,12 +665,14 @@ function DroppableKanbanColumn({
   statuses,
   contextMenu,
   onSetStatus,
+  highlightTaskId,
 }: {
   status: Status;
   tasks: TaskItem[];
   onOpen: (t: TaskItem) => void;
   statuses?: readonly import('../../../convex/lib/taskStatus').TaskStatusDef[];
   onSetStatus?: (taskId: string, statusKey: string) => void;
+  highlightTaskId?: string | null;
   contextMenu?: {
     canManage: boolean;
     onEdit: (t: ContextTask) => void;
@@ -721,6 +725,7 @@ function DroppableKanbanColumn({
                 onOpen={() => onOpen(task)}
                 statuses={statuses}
                 onSetStatus={onSetStatus}
+                isHighlighted={task._id === highlightTaskId}
               />
             </TaskContextMenu>
           ) : (
@@ -730,6 +735,7 @@ function DroppableKanbanColumn({
               onOpen={() => onOpen(task)}
               statuses={statuses}
               onSetStatus={onSetStatus}
+              isHighlighted={task._id === highlightTaskId}
             />
           ),
         )}
@@ -2809,6 +2815,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
                   onOpen={(task) => openTask(task)}
                   statuses={statuses}
                   onSetStatus={canManage ? handleSetStatus : undefined}
+                  highlightTaskId={highlightTaskId}
                   contextMenu={
                     canManage
                       ? {
@@ -2868,6 +2875,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
             canEdit={canCreate}
             lang={i18n.language}
             projectName={projectNameOf}
+            highlightTaskId={highlightTaskId}
             onOpenTask={(taskId) => {
               const task = tasks.find((candidate) => candidate._id === taskId);
               if (task) openTask(task);
