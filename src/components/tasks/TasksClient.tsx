@@ -13,6 +13,8 @@ import { ProjectBadge } from './ProjectBadge';
 import { localizedTaskTitle, type TitledTask } from '@/lib/taskTitle';
 import { resolveStatus } from '../../../convex/lib/taskStatus';
 import { statusLabel } from '@/lib/taskLabels';
+import { taskColorClasses, CHIP_BASE } from '@/lib/taskColors';
+import { cn } from '@/lib/utils';
 import { TaskSheet } from './TaskSheet';
 import DetailSheet from '@/components/ui/detail-sheet';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -2974,28 +2976,48 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
                     const isCollapsed = collapsedSections.has(section.key);
                     return (
                       <div key={section.key}>
-                        {/* Section Header */}
-                        <button
-                          onClick={() => toggleSection(section.key)}
-                          className="w-full flex items-center gap-2 px-4 py-2 bg-(--background) hover:bg-(--background-subtle) transition-colors text-left border-b border-(--border)"
-                        >
-                          <svg
-                            className={`w-3.5 h-3.5 text-(--text-muted) transition-transform shrink-0 ${isCollapsed ? '' : 'rotate-90'}`}
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M9 5l7 7-7 7"
-                            />
-                          </svg>
-                          <span className="text-sm font-semibold text-(--text-primary)">
-                            {section.label}
-                          </span>
-                        </button>
+                        {/* Section Header — matches Table/Projects view styling */}
+                        {(() => {
+                          const statusDef = statuses?.find((s) => s.key === section.key);
+                          const chipColor = statusDef?.color ?? 'gray';
+                          const chipClasses = taskColorClasses(chipColor);
+                          return (
+                            <div className="flex items-center gap-2 border-b border-(--border) bg-(--background) px-3 py-1.5">
+                              <button
+                                type="button"
+                                onClick={() => toggleSection(section.key)}
+                                aria-expanded={!isCollapsed}
+                                className="flex min-w-0 items-center gap-2 rounded-md py-0.5 pr-2 text-left hover:bg-(--background-subtle)"
+                              >
+                                <svg
+                                  className={`w-3.5 h-3.5 text-(--text-muted) transition-transform shrink-0 ${isCollapsed ? '' : 'rotate-90'}`}
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M9 5l7 7-7 7"
+                                  />
+                                </svg>
+                                <span className={cn(CHIP_BASE, chipClasses.chip, 'uppercase')}>{section.label}</span>
+                                <span className="shrink-0 text-xs tabular-nums text-(--text-muted)">{section.tasks.length}</span>
+                              </button>
+                              {canCreate && (
+                                <button
+                                  type="button"
+                                  onClick={() => setShowCreate(true)}
+                                  className="ml-1 flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-xs text-(--text-muted) opacity-0 transition-opacity hover:bg-(--background-subtle) hover:text-(--text-primary) focus-visible:opacity-100 group-hover/section:opacity-100"
+                                >
+                                  <span className="text-lg leading-none">+</span>
+                                  {t('tasksTable.addTask', 'Add Task')}
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })()}
 
                         {/* Task Rows — each section is a droppable zone */}
                         {!isCollapsed && (
