@@ -49,7 +49,7 @@ import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-
 import { CSS } from '@dnd-kit/utilities';
 import { toast } from 'sonner';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
-import { useOptimisticTaskStatus, useRecurringTaskStatus } from '@/hooks/useOptimisticActions';
+
 import { memo } from 'react';
 import {
   ArrowDownWideNarrow,
@@ -1454,8 +1454,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 1000, tolerance: 5 } }),
   );
-  const { updateOptimistic } = useOptimisticTaskStatus();
-  const { updateRecurringOptimistic } = useRecurringTaskStatus();
+
   const [optimisticStatuses, setOptimisticStatuses] = useState<Map<string, { status: Status; at: number }>>(new Map());
 
   /**
@@ -2367,7 +2366,8 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
     [tasks, statuses, convexId, setOptimisticStatuses, handleSetStatus],
   );
 
-  // Kanban-specific drag end: handles recurring tasks and uses column ID as status.
+  // Kanban drag end: uses the same handleSetStatus as List/Table
+  // for consistent mutation, undo toast, and recurring task handling.
   const handleKanbanDragEnd = useCallback(
     (e: DragEndEvent) => {
       const { active, over } = e;
@@ -2383,37 +2383,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
         : null;
       const currentStatusKey = (resolvedCurrent?.key ?? task.status) as Status;
       if (currentStatusKey === newStatus) return;
-      // Recurring tasks live in recurringTasks table — use dedicated mutation.
-      if ((task as TaskItem)._type === 'recurring') {
-        flushSync(() => {
-          setOptimisticStatuses((prev) => {
-            const next = new Map(prev);
-            next.set(task._id as string, { status: newStatus, at: Date.now() });
-            return next;
-          });
-        });
-        setActiveTask(null);
-        updateRecurringOptimistic(task._id as unknown as Id<'recurringTasks'>, newStatus)
-          .then(() => {
-            toast.success(
-              t('tasks.status.moved', { status: t(STATUS_CONFIG[newStatus].labelKey) }),
-              { duration: 2000 },
-            );
-            // Don't clear optimistic here — let Convex reactivity deliver the
-            // updated task. The useOptimisticStatusSync effect below will
-            // automatically remove the entry once rawTasks catches up.
-          })
-          .catch(() => {
-            toast.error(t('tasks.failedToUpdateStatus'));
-            // On error, revert the optimistic status so the card jumps back.
-            setOptimisticStatuses((prev) => {
-              const next = new Map(prev);
-              next.delete(task._id as string);
-              return next;
-            });
-          });
-        return;
-      }
+      // Set optimistic status for instant card movement.
       flushSync(() => {
         setOptimisticStatuses((prev) => {
           const next = new Map(prev);
@@ -2421,28 +2391,11 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
           return next;
         });
       });
-      setActiveTask(null);
-      updateOptimistic(task._id as Id<'tasks'>, newStatus, convexId, currentStatusKey)
-        .then(() => {
-          toast.success(
-            t('tasks.status.moved', { status: t(STATUS_CONFIG[newStatus].labelKey) }),
-            { duration: 2000 },
-          );
-          // Don't clear optimistic here — let Convex reactivity deliver the
-          // updated task. The useOptimisticStatusSync effect below will
-          // automatically remove the entry once rawTasks catches up.
-        })
-        .catch(() => {
-          toast.error(t('tasks.failedToUpdateStatus'));
-          // On error, revert the optimistic status so the card jumps back.
-          setOptimisticStatuses((prev) => {
-            const next = new Map(prev);
-            next.delete(task._id as string);
-            return next;
-          });
-        });
+      // Use handleSetStatus (same as List/Table) — fires the mutation,
+      // shows undo toast, and handles recurring tasks.
+      handleSetStatus(task._id, newStatus);
     },
-    [tasks, statuses, convexId, setOptimisticStatuses, handleSetStatus, updateOptimistic, updateRecurringOptimistic, t],
+    [tasks, statuses, convexId, setOptimisticStatuses, handleSetStatus],
   );
 
   const handleDndCancel = useCallback(() => setActiveTask(null), []);
