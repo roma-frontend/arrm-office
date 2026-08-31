@@ -307,6 +307,26 @@ export const ensureHrAssistantMembership = mutation({
         }
       }
 
+      // Migrate messages from old channel to canonical
+      const oldMessages = await ctx.db
+        .query('chatMessages')
+        .withIndex('by_conversation_created', (q) => q.eq('conversationId', ch._id))
+        .collect();
+      for (const msg of oldMessages) {
+        await ctx.db.patch(msg._id, { conversationId: canonical._id });
+      }
+
+      // Migrate attendance digest message records
+      const oldDigests = await ctx.db
+        .query('attendanceDigestMessages')
+        .withIndex('by_org_date', (q) => q.eq('organizationId', orgId))
+        .collect();
+      for (const d of oldDigests) {
+        if (d.conversationId === ch._id) {
+          await ctx.db.patch(d._id, { conversationId: canonical._id });
+        }
+      }
+
       // Soft-delete if not already
       if (!ch.isDeleted) {
         await ctx.db.patch(ch._id, { isDeleted: true, deletedAt: now });

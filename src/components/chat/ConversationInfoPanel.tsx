@@ -164,7 +164,8 @@ export function ConversationInfoPanel({
             <p className="text-xs font-semibold flex-1" style={{ color: 'var(--text-muted)' }}>
               {t('chat.members')} ({members?.length ?? 0})
             </p>
-            {/* Always show add-member button (for both DM and group conversations) */}
+            {/* Hide add-member for HR Assistant and System Announcements (read-only channels) */}
+            {conversation?.name !== 'HR Assistant' && conversation?.name !== 'System Announcements' && (
             <button
               onClick={() => setShowAddMember(!showAddMember)}
               className="w-6 h-6 flex items-center justify-center rounded-lg transition-all hover:scale-105 active:scale-95"
@@ -180,6 +181,7 @@ export function ConversationInfoPanel({
             >
               <Plus className="w-3.5 h-3.5" />
             </button>
+            )}
           </div>
 
           {/* Add member UI */}
