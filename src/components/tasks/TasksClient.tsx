@@ -1442,7 +1442,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
   );
   const { updateOptimistic } = useOptimisticTaskStatus();
   const { updateRecurringOptimistic } = useRecurringTaskStatus();
-  const [optimisticStatuses, setOptimisticStatuses] = useState<Map<string, Status>>(new Map());
+  const [optimisticStatuses, setOptimisticStatuses] = useState<Map<string, { status: Status; at: number }>>(new Map());
 
   /**
    * Open a task in the panel instead of navigating.
@@ -1505,11 +1505,11 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
     if (!rawTasks) return rawTasks;
     if (optimisticStatuses.size === 0) return rawTasks;
     return rawTasks.map((task) => {
-      const optimisticStatus = optimisticStatuses.get(task._id);
-      if (optimisticStatus) {
+      const entry = optimisticStatuses.get(task._id);
+      if (entry) {
         // Override BOTH status (canonical) and statusKey so that resolveStatus
         // sees the new key first and places the card in the correct column.
-        return { ...task, status: optimisticStatus, statusKey: optimisticStatus };
+        return { ...task, status: entry.status, statusKey: entry.status };
       }
       return task;
     });
@@ -1633,24 +1633,32 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
     rawTasksWithOptimistic,
   );
 
-  // Auto-clean optimistic status entries once the Convex query delivers the
-  // updated task with the expected status.  Without this, stale optimistic
-  // entries would linger until the next drag or page navigation.
+  // Auto-clean optimistic status entries:
+  // 1. When Convex delivers the updated task (server matches optimistic)
+  // 2. When the entry expires (10s) — handles Undo clicks where the server
+  //    reverts but the optimistic entry would otherwise linger.
   useEffect(() => {
     if (!rawTasks || optimisticStatuses.size === 0) return;
+    const now = Date.now();
+    const STALE_MS = 10_000;
     let changed = false;
     const next = new Map(optimisticStatuses);
-    for (const [taskId, optStatus] of optimisticStatuses) {
+    for (const [taskId, entry] of optimisticStatuses) {
       const serverTask = rawTasks.find((t) => t._id === taskId);
       if (serverTask) {
         const resolved = statuses
           ? resolveStatus({ status: serverTask.status as any, statusKey: serverTask.statusKey }, statuses)
           : null;
         const serverKey = (resolved?.key ?? serverTask.status) as Status;
-        if (serverKey === optStatus) {
+        // Clean up if server caught up (matches) OR if entry is stale (>10s)
+        if (serverKey === entry.status || now - entry.at > STALE_MS) {
           next.delete(taskId);
           changed = true;
         }
+      } else if (now - entry.at > STALE_MS) {
+        // Task disappeared from query and entry is old — clean up
+        next.delete(taskId);
+        changed = true;
       }
     }
     if (changed) setOptimisticStatuses(next);
@@ -2321,7 +2329,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
       flushSync(() => {
         setOptimisticStatuses((prev) => {
           const next = new Map(prev);
-          next.set(task._id as string, overStatus as Status);
+          next.set(task._id as string, { status: overStatus as Status, at: Date.now() });
           return next;
         });
       });
@@ -2351,7 +2359,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
         flushSync(() => {
           setOptimisticStatuses((prev) => {
             const next = new Map(prev);
-            next.set(task._id as string, newStatus);
+            next.set(task._id as string, { status: newStatus, at: Date.now() });
             return next;
           });
         });
@@ -2380,7 +2388,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
       flushSync(() => {
         setOptimisticStatuses((prev) => {
           const next = new Map(prev);
-          next.set(task._id as string, newStatus);
+          next.set(task._id as string, { status: newStatus, at: Date.now() });
           return next;
         });
       });
