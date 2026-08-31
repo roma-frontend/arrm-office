@@ -177,7 +177,9 @@ export default function ChatClient({
   useEffect(() => {
     if (hrMigrationDone.current) return;
     hrMigrationDone.current = true;
-    void ensureHrMembership({}).catch(() => {});
+    ensureHrMembership({}).then((r) => {
+      if (r && !r.migrated) console.warn('[ChatClient] HR migration skipped:', r);
+    }).catch((e) => console.error('[ChatClient] HR migration error:', e));
   }, [ensureHrMembership]);
 
   // When deselecting on mobile

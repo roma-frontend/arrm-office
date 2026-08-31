@@ -208,11 +208,15 @@ export const ensureHrAssistantMembership = mutation({
   handler: async (ctx) => {
     const caller = await getAuthCaller(ctx);
     if (!caller) throw new Error('Not authenticated');
-    if (!caller.organizationId) return { migrated: false };
-    await ctx.runMutation(internal.attendance.bot.seedHrAssistantMembers, {
-      organizationId: caller.organizationId,
-    });
-    return { migrated: true };
+    if (!caller.organizationId) return { migrated: false, reason: 'no-org' };
+    try {
+      const result = await ctx.runMutation(internal.attendance.bot.seedHrAssistantMembers, {
+        organizationId: caller.organizationId,
+      });
+      return { migrated: true, ...result };
+    } catch (err: any) {
+      return { migrated: false, error: err?.message ?? String(err) };
+    }
   },
 });
 

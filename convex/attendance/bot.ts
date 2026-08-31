@@ -471,15 +471,14 @@ export const seedHrAssistantMembers = internalMutation({
   handler: async (ctx, args) => {
     const conversation = await findOrCreateHrAssistantChannel(ctx, args.organizationId);
 
-    // Clean up duplicate HR Assistant channels created by the isDeleted bug.
-    // Migrate memberships from old channels to the canonical one, then
-    // soft-delete the old channels so only the canonical one remains.
+    // Clean up ALL duplicate HR Assistant channels (both active and already
+    // soft-deleted). Migrate memberships from old channels to the canonical
+    // one, then soft-delete any that aren't the canonical channel.
     const allChannels = await ctx.db
       .query('chatConversations')
       .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
       .filter((q) =>
         q.and(
-          q.not(q.eq(q.field('isDeleted'), true)),
           q.eq(q.field('type'), 'group'),
           q.eq(q.field('name'), 'HR Assistant'),
         ),
@@ -507,7 +506,10 @@ export const seedHrAssistantMembers = internalMutation({
             await ctx.db.patch(m._id, { conversationId: conversation!._id });
           }
         }
-        await ctx.db.patch(ch._id, { isDeleted: true, deletedAt: now });
+        // Soft-delete if not already deleted
+        if (!ch.isDeleted) {
+          await ctx.db.patch(ch._id, { isDeleted: true, deletedAt: now });
+        }
       }
     }
 
