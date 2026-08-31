@@ -56,6 +56,10 @@ interface MessageMap {
   entryTemplate: (line: { name: string; detail?: string }) => string;
   /** Footer showing when the digest was last refreshed. */
   refreshedAtTemplate: (at: string) => string;
+  /** Label for total employees. */
+  totalLabel: string;
+  /** Label for present employees. */
+  presentLabel: string;
 }
 
 const MESSAGES: Record<SupportedLocale, MessageMap> = {
@@ -71,6 +75,8 @@ const MESSAGES: Record<SupportedLocale, MessageMap> = {
       `📊 Office: ${c.office} · WFH: ${c.wfh} · Trip: ${c.trip} · Sick: ${c.sick} · Leave: ${c.leave}`,
     entryTemplate: ({ name, detail }) => (detail ? `• ${name} — ${detail}` : `• ${name}`),
     refreshedAtTemplate: (at) => `🔄 Refreshed at ${at}`,
+    totalLabel: 'Total',
+    presentLabel: 'Present',
   },
   ru: {
     digestTitle: '☀️ Посещаемость за {{date}}',
@@ -84,6 +90,8 @@ const MESSAGES: Record<SupportedLocale, MessageMap> = {
       `📊 Офис: ${c.office} · Удалённо: ${c.wfh} · Командировка: ${c.trip} · Больничные: ${c.sick} · Отпуск: ${c.leave}`,
     entryTemplate: ({ name, detail }) => (detail ? `• ${name} — ${detail}` : `• ${name}`),
     refreshedAtTemplate: (at) => `🔄 Обновлено в ${at}`,
+    totalLabel: 'Всего',
+    presentLabel: 'На месте',
   },
   hy: {
     digestTitle: '☀️ Մասնակցություն՝ {{date}}',
@@ -97,6 +105,8 @@ const MESSAGES: Record<SupportedLocale, MessageMap> = {
       `📊 Գրասենյակ: ${c.office} · Հեռավար: ${c.wfh} · Ուղևորություն: ${c.trip} · Հիվանդ: ${c.sick} · Արձակուրդ: ${c.leave}`,
     entryTemplate: ({ name, detail }) => (detail ? `• ${name} — ${detail}` : `• ${name}`),
     refreshedAtTemplate: (at) => `🔄 Թարմացվել է՝ ${at}`,
+    totalLabel: 'Ընդհանուր',
+    presentLabel: 'Տեղում',
   },
   de: {
     digestTitle: '☀️ Anwesenheit — {{date}}',
@@ -110,6 +120,8 @@ const MESSAGES: Record<SupportedLocale, MessageMap> = {
       `📊 Büro: ${c.office} · Homeoffice: ${c.wfh} · Reise: ${c.trip} · Krank: ${c.sick} · Urlaub: ${c.leave}`,
     entryTemplate: ({ name, detail }) => (detail ? `• ${name} — ${detail}` : `• ${name}`),
     refreshedAtTemplate: (at) => `🔄 Aktualisiert um ${at}`,
+    totalLabel: 'Gesamt',
+    presentLabel: 'Anwesend',
   },
 };
 
@@ -170,56 +182,63 @@ export function renderDigest(
       userName: person.name,
       type: 'office',
     };
-    // Replace the name with the canonical roster name (entries may carry an
-    // outdated display name if the employee changed it since the entry was
-    // written).
     entry.userName = person.name;
     buckets[entry.type].push(entry);
   }
 
+  const total = everyone.length;
+  const present = buckets.office.length + buckets.wfh.length;
+
   const lines: string[] = [];
+  // Title
   lines.push(msg.digestTitle.replace('{{date}}', date));
+  lines.push('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   lines.push('');
 
+  // Summary box
+  const summaryParts: string[] = [];
+  if (buckets.office.length > 0) summaryParts.push(`🏢 ${buckets.office.length}`);
+  if (buckets.wfh.length > 0) summaryParts.push(`🏠 ${buckets.wfh.length}`);
+  if (buckets.business_trip.length > 0) summaryParts.push(`✈️ ${buckets.business_trip.length}`);
+  if (buckets.sick.length > 0) summaryParts.push(`🤒 ${buckets.sick.length}`);
+  if (buckets.leave.length > 0) summaryParts.push(`🌴 ${buckets.leave.length}`);
+  if (buckets.holiday.length > 0) summaryParts.push(`🎉 ${buckets.holiday.length}`);
+  lines.push(`📊 ${summaryParts.join('  ·  ')}`);
+  lines.push(`👥 ${msg.totalLabel}: ${total}  |  ✅ ${msg.presentLabel}: ${present}`);
+  lines.push('');
+
+  // Sections with employee names
   const sections: Array<{
     header: string;
+    icon: string;
     list: AttendanceEntryLite[];
     detailKey?: 'note' | 'time';
   }> = [
-    { header: msg.sectionOffice, list: buckets.office },
-    { header: msg.sectionWfh, list: buckets.wfh },
-    { header: msg.sectionTrip, list: buckets.business_trip, detailKey: 'time' },
-    { header: msg.sectionSick, list: buckets.sick },
-    { header: msg.sectionLeave, list: buckets.leave },
-    { header: msg.sectionHoliday, list: buckets.holiday },
+    { header: msg.sectionOffice, icon: '🏢', list: buckets.office },
+    { header: msg.sectionWfh, icon: '🏠', list: buckets.wfh },
+    { header: msg.sectionTrip, icon: '✈️', list: buckets.business_trip, detailKey: 'time' },
+    { header: msg.sectionSick, icon: '🤒', list: buckets.sick },
+    { header: msg.sectionLeave, icon: '🌴', list: buckets.leave },
+    { header: msg.sectionHoliday, icon: '🎉', list: buckets.holiday },
   ];
 
   for (const sec of sections) {
     if (sec.list.length === 0) continue;
-    lines.push(sec.header);
+    lines.push(`${sec.header} (${sec.list.length})`);
+    lines.push('─────────────────────────────');
     for (const e of sec.list) {
       const detail =
         sec.detailKey === 'time' && (e.startTime || e.endTime)
-          ? `${e.startTime ?? ''}${e.startTime || e.endTime ? '–' : ''}${e.endTime ?? ''}`.replace(
-              /^–|–$/g,
+          ? `  ${e.startTime ?? ''}${e.startTime || e.endTime ? '–' : ''}${e.endTime ?? ''}`.replace(
+              /^\s*–|–$/g,
               '',
             )
           : e.note;
-      lines.push(msg.entryTemplate({ name: e.userName, detail }));
+      lines.push(`  👤  ${e.userName}${detail ? `  — ${detail}` : ''}`);
     }
     lines.push('');
   }
 
-  lines.push(
-    msg.summaryTemplate({
-      office: buckets.office.length,
-      wfh: buckets.wfh.length,
-      trip: buckets.business_trip.length,
-      sick: buckets.sick.length,
-      leave: buckets.leave.length,
-    }),
-  );
-  lines.push('');
   lines.push(msg.refreshedAtTemplate(refreshedAt));
 
   return { title: msg.digestTitle.replace('{{date}}', date), body: lines.join('\n') };
