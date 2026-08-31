@@ -421,7 +421,8 @@ async function findOrCreateHrAssistantChannel(
     .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
     .filter((q) =>
       q.and(
-        q.eq(q.field('isDeleted'), false),
+        // isDeleted is optional — undefined means not deleted
+        q.not(q.eq(q.field('isDeleted'), true)),
         q.eq(q.field('type'), 'group'),
         q.eq(q.field('name'), 'HR Assistant'),
       ),
@@ -469,6 +470,27 @@ export const seedHrAssistantMembers = internalMutation({
   args: { organizationId: v.id('organizations') },
   handler: async (ctx, args) => {
     const conversation = await findOrCreateHrAssistantChannel(ctx, args.organizationId);
+
+    // Clean up duplicate HR Assistant channels created by the isDeleted bug.
+    // Soft-delete any extra channels so only the canonical one remains.
+    const allChannels = await ctx.db
+      .query('chatConversations')
+      .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
+      .filter((q) =>
+        q.and(
+          q.not(q.eq(q.field('isDeleted'), true)),
+          q.eq(q.field('type'), 'group'),
+          q.eq(q.field('name'), 'HR Assistant'),
+        ),
+      )
+      .collect();
+    const now = Date.now();
+    for (const ch of allChannels) {
+      if (ch._id !== conversation!._id) {
+        await ctx.db.patch(ch._id, { isDeleted: true, deletedAt: now });
+      }
+    }
+
     const users = await ctx.db
       .query('users')
       .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
@@ -478,7 +500,6 @@ export const seedHrAssistantMembers = internalMutation({
       .withIndex('by_conversation', (q) => q.eq('conversationId', conversation!._id))
       .collect();
     const existingIds = new Set(existing.map((m) => m.userId));
-    const now = Date.now();
     let added = 0;
     for (const u of users) {
       if (existingIds.has(u._id)) continue;
