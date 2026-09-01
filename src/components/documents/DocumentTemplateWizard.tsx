@@ -120,7 +120,7 @@ function SortableField({
             />
           </div>
           <div className="w-32">
-            <Label className="text-xs">{t('documents.fieldType')}</Label>
+            <Label className="text-xs">{t('common.type', 'Type')}</Label>
             <Select
               value={field.type}
               onValueChange={(v) => onUpdate(index, { type: v as TemplateField['type'] })}

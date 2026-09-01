@@ -28,6 +28,7 @@ import {
 import { toast } from 'sonner';
 import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import DocumentUploadWizard from '@/components/documents/DocumentUploadWizard';
+import DocumentTemplateUseWizard from '@/components/documents/DocumentTemplateUseWizard';
 import DocumentTemplateWizard from '@/components/documents/DocumentTemplateWizard';
 import DocumentBuilderTab from '@/components/documents/DocumentBuilderTab';
 import IssuedDocumentsTab from '@/components/documents/IssuedDocumentsTab';
@@ -248,7 +249,6 @@ export default function DocumentsClient() {
 
   const handleCreateDocFromTemplate = (templateId: Id<'documentTemplates'>) => {
     setCreateDocFromTemplate(templateId);
-    setShowUploadWizard(true);
   };
 
   // Filter documents by tab
@@ -676,10 +676,18 @@ export default function DocumentsClient() {
         <DocumentUploadWizard
           onClose={() => {
             setShowUploadWizard(false);
-            setCreateDocFromTemplate(null);
           }}
           onSuccess={handleWizardSuccess}
-          templateId={createDocFromTemplate || undefined}
+        />
+      )}
+
+      {/* Use Template Wizard */}
+      {createDocFromTemplate && (
+        <DocumentTemplateUseWizard
+          open={!!createDocFromTemplate}
+          onClose={() => setCreateDocFromTemplate(null)}
+          onSuccess={handleWizardSuccess}
+          templateId={createDocFromTemplate}
         />
       )}
 

@@ -11,7 +11,7 @@ import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { CreateTaskWizard } from './CreateTaskWizard';
 import { ProjectBadge } from './ProjectBadge';
 import { localizedTaskTitle, type TitledTask } from '@/lib/taskTitle';
-import { resolveStatus } from '../../../convex/lib/taskStatus';
+import { resolveStatus, STATUS_TYPE_TO_CANONICAL } from '../../../convex/lib/taskStatus';
 import { statusLabel } from '@/lib/taskLabels';
 import { taskColorClasses, CHIP_BASE } from '@/lib/taskColors';
 import { cn } from '@/lib/utils';
@@ -326,7 +326,7 @@ function StatusCircleButton({
   const resolvedStatus = statuses
     ? resolveStatus({ status: task.status as any, statusKey: task.statusKey }, statuses)
     : null;
-  const resolvedKey = (resolvedStatus?.key ?? task.status) as Status;
+  const resolvedKey = statuses ? canonicalKey(task, statuses) : (task.status as Status);
   const statusCfg = STATUS_CONFIG[resolvedKey];
   const isCompleted = resolvedKey === 'completed';
   if (!canManage) {
@@ -1314,6 +1314,23 @@ function RecurringSeriesDetailSheet({
   );
 }
 
+/**
+ * Canonical status key from a task, using resolveStatus + the type→canonical
+ * mapping.  Handles custom statuses correctly (e.g. `statusKey: 'shipped'`
+ * with type `done` → `'completed'`), where the raw `resolved.key` would be
+ * the org's custom key instead of the canonical value.
+ */
+function canonicalKey(
+  task: { status: string; statusKey?: string | null },
+  statuses: readonly import('../../../convex/lib/taskStatus').TaskStatusDef[],
+): Status {
+  const resolved = resolveStatus(
+    { status: task.status as any, statusKey: task.statusKey },
+    statuses,
+  );
+  return STATUS_TYPE_TO_CANONICAL[resolved.type] as Status;
+}
+
 interface TasksClientProps {
   userId: string;
   userRole: 'superadmin' | 'admin' | 'supervisor' | 'employee' | 'driver';
@@ -1689,13 +1706,9 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
           // Also check server data for faster cleanup
           const serverTask = rawTasksRef.current?.find((t) => t._id === taskId);
           if (serverTask) {
-            const resolved = statuses
-              ? resolveStatus(
-                  { status: serverTask.status as any, statusKey: serverTask.statusKey },
-                  statuses,
-                )
-              : null;
-            const serverKey = (resolved?.key ?? serverTask.status) as Status;
+            const serverKey = statuses
+              ? canonicalKey(serverTask, statuses)
+              : (serverTask.status as Status);
             if (
               serverKey === entry.status || // Convex delivered confirmed status
               (serverKey !== entry.status && age > GRACE_MS) // revert happened
@@ -1862,10 +1875,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
     const filtered = rawTasksWithOptimistic.filter((t) => {
       // Resolve status through org definitions so recurring tasks with
       // mismatched status/statusKey are treated consistently everywhere.
-      const rKey = statuses
-        ? (resolveStatus({ status: t.status as any, statusKey: t.statusKey }, statuses)
-            .key as Status)
-        : (t.status as Status);
+      const rKey = statuses ? canonicalKey(t, statuses) : (t.status as Status);
       const matchPriority = filterPriority === 'all' || t.priority === filterPriority;
       const matchStatus = filterStatus === 'all' || rKey === filterStatus;
       const matchSearch = !search || t.title.toLowerCase().includes(search.toLowerCase());
@@ -1958,12 +1968,11 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
   const stats = useMemo(() => {
     const all = rawTasksWithOptimistic ?? [];
     /** Resolve the status key through org definitions so recurring tasks
-     *  with mismatched status/statusKey show up in the correct bucket. */
+     *  with mismatched status/statusKey show up in the correct bucket.
+     *  Uses canonicalKey to map custom statuses (e.g. 'shipped') to their
+     *  canonical equivalents (e.g. 'completed'). */
     const resolvedKey = (t: (typeof all)[number]) => {
-      const r = statuses
-        ? resolveStatus({ status: t.status as any, statusKey: t.statusKey }, statuses)
-        : null;
-      return (r?.key ?? t.status) as Status;
+      return statuses ? canonicalKey(t, statuses) : (t.status as Status);
     };
     return {
       total: all.filter((t) => resolvedKey(t) !== 'cancelled').length,
@@ -1990,12 +1999,9 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
       cancelled: [],
     };
     tasks.forEach((t) => {
-      // Use resolveStatus so recurring tasks with mismatched status/statusKey
-      // land in the correct section (same logic as the Table view).
-      const resolved = statuses
-        ? resolveStatus({ status: t.status as any, statusKey: t.statusKey }, statuses)
-        : null;
-      const key = (resolved?.key ?? t.status) as Status;
+      // Use canonicalKey so recurring tasks with mismatched status/statusKey
+      // land in the correct column (same logic as the Table view).
+      const key = statuses ? canonicalKey(t, statuses) : (t.status as Status);
       if (map[key]) map[key].push(t);
       else map.pending.push(t);
     });
@@ -2010,12 +2016,10 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
         key: status,
         label: t(STATUS_CONFIG[status].labelKey),
         tasks: tasks.filter((t) => {
-          // Use resolveStatus so recurring tasks with mismatched status/statusKey
+          // Use canonicalKey so recurring tasks with mismatched status/statusKey
           // land in the correct section (same logic as the Table view).
-          const resolved = statuses
-            ? resolveStatus({ status: t.status as any, statusKey: t.statusKey }, statuses)
-            : null;
-          return (resolved?.key ?? t.status) === status;
+          const key = statuses ? canonicalKey(t, statuses) : (t.status as Status);
+          return key === status;
         }),
       }));
     }
@@ -2367,10 +2371,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
       if (!overStatus) return;
       // Resolve the task's current status through org definitions so
       // custom statuses are compared against the right canonical key.
-      const resolvedCurrent = statuses
-        ? resolveStatus({ status: task.status as any, statusKey: task.statusKey }, statuses)
-        : null;
-      const currentStatusKey = (resolvedCurrent?.key ?? task.status) as Status;
+      const currentStatusKey = statuses ? canonicalKey(task, statuses) : (task.status as Status);
       if (currentStatusKey === overStatus) return;
       // Set optimistic status for instant UI feedback (same as Kanban).
       flushSync(() => {
@@ -2397,10 +2398,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
       if (!task) return;
       // Resolve the task's current status through org definitions so
       // custom statuses are compared against the right canonical key.
-      const resolvedCurrent = statuses
-        ? resolveStatus({ status: task.status as any, statusKey: task.statusKey }, statuses)
-        : null;
-      const currentStatusKey = (resolvedCurrent?.key ?? task.status) as Status;
+      const currentStatusKey = statuses ? canonicalKey(task, statuses) : (task.status as Status);
       if (currentStatusKey === newStatus) return;
       // Set optimistic status for instant card movement.
       flushSync(() => {

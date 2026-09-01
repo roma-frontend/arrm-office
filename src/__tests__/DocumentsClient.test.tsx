@@ -171,6 +171,14 @@ jest.mock('@/components/documents/DocumentUploadWizard', () => ({
     return <div data-testid="upload-wizard" data-template-id={props.templateId ?? ''} />;
   },
 }));
+let templateUseWizardProps: any = null;
+jest.mock('@/components/documents/DocumentTemplateUseWizard', () => ({
+  __esModule: true,
+  default: (props: any) => {
+    templateUseWizardProps = props;
+    return <div data-testid="template-use-wizard" data-template-id={props.templateId ?? ''} />;
+  },
+}));
 jest.mock('@/components/documents/DocumentTemplateWizard', () => ({
   __esModule: true,
   default: (props: any) => {
@@ -303,6 +311,7 @@ describe('DocumentsClient', () => {
     queryCalls = {};
     mutationImpls = {};
     uploadWizardProps = null;
+    templateUseWizardProps = null;
     templateWizardProps = null;
     builderProps = null;
     issuedProps = null;
@@ -611,12 +620,12 @@ describe('DocumentsClient', () => {
     expect(badges[1].textContent).toBe('2 fields');
   });
 
-  it('opens the upload wizard with a template id via Use Template', () => {
+  it('opens the template use wizard with a template id via Use Template', () => {
     render(<DocumentsClient />);
     fireEvent.click(screen.getByText('Templates'));
     fireEvent.click(screen.getByText('Use Template'));
-    expect(screen.getByTestId('upload-wizard')).toBeInTheDocument();
-    expect(screen.getByTestId('upload-wizard').getAttribute('data-template-id')).toBe('t1');
+    expect(screen.getByTestId('template-use-wizard')).toBeInTheDocument();
+    expect(screen.getByTestId('template-use-wizard').getAttribute('data-template-id')).toBe('t1');
   });
 
   it('deletes a template and shows a success toast', async () => {
