@@ -64,7 +64,9 @@ beforeEach(() => {
   mockGetAuthCaller = jest.requireMock('../../convex/lib/getAuthCaller').getAuthCaller;
   mockNotify = jest.requireMock('../../convex/lib/notify').notify;
   mockInsertSignatureDocument = jest.requireMock('../../convex/signatures').insertSignatureDocument;
-  mockAllocateDocumentNumber = jest.requireMock('../../convex/lib/documentNumbers').allocateDocumentNumber;
+  mockAllocateDocumentNumber = jest.requireMock(
+    '../../convex/lib/documentNumbers',
+  ).allocateDocumentNumber;
   mockHasCapability = jest.requireMock('../../convex/lib/capabilities').hasCapability;
   mockRestoreLeaveBalance = jest.requireMock('../../convex/leaves/balances').restoreLeaveBalance;
 
@@ -217,9 +219,9 @@ describe('generateLeaveRequestDocument', () => {
     const { ctx, get } = makeCtx();
     get.mockResolvedValueOnce(null); // leave
 
-    await expect(
-      handlers.generateLeaveRequestDocument(ctx, { leaveId: LEAVE_ID }),
-    ).rejects.toThrow('Not authenticated');
+    await expect(handlers.generateLeaveRequestDocument(ctx, { leaveId: LEAVE_ID })).rejects.toThrow(
+      'Not authenticated',
+    );
   });
 
   it('throws when leave not found', async () => {
@@ -227,9 +229,9 @@ describe('generateLeaveRequestDocument', () => {
     const { ctx, get } = makeCtx();
     get.mockResolvedValueOnce(null);
 
-    await expect(
-      handlers.generateLeaveRequestDocument(ctx, { leaveId: LEAVE_ID }),
-    ).rejects.toThrow('Leave request not found');
+    await expect(handlers.generateLeaveRequestDocument(ctx, { leaveId: LEAVE_ID })).rejects.toThrow(
+      'Leave request not found',
+    );
   });
 
   it('throws when leave is not pending', async () => {
@@ -237,9 +239,9 @@ describe('generateLeaveRequestDocument', () => {
     const { ctx, get } = makeCtx();
     get.mockResolvedValueOnce(leaveDoc({ status: 'approved' }));
 
-    await expect(
-      handlers.generateLeaveRequestDocument(ctx, { leaveId: LEAVE_ID }),
-    ).rejects.toThrow('Leave is not pending');
+    await expect(handlers.generateLeaveRequestDocument(ctx, { leaveId: LEAVE_ID })).rejects.toThrow(
+      'Leave is not pending',
+    );
   });
 
   it('returns existing document id if already generated', async () => {
@@ -316,9 +318,7 @@ describe('generateLeaveRequestDocument', () => {
 
     // Only employee should NOT get notified about their own doc
     const notifyCalls = mockNotify.mock.calls;
-    const employeeNotified = notifyCalls.some(
-      (call: any[]) => call[1]?.userId === USER_ID,
-    );
+    const employeeNotified = notifyCalls.some((call: any[]) => call[1]?.userId === USER_ID);
     expect(employeeNotified).toBe(false);
   });
 });
@@ -332,15 +332,17 @@ describe('generateLeaveOrderDocument', () => {
     const { ctx, get } = makeCtx();
     get.mockResolvedValueOnce(leaveDoc({ status: 'pending' }));
 
-    await expect(
-      handlers.generateLeaveOrderDocument(ctx, { leaveId: LEAVE_ID }),
-    ).rejects.toThrow('Leave must be approved');
+    await expect(handlers.generateLeaveOrderDocument(ctx, { leaveId: LEAVE_ID })).rejects.toThrow(
+      'Leave must be approved',
+    );
   });
 
   it('returns existing document id if already generated', async () => {
     mockGetAuthCaller.mockResolvedValue(makeCaller());
     const { ctx, get } = makeCtx();
-    get.mockResolvedValueOnce(leaveDoc({ status: 'approved', leaveOrderDocumentId: 'existing_order' }));
+    get.mockResolvedValueOnce(
+      leaveDoc({ status: 'approved', leaveOrderDocumentId: 'existing_order' }),
+    );
 
     const result = await handlers.generateLeaveOrderDocument(ctx, { leaveId: LEAVE_ID });
     expect(result).toEqual({ documentId: 'existing_order' });
@@ -475,12 +477,18 @@ describe('getLeaveDocuments', () => {
     const { ctx, get } = makeCtx();
 
     get
-      .mockResolvedValueOnce(leaveDoc({
-        leaveRequestDocumentId: 'req_doc',
-        leaveOrderDocumentId: 'order_doc',
-      }))
-      .mockResolvedValueOnce(signatureDoc({ _id: 'req_doc', status: 'signed', title: 'Leave Request' }))
-      .mockResolvedValueOnce(signatureDoc({ _id: 'order_doc', status: 'pending', title: 'Leave Order' }));
+      .mockResolvedValueOnce(
+        leaveDoc({
+          leaveRequestDocumentId: 'req_doc',
+          leaveOrderDocumentId: 'order_doc',
+        }),
+      )
+      .mockResolvedValueOnce(
+        signatureDoc({ _id: 'req_doc', status: 'signed', title: 'Leave Request' }),
+      )
+      .mockResolvedValueOnce(
+        signatureDoc({ _id: 'order_doc', status: 'pending', title: 'Leave Order' }),
+      );
 
     const result = await handlers.getLeaveDocuments(ctx, { leaveId: LEAVE_ID });
 
@@ -568,10 +576,7 @@ describe('releaseLeaveRow', () => {
 
     await releaseLeaveRow(ctx, 'req_doc');
 
-    expect(patch).toHaveBeenCalledWith(
-      LEAVE_ID,
-      expect.objectContaining({ status: 'rejected' }),
-    );
+    expect(patch).toHaveBeenCalledWith(LEAVE_ID, expect.objectContaining({ status: 'rejected' }));
     expect(mockNotify).toHaveBeenCalled();
     expect(insert).toHaveBeenCalledWith(
       'auditLogs',
@@ -611,10 +616,7 @@ describe('releaseLeaveRow', () => {
       'paid',
       5,
     );
-    expect(patch).toHaveBeenCalledWith(
-      LEAVE_ID,
-      expect.objectContaining({ status: 'rejected' }),
-    );
+    expect(patch).toHaveBeenCalledWith(LEAVE_ID, expect.objectContaining({ status: 'rejected' }));
     expect(mockNotify).toHaveBeenCalled();
     expect(insert).toHaveBeenCalledWith(
       'auditLogs',

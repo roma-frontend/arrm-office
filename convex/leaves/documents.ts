@@ -31,10 +31,7 @@ async function findOrgHrUsers(
     .withIndex('by_org_role', (q) => q.eq('organizationId', organizationId).eq('role', 'admin'))
     .take(SMALL_LIST_CAP);
   return admins.filter(
-    (u) =>
-      u.isActive &&
-      hasCapability(u, 'leave.approve.org') &&
-      !u.email?.endsWith('.internal'),
+    (u) => u.isActive && hasCapability(u, 'leave.approve.org') && !u.email?.endsWith('.internal'),
   );
 }
 
@@ -355,9 +352,7 @@ export const generateLeaveOrderDocument = internalMutation({
     if (!org) throw new Error('Organization not found');
 
     // Find HR users who can countersign
-    const hrUsers = leave.organizationId
-      ? await findOrgHrUsers(ctx, leave.organizationId)
-      : [];
+    const hrUsers = leave.organizationId ? await findOrgHrUsers(ctx, leave.organizationId) : [];
 
     // Filter out the reviewer (supervisor) from HR list to avoid self-signing
     const approverHrUsers = hrUsers.filter(
@@ -520,7 +515,11 @@ export async function releaseLeaveRow(
 
   if (leaveAsRequest && leaveAsRequest.status === 'pending') {
     // Supervisor declined the leave request document — reject the leave
-    await rejectLeaveFromSignature(ctx, leaveAsRequest, 'Supervisor declined the leave request document');
+    await rejectLeaveFromSignature(
+      ctx,
+      leaveAsRequest,
+      'Supervisor declined the leave request document',
+    );
     return;
   }
 

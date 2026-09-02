@@ -136,7 +136,12 @@ export default function DocumentDetailClient() {
     if (!popup) {
       // Popup was blocked — fall back to same-tab navigation.
       window.location.href = document.fileUrl;
-      toast.info(t('documents.popupBlocked', 'Document opened in the current tab — allow popups for this site to open in a new tab'));
+      toast.info(
+        t(
+          'documents.popupBlocked',
+          'Document opened in the current tab — allow popups for this site to open in a new tab',
+        ),
+      );
       return;
     }
     setIsViewing(true);
