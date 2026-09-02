@@ -46,6 +46,10 @@ export const leaves = {
     reviewedBy: v.optional(v.id('users')),
     reviewComment: v.optional(v.string()),
     reviewedAt: v.optional(v.number()),
+    /** Bilingual leave request document sent to the supervisor for signature. */
+    leaveRequestDocumentId: v.optional(v.id('signatureDocuments')),
+    /** Bilingual leave order document sent to HR for signature (generated after supervisor approval). */
+    leaveOrderDocumentId: v.optional(v.id('signatureDocuments')),
     createdAt: v.number(),
     updatedAt: v.number(),
   })

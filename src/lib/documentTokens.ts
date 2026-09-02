@@ -51,6 +51,14 @@ export interface MergeSourceData {
     name?: string | null;
     position?: string | null;
   };
+  /** Leave request details, populated for leave-related documents. */
+  leave?: {
+    type?: string | null;
+    startDate?: string | null;
+    endDate?: string | null;
+    days?: number | null;
+    reason?: string | null;
+  };
   /** Absolute timestamp for `{{today}}` — pass Date.now() from the caller. */
   now: number;
 }
@@ -115,6 +123,12 @@ export const TOKEN_RESOLVERS: Record<string, TokenResolver> = {
 
   'signatory.name': (d) => text(d.signatory?.name),
   'signatory.position': (d) => text(d.signatory?.position),
+
+  'leave.type': (d) => text(d.leave?.type),
+  'leave.startDate': (d, lang) => dateString(d.leave?.startDate, lang),
+  'leave.endDate': (d, lang) => dateString(d.leave?.endDate, lang),
+  'leave.days': (d) => (typeof d.leave?.days === 'number' ? String(d.leave.days) : MISSING),
+  'leave.reason': (d) => text(d.leave?.reason),
 
   today: (d, lang) => formatDate(d.now, lang, { year: 'numeric', month: 'long', day: 'numeric' }),
 };

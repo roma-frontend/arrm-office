@@ -129,13 +129,22 @@ export default function DocumentDetailClient() {
 
   const handleView = async () => {
     if (!currentUser || !document) return;
+    // Open the file immediately while still inside the user-gesture call
+    // stack — calling window.open *after* an await lets the browser's
+    // popup blocker kill it in production.
+    const popup = window.open(document.fileUrl, '_blank', 'noopener,noreferrer');
+    if (!popup) {
+      // Popup was blocked — fall back to same-tab navigation.
+      window.location.href = document.fileUrl;
+      toast.info(t('documents.popupBlocked', 'Document opened in the current tab — allow popups for this site to open in a new tab'));
+      return;
+    }
     setIsViewing(true);
     try {
       await recordView({
         organizationId: document.organizationId,
         documentId,
       });
-      window.open(document.fileUrl, '_blank', 'noopener,noreferrer');
     } catch {
       toast.error(t('documents.viewError'));
     } finally {

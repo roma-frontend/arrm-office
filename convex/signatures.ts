@@ -8,6 +8,7 @@ import { getAuthCaller, type AuthenticatedCaller } from './lib/getAuthCaller';
 import { notify } from './lib/notify';
 import { sha256Hex } from './lib/sha256';
 import type { Doc, Id } from './_generated/dataModel';
+import { releaseLeaveRow } from './leaves/documents';
 import {
   assertModuleAccess,
   assertQuota,
@@ -863,6 +864,7 @@ export const declineDocument = mutation({
       await ctx.db.patch(request.documentId, { status: 'cancelled' });
     }
     await releasePacketRow(ctx, request.documentId);
+    await releaseLeaveRow(ctx, request.documentId);
 
     // Audit log
     await ctx.db.insert('signatureAuditLog', {
@@ -912,6 +914,7 @@ export const cancelDocument = mutation({
 
     // Let the hiring packet row become editable / re-sendable again.
     await releasePacketRow(ctx, documentId);
+    await releaseLeaveRow(ctx, documentId);
 
     // Audit log
     await ctx.db.insert('signatureAuditLog', {

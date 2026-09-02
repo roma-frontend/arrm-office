@@ -104,7 +104,7 @@ jest.mock('@/components/ui/ShieldLoader', () => ({
 }));
 
 jest.mock('sonner', () => ({
-  toast: { success: jest.fn(), error: jest.fn() },
+  toast: { success: jest.fn(), error: jest.fn(), info: jest.fn() },
 }));
 
 jest.mock('lucide-react', () => {
@@ -509,7 +509,7 @@ describe('DocumentsClient', () => {
   // ── View / publish / delete flows ───────────────────────────────────────
 
   it('opens a document after recording the view', async () => {
-    const openMock = jest.fn();
+    const openMock = jest.fn().mockReturnValue({ focus: jest.fn() });
     (window as any).open = openMock;
     mutationImpls.recordDocumentView = jest.fn().mockResolvedValue(undefined);
     render(<DocumentsClient />);
@@ -526,6 +526,8 @@ describe('DocumentsClient', () => {
   });
 
   it('shows an error toast when recording the view fails', async () => {
+    const openMock = jest.fn().mockReturnValue({ focus: jest.fn() });
+    (window as any).open = openMock;
     mutationImpls.recordDocumentView = jest.fn().mockRejectedValue(new Error('boom'));
     render(<DocumentsClient />);
 

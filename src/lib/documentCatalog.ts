@@ -655,7 +655,10 @@ export const CATALOG: CatalogTemplate[] = [
         title: 'Leave Order',
         body:
           'ORDER\n\n' +
-          '{{org.name}} hereby grants {{employee.fullName}}, {{employee.position}} of the {{employee.department}} department, leave in accordance with the applicable leave policy.\n\n' +
+          '{{org.name}} hereby grants {{employee.fullName}}, {{employee.position}} of the {{employee.department}} department,\n' +
+          '{{leave.type}} leave for {{leave.days}} day(s), from {{leave.startDate}} to {{leave.endDate}},\n' +
+          'for the following reason: {{leave.reason}}.\n\n' +
+          'This order is issued in accordance with the applicable leave policy.\n\n' +
           'Issued by: {{signatory.name}}, {{signatory.position}}\n' +
           'Date: {{today}}',
       },
@@ -663,7 +666,10 @@ export const CATALOG: CatalogTemplate[] = [
         title: 'Приказ об отпуске',
         body:
           'ПРИКАЗ\n\n' +
-          '{{org.name}} предоставляет {{employee.fullName}}, {{employee.position}} отдела {{employee.department}}, отпуск в соответствии с действующей политикой отпусков.\n\n' +
+          '{{org.name}} предоставляет {{employee.fullName}}, {{employee.position}} отдела {{employee.department}},\n' +
+          '{{leave.type}} отпуск на {{leave.days}} рабочий(их) дней, с {{leave.startDate}} по {{leave.endDate}},\n' +
+          'по следующей причине: {{leave.reason}}.\n\n' +
+          'Настоящий приказ издан в соответствии с действующей политикой отпусков.\n\n' +
           'Издал: {{signatory.name}}, {{signatory.position}}\n' +
           'Дата: {{today}}',
       },
@@ -671,7 +677,10 @@ export const CATALOG: CatalogTemplate[] = [
         title: 'Urlaubsanordnung',
         body:
           'ANORDNUNG\n\n' +
-          '{{org.name}} gewährt {{employee.fullName}}, {{employee.position}} der Abteilung {{employee.department}}, Urlaub gemäß der geltenden Urlaubsrichtlinie.\n\n' +
+          '{{org.name}} gewährt {{employee.fullName}}, {{employee.position}} der Abteilung {{employee.department}},\n' +
+          '{{leave.type}} Urlaub für {{leave.days}} Tag(e), vom {{leave.startDate}} bis {{leave.endDate}},\n' +
+          'aus folgendem Grund: {{leave.reason}}.\n\n' +
+          'Diese Anordnung wird gemäß der geltenden Urlaubsrichtlinie ausgestellt.\n\n' +
           'Ausgestellt von: {{signatory.name}}, {{signatory.position}}\n' +
           'Datum: {{today}}',
       },
@@ -679,7 +688,10 @@ export const CATALOG: CatalogTemplate[] = [
         title: 'Արձակուրդի հրաման',
         body:
           'ՀՐԱՄԱՆ\n\n' +
-          '{{org.name}}-ը սույնով {{employee.department}} բաժնի {{employee.position}} {{employee.fullName}}-ին տրամադրում է արձակուրդ՝ գործող արձակուրդի քաղաքականությանը համապատասխան։\n\n' +
+          '{{org.name}}-ը սույնով {{employee.department}} բաժնի {{employee.position}} {{employee.fullName}}-ին տրամադրում է\n' +
+          '{{leave.type}} արձակուրդ՝ {{leave.days}} օրով, {{leave.startDate}}-ից մինչև {{leave.endDate}},\n' +
+          'հետևյալ պատճառով՝ {{leave.reason}}։\n\n' +
+          'Հրամանը տրված է գործող արձակուրդի քաղաքականությանը համապատասխան։\n\n' +
           'Տրված է՝ {{signatory.name}}, {{signatory.position}}\n' +
           'Ամսաթիվ՝ {{today}}',
       },

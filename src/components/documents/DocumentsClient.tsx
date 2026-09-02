@@ -146,13 +146,24 @@ export default function DocumentsClient() {
   const handleViewDocument = async (doc: DocumentWithUploader) => {
     if (!effectiveOrgId || !user?.id) return;
 
+    // Open the file immediately while still inside the user-gesture call
+    // stack — calling window.open *after* an await lets the browser's
+    // popup blocker kill it in production (the extra network latency makes
+    // the async gap visible to the heuristic).
+    const popup = window.open(doc.fileUrl, '_blank', 'noopener,noreferrer');
+    if (!popup) {
+      // Popup was blocked — fall back to same-tab navigation.
+      window.location.href = doc.fileUrl;
+      toast.info(t('documents.popupBlocked', 'Document opened in the current tab — allow popups for this site to open in a new tab'));
+      return;
+    }
+
     try {
       await recordViewMutation({
         organizationId: effectiveOrgId as Id<'organizations'>,
         documentId: doc._id,
       });
       setSelectedDocument(doc);
-      window.open(doc.fileUrl, '_blank', 'noopener,noreferrer');
     } catch {
       toast.error(t('documents.viewError', 'Failed to record document view'));
     }

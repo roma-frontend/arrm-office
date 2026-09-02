@@ -234,6 +234,14 @@ export const createLeave = mutation({
       createdAt: now,
     });
 
+    // Schedule generation of the bilingual leave-request document for supervisor signature.
+    // Done asynchronously so the leave creation is not blocked by the signing workflow.
+    if (!route.autoApprove) {
+      await ctx.scheduler.runAfter(0, internal.leaves.documents.generateLeaveRequestDocument, {
+        leaveId,
+      });
+    }
+
     return leaveId;
   },
 });
@@ -369,6 +377,15 @@ export const approveLeave = mutation({
           trigger: 'approval',
         });
       }
+    }
+
+    // After supervisor approval, schedule generation of the bilingual leave-order
+    // document. If HR exists it will be sent for countersignature; otherwise it
+    // is auto-approved.
+    if (!headSelfApproval && leave.organizationId) {
+      await ctx.scheduler.runAfter(0, internal.leaves.documents.generateLeaveOrderDocument, {
+        leaveId,
+      });
     }
 
     return leaveId;
