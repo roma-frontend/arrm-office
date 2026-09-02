@@ -13,9 +13,9 @@ import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 // ── Mocks ────────────────────────────────────────────────────────────────────
 jest.mock('../../convex/_generated/server', () => ({
   mutation: ({ handler, args }: any) => ({ handler, args }),
+  internalMutation: ({ handler, args }: any) => ({ handler, args }),
   query: ({ handler, args }: any) => ({ handler, args }),
   action: ({ handler, args }: any) => ({ handler, args }),
-  internalMutation: ({ handler, args }: any) => ({ handler, args }),
   internalQuery: ({ handler, args }: any) => ({ handler, args }),
   internalAction: ({ handler, args }: any) => ({ handler, args }),
 }));
@@ -537,9 +537,7 @@ describe('releaseLeaveRow', () => {
     const { ctx, patch } = makeCtx();
     // Both queries return null
     ctx.db.query = jest.fn(() => ({
-      withIndex: jest.fn().mockReturnValue({
-        filter: jest.fn().mockReturnValue({ first: jest.fn().mockResolvedValue(null) }),
-      }),
+      filter: jest.fn().mockReturnValue({ first: jest.fn().mockResolvedValue(null) }),
     }));
 
     await releaseLeaveRow(ctx, 'nonexistent_doc');
@@ -553,21 +551,17 @@ describe('releaseLeaveRow', () => {
     ctx.db.query = jest.fn(() => {
       callCount++;
       if (callCount === 1) {
-        // First query: by_org for request doc — returns a pending leave
+        // First query: leave request doc — returns a pending leave
         return {
-          withIndex: jest.fn().mockReturnValue({
-            filter: jest.fn().mockReturnValue({
-              first: jest.fn().mockResolvedValue(leaveDoc({ status: 'pending' })),
-            }),
+          filter: jest.fn().mockReturnValue({
+            first: jest.fn().mockResolvedValue(leaveDoc({ status: 'pending' })),
           }),
         };
       }
-      // Second query: by_org for order doc — returns null
+      // Second query: leave order doc — returns null
       return {
-        withIndex: jest.fn().mockReturnValue({
-          filter: jest.fn().mockReturnValue({
-            first: jest.fn().mockResolvedValue(null),
-          }),
+        filter: jest.fn().mockReturnValue({
+          first: jest.fn().mockResolvedValue(null),
         }),
       };
     });
@@ -593,21 +587,17 @@ describe('releaseLeaveRow', () => {
     ctx.db.query = jest.fn(() => {
       callCount++;
       if (callCount === 1) {
-        // First query: by_org for request doc — returns null
+        // First query: leave request doc — returns null
         return {
-          withIndex: jest.fn().mockReturnValue({
-            filter: jest.fn().mockReturnValue({
-              first: jest.fn().mockResolvedValue(null),
-            }),
+          filter: jest.fn().mockReturnValue({
+            first: jest.fn().mockResolvedValue(null),
           }),
         };
       }
-      // Second query: by_org for order doc — returns an approved leave
+      // Second query: leave order doc — returns an approved leave
       return {
-        withIndex: jest.fn().mockReturnValue({
-          filter: jest.fn().mockReturnValue({
-            first: jest.fn().mockResolvedValue(leaveDoc({ status: 'approved' })),
-          }),
+        filter: jest.fn().mockReturnValue({
+          first: jest.fn().mockResolvedValue(leaveDoc({ status: 'approved' })),
         }),
       };
     });

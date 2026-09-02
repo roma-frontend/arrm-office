@@ -8,11 +8,11 @@
  *   4. HR approves → done; HR rejects → cycle closes
  */
 import { v } from 'convex/values';
-import { mutation, query } from '../_generated/server';
+import { internalMutation, query } from '../_generated/server';
 import type { MutationCtx, QueryCtx } from '../_generated/server';
 import type { Doc, Id } from '../_generated/dataModel';
 import { getAuthCaller } from '../lib/getAuthCaller';
-import { isSuperadmin } from '../lib/auth';
+
 import { insertSignatureDocument } from '../signatures';
 import { allocateDocumentNumber } from '../lib/documentNumbers';
 import { notify } from '../lib/notify';
@@ -86,7 +86,6 @@ function buildLeaveRequestContent(args: {
   const typeLabel = leaveTypeLabel(args.leaveType, args.primaryLocale);
   const typeLabelSec = leaveTypeLabel(args.leaveType, args.secondaryLocale);
   const dayWord = args.days === 1 ? 'day' : 'days';
-  const dayWordRu = args.days === 1 ? 'день' : 'дней';
   const dayWordHy = args.days === 1 ? 'օր' : 'օր';
 
   const blocks: Array<{ left: string; right: string }> = [
@@ -220,7 +219,7 @@ function buildLeaveOrderContent(args: {
  * Called after `createLeave` to generate the bilingual leave-request document
  * and send it to the supervisor for signature.
  */
-export const generateLeaveRequestDocument = mutation({
+export const generateLeaveRequestDocument = internalMutation({
   args: {
     leaveId: v.id('leaveRequests'),
   },
@@ -246,8 +245,8 @@ export const generateLeaveRequestDocument = mutation({
     const content = buildLeaveRequestContent({
       orgName: org.name ?? 'Organization',
       employeeName: user.name ?? 'Employee',
-      employeePosition: (user as any).position ?? 'Employee',
-      employeeDepartment: (user as any).department ?? 'General',
+      employeePosition: user.position ?? 'Employee',
+      employeeDepartment: user.department ?? 'General',
       leaveType: leave.type,
       startDate: leave.startDate,
       endDate: leave.endDate,
@@ -336,7 +335,7 @@ export const generateLeaveRequestDocument = mutation({
  * If HR exists, generates a leave-order document and sends it to HR for countersignature.
  * If no HR, the order is auto-recorded.
  */
-export const generateLeaveOrderDocument = mutation({
+export const generateLeaveOrderDocument = internalMutation({
   args: {
     leaveId: v.id('leaveRequests'),
   },
@@ -375,15 +374,15 @@ export const generateLeaveOrderDocument = mutation({
     const content = buildLeaveOrderContent({
       orgName: org.name ?? 'Organization',
       employeeName: user.name ?? 'Employee',
-      employeePosition: (user as any).position ?? 'Employee',
-      employeeDepartment: (user as any).department ?? 'General',
+      employeePosition: user.position ?? 'Employee',
+      employeeDepartment: user.department ?? 'General',
       leaveType: leave.type,
       startDate: leave.startDate,
       endDate: leave.endDate,
       days: leave.days,
       reason: leave.reason,
       supervisorName: supervisor?.name ?? 'Supervisor',
-      supervisorPosition: (supervisor as any)?.position ?? 'Supervisor',
+      supervisorPosition: supervisor?.position ?? 'Supervisor',
       primaryLocale: 'hy',
       secondaryLocale: secLocale,
       today: new Date(now).toLocaleDateString('en-GB'),
@@ -510,10 +509,12 @@ export async function releaseLeaveRow(
   ctx: MutationCtx,
   documentId: Id<'signatureDocuments'>,
 ): Promise<void> {
-  // Check if this signature document is a leave request document
+  // We need to search across all organizations, so we cannot use the
+  // by_org index (it requires organizationId). A filter-based scan is
+  // acceptable because leaveRequestDocumentId / leaveOrderDocumentId
+  // mutations happen rarely (only on signature decline/cancel).
   const leaveAsRequest = await ctx.db
     .query('leaveRequests')
-    .withIndex('by_org', (q) => q.eq('organizationId', undefined as any))
     .filter((q) => q.eq(q.field('leaveRequestDocumentId'), documentId))
     .first();
 
@@ -523,10 +524,8 @@ export async function releaseLeaveRow(
     return;
   }
 
-  // Check if this signature document is a leave order document
   const leaveAsOrder = await ctx.db
     .query('leaveRequests')
-    .withIndex('by_org', (q) => q.eq('organizationId', undefined as any))
     .filter((q) => q.eq(q.field('leaveOrderDocumentId'), documentId))
     .first();
 

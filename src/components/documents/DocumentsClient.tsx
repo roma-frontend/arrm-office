@@ -153,6 +153,7 @@ export default function DocumentsClient() {
     const popup = window.open(doc.fileUrl, '_blank', 'noopener,noreferrer');
     if (!popup) {
       // Popup was blocked — fall back to same-tab navigation.
+      // eslint-disable-next-line react-hooks/immutability -- intentional fallback when popup is blocked
       window.location.href = doc.fileUrl;
       toast.info(t('documents.popupBlocked', 'Document opened in the current tab — allow popups for this site to open in a new tab'));
       return;
