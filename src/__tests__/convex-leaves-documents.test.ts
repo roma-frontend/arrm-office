@@ -119,7 +119,7 @@ function userDoc(overrides: Record<string, unknown> = {}) {
     role: 'employee',
     organizationId: ORG_ID,
     isActive: true,
-    preferredLocale: 'ru',
+    language: 'ru',
     department: 'Engineering',
     position: 'Senior Developer',
     ...overrides,

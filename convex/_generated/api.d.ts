@@ -89,6 +89,7 @@ import type * as leaveSettings from "../leaveSettings.js";
 import type * as leaves from "../leaves.js";
 import type * as leaves_approval from "../leaves/approval.js";
 import type * as leaves_balances from "../leaves/balances.js";
+import type * as leaves_documents from "../leaves/documents.js";
 import type * as leaves_helpers from "../leaves/helpers.js";
 import type * as leaves_index from "../leaves/index.js";
 import type * as leaves_mutations from "../leaves/mutations.js";
@@ -385,6 +386,7 @@ declare const fullApi: ApiFromModules<{
   leaves: typeof leaves;
   "leaves/approval": typeof leaves_approval;
   "leaves/balances": typeof leaves_balances;
+  "leaves/documents": typeof leaves_documents;
   "leaves/helpers": typeof leaves_helpers;
   "leaves/index": typeof leaves_index;
   "leaves/mutations": typeof leaves_mutations;

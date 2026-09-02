@@ -41,7 +41,7 @@ async function findOrgHrUsers(
 /** Locale of the secondary language for a leave document (Armenian + org lang). */
 function secondaryLocale(employee: Doc<'users'>): 'hy' | 'ru' | 'en' | 'de' {
   // Armenian is always primary; secondary comes from employee preference or org default
-  return (employee.preferredLocale as 'hy' | 'ru' | 'en' | 'de') ?? 'ru';
+  return (employee.language as 'hy' | 'ru' | 'en' | 'de') ?? 'ru';
 }
 
 /** Translate leave type key to display labels per locale. */
