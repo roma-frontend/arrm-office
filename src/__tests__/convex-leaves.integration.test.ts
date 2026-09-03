@@ -129,6 +129,36 @@ async function createLeaveRequest(
   return result as Id<'leaveRequests'>;
 }
 
+/**
+ * Create a completed leave-request signature document and link it to the leave.
+ * The approveLeave mutation requires the document to be signed before approval.
+ */
+async function createAndLinkLeaveDocument(
+  c: Ctx,
+  leaveId: Id<'leaveRequests'>,
+  adminId: Id<'users'>,
+  employeeId: Id<'users'>,
+): Promise<Id<'signatureDocuments'>> {
+  return await c.t.run(async (ctx) => {
+    const sigDocId = await ctx.db.insert('signatureDocuments', {
+      organizationId: c.organizationId,
+      title: 'Leave Request — Test',
+      content: JSON.stringify({ version: 2, blocks: [] }),
+      fieldDefinitions: [
+        { id: 'signature', label: 'Signature', type: 'signature', required: true },
+      ],
+      status: 'completed',
+      signatureBlock: true,
+      createdBy: adminId,
+      createdAt: Date.now(),
+    });
+    await ctx.db.patch(leaveId, {
+      leaveRequestDocumentId: sigDocId,
+    });
+    return sigDocId;
+  });
+}
+
 describe('leaves.createLeave', () => {
   it('rejects a user that does not exist', async () => {
     const c = await seed();
@@ -275,6 +305,8 @@ describe('leaves.approveLeave', () => {
       } as never);
     });
     const leaveId = await createLeaveRequest(c, asEmployee, c.employeeId);
+    // The document gate requires a completed leave-request document.
+    await createAndLinkLeaveDocument(c, leaveId, c.adminId, c.employeeId);
 
     const result = await asAdmin(c).mutation(api.leaves.approveLeave, {
       leaveId,
@@ -327,6 +359,7 @@ describe('leaves.approveLeave', () => {
       startDate: thisYearDate(6, 10),
       endDate: thisYearDate(8, 30),
     });
+    await createAndLinkLeaveDocument(c, leaveId, c.adminId, c.employeeId);
 
     await asAdmin(c).mutation(api.leaves.approveLeave, { leaveId });
 
@@ -337,6 +370,7 @@ describe('leaves.approveLeave', () => {
   it('only touches the users table when no profile exists', async () => {
     const c = await seed();
     const leaveId = await createLeaveRequest(c, asEmployee, c.employeeId);
+    await createAndLinkLeaveDocument(c, leaveId, c.adminId, c.employeeId);
 
     await asAdmin(c).mutation(api.leaves.approveLeave, { leaveId });
 
@@ -355,6 +389,7 @@ describe('leaves.approveLeave', () => {
   it('refuses to approve a non-pending leave twice', async () => {
     const c = await seed();
     const leaveId = await createLeaveRequest(c, asEmployee, c.employeeId);
+    await createAndLinkLeaveDocument(c, leaveId, c.adminId, c.employeeId);
     await asAdmin(c).mutation(api.leaves.approveLeave, { leaveId });
 
     await expect(asAdmin(c).mutation(api.leaves.approveLeave, { leaveId })).rejects.toThrow(

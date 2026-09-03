@@ -143,6 +143,31 @@ async function file(
   )) as Id<'leaveRequests'>;
 }
 
+/**
+ * Create a completed leave-request signature document and link it to the leave.
+ * The approveLeave mutation requires the document to be signed before approval.
+ */
+async function linkDoc(c: Ctx, leaveId: Id<'leaveRequests'>): Promise<Id<'signatureDocuments'>> {
+  return await c.t.run(async (ctx) => {
+    const sigDocId = await ctx.db.insert('signatureDocuments', {
+      organizationId: c.organizationId,
+      title: 'Leave Request — Test',
+      content: JSON.stringify({ version: 2, blocks: [] }),
+      fieldDefinitions: [
+        { id: 'signature', label: 'Signature', type: 'signature', required: true },
+      ],
+      status: 'completed',
+      signatureBlock: true,
+      createdBy: c.tigranId,
+      createdAt: Date.now(),
+    });
+    await ctx.db.patch(leaveId, {
+      leaveRequestDocumentId: sigDocId,
+    });
+    return sigDocId;
+  });
+}
+
 // ── The head of the organization ────────────────────────────────────────────
 describe('head of the organization', () => {
   it('records their own request as approved, with an audit note and the balance taken', async () => {
@@ -193,6 +218,7 @@ describe('head of the organization', () => {
         updatedAt: Date.now(),
       } as never),
     );
+    await linkDoc(c, leaveId);
 
     await expect(
       as(c, 'karine@profix.test').mutation(api.leaves.approveLeave, { leaveId }),
@@ -230,6 +256,7 @@ describe('approver resolution', () => {
   it("lets a manager approve their own report's request", async () => {
     const c = await seed();
     const leaveId = await file(c, 'anna@profix.test', c.annaId);
+    await linkDoc(c, leaveId);
 
     await as(c, 'lead@profix.test').mutation(api.leaves.approveLeave, { leaveId });
 
@@ -254,6 +281,7 @@ describe('approver resolution', () => {
   it('lets HR approve anyone in the organization, chain or not', async () => {
     const c = await seed();
     const leaveId = await file(c, 'anna@profix.test', c.annaId);
+    await linkDoc(c, leaveId);
 
     await as(c, 'karine@profix.test').mutation(api.leaves.approveLeave, { leaveId });
     const leave = await c.t.run((ctx) => ctx.db.get(leaveId));
@@ -264,6 +292,7 @@ describe('approver resolution', () => {
   it('lets the CEO approve an admin who reports to him', async () => {
     const c = await seed();
     const leaveId = await file(c, 'karine@profix.test', c.karineId);
+    await linkDoc(c, leaveId);
 
     await as(c, 'tigran@profix.test').mutation(api.leaves.approveLeave, { leaveId });
     const leave = await c.t.run((ctx) => ctx.db.get(leaveId));
@@ -304,7 +333,8 @@ describe('separation of duties', () => {
       as(c, 'karine@profix.test').mutation(api.leaves.approveLeave, { leaveId }),
     ).rejects.toThrow('filed on someone else');
 
-    // Anna's manager still can.
+    // Anna's manager still can (with document).
+    await linkDoc(c, leaveId);
     await as(c, 'lead@profix.test').mutation(api.leaves.approveLeave, { leaveId });
     expect((await c.t.run((ctx) => ctx.db.get(leaveId)))?.status).toBe('approved');
   });
@@ -330,6 +360,8 @@ describe('bulk approval', () => {
     const c = await seed();
     const mine = await file(c, 'anna@profix.test', c.annaId);
     const notMine = await file(c, 'otherlead@profix.test', c.otherLeadId);
+    // Link document only for the one that should be approved.
+    await linkDoc(c, mine);
 
     const result = (await as(c, 'lead@profix.test').mutation(api.leaves.bulkApproveLeaves, {
       leaveIds: [mine, notMine],
@@ -416,6 +448,7 @@ describe('getReviewEligibility', () => {
 describe('HR deleting their own leave', () => {
   async function approvedOwnLeave(c: Ctx) {
     const leaveId = await file(c, 'karine@profix.test', c.karineId);
+    await linkDoc(c, leaveId);
     await as(c, 'tigran@profix.test').mutation(api.leaves.approveLeave, { leaveId });
     // Approved by the CEO: 10 days of paid balance minus the 3 booked.
     expect((await c.t.run((ctx) => ctx.db.get(c.karineId)))?.paidLeaveBalance).toBe(7);

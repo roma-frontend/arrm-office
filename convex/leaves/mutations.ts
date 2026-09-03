@@ -274,6 +274,27 @@ export const approveLeave = mutation({
     await assertMayReview(ctx, reviewer, leave);
     const headSelfApproval = leave.userId === reviewerId;
 
+    // ── Mandatory document gate ──────────────────────────────────────────
+    // The bilingual leave-request document must exist and be fully signed
+    // before the supervisor may approve the leave. This ensures the formal
+    // audit trail is in place before the approval decision is recorded.
+    if (leave.leaveRequestDocumentId) {
+      const requestDoc = await ctx.db.get(leave.leaveRequestDocumentId);
+      if (!requestDoc) {
+        throw new Error('Leave request document not found — please try again.');
+      }
+      if (requestDoc.status !== 'completed') {
+        throw new Error(
+          `Leave request document must be signed before approval (current status: ${requestDoc.status}). Please sign the document first.`,
+        );
+      }
+    } else {
+      // Document not yet generated (async scheduler may still be running)
+      throw new Error(
+        'Leave request document has not been generated yet. Please wait a moment and try again.',
+      );
+    }
+
     const now = Date.now();
     await ctx.db.patch(leaveId, {
       status: 'approved',
@@ -1191,6 +1212,20 @@ export const bulkApproveLeaves = mutation({
         const bulkRefusal = await reviewRefusal(ctx, reviewer, leave);
         if (bulkRefusal) {
           errors.push(`${bulkRefusal} (leave ${leaveId})`);
+          continue;
+        }
+
+        // ── Mandatory document gate (same as single approveLeave) ────────
+        if (leave.leaveRequestDocumentId) {
+          const requestDoc = await ctx.db.get(leave.leaveRequestDocumentId);
+          if (!requestDoc || requestDoc.status !== 'completed') {
+            errors.push(
+              `Leave request document not signed (leave ${leaveId}, status: ${requestDoc?.status ?? 'missing'})`,
+            );
+            continue;
+          }
+        } else {
+          errors.push(`Leave request document not generated yet (leave ${leaveId})`);
           continue;
         }
 

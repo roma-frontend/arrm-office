@@ -130,6 +130,19 @@ function userDoc(overrides: Record<string, unknown> = {}) {
   };
 }
 
+const SIGNATURE_DOC_ID = 'sig_doc_1';
+
+function signatureDoc(overrides: Record<string, unknown> = {}) {
+  return {
+    _id: SIGNATURE_DOC_ID,
+    organizationId: ORG_A,
+    title: 'Leave Request — Anna',
+    content: '{}',
+    status: 'completed',
+    ...overrides,
+  };
+}
+
 function leaveDoc(overrides: Record<string, unknown> = {}) {
   return {
     _id: LEAVE_ID,
@@ -144,6 +157,7 @@ function leaveDoc(overrides: Record<string, unknown> = {}) {
     isRead: false,
     createdAt: 1_700_000_000_000,
     updatedAt: 1_700_000_000_000,
+    leaveRequestDocumentId: SIGNATURE_DOC_ID,
     ...overrides,
   };
 }
@@ -230,6 +244,7 @@ describe('approveLeave balance branches', () => {
       get
         .mockResolvedValueOnce(leaveDoc({ type })) // leave
         .mockResolvedValueOnce(makeCaller('admin')) // reviewer
+        .mockResolvedValueOnce(signatureDoc()) // leave-request document (completed)
         .mockResolvedValueOnce(profile as any); // leave owner
       const metricCh = chain(chains, 'slaMetrics');
       metricCh.first.mockResolvedValueOnce(null); // no SLA metric
@@ -250,6 +265,7 @@ describe('approveLeave balance branches', () => {
     get
       .mockResolvedValueOnce(leaveDoc({ type: 'paid' }))
       .mockResolvedValueOnce(makeCaller('admin'))
+      .mockResolvedValueOnce(signatureDoc()) // leave-request document (completed)
       .mockResolvedValueOnce(userDoc({ paidLeaveBalance: 24 }));
     const metricCh = chain(chains, 'slaMetrics');
     metricCh.first.mockResolvedValueOnce({
@@ -573,11 +589,12 @@ describe('bulkApproveLeaves extra branches', () => {
     for (const [type, profile, field] of cases) {
       mockGetAuthCaller.mockResolvedValue(makeCaller('admin'));
       const { ctx, get, chains } = makeCtx();
-      // reviewer + leave + owner (usersBatch)
+      // reviewer + leave + owner (usersBatch) + document (in approval loop)
       get
         .mockResolvedValueOnce(makeCaller('admin'))
         .mockResolvedValueOnce(leaveDoc({ type }))
-        .mockResolvedValueOnce(profile as any);
+        .mockResolvedValueOnce(profile as any)
+        .mockResolvedValueOnce(signatureDoc()); // leave-request document (completed)
       const metricCh = chain(chains, 'slaMetrics');
       metricCh.first.mockResolvedValueOnce(null);
 
@@ -600,7 +617,8 @@ describe('bulkApproveLeaves extra branches', () => {
     get
       .mockResolvedValueOnce(makeCaller('admin'))
       .mockResolvedValueOnce(leaveDoc({ type: 'paid' }))
-      .mockResolvedValueOnce(userDoc({ paidLeaveBalance: 24 }));
+      .mockResolvedValueOnce(userDoc({ paidLeaveBalance: 24 }))
+      .mockResolvedValueOnce(signatureDoc()); // leave-request document (completed)
     const metricCh = chain(chains, 'slaMetrics');
     metricCh.first.mockResolvedValueOnce({
       _id: 'metric_1',
@@ -627,6 +645,7 @@ describe('bulkApproveLeaves extra branches', () => {
       if (id === 'leave_foreign')
         return Promise.resolve(leaveDoc({ _id: 'leave_foreign', organizationId: ORG_B }));
       if (id === 'leave_ok') return Promise.resolve(leaveDoc({ _id: 'leave_ok' }));
+      if (id === SIGNATURE_DOC_ID) return Promise.resolve(signatureDoc());
       if (id === USER_ID) return Promise.resolve(userDoc({ paidLeaveBalance: 24 }));
       return Promise.resolve(null);
     });
@@ -648,12 +667,14 @@ describe('bulkApproveLeaves extra branches', () => {
     mockIsSuperadmin.mockReturnValue(true);
     const { ctx, get, patch, insert } = makeCtx();
     // Order in the handler: reviewer, then the leavesBatch (both leaves), then
-    // the usersBatch (deduped owner ids).
+    // the usersBatch (deduped owner ids), then per-row document gate checks.
     get
       .mockResolvedValueOnce(makeCaller('superadmin', ORG_B, ADMIN_ID)) // reviewer
       .mockResolvedValueOnce(leaveDoc({ _id: 'leave_bad' })) // leavesBatch[0]
       .mockResolvedValueOnce(leaveDoc({ _id: 'leave_good' })) // leavesBatch[1]
-      .mockResolvedValueOnce(userDoc({ paidLeaveBalance: 24 })); // usersBatch[0]
+      .mockResolvedValueOnce(userDoc({ paidLeaveBalance: 24 })) // usersBatch[0]
+      .mockResolvedValueOnce(signatureDoc()) // leave_bad document
+      .mockResolvedValueOnce(signatureDoc({ _id: 'sig_doc_2' })); // leave_good document
     // The first patch throws; the second leave still succeeds.
     patch.mockRejectedValueOnce(new Error('boom'));
 

@@ -132,6 +132,19 @@ function userDoc(overrides: Record<string, unknown> = {}) {
   };
 }
 
+const SIGNATURE_DOC_ID = 'sig_doc_1';
+
+function signatureDoc(overrides: Record<string, unknown> = {}) {
+  return {
+    _id: SIGNATURE_DOC_ID,
+    organizationId: ORG_A,
+    title: 'Leave Request — Anna (2026-08-10 → 2026-08-12)',
+    content: '{}',
+    status: 'completed',
+    ...overrides,
+  };
+}
+
 function leaveDoc(overrides: Record<string, unknown> = {}) {
   return {
     _id: LEAVE_ID,
@@ -146,6 +159,7 @@ function leaveDoc(overrides: Record<string, unknown> = {}) {
     isRead: false,
     createdAt: 1_700_000_000_000,
     updatedAt: 1_700_000_000_000,
+    leaveRequestDocumentId: SIGNATURE_DOC_ID,
     ...overrides,
   };
 }
@@ -339,6 +353,7 @@ describe('approveLeave', () => {
     const { ctx, get, patch, insert, db } = makeCtx();
     get.mockResolvedValueOnce(leaveDoc());
     get.mockResolvedValueOnce(userDoc({ _id: ADMIN_ID, role: 'admin', name: 'Boss' }));
+    get.mockResolvedValueOnce(signatureDoc()); // leave-request document (completed)
     get.mockResolvedValueOnce(userDoc({ paidLeaveBalance: 24 })); // leave owner
     const metricCh = makeChain();
     metricCh.first.mockResolvedValueOnce({
@@ -375,6 +390,7 @@ describe('approveLeave', () => {
     const { ctx, get, chains } = makeCtx();
     get.mockResolvedValueOnce(leaveDoc({ type: 'sick' }));
     get.mockResolvedValueOnce(userDoc({ _id: ADMIN_ID, role: 'supervisor', name: 'Boss' }));
+    get.mockResolvedValueOnce(signatureDoc()); // leave-request document (completed)
     get.mockResolvedValueOnce(userDoc({ sickLeaveBalance: 10 }));
 
     await handlers.approveLeave(ctx, { leaveId: LEAVE_ID });
@@ -391,6 +407,7 @@ describe('approveLeave', () => {
     const { ctx, get } = makeCtx();
     get.mockResolvedValueOnce(leaveDoc({ type: 'family' }));
     get.mockResolvedValueOnce(userDoc({ _id: ADMIN_ID, role: 'admin', name: 'Boss' }));
+    get.mockResolvedValueOnce(signatureDoc()); // leave-request document (completed)
     get.mockResolvedValueOnce(userDoc({ familyLeaveBalance: 2 })); // 2 - 3 → 0
 
     await handlers.approveLeave(ctx, { leaveId: LEAVE_ID });
@@ -665,6 +682,7 @@ describe('bulkApproveLeaves', () => {
     get.mockImplementation((id: string) => {
       if (id === ADMIN_ID) return Promise.resolve(userDoc({ _id: ADMIN_ID, role: 'admin' }));
       if (id === LEAVE_ID) return Promise.resolve(leaveDoc());
+      if (id === SIGNATURE_DOC_ID) return Promise.resolve(signatureDoc());
       if (id === 'leave_2')
         return Promise.resolve(leaveDoc({ _id: 'leave_2', status: 'approved' }));
       if (id === 'leave_3')
