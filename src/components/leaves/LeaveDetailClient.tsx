@@ -23,6 +23,7 @@ import {
   XCircle,
   Trash2,
   Pencil,
+  FileSignature,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { enUS, ru, hy } from 'date-fns/locale';
@@ -51,6 +52,31 @@ const LeaveStatusBadge = ({ status }: { status: string }) => {
     }[status] ?? t('leaveStatus.pending');
 
   return <Badge className={`${variant} border-0`}>{label}</Badge>;
+};
+
+const DocumentStatusBadge = ({ status }: { status: string }) => {
+  const { t } = useTranslation();
+  const variant =
+    {
+      pending: 'bg-(--warning-quiet) text-(--warning-text)',
+      partially_signed: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+      completed: 'bg-(--success-quiet) text-(--success-text)',
+      cancelled: 'bg-(--danger-quiet) text-(--danger-text)',
+      signed: 'bg-(--success-quiet) text-(--success-text)',
+      sent: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+    }[status] ?? 'bg-gray-100 text-gray-600';
+
+  const label =
+    {
+      pending: t('signatures.status.pending', 'Awaiting signature'),
+      partially_signed: t('signatures.status.partiallySigned', 'Partially signed'),
+      completed: t('signatures.status.completed', 'Completed'),
+      signed: t('signatures.status.signed', 'Signed'),
+      sent: t('signatures.status.sent', 'Sent'),
+      cancelled: t('signatures.status.cancelled', 'Cancelled'),
+    }[status] ?? status;
+
+  return <Badge className={`${variant} border-0 text-xs`}>{label}</Badge>;
 };
 
 const LeaveTypeBadge = ({ type }: { type: string }) => {
@@ -109,6 +135,7 @@ export default function LeaveDetailClient({
   const [isRejectingCancel, setIsRejectingCancel] = useState(false);
 
   const leave = useQuery(api.leaves.getLeaveById, { leaveId });
+  const leaveDocs = useQuery(api.leaves.getLeaveDocuments, { leaveId });
   const currentUser = useQuery(
     api.users.queries.getUserById,
     user?.id ? { userId: user.id as Id<'users'> } : 'skip',
@@ -446,6 +473,79 @@ export default function LeaveDetailClient({
           </div>
         </CardContent>
       </Card>
+
+      {/* ── Documents section ──────────────────────────────────────── */}
+      {(leaveDocs?.leaveRequestDocument || leaveDocs?.leaveOrderDocument) && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileSignature className="h-5 w-5" />
+              {t('leave.documents', 'Documents')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {leaveDocs?.leaveRequestDocument && (
+              <div className="flex items-center justify-between rounded-lg border p-3">
+                <div className="flex items-center gap-3">
+                  <FileText className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm font-medium">{leaveDocs.leaveRequestDocument.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {t('leave.leaveRequestDocument', 'Leave Request Document')}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <DocumentStatusBadge status={leaveDocs.leaveRequestDocument.status} />
+                  {(leaveDocs.leaveRequestDocument.status === 'pending' ||
+                    leaveDocs.leaveRequestDocument.status === 'draft') && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        router.push(`/signatures/${leaveDocs.leaveRequestDocument!.id}`)
+                      }
+                    >
+                      <FileSignature className="mr-1 h-3 w-3" />
+                      {t('signatures.sign', 'Sign')}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+            {leaveDocs?.leaveOrderDocument && (
+              <div className="flex items-center justify-between rounded-lg border p-3">
+                <div className="flex items-center gap-3">
+                  <FileText className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm font-medium">{leaveDocs.leaveOrderDocument.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {t(
+                        'leave.leaveOrderDocument',
+                        'Leave Order (\u041f\u0440\u0438\u043a\u0430\u0437)',
+                      )}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <DocumentStatusBadge status={leaveDocs.leaveOrderDocument.status} />
+                  {(leaveDocs.leaveOrderDocument.status === 'pending' ||
+                    leaveDocs.leaveOrderDocument.status === 'draft') && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => router.push(`/signatures/${leaveDocs.leaveOrderDocument!.id}`)}
+                    >
+                      <FileSignature className="mr-1 h-3 w-3" />
+                      {t('signatures.sign', 'Sign')}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

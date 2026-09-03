@@ -69,7 +69,21 @@
     "cancelPendingHint": "Չեղարկման հայտը սպասում է HR-ի հաստատմանը",
     "approveCancellation": "Հաստատել չեղարկումը",
     "rejectCancellation": "Մերժել չեղարկումը",
-    "reviewNotAllowedHint": "Այս հայտի որոշումը կայացնում է աշխատակցի ղեկավարը՝ ըստ ենթակայության գծի, կամ HR-ը։"
+    "reviewNotAllowedHint": "Այս հայտի որոշումը կայացնում է աշխատակցի ղեկավարը՝ ըստ ենթակայության գծի, կամ HR-ը։",
+    "documents": "Փաստաթղթեր",
+    "leaveRequestDocument": "Արձակուրդի հայտ (փաստաթուղթ)",
+    "leaveOrderDocument": "Արձակուրդի հրաման"
+  },
+  "signatures": {
+    "sign": "Ստորագրել",
+    "status": {
+      "pending": "Սպասում է ստորագրության",
+      "partiallySigned": "Մասնակի ստորագրված",
+      "completed": "Ավարտված",
+      "signed": "Ստորագրված",
+      "sent": "Ուղարկված",
+      "cancelled": "Չեղարկված"
+    }
   },
   "leaveTypes": {
     "paid": "Վճարովի արձակուրդ",

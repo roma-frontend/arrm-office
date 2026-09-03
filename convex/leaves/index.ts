@@ -12,6 +12,7 @@ export {
   listLeavesPaginated,
   getLeavesForDateRange,
 } from './queries';
+export { getLeaveDocuments } from './documents';
 export {
   createLeave,
   approveLeave,

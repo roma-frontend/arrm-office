@@ -69,7 +69,21 @@
     "cancelPendingHint": "The cancellation request is pending HR approval",
     "approveCancellation": "Approve cancellation",
     "rejectCancellation": "Reject cancellation",
-    "reviewNotAllowedHint": "This request is decided by the manager above this employee in the reporting line, or by HR."
+    "reviewNotAllowedHint": "This request is decided by the manager above this employee in the reporting line, or by HR.",
+    "documents": "Documents",
+    "leaveRequestDocument": "Leave Request Document",
+    "leaveOrderDocument": "Leave Order (\u041f\u0440\u0438\u043a\u0430\u0437)"
+  },
+  "signatures": {
+    "sign": "Sign",
+    "status": {
+      "pending": "Awaiting signature",
+      "partiallySigned": "Partially signed",
+      "completed": "Completed",
+      "signed": "Signed",
+      "sent": "Sent",
+      "cancelled": "Cancelled"
+    }
   },
   "leaveTypes": {
     "paid": "Paid Vacation",

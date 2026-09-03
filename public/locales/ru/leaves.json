@@ -69,7 +69,21 @@
     "cancelPendingHint": "Запрос на отмену ожидает решения HR",
     "approveCancellation": "Одобрить отмену",
     "rejectCancellation": "Отклонить отмену",
-    "reviewNotAllowedHint": "Решение по этой заявке принимает руководитель сотрудника по линии подчинения или HR."
+    "reviewNotAllowedHint": "Решение по этой заявке принимает руководитель сотрудника по линии подчинения или HR.",
+    "documents": "Документы",
+    "leaveRequestDocument": "Заявка на отпуск (документ)",
+    "leaveOrderDocument": "Приказ об отпуске"
+  },
+  "signatures": {
+    "sign": "Подписать",
+    "status": {
+      "pending": "Ожидает подписи",
+      "partiallySigned": "Частично подписан",
+      "completed": "Завершён",
+      "signed": "Подписан",
+      "sent": "Отправлен",
+      "cancelled": "Отменён"
+    }
   },
   "leaveTypes": {
     "paid": "Оплачиваемый отпуск",

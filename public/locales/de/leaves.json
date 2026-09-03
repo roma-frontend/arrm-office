@@ -69,7 +69,21 @@
     "cancelPendingHint": "Die Stornierungsanfrage wartet auf die HR-Genehmigung",
     "approveCancellation": "Stornierung genehmigen",
     "rejectCancellation": "Stornierung ablehnen",
-    "reviewNotAllowedHint": "Über diesen Antrag entscheidet die vorgesetzte Person dieses Mitarbeiters in der Berichtslinie oder HR."
+    "reviewNotAllowedHint": "Über diesen Antrag entscheidet die vorgesetzte Person dieses Mitarbeiters in der Berichtslinie oder HR.",
+    "documents": "Dokumente",
+    "leaveRequestDocument": "Urlaubsantrag (Dokument)",
+    "leaveOrderDocument": "Urlaubsanordnung"
+  },
+  "signatures": {
+    "sign": "Unterschreiben",
+    "status": {
+      "pending": "Wartet auf Unterschrift",
+      "partiallySigned": "Teilweise unterschrieben",
+      "completed": "Abgeschlossen",
+      "signed": "Unterschrieben",
+      "sent": "Gesendet",
+      "cancelled": "Storniert"
+    }
   },
   "leaveTypes": {
     "paid": "Bezahlter Urlaub",
