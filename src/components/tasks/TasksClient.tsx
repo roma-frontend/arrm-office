@@ -602,12 +602,14 @@ function DraggableTaskCard({
   statuses,
   onSetStatus,
   isHighlighted,
+  highlightPulse,
 }: {
   task: TaskItem;
   onOpen: () => void;
   statuses?: readonly import('../../../convex/lib/taskStatus').TaskStatusDef[];
   onSetStatus?: (taskId: string, statusKey: string) => void;
   isHighlighted?: boolean;
+  highlightPulse?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: task._id,
@@ -617,8 +619,9 @@ function DraggableTaskCard({
   });
   const style = { transform: CSS.Translate.toString(transform), opacity: isDragging ? 0.4 : 1 };
 
-  const highlightStyle = isHighlighted
-    ? { boxShadow: '0 0 0 3px rgba(99,102,241,0.4), 0 0 24px rgba(99,102,241,0.25)', backgroundColor: 'rgba(99,102,241,0.12)', outline: '2px solid rgba(99,102,241,0.5)', outlineOffset: '0px', borderRadius: '8px', transition: 'all 0.4s ease' }
+  const highlightStyle = isHighlighted && highlightPulse
+    ? { boxShadow: '0 0 0 2px rgba(44,140,213,0.5), 0 0 20px rgba(44,140,213,0.25)', backgroundColor: 'rgba(44,140,213,0.1)', borderRadius: '14px', transition: 'all 0.3s ease' }
+    : isHighlighted ? { backgroundColor: 'rgba(44,140,213,0.05)', borderRadius: '14px', transition: 'all 0.3s ease' }
     : {};
 
   return (
@@ -671,6 +674,7 @@ function DroppableKanbanColumn({
   contextMenu,
   onSetStatus,
   highlightTaskId,
+  highlightPulse,
 }: {
   status: Status;
   tasks: TaskItem[];
@@ -678,6 +682,7 @@ function DroppableKanbanColumn({
   statuses?: readonly import('../../../convex/lib/taskStatus').TaskStatusDef[];
   onSetStatus?: (taskId: string, statusKey: string) => void;
   highlightTaskId?: string | null;
+  highlightPulse?: boolean;
   contextMenu?: {
     canManage: boolean;
     onEdit: (t: ContextTask) => void;
@@ -731,6 +736,7 @@ function DroppableKanbanColumn({
                 statuses={statuses}
                 onSetStatus={onSetStatus}
                 isHighlighted={task._id === highlightTaskId}
+                highlightPulse={highlightPulse}
               />
             </TaskContextMenu>
           ) : (
@@ -741,6 +747,7 @@ function DroppableKanbanColumn({
               statuses={statuses}
               onSetStatus={onSetStatus}
               isHighlighted={task._id === highlightTaskId}
+              highlightPulse={highlightPulse}
             />
           ),
         )}
@@ -924,10 +931,12 @@ function DraggableListRow({
   task,
   children,
   isHighlighted,
+  highlightPulse,
 }: {
   task: TaskItem;
   children: React.ReactNode;
   isHighlighted?: boolean;
+  highlightPulse?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: task._id,
@@ -939,8 +948,9 @@ function DraggableListRow({
     zIndex: isDragging ? 50 : undefined,
   };
 
-  const highlightStyle = isHighlighted
-    ? { boxShadow: '0 0 0 3px rgba(99,102,241,0.4), 0 0 24px rgba(99,102,241,0.25)', backgroundColor: 'rgba(99,102,241,0.12)', outline: '2px solid rgba(99,102,241,0.5)', outlineOffset: '0px', borderRadius: '8px', transition: 'all 0.4s ease' }
+  const highlightStyle = isHighlighted && highlightPulse
+    ? { boxShadow: '0 0 0 2px rgba(44,140,213,0.5), 0 0 20px rgba(44,140,213,0.25)', backgroundColor: 'rgba(44,140,213,0.1)', transition: 'all 0.3s ease' }
+    : isHighlighted ? { backgroundColor: 'rgba(44,140,213,0.05)', transition: 'all 0.3s ease' }
     : {};
 
   return (
@@ -1444,18 +1454,29 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
 
   // `/` is the search shortcut everywhere else in this app; the hook ignores it
   // while the user is already typing in a field.
-  useGlobalShortcut({ key: '/' }, () => searchRef.current?.focus());
-
-  // ── Notification highlight ─────────────────────────────────────
+  useGlobalShortcut({ key: '/' }, () => searchRef.current?.focus());  // ── Notification highlight ─────────────────────────────────────
   // When navigated from a notification with ?highlight=<taskId>, the
   // matching row blinks for 4 seconds so the user spots it immediately.
   const [highlightTaskId, setHighlightTaskId] = useState<string | null>(null);
+  const [highlightPulse, setHighlightPulse] = useState(true);
   const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pulseIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const startHighlight = useCallback((taskId: string) => {
     if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+    if (pulseIntervalRef.current) clearInterval(pulseIntervalRef.current);
     setHighlightTaskId(taskId);
-    highlightTimerRef.current = setTimeout(() => setHighlightTaskId(null), 4000);
+    setHighlightPulse(true);
+    // Pulse on/off every 600ms for 4 seconds
+    pulseIntervalRef.current = setInterval(() => {
+      setHighlightPulse((prev) => !prev);
+    }, 600);
+    highlightTimerRef.current = setTimeout(() => {
+      setHighlightTaskId(null);
+      setHighlightPulse(true);
+      if (pulseIntervalRef.current) clearInterval(pulseIntervalRef.current);
+    }, 4000);
   }, []);
   useEffect(() => {
     // Check on mount
@@ -2864,6 +2885,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
                   statuses={statuses}
                   onSetStatus={canManage ? handleSetStatus : undefined}
                   highlightTaskId={highlightTaskId}
+                  highlightPulse={highlightPulse}
                   contextMenu={
                     canManage
                       ? {
@@ -3082,6 +3104,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
                                   key={task._id}
                                   task={task}
                                   isHighlighted={task._id === highlightTaskId}
+                                  highlightPulse={highlightPulse}
                                 >
                                   <TaskContextMenu
                                     key={task._id}
