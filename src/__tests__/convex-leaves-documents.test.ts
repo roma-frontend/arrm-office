@@ -214,13 +214,15 @@ function makeCtx(overrides: Record<string, unknown> = {}) {
 // generateLeaveRequestDocument
 // ═══════════════════════════════════════════════════════════════════════════════
 describe('generateLeaveRequestDocument', () => {
-  it('throws when not authenticated', async () => {
+  it('proceeds without auth (scheduler context) — throws on missing leave', async () => {
     mockGetAuthCaller.mockResolvedValue(null);
     const { ctx, get } = makeCtx();
-    get.mockResolvedValueOnce(null); // leave
+    get.mockResolvedValueOnce(null); // leave not found
 
+    // Auth is optional now (scheduler has no auth context).
+    // The function should proceed past the auth check and fail on the leave lookup.
     await expect(handlers.generateLeaveRequestDocument(ctx, { leaveId: LEAVE_ID })).rejects.toThrow(
-      'Not authenticated',
+      'Leave request not found',
     );
   });
 
@@ -281,7 +283,8 @@ describe('generateLeaveRequestDocument', () => {
 
     // Content contains bilingual markers
     const contentArg = mockInsertSignatureDocument.mock.calls[0][1].content;
-    const parsed = JSON.parse(contentArg);
+    expect(contentArg).toMatch(/^__DOC__/);
+    const parsed = JSON.parse(contentArg.replace(/^__DOC__/, ''));
     expect(parsed.version).toBe(2);
     expect(parsed.templateId).toBe('leave-request');
     expect(parsed.blocks.length).toBeGreaterThanOrEqual(4);
@@ -433,7 +436,8 @@ describe('generateLeaveOrderDocument', () => {
 
     // Content should be a leave order
     const contentArg = mockInsertSignatureDocument.mock.calls[0][1].content;
-    const parsed = JSON.parse(contentArg);
+    expect(contentArg).toMatch(/^__DOC__/);
+    const parsed = JSON.parse(contentArg.replace(/^__DOC__/, ''));
     expect(parsed.templateId).toBe('leave-order');
     expect(parsed.title).toContain('Leave Order');
 

@@ -18,6 +18,7 @@ import { allocateDocumentNumber } from '../lib/documentNumbers';
 import { notify } from '../lib/notify';
 import { hasCapability } from '../lib/capabilities';
 import { SMALL_LIST_CAP } from '../lib/limits';
+import { getAncestorIds, getOrgHeadId } from '../lib/reportingLine';
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
@@ -80,52 +81,58 @@ function buildLeaveRequestContent(args: {
   signatoryPosition?: string;
   today: string;
 }): string {
-  const typeLabel = leaveTypeLabel(args.leaveType, args.primaryLocale);
-  const typeLabelSec = leaveTypeLabel(args.leaveType, args.secondaryLocale);
-  const dayWord = args.days === 1 ? 'day' : 'days';
+  const typeLabelPrimary = leaveTypeLabel(args.leaveType, args.primaryLocale);
+  const typeLabelSecondary = leaveTypeLabel(args.leaveType, args.secondaryLocale);
   const dayWordHy = args.days === 1 ? 'օր' : 'օր';
 
-  const blocks: Array<{ left: string; right: string }> = [
-    // Title
-    {
-      left: `${args.orgName} — LEAVE REQUEST`,
-      right: `${args.orgName} — ԴԻՄՈՒՄ ԱՐՁԱԿՈՒՐԴԻ ՀԱՄԱՐ`,
-    },
-    // Requestor info
-    {
-      left: `I, ${args.employeeName}, ${args.employeePosition} of the ${args.employeeDepartment} department,`,
-      right: `Ես՝ ${args.employeeName}-ի, ${args.employeeDepartment} բաժնի ${args.employeePosition},`,
-    },
-    // Request body
-    {
-      left: `hereby request ${typeLabel} leave for ${args.days} ${dayWord} (${args.startDate} – ${args.endDate}).`,
-      right: `սույնով խնդրում եմ տրամադրել ${typeLabelSec} արձակուրդ՝ ${args.days} ${dayWordHy} ժամկետով (${args.startDate} – ${args.endDate})։`,
-    },
-    // Reason
-    {
-      left: `Reason: ${args.reason}`,
-      right: `Պատճառ՝ ${args.reason}`,
-    },
-    // Date
-    {
-      left: `Date: ${args.today}`,
-      right: `Ամսաթիվ՝ ${args.today}`,
-    },
+  // Left column: Armenian (primaryLocale)
+  // Right column: secondaryLocale (RU or EN depending on user's language)
+  const leftBlocks: Array<{ text: string }> = [
+    { text: `${args.orgName} — ԴԻՄՈՒՄ ԱՐՁԱԿՈՒՐԴԻ ՀԱՄԱՐ` },
+    { text: `Ես՝ ${args.employeeName}, ${args.employeeDepartment} բաժնի ${args.employeePosition},` },
+    { text: `սույնով խնդրում եմ տրամադրել ${typeLabelPrimary} արձակուրդ՝ ${args.days} ${dayWordHy} ժամկետով (${args.startDate} – ${args.endDate})։` },
+    { text: `Պատճառ՝ ${args.reason}` },
+    { text: `Ամսաթիվ՝ ${args.today}` },
   ];
 
-  // Flatten into a JSON structure that the signing system can freeze
-  return JSON.stringify({
+  // Build secondary language blocks based on the user's secondary locale
+  const rightBlocks: Array<{ text: string }> = [];
+  if (args.secondaryLocale === 'ru') {
+    rightBlocks.push(
+      { text: `${args.orgName} — ЗАЯВЛЕНИЕ НА ОТПУСК` },
+      { text: `Я, ${args.employeeName}, ${args.employeePosition} ${args.employeeDepartment} отдела,` },
+      { text: `прошу предоставить ${typeLabelSecondary} отпуск на ${args.days} ${args.days === 1 ? 'день' : args.days < 5 ? 'дня' : 'дней'} (${args.startDate} – ${args.endDate}).` },
+      { text: `Причина: ${args.reason}` },
+      { text: `Дата: ${args.today}` },
+    );
+  } else {
+    // Fallback: English
+    rightBlocks.push(
+      { text: `${args.orgName} — LEAVE REQUEST` },
+      { text: `I, ${args.employeeName}, ${args.employeePosition} of the ${args.employeeDepartment} department,` },
+      { text: `hereby request ${typeLabelSecondary} leave for ${args.days} ${args.days === 1 ? 'day' : 'days'} (${args.startDate} – ${args.endDate}).` },
+      { text: `Reason: ${args.reason}` },
+      { text: `Date: ${args.today}` },
+    );
+  }
+
+  const leftLabel = args.primaryLocale === 'hy' ? 'ՀԱՅԵՐԵՆ' : args.primaryLocale.toUpperCase();
+  const rightLabel = args.secondaryLocale === 'hy' ? 'ՀԱՅԵՐԵՆ' : args.secondaryLocale.toUpperCase();
+
+  const blocks = leftBlocks.map((b, i) => ({
+    type: 'bilingual' as const,
+    left: [{ type: 'paragraph' as const, text: b.text }],
+    right: [{ type: 'paragraph' as const, text: rightBlocks[i]?.text ?? '' }],
+    leftLabel,
+    rightLabel,
+  }));
+
+  return '__DOC__' + JSON.stringify({
     version: 2,
     source: 'catalog' as const,
     templateId: 'leave-request',
-    title: 'Leave Request / Դիմում',
-    blocks: blocks.map((b) => ({
-      type: 'bilingual' as const,
-      left: [{ type: 'paragraph' as const, text: b.left }],
-      right: [{ type: 'paragraph' as const, text: b.right }],
-      leftLabel: args.primaryLocale === 'hy' ? 'ՀԱՅԵՐԵՆ' : args.primaryLocale.toUpperCase(),
-      rightLabel: args.secondaryLocale === 'hy' ? 'ՀԱՅԵՐԵՆ' : args.secondaryLocale.toUpperCase(),
-    })),
+    title: 'Leave Request / \u0534\u056b\u0574\u0578\u0582\u0574',
+    blocks,
     accent: 'emerald' as const,
     orgName: args.orgName,
     primaryLocale: args.primaryLocale,
@@ -159,44 +166,52 @@ function buildLeaveOrderContent(args: {
   secondaryLocale: string;
   today: string;
 }): string {
-  const typeLabel = leaveTypeLabel(args.leaveType, args.primaryLocale);
-  const typeLabelSec = leaveTypeLabel(args.leaveType, args.secondaryLocale);
+  const typeLabelPrimary = leaveTypeLabel(args.leaveType, args.primaryLocale);
+  const typeLabelSecondary = leaveTypeLabel(args.leaveType, args.secondaryLocale);
 
-  const blocks: Array<{ left: string; right: string }> = [
-    // Title
-    {
-      left: `${args.orgName} — LEAVE ORDER`,
-      right: `${args.orgName} — ՀՐԱՄԱՆ ԱՐՁԱԿՈՒՐԴԻ ՄԱՍԻՆ`,
-    },
-    // Order body
-    {
-      left: `By order of ${args.supervisorName}, ${args.supervisorPosition}, ${args.employeeName}, ${args.employeePosition} of the ${args.employeeDepartment} department, is granted ${typeLabel} leave for ${args.days} days (${args.startDate} – ${args.endDate}).`,
-      right: `${args.supervisorName}-ի՝ ${args.supervisorPosition} հրամանով, ${args.employeeDepartment} բաժնի ${args.employeePosition} ${args.employeeName}-ին տրամադրվում է ${typeLabelSec} արձակուրդ՝ ${args.days} օրով (${args.startDate} – ${args.endDate})։`,
-    },
-    // Reason
-    {
-      left: `Reason: ${args.reason}`,
-      right: `Պատճառ՝ ${args.reason}`,
-    },
-    // Date
-    {
-      left: `Date: ${args.today}`,
-      right: `Ամսաթիվ՝ ${args.today}`,
-    },
+  // Left column: Armenian (primaryLocale)
+  // Right column: secondaryLocale (RU or EN)
+  const leftBlocks: Array<{ text: string }> = [
+    { text: `${args.orgName} — ՀՐԱՄԱՆ ԱՐՁԱԿՈՒՐԴԻ ՄԱՍԻՆ` },
+    { text: `${args.supervisorName}-ի՝ ${args.supervisorPosition} հրամանով, ${args.employeeDepartment} բաժնի ${args.employeePosition} ${args.employeeName}-ին տրամադրվում է ${typeLabelPrimary} արձակուրդ՝ ${args.days} օրով (${args.startDate} – ${args.endDate})։` },
+    { text: `Պատճառ՝ ${args.reason}` },
+    { text: `Ամսաթիվ՝ ${args.today}` },
   ];
 
-  return JSON.stringify({
+  const rightBlocks: Array<{ text: string }> = [];
+  if (args.secondaryLocale === 'ru') {
+    rightBlocks.push(
+      { text: `${args.orgName} — ПРИКАЗ ОБ ОТПУСКЕ` },
+      { text: `По приказу ${args.supervisorName}, ${args.supervisorPosition}, ${args.employeeName}, ${args.employeePosition} ${args.employeeDepartment} отдела, предоставляется ${typeLabelSecondary} отпуск на ${args.days} ${args.days === 1 ? 'день' : args.days < 5 ? 'дня' : 'дней'} (${args.startDate} – ${args.endDate}).` },
+      { text: `Причина: ${args.reason}` },
+      { text: `Дата: ${args.today}` },
+    );
+  } else {
+    rightBlocks.push(
+      { text: `${args.orgName} — LEAVE ORDER` },
+      { text: `By order of ${args.supervisorName}, ${args.supervisorPosition}, ${args.employeeName}, ${args.employeePosition} of the ${args.employeeDepartment} department, is granted ${typeLabelSecondary} leave for ${args.days} ${args.days === 1 ? 'day' : 'days'} (${args.startDate} – ${args.endDate}).` },
+      { text: `Reason: ${args.reason}` },
+      { text: `Date: ${args.today}` },
+    );
+  }
+
+  const leftLabel = args.primaryLocale === 'hy' ? 'ՀԱՅԵՐԵՆ' : args.primaryLocale.toUpperCase();
+  const rightLabel = args.secondaryLocale === 'hy' ? 'ՀԱՅԵՐԵՆ' : args.secondaryLocale.toUpperCase();
+
+  const blocks = leftBlocks.map((b, i) => ({
+    type: 'bilingual' as const,
+    left: [{ type: 'paragraph' as const, text: b.text }],
+    right: [{ type: 'paragraph' as const, text: rightBlocks[i]?.text ?? '' }],
+    leftLabel,
+    rightLabel,
+  }));
+
+  return '__DOC__' + JSON.stringify({
     version: 2,
     source: 'catalog' as const,
     templateId: 'leave-order',
-    title: 'Leave Order / Հրաման',
-    blocks: blocks.map((b) => ({
-      type: 'bilingual' as const,
-      left: [{ type: 'paragraph' as const, text: b.left }],
-      right: [{ type: 'paragraph' as const, text: b.right }],
-      leftLabel: args.primaryLocale === 'hy' ? 'ՀԱՅԵՐԵՆ' : args.primaryLocale.toUpperCase(),
-      rightLabel: args.secondaryLocale === 'hy' ? 'ՀԱՅԵՐԵՆ' : args.secondaryLocale.toUpperCase(),
-    })),
+    title: 'Leave Order / \u0540\u0580\u0561\u0574\u0561\u0576',
+    blocks,
     accent: 'emerald' as const,
     orgName: args.orgName,
     primaryLocale: args.primaryLocale,
@@ -221,8 +236,10 @@ export const generateLeaveRequestDocument = internalMutation({
     leaveId: v.id('leaveRequests'),
   },
   handler: async (ctx, args) => {
+    // Auth is optional here: this function is called from ctx.scheduler.runAfter
+    // (no auth context) as well as from ctx.runMutation (has auth). When called
+    // from the scheduler we fall back to the leave's createdBy field.
     const caller = await getAuthCaller(ctx);
-    if (!caller) throw new Error('Not authenticated');
 
     const leave = await ctx.db.get(args.leaveId);
     if (!leave) throw new Error('Leave request not found');
@@ -234,6 +251,10 @@ export const generateLeaveRequestDocument = internalMutation({
 
     const org = leave.organizationId ? await ctx.db.get(leave.organizationId) : null;
     if (!org) throw new Error('Organization not found');
+
+    // Resolve the actor for the audit trail: authenticated caller or the leave creator.
+    const actorId = caller?._id ?? leave.createdBy;
+    if (!actorId) throw new Error('Cannot determine document creator');
 
     const secLocale = secondaryLocale(user);
     const now = Date.now();
@@ -254,23 +275,39 @@ export const generateLeaveRequestDocument = internalMutation({
       today: new Date(now).toLocaleDateString('en-GB'),
     });
 
-    // The supervisor (reviewer) signs first, then the employee
+    // The supervisor (reviewer) signs first, then the employee.
+    // When this runs from createLeave, leave.reviewedBy is not set yet (the
+    // leave is still pending), so we resolve the approver from the reporting
+    // line: the nearest active ancestor who holds `leave.approve`.
     const signers: Array<{ userId: Id<'users'>; name: string; email: string; order: number }> = [];
 
-    // Order 1: the supervisor (the nearest approver in the reporting line)
+    // Order 1: the nearest approver in the reporting line
+    let supervisorDoc: Doc<'users'> | null = null;
     if (leave.reviewedBy) {
-      const reviewer = await ctx.db.get(leave.reviewedBy);
-      if (reviewer) {
-        signers.push({
-          userId: reviewer._id,
-          name: reviewer.name ?? '',
-          email: reviewer.email ?? '',
-          order: 1,
-        });
+      // Document generated after approval — reviewer is known.
+      supervisorDoc = await ctx.db.get(leave.reviewedBy);
+    } else {
+      // Document generated during createLeave — walk the reporting line.
+      const ancestorIds = await getAncestorIds(ctx, user._id);
+      for (const ancestorId of ancestorIds) {
+        const ancestor = await ctx.db.get(ancestorId);
+        if (!ancestor || !ancestor.isActive) continue;
+        if (!hasCapability(ancestor, 'leave.approve')) continue;
+        supervisorDoc = ancestor;
+        break;
       }
     }
 
-    // Order 2: the employee
+    if (supervisorDoc) {
+      signers.push({
+        userId: supervisorDoc._id,
+        name: supervisorDoc.name ?? '',
+        email: supervisorDoc.email ?? '',
+        order: 1,
+      });
+    }
+
+    // Order 2+: the employee
     signers.push({
       userId: user._id,
       name: user.name ?? '',
@@ -295,7 +332,7 @@ export const generateLeaveRequestDocument = internalMutation({
         { id: 'signature', label: 'Signature', type: 'signature', required: true },
       ],
       signers,
-      createdBy: caller._id,
+      createdBy: actorId,
     });
 
     await ctx.db.patch(args.leaveId, {
@@ -337,8 +374,8 @@ export const generateLeaveOrderDocument = internalMutation({
     leaveId: v.id('leaveRequests'),
   },
   handler: async (ctx, args) => {
+    // Auth is optional: called from scheduler (no auth) and from mutations (has auth).
     const caller = await getAuthCaller(ctx);
-    if (!caller) throw new Error('Not authenticated');
 
     const leave = await ctx.db.get(args.leaveId);
     if (!leave) throw new Error('Leave request not found');
@@ -355,7 +392,7 @@ export const generateLeaveOrderDocument = internalMutation({
     const hrUsers = leave.organizationId ? await findOrgHrUsers(ctx, leave.organizationId) : [];
 
     // Filter out the reviewer (supervisor) from HR list to avoid self-signing
-    const approverHrUsers = hrUsers.filter(
+    let approverHrUsers = hrUsers.filter(
       (u) => u._id !== leave.reviewedBy && u._id !== leave.userId,
     );
 
@@ -384,9 +421,20 @@ export const generateLeaveOrderDocument = internalMutation({
     });
 
     if (approverHrUsers.length === 0) {
-      // No HR available — record the order as auto-approved
-      // The leave is already approved by the supervisor, so no further signature needed
-      return { autoApproved: true, reason: 'no_hr' };
+      // No HR available — fall back to the head of the organization (CEO)
+      // as the countersigner. If the head is the employee or the supervisor,
+      // or no head is declared, auto-approve without signature.
+      const headId = await getOrgHeadId(ctx, leave.organizationId);
+      if (headId && headId !== leave.userId && headId !== leave.reviewedBy) {
+        const headDoc = await ctx.db.get(headId);
+        if (headDoc && headDoc.isActive) {
+          approverHrUsers = [headDoc];
+        }
+      }
+
+      if (approverHrUsers.length === 0) {
+        return { autoApproved: true, reason: 'no_hr' };
+      }
     }
 
     // Build signers: employee first, then HR
@@ -411,6 +459,10 @@ export const generateLeaveOrderDocument = internalMutation({
 
     const documentNumber = await allocateDocumentNumber(ctx, leave.organizationId!);
 
+    // Resolve actor for audit trail: authenticated caller, or the reviewer who approved the leave.
+    const actorId = caller?._id ?? leave.reviewedBy ?? leave.userId;
+    if (!actorId) throw new Error('Cannot determine document creator');
+
     const signatureDocumentId = await insertSignatureDocument(ctx, {
       organizationId: leave.organizationId!,
       title: `Leave Order — ${user.name ?? 'Employee'} (${leave.startDate} → ${leave.endDate})`,
@@ -422,7 +474,7 @@ export const generateLeaveOrderDocument = internalMutation({
         { id: 'signature', label: 'Signature', type: 'signature', required: true },
       ],
       signers,
-      createdBy: caller._id,
+      createdBy: actorId,
     });
 
     await ctx.db.patch(args.leaveId, {

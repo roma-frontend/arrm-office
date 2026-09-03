@@ -54,6 +54,7 @@ jest.mock('convex/react', () => ({
       return Promise.resolve();
     };
   },
+  useConvex: () => ({}),
 }));
 
 jest.mock('@/convex/_generated/api', () => ({
@@ -101,6 +102,10 @@ jest.mock('@/components/leaves/LeaveNotFound', () => () => (
   <div data-testid="leave-not-found">not found</div>
 ));
 
+jest.mock('@/components/leaves/LeaveSignDocumentSheet', () => ({
+  LeaveSignDocumentSheet: () => <div data-testid="leave-sign-sheet" />,
+}));
+
 jest.mock('sonner', () => ({
   toast: { error: jest.fn(), success: jest.fn() },
 }));
@@ -116,6 +121,7 @@ jest.mock('lucide-react', () => {
     'XCircle',
     'Trash2',
     'Pencil',
+    'FileSignature',
   ];
   const mocks: Record<string, any> = {};
   for (const n of names) mocks[n] = (props: any) => <span data-testid={`icon-${n}`} {...props} />;

@@ -70,6 +70,7 @@ import {
   parseDocumentContent,
   type CollectedSignature,
 } from '@/lib/bilingualDocument';
+import { DocumentPreview } from '@/components/documents/DocumentBlocksPreview';
 import {
   assetFormDocumentNumber,
   assetFormFileName,
@@ -1121,8 +1122,8 @@ function SignDocumentDialog({ open, onClose, request, userId }: SignDocumentDial
 
   return (
     <Sheet open={open} onOpenChange={onClose}>
-      <SheetContent side="right" size="md" closeLabel={t('common.close', 'Close')}>
-        <SheetHeader>
+      <SheetContent side="right" size="xl" closeLabel={t('common.close', 'Close')} className="p-0">
+        <SheetHeader className="px-8 pt-8 pb-4 border-b border-(--border)">
           <SheetTitle className="flex items-center gap-2">
             <PenTool className="w-5 h-5 text-primary" />
             {declineMode
@@ -1132,17 +1133,48 @@ function SignDocumentDialog({ open, onClose, request, userId }: SignDocumentDial
           <SheetDescription className="sr-only">Sign or decline</SheetDescription>
         </SheetHeader>
 
-        <SheetBody>
+        <SheetBody className="px-8 py-8">
           {doc && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div>
-                <h3 className="font-semibold">{displayTitle}</h3>
+                <h3 className="font-semibold text-base">{displayTitle}</h3>
                 {act?.input.assetName && (
                   <p className="text-xs text-muted-foreground mt-0.5">{act.input.assetName}</p>
                 )}
-                <div className="mt-2 p-3 bg-muted/50 rounded-lg text-sm whitespace-pre-wrap max-h-[200px] overflow-y-auto">
-                  {displayBody}
-                </div>
+              </div>
+
+              {/* Themed document preview */}
+              <div className="max-h-[50vh] overflow-y-auto rounded-xl border border-(--border) bg-white p-8 shadow-sm dark:bg-(--surface-3)">
+                {(() => {
+                  const parsed = doc.content ? parseDocumentContent(doc.content) : null;
+                  if (parsed) {
+                    return (
+                      <DocumentPreview
+                        doc={toRenderableDocument(
+                          {
+                            ...doc,
+                            requests: doc.requests?.map((r) => ({
+                              _id: r._id,
+                              status: r.status,
+                              signatureData: r.signatureData,
+                              order: r.order,
+                              signerName: r.signerName,
+                              signedAt: r.signedAt,
+                            })),
+                          } as any,
+                          labels,
+                          t,
+                          i18n.language,
+                        )}
+                      />
+                    );
+                  }
+                  return (
+                    <div className="whitespace-pre-wrap text-sm text-(--text-muted)">
+                      {displayBody}
+                    </div>
+                  );
+                })()}
               </div>
 
               {!declineMode ? (
@@ -1196,7 +1228,7 @@ function SignDocumentDialog({ open, onClose, request, userId }: SignDocumentDial
           )}
         </SheetBody>
 
-        <SheetFooter className="justify-between">
+        <SheetFooter className="justify-between px-8 py-4 border-t border-(--border)">
           {!declineMode ? (
             <>
               <Button variant="outline" size="sm" onClick={() => setDeclineMode(true)}>
@@ -1393,13 +1425,13 @@ function DocumentDetailDialog({ open, onClose, documentId, userId }: DocumentDet
 
   return (
     <Sheet open={open} onOpenChange={onClose}>
-      <SheetContent side="right" size="md" closeLabel={t('common.close', 'Close')}>
-        <SheetHeader>
+      <SheetContent side="right" size="xl" closeLabel={t('common.close', 'Close')} className="p-0">
+        <SheetHeader className="px-8 pt-8 pb-4 border-b border-(--border)">
           <SheetTitle>{displayTitle || '...'}</SheetTitle>
           <SheetDescription className="sr-only">Document details</SheetDescription>
         </SheetHeader>
 
-        <SheetBody className="space-y-4">
+        <SheetBody className="px-8 py-8 space-y-6">
           {doc && (
             <>
               {/* Status Badge */}
@@ -1413,9 +1445,38 @@ function DocumentDetailDialog({ open, onClose, documentId, userId }: DocumentDet
                 )}
               </div>
 
-              {/* Content Preview — localized for movement/return forms */}
-              <div className="p-3 bg-muted/50 rounded-lg text-sm whitespace-pre-wrap max-h-[150px] overflow-y-auto">
-                {displayBody}
+              {/* Content Preview — themed bilingual document */}
+              <div className="max-h-[60vh] overflow-y-auto rounded-xl border border-(--border) bg-white p-8 shadow-sm dark:bg-(--surface-3)">
+                {(() => {
+                  const parsed = doc.content ? parseDocumentContent(doc.content) : null;
+                  if (parsed) {
+                    return (
+                      <DocumentPreview
+                        doc={toRenderableDocument(
+                          {
+                            ...doc,
+                            requests: doc.requests?.map((r) => ({
+                              _id: r._id,
+                              status: r.status,
+                              signatureData: r.signatureData,
+                              order: r.order,
+                              signerName: r.signerName,
+                              signedAt: r.signedAt,
+                            })),
+                          } as any,
+                          labels,
+                          t,
+                          i18n.language,
+                        )}
+                      />
+                    );
+                  }
+                  return (
+                    <div className="whitespace-pre-wrap text-sm text-(--text-muted)">
+                      {displayBody}
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Signers */}
@@ -1486,7 +1547,7 @@ function DocumentDetailDialog({ open, onClose, documentId, userId }: DocumentDet
           )}
         </SheetBody>
 
-        <SheetFooter className="justify-between">
+        <SheetFooter className="justify-between px-8 py-4 border-t border-(--border)">
           <div className="flex gap-2 flex-wrap">
             <Button variant="outline" size="sm" onClick={onClose}>
               {t('common.close', 'Close')}

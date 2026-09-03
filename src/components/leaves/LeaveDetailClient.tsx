@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { enUS, ru, hy } from 'date-fns/locale';
+import { LeaveSignDocumentSheet } from '@/components/leaves/LeaveSignDocumentSheet';
 
 const LeaveStatusBadge = ({ status }: { status: string }) => {
   const { t } = useTranslation();
@@ -133,6 +134,7 @@ export default function LeaveDetailClient({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRequestingCancel, setIsRequestingCancel] = useState(false);
   const [isRejectingCancel, setIsRejectingCancel] = useState(false);
+  const [signDocId, setSignDocId] = useState<Id<'signatureDocuments'> | null>(null);
 
   const leave = useQuery(api.leaves.getLeaveById, { leaveId });
   const leaveDocs = useQuery(api.leaves.getLeaveDocuments, { leaveId });
@@ -503,7 +505,7 @@ export default function LeaveDetailClient({
                       variant="outline"
                       size="sm"
                       onClick={() =>
-                        router.push(`/signatures/${leaveDocs.leaveRequestDocument!.id}`)
+                        setSignDocId(leaveDocs.leaveRequestDocument!.id)
                       }
                     >
                       <FileSignature className="mr-1 h-3 w-3" />
@@ -534,7 +536,7 @@ export default function LeaveDetailClient({
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => router.push(`/signatures/${leaveDocs.leaveOrderDocument!.id}`)}
+                      onClick={() => setSignDocId(leaveDocs.leaveOrderDocument!.id)}
                     >
                       <FileSignature className="mr-1 h-3 w-3" />
                       {t('signatures.sign', 'Sign')}
@@ -546,6 +548,14 @@ export default function LeaveDetailClient({
           </CardContent>
         </Card>
       )}
+
+      {/* Sign document sheet */}
+      <LeaveSignDocumentSheet
+        open={!!signDocId}
+        onClose={() => setSignDocId(null)}
+        documentId={signDocId}
+        userId={user?.id ? (user.id as Id<'users'>) : null}
+      />
     </div>
   );
 }

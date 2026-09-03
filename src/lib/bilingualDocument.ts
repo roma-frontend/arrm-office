@@ -536,6 +536,11 @@ export function isStructuredContent(content: string): boolean {
  * Parse a stored body. Returns `null` for anything unreadable so callers fall
  * back to plain text instead of throwing on legacy or corrupted rows.
  *
+ * Handles three formats:
+ * 1. Current `__DOC__{...}` payloads
+ * 2. Legacy `__HP__{...}` hiring packet payloads
+ * 3. Raw JSON without prefix (legacy leave documents created before the fix)
+ *
  * Version 1 payloads (`__HP__`, written by the hiring packet) are upgraded on
  * read: they carry the same fields under a `templateId`, so no migration of
  * already-signed documents is needed.
@@ -546,7 +551,23 @@ export function parseDocumentContent(content: string): FrozenDocument | null {
     : content.startsWith(LEGACY_HP_PREFIX)
       ? LEGACY_HP_PREFIX
       : null;
-  if (!prefix) return null;
+
+  // Fallback: try parsing raw JSON (documents created without __DOC__ prefix)
+  if (!prefix) {
+    try {
+      const parsed: unknown = JSON.parse(content);
+      if (typeof parsed === 'object' && parsed !== null && Array.isArray((parsed as any).blocks)) {
+        return {
+          ...(parsed as FrozenDocument),
+          version: 2,
+          source: (parsed as any).source ?? 'catalog',
+        };
+      }
+    } catch {
+      // Not valid JSON — fall through to return null
+    }
+    return null;
+  }
 
   try {
     const parsed: unknown = JSON.parse(content.slice(prefix.length));
