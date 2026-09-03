@@ -3171,26 +3171,33 @@ html.cookie-consent-given .cookie-banner-root {
 
 /* ── Task highlight animation (notification click → blink + glow) ── */
 @keyframes taskHighlight {
-  0%, 100% {
+  0%,
+  100% {
     background-color: transparent !important;
     box-shadow: none !important;
     outline-color: transparent !important;
   }
   20% {
     background-color: rgba(99, 102, 241, 0.15) !important;
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3), 0 0 20px rgba(99, 102, 241, 0.2) !important;
+    box-shadow:
+      0 0 0 3px rgba(99, 102, 241, 0.3),
+      0 0 20px rgba(99, 102, 241, 0.2) !important;
     outline: 2px solid rgba(99, 102, 241, 0.5) !important;
     outline-offset: 0px;
   }
   50% {
     background-color: rgba(99, 102, 241, 0.25) !important;
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.4), 0 0 32px rgba(99, 102, 241, 0.25) !important;
+    box-shadow:
+      0 0 0 3px rgba(99, 102, 241, 0.4),
+      0 0 32px rgba(99, 102, 241, 0.25) !important;
     outline: 2px solid rgba(99, 102, 241, 0.6) !important;
     outline-offset: 0px;
   }
   80% {
     background-color: rgba(99, 102, 241, 0.15) !important;
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3), 0 0 20px rgba(99, 102, 241, 0.2) !important;
+    box-shadow:
+      0 0 0 3px rgba(99, 102, 241, 0.3),
+      0 0 20px rgba(99, 102, 241, 0.2) !important;
     outline: 2px solid rgba(99, 102, 241, 0.5) !important;
     outline-offset: 0px;
   }

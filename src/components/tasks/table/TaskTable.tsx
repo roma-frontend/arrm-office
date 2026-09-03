@@ -401,10 +401,16 @@ function DraggableTaskRowWrapper({
     zIndex: isDragging ? 50 : undefined,
     position: 'relative' as const,
   };
-  const highlightStyle = isHighlighted && highlightPulse
-    ? { boxShadow: '0 0 0 2px rgba(44,140,213,0.5), 0 0 20px rgba(44,140,213,0.25)', backgroundColor: 'rgba(44,140,213,0.1)', transition: 'all 0.3s ease' }
-    : isHighlighted ? { backgroundColor: 'rgba(44,140,213,0.05)', transition: 'all 0.3s ease' }
-    : {};
+  const highlightStyle =
+    isHighlighted && highlightPulse
+      ? {
+          boxShadow: '0 0 0 2px rgba(44,140,213,0.5), 0 0 20px rgba(44,140,213,0.25)',
+          backgroundColor: 'rgba(44,140,213,0.1)',
+          transition: 'all 0.3s ease',
+        }
+      : isHighlighted
+        ? { backgroundColor: 'rgba(44,140,213,0.05)', transition: 'all 0.3s ease' }
+        : {};
 
   return (
     <div

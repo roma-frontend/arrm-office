@@ -619,10 +619,21 @@ function DraggableTaskCard({
   });
   const style = { transform: CSS.Translate.toString(transform), opacity: isDragging ? 0.4 : 1 };
 
-  const highlightStyle = isHighlighted && highlightPulse
-    ? { boxShadow: '0 0 0 2px rgba(44,140,213,0.5), 0 0 20px rgba(44,140,213,0.25)', backgroundColor: 'rgba(44,140,213,0.1)', borderRadius: '14px', transition: 'all 0.3s ease' }
-    : isHighlighted ? { backgroundColor: 'rgba(44,140,213,0.05)', borderRadius: '14px', transition: 'all 0.3s ease' }
-    : {};
+  const highlightStyle =
+    isHighlighted && highlightPulse
+      ? {
+          boxShadow: '0 0 0 2px rgba(44,140,213,0.5), 0 0 20px rgba(44,140,213,0.25)',
+          backgroundColor: 'rgba(44,140,213,0.1)',
+          borderRadius: '14px',
+          transition: 'all 0.3s ease',
+        }
+      : isHighlighted
+        ? {
+            backgroundColor: 'rgba(44,140,213,0.05)',
+            borderRadius: '14px',
+            transition: 'all 0.3s ease',
+          }
+        : {};
 
   return (
     <div
@@ -948,10 +959,16 @@ function DraggableListRow({
     zIndex: isDragging ? 50 : undefined,
   };
 
-  const highlightStyle = isHighlighted && highlightPulse
-    ? { boxShadow: '0 0 0 2px rgba(44,140,213,0.5), 0 0 20px rgba(44,140,213,0.25)', backgroundColor: 'rgba(44,140,213,0.1)', transition: 'all 0.3s ease' }
-    : isHighlighted ? { backgroundColor: 'rgba(44,140,213,0.05)', transition: 'all 0.3s ease' }
-    : {};
+  const highlightStyle =
+    isHighlighted && highlightPulse
+      ? {
+          boxShadow: '0 0 0 2px rgba(44,140,213,0.5), 0 0 20px rgba(44,140,213,0.25)',
+          backgroundColor: 'rgba(44,140,213,0.1)',
+          transition: 'all 0.3s ease',
+        }
+      : isHighlighted
+        ? { backgroundColor: 'rgba(44,140,213,0.05)', transition: 'all 0.3s ease' }
+        : {};
 
   return (
     <div
@@ -1446,15 +1463,16 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
     // Preserve the highlight param so the notification → scroll flow works
     const hlParam = new URLSearchParams(window.location.search).get('highlight');
     const hlSuffix = hlParam ? `${query ? '&' : ''}highlight=${hlParam}` : '';
-    const next = query === '' && !hlSuffix
-      ? window.location.pathname
-      : `${window.location.pathname}?${query}${hlSuffix}`;
+    const next =
+      query === '' && !hlSuffix
+        ? window.location.pathname
+        : `${window.location.pathname}?${query}${hlSuffix}`;
     window.history.replaceState(window.history.state, '', next);
   }, [viewState]);
 
   // `/` is the search shortcut everywhere else in this app; the hook ignores it
   // while the user is already typing in a field.
-  useGlobalShortcut({ key: '/' }, () => searchRef.current?.focus());  // ── Notification highlight ─────────────────────────────────────
+  useGlobalShortcut({ key: '/' }, () => searchRef.current?.focus()); // ── Notification highlight ─────────────────────────────────────
   // When navigated from a notification with ?highlight=<taskId>, the
   // matching row blinks for 4 seconds so the user spots it immediately.
   const [highlightTaskId, setHighlightTaskId] = useState<string | null>(null);
