@@ -11,13 +11,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { toast } from 'sonner';
-import {
-  PenTool,
-  FileText,
-  CheckCircle,
-  ChevronLeft,
-  ArrowLeft,
-} from 'lucide-react';
+import { PenTool, FileText, CheckCircle, ChevronLeft, ArrowLeft } from 'lucide-react';
 import {
   SignaturePad,
   SignatureUpload,
@@ -62,9 +56,7 @@ export default function SignatureDocumentPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
         <FileText className="w-16 h-16 text-muted-foreground" />
-        <h2 className="text-xl font-semibold">
-          {t('signatures.notFound', 'Document not found')}
-        </h2>
+        <h2 className="text-xl font-semibold">{t('signatures.notFound', 'Document not found')}</h2>
         <Button variant="outline" onClick={() => router.back()}>
           <ArrowLeft className="w-4 h-4 mr-2" />
           {t('common.back', 'Back')}
@@ -74,9 +66,7 @@ export default function SignatureDocumentPage() {
   }
 
   // Find the current user's request among the signers
-  const myRequest = doc.requests?.find(
-    (r) => r.signerId === userId && r.status === 'pending',
-  );
+  const myRequest = doc.requests?.find((r) => r.signerId === userId && r.status === 'pending');
 
   const isSigned = doc.status === 'completed';
   const canSign = !!myRequest;
@@ -114,9 +104,7 @@ export default function SignatureDocumentPage() {
       setSignatureData(null);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : '';
-      toast.error(
-        msg || t('signatures.errors.signFailed', 'Failed to sign document'),
-      );
+      toast.error(msg || t('signatures.errors.signFailed', 'Failed to sign document'));
     } finally {
       setIsSigning(false);
     }
@@ -146,9 +134,7 @@ export default function SignatureDocumentPage() {
         <div className="flex-1">
           <h1 className="text-xl font-bold">{displayTitle || doc.title}</h1>
           <div className="flex items-center gap-2 mt-1">
-            <Badge
-              className={`text-xs ${statusColor[doc.status] || ''}`}
-            >
+            <Badge className={`text-xs ${statusColor[doc.status] || ''}`}>
               {String(t(`signatures.status.${doc.status}`, doc.status))}
             </Badge>
           </div>
@@ -175,15 +161,10 @@ export default function SignatureDocumentPage() {
       {/* Signers */}
       <Card className="mb-4">
         <CardContent className="p-4">
-          <h3 className="font-semibold mb-3">
-            {t('signatures.signers', 'Signers')}
-          </h3>
+          <h3 className="font-semibold mb-3">{t('signatures.signers', 'Signers')}</h3>
           <div className="space-y-2">
             {doc.requests?.map((req) => (
-              <div
-                key={req._id}
-                className="flex items-center justify-between p-2 rounded border"
-              >
+              <div key={req._id} className="flex items-center justify-between p-2 rounded border">
                 <div className="flex items-center gap-2">
                   <Badge variant="outline" className="text-xs">
                     #{req.order}
@@ -197,9 +178,7 @@ export default function SignatureDocumentPage() {
                     )}
                   </span>
                 </div>
-                <Badge
-                  className={`text-xs ${statusColor[req.status] || ''}`}
-                >
+                <Badge className={`text-xs ${statusColor[req.status] || ''}`}>
                   {String(t(`signatures.requestStatus.${req.status}`, req.status))}
                 </Badge>
               </div>
@@ -229,18 +208,10 @@ export default function SignatureDocumentPage() {
             ) : signatureData ? (
               <div className="space-y-3">
                 <div className="border rounded-lg p-3 bg-white flex justify-center">
-                  <img
-                    src={signatureData}
-                    alt="Your signature"
-                    className="max-h-[80px]"
-                  />
+                  <img src={signatureData} alt="Your signature" className="max-h-[80px]" />
                 </div>
                 <div className="flex justify-between">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setSignatureData(null)}
-                  >
+                  <Button variant="outline" size="sm" onClick={() => setSignatureData(null)}>
                     {t('signatures.pad.redraw', 'Redraw')}
                   </Button>
                   <Button size="sm" onClick={handleSign} disabled={isSigning}>
@@ -254,10 +225,7 @@ export default function SignatureDocumentPage() {
             ) : (
               <div>
                 <p className="text-sm text-muted-foreground mb-3">
-                  {t(
-                    'signatures.drawOrUpload',
-                    'Draw or upload your signature below',
-                  )}
+                  {t('signatures.drawOrUpload', 'Draw or upload your signature below')}
                 </p>
                 <Tabs defaultValue="draw" className="w-full">
                   <TabsList className="grid w-full grid-cols-2 mb-3">

@@ -69,14 +69,8 @@ export function LeaveSignDocumentSheet({
   const [declineMode, setDeclineMode] = useState(false);
   const [declineReason, setDeclineReason] = useState('');
 
-  const doc = useQuery(
-    api.signatures.getDocument,
-    documentId ? { documentId } : 'skip',
-  );
-  const auditLog = useQuery(
-    api.signatures.getAuditLog,
-    documentId ? { documentId } : 'skip',
-  );
+  const doc = useQuery(api.signatures.getDocument, documentId ? { documentId } : 'skip');
+  const auditLog = useQuery(api.signatures.getAuditLog, documentId ? { documentId } : 'skip');
   const signMutation = useMutation(api.signatures.signDocument);
   const declineMutation = useMutation(api.signatures.declineDocument);
   const reminderMutation = useMutation(api.signatures.sendReminder);
@@ -90,9 +84,7 @@ export function LeaveSignDocumentSheet({
   const displayTitle = doc ? localizedDocTitle(doc, t) : '';
 
   // Find the current user's pending request
-  const myRequest = doc?.requests?.find(
-    (r) => r.signerId === userId && r.status === 'pending',
-  );
+  const myRequest = doc?.requests?.find((r) => r.signerId === userId && r.status === 'pending');
 
   const myOrder = myRequest?.order;
   const waitingFor =
@@ -129,9 +121,7 @@ export function LeaveSignDocumentSheet({
       onClose();
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : '';
-      toast.error(
-        msg || t('signatures.errors.signFailed', 'Failed to sign document'),
-      );
+      toast.error(msg || t('signatures.errors.signFailed', 'Failed to sign document'));
     } finally {
       setIsSigning(false);
     }
@@ -239,15 +229,11 @@ export function LeaveSignDocumentSheet({
             <>
               {/* Status Badge */}
               <div className="flex items-center gap-2">
-                <Badge variant="outline">
-                  {t(`signatures.status.${doc.status}`, doc.status)}
-                </Badge>
+                <Badge variant="outline">{t(`signatures.status.${doc.status}`, doc.status)}</Badge>
                 {doc.expiresAt && (
                   <span className="text-xs text-muted-foreground">
                     {t('signatures.expiresOn', 'Expires')}:{' '}
-                    {new Date(doc.expiresAt).toLocaleDateString(
-                      getLocaleString(i18n.language),
-                    )}
+                    {new Date(doc.expiresAt).toLocaleDateString(getLocaleString(i18n.language))}
                   </span>
                 )}
               </div>
@@ -289,9 +275,7 @@ export function LeaveSignDocumentSheet({
 
               {/* Signers */}
               <div>
-                <h4 className="text-sm font-semibold mb-2">
-                  {t('signatures.signers', 'Signers')}
-                </h4>
+                <h4 className="text-sm font-semibold mb-2">{t('signatures.signers', 'Signers')}</h4>
                 <div className="space-y-2">
                   {doc.requests?.map((req) => (
                     <div
@@ -305,15 +289,8 @@ export function LeaveSignDocumentSheet({
                         <span className="text-sm">{req.signerName}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge
-                          className={`text-xs ${requestStatusColor[req.status] || ''}`}
-                        >
-                          {String(
-                            t(
-                              `signatures.requestStatus.${req.status}`,
-                              req.status,
-                            ),
-                          )}
+                        <Badge className={`text-xs ${requestStatusColor[req.status] || ''}`}>
+                          {String(t(`signatures.requestStatus.${req.status}`, req.status))}
                         </Badge>
                         {req.status === 'pending' && doc.createdBy === userId && (
                           <Button
@@ -347,12 +324,7 @@ export function LeaveSignDocumentSheet({
                         >
                           <Icon className="w-3 h-3 shrink-0" />
                           <span>
-                            {String(
-                              t(
-                                `signatures.actions.${entry.action}`,
-                                entry.action,
-                              ),
-                            )}
+                            {String(t(`signatures.actions.${entry.action}`, entry.action))}
                           </span>
                           <span className="ml-auto">
                             {new Date(entry.timestamp).toLocaleString(
@@ -370,10 +342,7 @@ export function LeaveSignDocumentSheet({
               {canSign && !declineMode && (
                 <div className="border-t pt-4">
                   <Label className="mb-2 block">
-                    {t(
-                      'signatures.pad.provideSignature',
-                      'Draw or upload your signature',
-                    )}
+                    {t('signatures.pad.provideSignature', 'Draw or upload your signature')}
                   </Label>
                   {!isMyTurn && waitingFor.length > 0 ? (
                     <p className="text-sm text-(--warning-text) py-3 text-center">
@@ -385,34 +354,20 @@ export function LeaveSignDocumentSheet({
                   ) : signatureData ? (
                     <div className="space-y-2">
                       <div className="border rounded-lg p-3 bg-white flex justify-center">
-                        <img
-                          src={signatureData}
-                          alt="Signature"
-                          className="max-h-[80px]"
-                        />
+                        <img src={signatureData} alt="Signature" className="max-h-[80px]" />
                       </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setSignatureData(null)}
-                      >
+                      <Button variant="outline" size="sm" onClick={() => setSignatureData(null)}>
                         {t('signatures.pad.redraw', 'Redraw')}
                       </Button>
                     </div>
                   ) : (
                     <Tabs defaultValue="draw" className="w-full">
                       <TabsList className="grid w-full grid-cols-2 mb-3">
-                        <TabsTrigger
-                          value="draw"
-                          className="flex items-center gap-1.5"
-                        >
+                        <TabsTrigger value="draw" className="flex items-center gap-1.5">
                           <PenTool className="w-3.5 h-3.5" />
                           {t('signatures.pad.tabDraw', 'Draw')}
                         </TabsTrigger>
-                        <TabsTrigger
-                          value="upload"
-                          className="flex items-center gap-1.5"
-                        >
+                        <TabsTrigger value="upload" className="flex items-center gap-1.5">
                           {t('signatures.pad.tabUpload', 'Upload')}
                         </TabsTrigger>
                       </TabsList>
@@ -437,10 +392,7 @@ export function LeaveSignDocumentSheet({
               {declineMode && (
                 <div className="border-t pt-4">
                   <Label>
-                    {t(
-                      'signatures.fields.declineReason',
-                      'Reason for declining (optional)',
-                    )}
+                    {t('signatures.fields.declineReason', 'Reason for declining (optional)')}
                   </Label>
                   <Textarea
                     className="mt-1"
@@ -455,10 +407,7 @@ export function LeaveSignDocumentSheet({
                 <div className="text-center py-4">
                   <CheckCircle className="w-10 h-10 mx-auto text-(--success-text) mb-2" />
                   <p className="text-sm font-medium">
-                    {t(
-                      'signatures.alreadySigned',
-                      'This document has been fully signed',
-                    )}
+                    {t('signatures.alreadySigned', 'This document has been fully signed')}
                   </p>
                 </div>
               )}
@@ -489,11 +438,7 @@ export function LeaveSignDocumentSheet({
           <div className="flex gap-2">
             {canSign && !declineMode && (
               <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setDeclineMode(true)}
-                >
+                <Button variant="outline" size="sm" onClick={() => setDeclineMode(true)}>
                   <XCircle className="w-4 h-4 mr-1" />
                   {t('signatures.decline', 'Decline')}
                 </Button>
@@ -511,11 +456,7 @@ export function LeaveSignDocumentSheet({
             )}
             {declineMode && (
               <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setDeclineMode(false)}
-                >
+                <Button variant="outline" size="sm" onClick={() => setDeclineMode(false)}>
                   <ChevronLeft className="w-4 h-4 mr-1" />
                   {t('common.back', 'Back')}
                 </Button>

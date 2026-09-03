@@ -89,8 +89,12 @@ function buildLeaveRequestContent(args: {
   // Right column: secondaryLocale (RU or EN depending on user's language)
   const leftBlocks: Array<{ text: string }> = [
     { text: `${args.orgName} — ԴԻՄՈՒՄ ԱՐՁԱԿՈՒՐԴԻ ՀԱՄԱՐ` },
-    { text: `Ես՝ ${args.employeeName}, ${args.employeeDepartment} բաժնի ${args.employeePosition},` },
-    { text: `սույնով խնդրում եմ տրամադրել ${typeLabelPrimary} արձակուրդ՝ ${args.days} ${dayWordHy} ժամկետով (${args.startDate} – ${args.endDate})։` },
+    {
+      text: `Ես՝ ${args.employeeName}, ${args.employeeDepartment} բաժնի ${args.employeePosition},`,
+    },
+    {
+      text: `սույնով խնդրում եմ տրամադրել ${typeLabelPrimary} արձակուրդ՝ ${args.days} ${dayWordHy} ժամկետով (${args.startDate} – ${args.endDate})։`,
+    },
     { text: `Պատճառ՝ ${args.reason}` },
     { text: `Ամսաթիվ՝ ${args.today}` },
   ];
@@ -100,8 +104,12 @@ function buildLeaveRequestContent(args: {
   if (args.secondaryLocale === 'ru') {
     rightBlocks.push(
       { text: `${args.orgName} — ЗАЯВЛЕНИЕ НА ОТПУСК` },
-      { text: `Я, ${args.employeeName}, ${args.employeePosition} ${args.employeeDepartment} отдела,` },
-      { text: `прошу предоставить ${typeLabelSecondary} отпуск на ${args.days} ${args.days === 1 ? 'день' : args.days < 5 ? 'дня' : 'дней'} (${args.startDate} – ${args.endDate}).` },
+      {
+        text: `Я, ${args.employeeName}, ${args.employeePosition} ${args.employeeDepartment} отдела,`,
+      },
+      {
+        text: `прошу предоставить ${typeLabelSecondary} отпуск на ${args.days} ${args.days === 1 ? 'день' : args.days < 5 ? 'дня' : 'дней'} (${args.startDate} – ${args.endDate}).`,
+      },
       { text: `Причина: ${args.reason}` },
       { text: `Дата: ${args.today}` },
     );
@@ -109,8 +117,12 @@ function buildLeaveRequestContent(args: {
     // Fallback: English
     rightBlocks.push(
       { text: `${args.orgName} — LEAVE REQUEST` },
-      { text: `I, ${args.employeeName}, ${args.employeePosition} of the ${args.employeeDepartment} department,` },
-      { text: `hereby request ${typeLabelSecondary} leave for ${args.days} ${args.days === 1 ? 'day' : 'days'} (${args.startDate} – ${args.endDate}).` },
+      {
+        text: `I, ${args.employeeName}, ${args.employeePosition} of the ${args.employeeDepartment} department,`,
+      },
+      {
+        text: `hereby request ${typeLabelSecondary} leave for ${args.days} ${args.days === 1 ? 'day' : 'days'} (${args.startDate} – ${args.endDate}).`,
+      },
       { text: `Reason: ${args.reason}` },
       { text: `Date: ${args.today}` },
     );
@@ -127,23 +139,26 @@ function buildLeaveRequestContent(args: {
     rightLabel,
   }));
 
-  return '__DOC__' + JSON.stringify({
-    version: 2,
-    source: 'catalog' as const,
-    templateId: 'leave-request',
-    title: 'Leave Request / \u0534\u056b\u0574\u0578\u0582\u0574',
-    blocks,
-    accent: 'emerald' as const,
-    orgName: args.orgName,
-    primaryLocale: args.primaryLocale,
-    secondaryLocale: args.secondaryLocale,
-    labels: {
-      signature: args.primaryLocale === 'hy' ? 'Ստորագրություն' : 'Signature',
-      name: args.primaryLocale === 'hy' ? 'Անուն' : 'Name',
-      date: args.primaryLocale === 'hy' ? 'Ամսաթիվ' : 'Date',
-      position: args.primaryLocale === 'hy' ? 'Պաշտոն' : 'Position',
-    },
-  });
+  return (
+    '__DOC__' +
+    JSON.stringify({
+      version: 2,
+      source: 'catalog' as const,
+      templateId: 'leave-request',
+      title: 'Leave Request / \u0534\u056b\u0574\u0578\u0582\u0574',
+      blocks,
+      accent: 'emerald' as const,
+      orgName: args.orgName,
+      primaryLocale: args.primaryLocale,
+      secondaryLocale: args.secondaryLocale,
+      labels: {
+        signature: args.primaryLocale === 'hy' ? 'Ստորագրություն' : 'Signature',
+        name: args.primaryLocale === 'hy' ? 'Անուն' : 'Name',
+        date: args.primaryLocale === 'hy' ? 'Ամսաթիվ' : 'Date',
+        position: args.primaryLocale === 'hy' ? 'Պաշտոն' : 'Position',
+      },
+    })
+  );
 }
 
 /**
@@ -173,7 +188,9 @@ function buildLeaveOrderContent(args: {
   // Right column: secondaryLocale (RU or EN)
   const leftBlocks: Array<{ text: string }> = [
     { text: `${args.orgName} — ՀՐԱՄԱՆ ԱՐՁԱԿՈՒՐԴԻ ՄԱՍԻՆ` },
-    { text: `${args.supervisorName}-ի՝ ${args.supervisorPosition} հրամանով, ${args.employeeDepartment} բաժնի ${args.employeePosition} ${args.employeeName}-ին տրամադրվում է ${typeLabelPrimary} արձակուրդ՝ ${args.days} օրով (${args.startDate} – ${args.endDate})։` },
+    {
+      text: `${args.supervisorName}-ի՝ ${args.supervisorPosition} հրամանով, ${args.employeeDepartment} բաժնի ${args.employeePosition} ${args.employeeName}-ին տրամադրվում է ${typeLabelPrimary} արձակուրդ՝ ${args.days} օրով (${args.startDate} – ${args.endDate})։`,
+    },
     { text: `Պատճառ՝ ${args.reason}` },
     { text: `Ամսաթիվ՝ ${args.today}` },
   ];
@@ -182,14 +199,18 @@ function buildLeaveOrderContent(args: {
   if (args.secondaryLocale === 'ru') {
     rightBlocks.push(
       { text: `${args.orgName} — ПРИКАЗ ОБ ОТПУСКЕ` },
-      { text: `По приказу ${args.supervisorName}, ${args.supervisorPosition}, ${args.employeeName}, ${args.employeePosition} ${args.employeeDepartment} отдела, предоставляется ${typeLabelSecondary} отпуск на ${args.days} ${args.days === 1 ? 'день' : args.days < 5 ? 'дня' : 'дней'} (${args.startDate} – ${args.endDate}).` },
+      {
+        text: `По приказу ${args.supervisorName}, ${args.supervisorPosition}, ${args.employeeName}, ${args.employeePosition} ${args.employeeDepartment} отдела, предоставляется ${typeLabelSecondary} отпуск на ${args.days} ${args.days === 1 ? 'день' : args.days < 5 ? 'дня' : 'дней'} (${args.startDate} – ${args.endDate}).`,
+      },
       { text: `Причина: ${args.reason}` },
       { text: `Дата: ${args.today}` },
     );
   } else {
     rightBlocks.push(
       { text: `${args.orgName} — LEAVE ORDER` },
-      { text: `By order of ${args.supervisorName}, ${args.supervisorPosition}, ${args.employeeName}, ${args.employeePosition} of the ${args.employeeDepartment} department, is granted ${typeLabelSecondary} leave for ${args.days} ${args.days === 1 ? 'day' : 'days'} (${args.startDate} – ${args.endDate}).` },
+      {
+        text: `By order of ${args.supervisorName}, ${args.supervisorPosition}, ${args.employeeName}, ${args.employeePosition} of the ${args.employeeDepartment} department, is granted ${typeLabelSecondary} leave for ${args.days} ${args.days === 1 ? 'day' : 'days'} (${args.startDate} – ${args.endDate}).`,
+      },
       { text: `Reason: ${args.reason}` },
       { text: `Date: ${args.today}` },
     );
@@ -206,23 +227,26 @@ function buildLeaveOrderContent(args: {
     rightLabel,
   }));
 
-  return '__DOC__' + JSON.stringify({
-    version: 2,
-    source: 'catalog' as const,
-    templateId: 'leave-order',
-    title: 'Leave Order / \u0540\u0580\u0561\u0574\u0561\u0576',
-    blocks,
-    accent: 'emerald' as const,
-    orgName: args.orgName,
-    primaryLocale: args.primaryLocale,
-    secondaryLocale: args.secondaryLocale,
-    labels: {
-      signature: args.primaryLocale === 'hy' ? 'Ստորագրություն' : 'Signature',
-      name: args.primaryLocale === 'hy' ? 'Անուն' : 'Name',
-      date: args.primaryLocale === 'hy' ? 'Ամսաթիվ' : 'Date',
-      position: args.primaryLocale === 'hy' ? 'Պաշտոն' : 'Position',
-    },
-  });
+  return (
+    '__DOC__' +
+    JSON.stringify({
+      version: 2,
+      source: 'catalog' as const,
+      templateId: 'leave-order',
+      title: 'Leave Order / \u0540\u0580\u0561\u0574\u0561\u0576',
+      blocks,
+      accent: 'emerald' as const,
+      orgName: args.orgName,
+      primaryLocale: args.primaryLocale,
+      secondaryLocale: args.secondaryLocale,
+      labels: {
+        signature: args.primaryLocale === 'hy' ? 'Ստորագրություն' : 'Signature',
+        name: args.primaryLocale === 'hy' ? 'Անուն' : 'Name',
+        date: args.primaryLocale === 'hy' ? 'Ամսաթիվ' : 'Date',
+        position: args.primaryLocale === 'hy' ? 'Պաշտոն' : 'Position',
+      },
+    })
+  );
 }
 
 // ─── Generate leave request document ───────────────────────────────────────

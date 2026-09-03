@@ -504,9 +504,7 @@ export default function LeaveDetailClient({
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() =>
-                        setSignDocId(leaveDocs.leaveRequestDocument!.id)
-                      }
+                      onClick={() => setSignDocId(leaveDocs.leaveRequestDocument!.id)}
                     >
                       <FileSignature className="mr-1 h-3 w-3" />
                       {t('signatures.sign', 'Sign')}
