@@ -405,6 +405,7 @@ function DraggableTaskRowWrapper({
       style={style}
       {...attributes}
       {...listeners}
+      data-task-id={task._id}
       className={isHighlighted ? 'animate-task-highlight' : undefined}
     >
       <TaskRow task={task} ctx={ctx} selected={selected} />

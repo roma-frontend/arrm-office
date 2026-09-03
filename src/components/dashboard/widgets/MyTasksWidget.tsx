@@ -64,7 +64,7 @@ export const MyTasksWidget = memo(function MyTasksWidget({ userId }: { userId: s
               return (
                 <Link
                   key={task._id}
-                  href="/tasks"
+                  href={`/tasks?highlight=${task._id}`}
                   className="flex items-center justify-between gap-3 p-3 rounded-lg border border-(--border) hover:bg-(--background-subtle) transition-colors"
                 >
                   <div className="flex-1 min-w-0">

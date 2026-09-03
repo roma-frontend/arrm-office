@@ -623,6 +623,7 @@ function DraggableTaskCard({
       style={style}
       {...listeners}
       {...attributes}
+      data-task-id={task._id}
       className={`relative group cursor-grab active:cursor-grabbing ${isHighlighted ? 'animate-task-highlight' : ''}`}
       onClick={(e) => {
         e.stopPropagation();
@@ -940,6 +941,7 @@ function DraggableListRow({
       style={style}
       {...listeners}
       {...attributes}
+      data-task-id={task._id}
       className={isHighlighted ? 'animate-task-highlight' : undefined}
     >
       {children}
@@ -1424,7 +1426,12 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
   useEffect(() => {
     if (!urlSynced.current) return;
     const query = encodeTaskView(viewState);
-    const next = query === '' ? window.location.pathname : `${window.location.pathname}?${query}`;
+    // Preserve the highlight param so the notification → scroll flow works
+    const hlParam = new URLSearchParams(window.location.search).get('highlight');
+    const hlSuffix = hlParam ? `${query ? '&' : ''}highlight=${hlParam}` : '';
+    const next = query === '' && !hlSuffix
+      ? window.location.pathname
+      : `${window.location.pathname}?${query}${hlSuffix}`;
     window.history.replaceState(window.history.state, '', next);
   }, [viewState]);
 
@@ -1437,6 +1444,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
   // matching row blinks for 4 seconds so the user spots it immediately.
   const [highlightTaskId, setHighlightTaskId] = useState<string | null>(null);
   const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const startHighlight = useCallback((taskId: string) => {
     if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
     setHighlightTaskId(taskId);
@@ -1460,6 +1468,28 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
     }, 500);
     return () => clearInterval(interval);
   }, [startHighlight]);
+
+  // Scroll to highlighted task when it appears in the DOM.
+  // Tasks load asynchronously, so we poll until the element exists.
+  useEffect(() => {
+    if (!highlightTaskId) return;
+    let attempts = 0;
+    const maxAttempts = 40; // 40 × 250ms = 10s max
+    const tryScroll = () => {
+      const el = document.querySelector(`[data-task-id="${highlightTaskId}"]`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+      if (++attempts < maxAttempts) {
+        scrollTimerRef.current = setTimeout(tryScroll, 250);
+      }
+    };
+    tryScroll();
+    return () => {
+      if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
+    };
+  }, [highlightTaskId]);
 
   useEffect(() => {
     const mainEl = mainRef.current;

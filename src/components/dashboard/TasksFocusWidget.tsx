@@ -152,7 +152,7 @@ export function TasksFocusWidget() {
                     <Check className="size-3" aria-hidden="true" />
                   )}
                 </button>
-                <Link href="/tasks" className="min-w-0 flex-1 truncate">
+                <Link href={`/tasks?highlight=${task._id}`} className="min-w-0 flex-1 truncate">
                   <span
                     className={cn(
                       'text-[13px] font-medium leading-tight',

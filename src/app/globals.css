@@ -3169,28 +3169,40 @@ html.cookie-consent-given .cookie-banner-root {
   }
 }
 
-/* ── Task highlight animation (notification click → blink) ─────────── */
+/* ── Task highlight animation (notification click → blink + glow) ── */
 @keyframes taskHighlight {
   0%,
   100% {
     background-color: transparent;
+    box-shadow: none;
+    border-color: transparent;
   }
-  25% {
-    background-color: var(--brand, #6366f1) 1a;
+  20% {
+    background-color: rgba(99, 102, 241, 0.12);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25), 0 0 16px rgba(99, 102, 241, 0.15);
+    border-color: rgba(99, 102, 241, 0.4);
   }
   50% {
-    background-color: var(--brand, #6366f1) 30;
+    background-color: rgba(99, 102, 241, 0.18);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.35), 0 0 24px rgba(99, 102, 241, 0.2);
+    border-color: rgba(99, 102, 241, 0.5);
   }
-  75% {
-    background-color: var(--brand, #6366f1) 1a;
+  80% {
+    background-color: rgba(99, 102, 241, 0.12);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25), 0 0 16px rgba(99, 102, 241, 0.15);
+    border-color: rgba(99, 102, 241, 0.4);
   }
 }
 .animate-task-highlight {
-  animation: taskHighlight 1s ease-in-out 4;
-  border-radius: 4px;
+  animation: taskHighlight 1.2s ease-in-out 3;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  transition: box-shadow 0.3s ease;
 }
 @media (prefers-reduced-motion: reduce) {
   .animate-task-highlight {
     animation-duration: 1ms;
+    border-color: rgba(99, 102, 241, 0.5);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
   }
 }
