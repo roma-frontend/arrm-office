@@ -399,14 +399,17 @@ function DraggableTaskRowWrapper({
     zIndex: isDragging ? 50 : undefined,
     position: 'relative' as const,
   };
+  const highlightStyle = isHighlighted
+    ? { boxShadow: '0 0 0 3px rgba(99,102,241,0.4), 0 0 24px rgba(99,102,241,0.25)', backgroundColor: 'rgba(99,102,241,0.12)', outline: '2px solid rgba(99,102,241,0.5)', outlineOffset: '0px', borderRadius: '8px', transition: 'all 0.4s ease' }
+    : {};
+
   return (
     <div
       ref={setNodeRef}
-      style={style}
+      style={{ ...style, ...highlightStyle }}
       {...attributes}
       {...listeners}
       data-task-id={task._id}
-      className={isHighlighted ? 'animate-task-highlight' : undefined}
     >
       <TaskRow task={task} ctx={ctx} selected={selected} />
     </div>
