@@ -710,7 +710,7 @@ function DroppableKanbanColumn({
       </div>
       <div
         ref={setNodeRef}
-        className={`space-y-3 min-h-[120px] p-2 rounded-2xl transition-all duration-200 ${
+        className={`flex flex-col gap-2 space-y-3 min-h-[120px] p-2 rounded-2xl transition-all duration-200 ${
           isOver
             ? `border-2 border-dashed ${cfg.border} bg-(--brand-quiet)`
             : 'border-2 border-transparent'
