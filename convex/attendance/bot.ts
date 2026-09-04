@@ -287,7 +287,13 @@ export const buildDigest = internalQuery({
     const firstWithLocale = everyone.find((u) => u && userIds.has(u._id));
     const locale = pickLocale('en'); // single-locale digest for the channel
 
-    const refreshedAt = new Date().toISOString().slice(11, 16); // HH:MM
+    // Format in the organization's timezone so the "Refreshed at" line
+    // shows local time (e.g. 09:00) instead of UTC (e.g. 05:00).
+    const org = await ctx.db.get(args.organizationId);
+    const tz = org?.timezone ?? 'Asia/Yerevan';
+    const refreshedAt = new Date()
+      .toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: tz })
+      .replace(/:/g, ':');
     const roster = everyone
       .filter((u) => u.isActive !== false && u.role !== 'superadmin' && !u.email.startsWith('+'))
       .map((u) => ({ id: u._id, name: u.name }));
@@ -370,6 +376,22 @@ export const renderAndPostDigest = internalMutation({
       lastMessageText: digest.body,
       lastMessageSenderId: botUser,
     });
+
+    // Increment unreadCount for every member except the bot so the chat
+    // icon badge and notification sound fire. Without this, the digest
+    // lands silently — no badge, no sound, no toast.
+    const members = await ctx.db
+      .query('chatMembers')
+      .withIndex('by_conversation', (q) => q.eq('conversationId', conversation!._id))
+      .collect();
+    for (const m of members) {
+      if (m.userId === botUser) continue;
+      if (m.isMuted) continue;
+      await ctx.db.patch(m._id, {
+        unreadCount: (m.unreadCount ?? 0) + 1,
+      });
+    }
+
     return { posted: true as const, updated: false };
   },
 });
