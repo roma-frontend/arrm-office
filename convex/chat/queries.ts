@@ -189,8 +189,23 @@ export const getMyConversations = query({
 
       const memberCount = conv.type === 'group' ? groupMembersMap.get(conv._id)?.length || 0 : 2;
 
+      // A member who cleared the history only for themselves must not keep
+      // seeing its last line in the list. The preview fields belong to the
+      // shared conversation row, so they are masked per viewer here — until a
+      // newer message arrives, which is why the comparison is against the
+      // timestamp rather than a boolean.
+      const clearedAt = membership.historyClearedAt ?? 0;
+      const previewCleared = clearedAt > 0 && (conv.lastMessageAt ?? 0) <= clearedAt;
+
       return {
         ...conv,
+        ...(previewCleared
+          ? {
+              lastMessageText: undefined,
+              lastMessageAt: undefined,
+              lastMessageSenderId: undefined,
+            }
+          : {}),
         membership,
         otherUser,
         memberCount,

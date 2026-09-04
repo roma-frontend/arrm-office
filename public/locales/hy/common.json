@@ -2626,7 +2626,8 @@
     "fullscreen": "Ամբողջ էկրան",
     "exitFullscreen": "Դուրս գալ ամբողջ էկրանից",
     "allModulesTitle": "Բոլոր մոդուլները",
-    "overdueCount": "{{count}} ժամկետանց"
+    "overdueCount": "{{count}} ժամկետանց",
+    "newNotifications": "նոր ծանուցում"
   },
   "meetings": {
     "joinNow": "Միանալ",

@@ -16,6 +16,16 @@ import {
 } from '@/components/ui/context-menu';
 import { cn } from '@/lib/utils';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   Search,
   Plus,
   Users,
@@ -23,6 +33,7 @@ import {
   Pin,
   Archive,
   Trash2,
+  Eraser,
   RotateCcw,
   Volume2,
   VolumeX,
@@ -47,7 +58,14 @@ interface Conversation {
   isPinned?: boolean;
   isArchived?: boolean;
   isDeleted?: boolean;
-  membership: { unreadCount: number; isMuted: boolean; isDeleted?: boolean; isArchived?: boolean };
+  membership: {
+    unreadCount: number;
+    isMuted: boolean;
+    isDeleted?: boolean;
+    isArchived?: boolean;
+    /** Role in the conversation — decides whether clearing wipes it for all. */
+    role?: 'owner' | 'admin' | 'member';
+  };
   otherUser?: {
     _id: Id<'users'>;
     name: string;
@@ -66,6 +84,11 @@ interface Props {
   onNewConversation: () => void;
   onTogglePin?: (convId: Id<'chatConversations'>) => Promise<void>;
   onDelete?: (convId: Id<'chatConversations'>) => Promise<void>;
+  /**
+   * Hard-delete the whole history of a conversation for every participant.
+   * Distinct from `onDelete`, which only hides it for the current user.
+   */
+  onClearChat?: (convId: Id<'chatConversations'>) => Promise<void>;
   onRestore?: (convId: Id<'chatConversations'>) => Promise<void>;
   onToggleArchive?: (convId: Id<'chatConversations'>) => Promise<void>;
   onToggleMute?: (convId: Id<'chatConversations'>) => Promise<void>;
@@ -134,6 +157,7 @@ export const ConversationList = React.memo(function ConversationList({
   onNewConversation,
   onTogglePin,
   onDelete,
+  onClearChat,
   onRestore,
   onToggleArchive,
   onToggleMute,
@@ -146,6 +170,15 @@ export const ConversationList = React.memo(function ConversationList({
   const [search, setSearch] = useState('');
   const [activeFilters, setActiveFilters] = useState<FilterType[]>(getStoredFilters);
   const [loadingOpId, setLoadingOpId] = useState<string | null>(null);
+  // Clearing a chat wipes the history for everyone, so it goes through a
+  // confirmation step — unlike the other, per-user and reversible menu actions.
+  const [clearTarget, setClearTarget] = useState<{
+    id: Id<'chatConversations'>;
+    name: string;
+    /** Whether confirming wipes the history for every participant or just this user. */
+    forEveryone: boolean;
+  } | null>(null);
+  const [isClearing, setIsClearing] = useState(false);
   const filtersRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -261,6 +294,21 @@ export const ConversationList = React.memo(function ConversationList({
       toast.error('Operation failed');
     } finally {
       setLoadingOpId(null);
+    }
+  };
+
+  const handleConfirmClear = async () => {
+    if (!clearTarget || !onClearChat) return;
+    setIsClearing(true);
+    try {
+      await onClearChat(clearTarget.id);
+      toast.success(t('chat.chatCleared'));
+      setClearTarget(null);
+    } catch (error) {
+      logger.error('Clear chat failed:', error);
+      toast.error(t('chat.clearChatFailed'));
+    } finally {
+      setIsClearing(false);
     }
   };
 
@@ -826,6 +874,32 @@ export const ConversationList = React.memo(function ConversationList({
 
                     <ContextMenuSeparator />
 
+                    {onClearChat && (
+                      <ContextMenuItem
+                        onClick={() => {
+                          // Radix keeps `pointer-events: none` on the body until
+                          // the menu has finished closing, so the confirmation
+                          // dialog is opened on the next frame instead of now.
+                          // A direct chat, or a group the user owns or admins,
+                          // is cleared for everybody; otherwise only for them.
+                          const target = {
+                            id: conv._id,
+                            name: displayName,
+                            forEveryone:
+                              conv.type === 'direct' ||
+                              conv.membership.role === 'owner' ||
+                              conv.membership.role === 'admin',
+                          };
+                          requestAnimationFrame(() => setClearTarget(target));
+                        }}
+                        disabled={isLoading}
+                        className="flex items-center gap-2 text-(--danger-text) focus:text-(--danger-text)"
+                      >
+                        <Eraser className="w-4 h-4" />
+                        {t('chat.clearChat')}
+                      </ContextMenuItem>
+                    )}
+
                     <ContextMenuItem
                       onClick={() =>
                         handleOperation(() => onDelete?.(conv._id) || Promise.resolve(), conv._id)
@@ -843,6 +917,47 @@ export const ConversationList = React.memo(function ConversationList({
           );
         })}
       </div>
+
+      {/* Clear-chat confirmation. In a direct chat (or a group the user
+          owns/admins) the history leaves the database for everyone; a regular
+          group member only clears their own view, so the wording differs. */}
+      <AlertDialog
+        open={clearTarget !== null}
+        onOpenChange={(open) => {
+          if (!open && !isClearing) setClearTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('chat.clearChat')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t(clearTarget?.forEveryone ? 'chat.clearChatConfirm' : 'chat.clearChatConfirmSelf', {
+                name: clearTarget?.name ?? '',
+              })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              type="button"
+              disabled={isClearing}
+              onClick={() => setClearTarget(null)}
+            >
+              {t('common.cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              type="button"
+              disabled={isClearing}
+              onClick={(e) => {
+                e.preventDefault();
+                void handleConfirmClear();
+              }}
+              className="bg-(--danger-solid) text-white hover:bg-(--danger-solid)"
+            >
+              {isClearing ? t('chat.clearingChat') : t('chat.clearChat')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 });

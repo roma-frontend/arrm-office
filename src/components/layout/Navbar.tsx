@@ -58,6 +58,7 @@ import { useScrollDirection } from '@/hooks/useScrollDirection';
 import { useNow } from '@/hooks/useNow';
 import { logger } from '@/lib/logger';
 import { hardRedirect } from '@/lib/hardRedirect';
+import { notificationTarget } from '@/lib/notificationTarget';
 import { toast } from 'sonner';
 import {
   notificationMessage,
@@ -119,49 +120,11 @@ interface NotificationItem {
   _creationTime: number;
 }
 
-const NOTIFICATION_ROUTES: Record<string, string> = {
-  join_request: '/join-requests',
-  join_approved: '/dashboard',
-  join_rejected: '/dashboard',
-  leave_request: '/leaves',
-  leave_approved: '/leaves',
-  leave_rejected: '/leaves',
-  driver_request: '/drivers',
-  driver_request_approved: '/drivers',
-  driver_request_rejected: '/drivers',
-  status_change: '/drivers',
-  employee_added: '/employees',
-  message_mention: '/chat',
-  review_deadline: '/performance',
-  okr_checkin_reminder: '/goals',
-  survey_auto_activated: '/surveys',
-  survey_auto_closed: '/surveys',
-  onboarding_task_due: '/onboarding',
-  onboarding_started: '/onboarding',
-  onboarding_manager_assigned: '/onboarding',
-  onboarding_buddy_assigned: '/onboarding',
-  onboarding_task_overdue: '/onboarding',
-  asset_assigned: '/assets',
-  room_booked: '/rooms',
-  room_booking_cancelled: '/rooms',
-  announcement_published: '/news',
-};
-
-export function notificationTarget(n: NotificationItem, role?: string): string | null {
-  if (n.type === 'security_alert' && n.relatedId && !n.relatedId.includes(':')) {
-    return `/superadmin/security/alert/${n.relatedId}`;
-  }
-  if (n.relatedId?.startsWith('support_ticket:')) {
-    return role === 'superadmin' ? '/superadmin/support' : '/help';
-  }
-  const base = n.route ?? NOTIFICATION_ROUTES[n.type] ?? null;
-  if (!base) return null;
-  // Pass relatedId as highlight param for task notifications
-  if (base === '/tasks' && n.relatedId) {
-    return `${base}?highlight=${n.relatedId}`;
-  }
-  return base;
-}
+/**
+ * Re-exported so existing imports (and tests) keep working while the routing
+ * table itself lives in `@/lib/notificationTarget`, shared with the banner.
+ */
+export { notificationTarget };
 
 function PresenceEmoji({ emoji }: { emoji: string }) {
   return <span aria-hidden="true">{emoji}</span>;

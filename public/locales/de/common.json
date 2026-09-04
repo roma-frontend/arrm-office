@@ -2626,7 +2626,8 @@
     "fullscreen": "Vollbild",
     "exitFullscreen": "Vollbild beenden",
     "allModulesTitle": "Alle Module",
-    "overdueCount": "{{count}} überfällig"
+    "overdueCount": "{{count}} überfällig",
+    "newNotifications": "neue Benachrichtigungen"
   },
   "meetings": {
     "joinNow": "Beitreten",

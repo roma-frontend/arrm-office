@@ -17,40 +17,10 @@ import { useMutation } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
 import { EventInviteButtons } from '@/components/calendar/EventInviteActions';
+import { notificationTarget } from '@/lib/notificationTarget';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
-
-const getRouteForType = (type: string): string => {
-  const routes: Record<string, string> = {
-    leave_request: '/leaves',
-    leave_approved: '/leaves',
-    leave_rejected: '/leaves',
-    driver_request: '/drivers',
-    driver_request_approved: '/drivers',
-    driver_request_rejected: '/drivers',
-    employee_added: '/employees',
-    join_request: '/organization',
-    join_approved: '/organization',
-    join_rejected: '/organization',
-    security_alert: '/security',
-    status_change: '/drivers',
-    message_mention: '/chat',
-    system: '/dashboard',
-    ticket: '/help',
-    task: '/tasks',
-    recognition: '/recognition',
-    event: '/events',
-    birthday: '/employees',
-    corporate: '/corporate',
-    kudos: '/recognition',
-    badge_awarded: '/recognition',
-    signature_request: '/signatures',
-    signature_completed: '/signatures',
-    signature_declined: '/signatures',
-  };
-  return routes[type] || '/dashboard';
-};
 
 /**
  * Real-time notification banner that slides in from top
@@ -109,7 +79,7 @@ export function NotificationBanner() {
           title: latest.title,
           message: latest.message,
           type: latest.type,
-          route: latest.route || getRouteForType(latest.type),
+          route: latest.route,
           metadata: latest.metadata,
           relatedId: latest.relatedId,
         });
@@ -122,6 +92,28 @@ export function NotificationBanner() {
   const handleDismiss = useCallback(() => {
     setNewNotification(null);
   }, []);
+
+  /**
+   * Follow the notification: mark it read first, then navigate.
+   *
+   * The read patch is what makes the counters settle — `notificationsUnread`,
+   * `taskUnread` and `calendarUnread` are all derived from `isRead` over the
+   * shared subscription, so they drop as soon as the mutation lands. The banner
+   * used to navigate without it, which left the bell (and the mobile dock)
+   * showing a notification the user had just acted on.
+   */
+  const handleView = useCallback(async () => {
+    if (!newNotification) return;
+    const target = notificationTarget(newNotification, user?.role) ?? '/dashboard';
+    handleDismiss();
+    try {
+      await markRead({ notificationId: newNotification.id as Id<'notifications'> });
+    } catch (err) {
+      // Navigating matters more than the read patch — log and continue.
+      logger.error('Failed to mark notification read before navigating', err);
+    }
+    router.push(target);
+  }, [newNotification, user?.role, handleDismiss, markRead, router]);
 
   if (!newNotification) return null;
 
@@ -182,14 +174,7 @@ export function NotificationBanner() {
         action={{
           label: t('banners.view', 'View'),
           onClick: () => {
-            handleDismiss();
-            const target = newNotification.route || '/dashboard';
-            // Pass relatedId as query param for task highlighting
-            if (newNotification.relatedId && target === '/tasks') {
-              router.push(`${target}?highlight=${newNotification.relatedId}`);
-            } else {
-              router.push(target);
-            }
+            void handleView();
           },
         }}
       />

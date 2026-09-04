@@ -28,6 +28,13 @@ interface Props {
   userRole: string;
 }
 
+/**
+ * Safety stop for the clear-chat loop: 500 messages per batch, so this covers a
+ * 20 000-message history. Beyond that the user is told to repeat the action
+ * rather than the browser spinning on an unbounded loop.
+ */
+const MAX_CLEAR_BATCHES = 40;
+
 export interface ActiveCall {
   callId: Id<'chatCalls'>;
   conversationId: Id<'chatConversations'>;
@@ -96,6 +103,7 @@ export default function ChatClient({
   const restoreConversationMutation = useMutation(api.chat.mutations.restoreConversation);
   const toggleArchiveMutation = useMutation(api.chat.mutations.toggleArchive);
   const toggleMuteMutation = useMutation(api.chat.mutations.toggleMute);
+  const clearConversationMutation = useMutation(api.chat.mutations.clearConversation);
 
   const handleSelectConversation = useCallback(
     (convId: Id<'chatConversations'>) => {
@@ -393,6 +401,20 @@ export default function ChatClient({
             }}
             onRestore={async (convId) => {
               await restoreConversationMutation({ conversationId: convId, userId: uid });
+            }}
+            onClearChat={async (convId) => {
+              // Clearing for everyone deletes a bounded batch per call (a
+              // transaction cannot touch an unbounded number of documents), so
+              // keep calling until the conversation reports itself empty. The
+              // clear-for-me path does its work in a single pass.
+              for (let batch = 0; batch < MAX_CLEAR_BATCHES; batch += 1) {
+                const result = await clearConversationMutation({
+                  conversationId: convId,
+                  userId: uid,
+                });
+                if (result.mode === 'self' || !result.hasMore) return;
+              }
+              throw new Error('Conversation too long to clear in one pass');
             }}
             onToggleArchive={async (convId) => {
               await toggleArchiveMutation({ conversationId: convId, userId: uid });

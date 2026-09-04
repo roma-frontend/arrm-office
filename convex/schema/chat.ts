@@ -41,6 +41,15 @@ export const chat = {
     isDeleted: v.optional(v.boolean()),
     deletedAt: v.optional(v.number()),
     isArchived: v.optional(v.boolean()),
+    /**
+     * When this member last cleared the history for themselves.
+     *
+     * `lastMessageText/At/SenderId` live on the shared conversation row, so a
+     * per-user clear cannot blank them — the list preview would keep showing a
+     * message the user no longer has. This timestamp masks the preview (and
+     * nothing else) for that member until a newer message arrives.
+     */
+    historyClearedAt: v.optional(v.number()),
     joinedAt: v.number(),
   })
     .index('by_conversation', ['conversationId'])

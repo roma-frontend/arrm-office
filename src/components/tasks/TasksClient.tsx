@@ -67,6 +67,8 @@ import {
 } from 'lucide-react';
 import type { TFunction } from 'i18next';
 import { useGlobalShortcut } from '@/hooks/useGlobalShortcut';
+import { useHighlightedEntity } from '@/hooks/useHighlightedEntity';
+import { highlightRowStyle } from '@/lib/highlightStyle';
 import {
   DEFAULT_TASK_VIEW,
   clearTaskFilters,
@@ -619,21 +621,11 @@ function DraggableTaskCard({
   });
   const style = { transform: CSS.Translate.toString(transform), opacity: isDragging ? 0.4 : 1 };
 
-  const highlightStyle =
-    isHighlighted && highlightPulse
-      ? {
-          boxShadow: '0 0 0 2px rgba(44,140,213,0.5), 0 0 20px rgba(44,140,213,0.25)',
-          backgroundColor: 'rgba(44,140,213,0.1)',
-          borderRadius: '14px',
-          transition: 'all 0.3s ease',
-        }
-      : isHighlighted
-        ? {
-            backgroundColor: 'rgba(44,140,213,0.05)',
-            borderRadius: '14px',
-            transition: 'all 0.3s ease',
-          }
-        : {};
+  const highlightStyle = {
+    ...highlightRowStyle(Boolean(isHighlighted), highlightPulse),
+    // Kanban cards are rounded, so the ring has to follow the card's radius.
+    ...(isHighlighted ? { borderRadius: '14px' } : {}),
+  };
 
   return (
     <div
@@ -1472,70 +1464,14 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
 
   // `/` is the search shortcut everywhere else in this app; the hook ignores it
   // while the user is already typing in a field.
-  useGlobalShortcut({ key: '/' }, () => searchRef.current?.focus()); // ── Notification highlight ─────────────────────────────────────
-  // When navigated from a notification with ?highlight=<taskId>, the
-  // matching row blinks for 4 seconds so the user spots it immediately.
-  const [highlightTaskId, setHighlightTaskId] = useState<string | null>(null);
-  const [highlightPulse, setHighlightPulse] = useState(true);
-  const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const scrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pulseIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  useGlobalShortcut({ key: '/' }, () => searchRef.current?.focus());
 
-  const startHighlight = useCallback((taskId: string) => {
-    if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
-    if (pulseIntervalRef.current) clearInterval(pulseIntervalRef.current);
-    setHighlightTaskId(taskId);
-    setHighlightPulse(true);
-    // Pulse on/off every 600ms for 4 seconds
-    pulseIntervalRef.current = setInterval(() => {
-      setHighlightPulse((prev) => !prev);
-    }, 600);
-    highlightTimerRef.current = setTimeout(() => {
-      setHighlightTaskId(null);
-      setHighlightPulse(true);
-      if (pulseIntervalRef.current) clearInterval(pulseIntervalRef.current);
-    }, 4000);
-  }, []);
-  useEffect(() => {
-    // Check on mount
-    const params = new URLSearchParams(window.location.search);
-    const hl = params.get('highlight');
-    if (hl) startHighlight(hl);
-    // Poll URL every 500ms to detect changes from router.push()
-    // (popstate only fires for browser back/forward, not Next.js router)
-    let lastSearch = window.location.search;
-    const interval = setInterval(() => {
-      if (window.location.search !== lastSearch) {
-        lastSearch = window.location.search;
-        const p = new URLSearchParams(window.location.search);
-        const h = p.get('highlight');
-        if (h) startHighlight(h);
-      }
-    }, 500);
-    return () => clearInterval(interval);
-  }, [startHighlight]);
-
-  // Scroll to highlighted task when it appears in the DOM.
-  // Tasks load asynchronously, so we poll until the element exists.
-  useEffect(() => {
-    if (!highlightTaskId) return;
-    let attempts = 0;
-    const maxAttempts = 40; // 40 × 250ms = 10s max
-    const tryScroll = () => {
-      const el = document.querySelector(`[data-task-id="${highlightTaskId}"]`);
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        return;
-      }
-      if (++attempts < maxAttempts) {
-        scrollTimerRef.current = setTimeout(tryScroll, 250);
-      }
-    };
-    tryScroll();
-    return () => {
-      if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
-    };
-  }, [highlightTaskId]);
+  // ── Notification highlight ─────────────────────────────────────
+  // When navigated from a notification with ?highlight=<taskId>, the matching
+  // row blinks and is scrolled into view. Shared with /leaves and /calendar.
+  const { highlightId: highlightTaskId, pulse: highlightPulse } = useHighlightedEntity({
+    attribute: 'data-task-id',
+  });
 
   useEffect(() => {
     const mainEl = mainRef.current;
@@ -2964,6 +2900,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
               lang={i18n.language}
               projectName={projectNameOf}
               highlightTaskId={highlightTaskId}
+              highlightPulse={highlightPulse}
               onOpenTask={(taskId) => {
                 const task = tasks.find((candidate) => candidate._id === taskId);
                 if (task) openTask(task);

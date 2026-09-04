@@ -26,6 +26,7 @@ import type { FunctionReturnType } from 'convex/server';
 import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
 import { useAuthUser } from '@/store/useAuthStore';
+import { notificationRoute } from '@/lib/notificationTarget';
 
 type NotificationsList = FunctionReturnType<typeof api.notifications.getUserNotifications>;
 type UserOrg = FunctionReturnType<typeof api.organizations.getMyOrganization>;
@@ -51,6 +52,12 @@ export interface NavBadgesValue {
   pendingApprovals: number;
   /** Unread announcements. */
   newsUnread: number;
+  /**
+   * Unread notifications grouped by the module they lead to (`/tasks`,
+   * `/leaves`, …). Lets any surface show "this tool has something new" and jump
+   * straight to the newest item — see the Tool Dock tiles.
+   */
+  unreadByRoute: Record<string, NotificationsList>;
 }
 
 const EMPTY: NavBadgesValue = {
@@ -64,6 +71,7 @@ const EMPTY: NavBadgesValue = {
   pendingSignatures: 0,
   pendingApprovals: 0,
   newsUnread: 0,
+  unreadByRoute: {},
 };
 
 const NavBadgesContext = createContext<NavBadgesValue>(EMPTY);
@@ -91,6 +99,18 @@ export function NavBadgesProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo<NavBadgesValue>(() => {
     const list = notifications ?? [];
+
+    // Group the unread ones by their module. The same resolution the click
+    // handlers use, so a tile can never advertise a notification that would
+    // navigate somewhere else.
+    const unreadByRoute: Record<string, NotificationsList> = {};
+    for (const n of list) {
+      if (n.isRead) continue;
+      const route = notificationRoute(n, user?.role);
+      if (!route) continue;
+      (unreadByRoute[route] ??= []).push(n);
+    }
+
     return {
       notifications,
       userOrg,
@@ -105,8 +125,9 @@ export function NavBadgesProvider({ children }: { children: React.ReactNode }) {
       pendingSignatures: badges?.pendingSignatures ?? 0,
       pendingApprovals: badges?.pendingApprovals ?? 0,
       newsUnread: badges?.newsUnread ?? 0,
+      unreadByRoute,
     };
-  }, [notifications, userOrg, chatUnread, badges]);
+  }, [notifications, userOrg, chatUnread, badges, user?.role]);
 
   return <NavBadgesContext.Provider value={value}>{children}</NavBadgesContext.Provider>;
 }

@@ -32,6 +32,7 @@ import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronRight, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { highlightRowStyle } from '@/lib/highlightStyle';
 import { taskColorClasses, CHIP_BASE } from '@/lib/taskColors';
 import {
   clampColumnWidth,
@@ -116,6 +117,8 @@ export interface TaskTableProps {
   emptyState?: ReactNode;
   /** Task id to highlight (from notification navigation). */
   highlightTaskId?: string | null;
+  /** Blink phase for the highlighted row; flips while the highlight is active. */
+  highlightPulse?: boolean;
   /** Context menu handlers — when provided, each task row gets a right-click menu. */
   contextMenu?: {
     canManage: boolean;
@@ -401,16 +404,7 @@ function DraggableTaskRowWrapper({
     zIndex: isDragging ? 50 : undefined,
     position: 'relative' as const,
   };
-  const highlightStyle =
-    isHighlighted && highlightPulse
-      ? {
-          boxShadow: '0 0 0 2px rgba(44,140,213,0.5), 0 0 20px rgba(44,140,213,0.25)',
-          backgroundColor: 'rgba(44,140,213,0.1)',
-          transition: 'all 0.3s ease',
-        }
-      : isHighlighted
-        ? { backgroundColor: 'rgba(44,140,213,0.05)', transition: 'all 0.3s ease' }
-        : {};
+  const highlightStyle = highlightRowStyle(Boolean(isHighlighted), highlightPulse);
 
   return (
     <div
@@ -463,6 +457,7 @@ export function TaskTable({
   addColumnSlot,
   emptyState,
   highlightTaskId,
+  highlightPulse,
   contextMenu,
 }: TaskTableProps) {
   const { t } = useTranslation();
@@ -795,6 +790,7 @@ export function TaskTable({
                       ctx={rowContext}
                       selected={selected.has(task._id)}
                       isHighlighted={task._id === highlightTaskId}
+                      highlightPulse={highlightPulse}
                     />
                   </TaskContextMenu>
                 ))}

@@ -2648,7 +2648,8 @@
     "fullscreen": "Во весь экран",
     "exitFullscreen": "Выйти из полноэкранного",
     "allModulesTitle": "Все модули",
-    "overdueCount": "{{count}} просрочено"
+    "overdueCount": "{{count}} просрочено",
+    "newNotifications": "новых уведомлений"
   },
   "meetings": {
     "joinNow": "Присоединиться",

@@ -19,6 +19,8 @@ import { enUS, ru, hy } from 'date-fns/locale';
 import i18n from 'i18next';
 import { toast } from 'sonner';
 import { useQuery, useMutation, usePaginatedQuery } from 'convex/react';
+import { useHighlightedEntity } from '@/hooks/useHighlightedEntity';
+import { highlightRowStyle } from '@/lib/highlightStyle';
 import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
 import { Button } from '@/components/ui/button';
@@ -135,6 +137,11 @@ export function LeavesClient() {
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [previousUnreadCount, setPreviousUnreadCount] = useState(0);
+
+  // ── Notification highlight ───────────────────────────────────────────────
+  // A leave notification navigates to /leaves?highlight=<requestId>; the row is
+  // scrolled into view and blinks so the user does not have to hunt for it.
+  const { highlightId, pulse: highlightPulse } = useHighlightedEntity();
 
   // Determine which query to use based on selectedOrgId
   const shouldUseOrgQuery = selectedOrgId && user?.id;
@@ -419,8 +426,10 @@ export function LeavesClient() {
                     {filtered.map((req) => (
                       <motion.div
                         key={req._id}
+                        data-highlight-id={req._id}
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
+                        style={highlightRowStyle(req._id === highlightId, highlightPulse)}
                         className="rounded-xl border border-(--border) bg-(--card)/60 dark:bg-(--card)/80 backdrop-blur-md overflow-hidden"
                       >
                         {/* Card Header */}
@@ -597,7 +606,11 @@ export function LeavesClient() {
                       <tbody className="divide-y divide-(--border)">
                         {filtered.map((req, _i) => (
                           <React.Fragment key={req._id}>
-                            <tr className="hover:bg-(--background-subtle) transition-colors">
+                            <tr
+                              data-highlight-id={req._id}
+                              style={highlightRowStyle(req._id === highlightId, highlightPulse)}
+                              className="hover:bg-(--background-subtle) transition-colors"
+                            >
                               <td
                                 className="px-6 py-3 cursor-pointer"
                                 onClick={() => openLeave(req)}

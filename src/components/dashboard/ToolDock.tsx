@@ -15,15 +15,19 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { useQuery } from 'convex/react';
+import { useMutation, useQuery } from 'convex/react';
 import { isPast } from 'date-fns';
 import { Pin, Search, LayoutGrid, Sparkles, Layers, PinOff } from 'lucide-react';
 import { api } from '../../../convex/_generated/api';
+import type { Id } from '../../../convex/_generated/dataModel';
 import { useToolDock } from '@/hooks/useToolDock';
 import { useAuthUser } from '@/store/useAuthStore';
+import { useNavBadges } from '@/components/layout/NavBadgesProvider';
+import { notificationTarget } from '@/lib/notificationTarget';
 import { useCommandPaletteStore } from '@/store/useCommandPaletteStore';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetBody } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
+import { logger } from '@/lib/logger';
 
 const REVIEWER_ROLES = new Set(['superadmin', 'admin', 'supervisor']);
 const APPROVAL_ADMIN_ROLES = new Set(['superadmin', 'admin']);
@@ -69,10 +73,64 @@ export function ToolDock() {
   const approvalsCount = pendingApprovals?.length ?? 0;
   const pendingLeavesCount = pendingLeaves?.length ?? 0;
   const reviewCount = pendingReviewCount ?? 0;
-  const attentionTotal =
-    overdueCount + (canReview ? pendingLeavesCount : 0) + approvalsCount + reviewCount;
 
-  const badgeFor = (href: string): { tone: string; count: number; label: string } | null => {
+  // ── Unread notifications per module ──────────────────────────────────────
+  // Shared with the navbar bell and both sidebars, so the dock can no longer
+  // disagree with them. A tile with unread notifications links to the newest
+  // one instead of the module root: that carries `?highlight=<entityId>`, so the
+  // target row is scrolled to and blinks on arrival. The notification is marked
+  // read on the way out, which is what makes the number drop — every unread
+  // counter here is derived from `isRead` over one live subscription.
+  const { unreadByRoute } = useNavBadges();
+  const markAsRead = useMutation(api.notifications.markAsRead);
+
+  /**
+   * Unread notifications belonging to a tile, newest first.
+   *
+   * Matched on a path prefix, not equality: a notification route can be deeper
+   * than the module root the tile knows (`/employees/<id>` under the Employees
+   * tile, `/superadmin/security/alert/<id>` under Security), and with an
+   * exact-match lookup those tiles would never light up.
+   */
+  const notificationsFor = useCallback(
+    (href: string) => {
+      const exact = unreadByRoute[href] ?? [];
+      const prefix = href.endsWith('/') ? href : `${href}/`;
+      const deeper = Object.entries(unreadByRoute)
+        .filter(([route]) => route.startsWith(prefix))
+        .flatMap(([, list]) => list);
+      if (deeper.length === 0) return exact;
+      return [...exact, ...deeper].sort((a, b) => b.createdAt - a.createdAt);
+    },
+    [unreadByRoute],
+  );
+
+  const notificationAttention = useMemo(
+    () => modules.reduce((sum, mod) => sum + notificationsFor(mod.href).length, 0),
+    [modules, notificationsFor],
+  );
+
+  const attentionTotal =
+    overdueCount +
+    (canReview ? pendingLeavesCount : 0) +
+    approvalsCount +
+    reviewCount +
+    notificationAttention;
+
+  const badgeFor = (
+    href: string,
+  ): { tone: string; count: number; label: string; pulse?: boolean } | null => {
+    // A new notification for this module wins the badge: it is the only one of
+    // these counters that points at a specific item the user can be taken to.
+    const unread = notificationsFor(href).length;
+    if (unread > 0) {
+      return {
+        tone: 'danger',
+        count: unread,
+        label: t('toolDock.newNotifications', 'new notifications'),
+        pulse: true,
+      };
+    }
     if (href === '/tasks') {
       if (reviewCount > 0) {
         return {
@@ -126,13 +184,24 @@ export function ToolDock() {
   }) => {
     const pinned = isPinned(href);
     const badge = badgeFor(href);
+    // Newest unread notification for this module, if any: the tile follows it so
+    // the click lands on the exact task / request / event behind the badge.
+    const pending = notificationsFor(href)[0];
+    const target = pending ? (notificationTarget(pending, user?.role) ?? href) : href;
     return (
       <div className="group relative">
         <Link
-          href={href}
+          href={target}
           onClick={() => {
             recordVisit(href);
             closeAll();
+            if (pending) {
+              // Fire-and-forget: the navigation must not wait on the patch, and
+              // the counters follow the subscription once it lands.
+              void markAsRead({ notificationId: pending._id as Id<'notifications'> }).catch(
+                (err: unknown) => logger.error('Failed to mark notification read', err),
+              );
+            }
           }}
           className={cn(
             'flex flex-col items-center gap-2 rounded-xl border border-(--border) bg-(--card) p-3 text-center',
@@ -153,6 +222,9 @@ export function ToolDock() {
                 className={cn(
                   'num absolute -top-1.5 -right-1.5 flex h-4.5 min-w-4.5 items-center justify-center rounded-full px-1 text-[9px] font-bold text-white',
                   badge.tone === 'danger' ? 'bg-(--danger-solid)' : 'bg-(--warning-solid)',
+                  // Only the "something new arrived" badge pulses; the standing
+                  // workload counters would turn the panel into a disco.
+                  badge.pulse && 'badge-pulse',
                 )}
                 title={badge.label}
               >

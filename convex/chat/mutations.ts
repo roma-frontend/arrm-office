@@ -9,6 +9,15 @@ import { notify } from '../lib/notify';
 import { encodeSystemMessage } from '../lib/systemMessage';
 
 /**
+ * Messages hard-deleted per `clearConversation` call.
+ *
+ * A mutation is a single transaction with a bounded document budget, so a long
+ * history has to be wiped over several calls; the client loops while the
+ * mutation reports `hasMore`.
+ */
+const CLEAR_BATCH_SIZE = 500;
+
+/**
  * Convert emoji to ASCII-safe key format using Unicode code points
  * Example: 👍 → "u1f44d", ❤️ → "u2764_ufe0f"
  */
@@ -1387,6 +1396,208 @@ export const restoreConversation = mutation({
     });
 
     return { success: true };
+  },
+});
+
+/**
+ * Clear the history of a conversation.
+ *
+ * Who loses what depends on how much of the history is the caller's to destroy:
+ *
+ * - **A direct chat, a group owner/admin, or a superadmin** clears it *for
+ *   everyone*: the rows leave the database and nothing can be restored.
+ * - **Any other group member** clears it *for themselves*: each message is added
+ *   to its `deletedForUsers`, so it disappears from that member's view while the
+ *   rest of the group keeps their copy. A message that has become invisible to
+ *   every remaining member is deleted outright, so the data does eventually
+ *   leave the database once everyone has cleared it.
+ *
+ * Either way this is different from `deleteConversation`, which also hides the
+ * *conversation itself* and can be undone by `restoreConversation`.
+ *
+ * The clear-for-everyone path runs in batches — a mutation cannot write an
+ * unbounded number of documents — and reports `hasMore` for the caller to loop
+ * on; each batch shrinks the set, so re-reading from the start makes progress.
+ * The clear-for-me path cannot loop that way (the rows stay where they are), so
+ * it hides the newest `DEFAULT_LIST_CAP` messages in one pass, the same bound
+ * `deleteConversation` already lives with.
+ */
+export const clearConversation = mutation({
+  args: {
+    conversationId: v.id('chatConversations'),
+    userId: v.id('users'),
+  },
+  handler: async (ctx, args) => {
+    await assertFeatureEnabled(ctx, 'chat.realtime');
+
+    // Potentially destructive for other participants, so the caller is taken from
+    // the verified Convex identity rather than the `userId` argument the other
+    // chat mutations trust.
+    const caller = await getAuthCaller(ctx);
+    if (!caller) throw new Error('Not authenticated');
+    if (caller._id !== args.userId && caller.role !== 'superadmin') {
+      throw new Error('Access denied');
+    }
+
+    const conv = await ctx.db.get(args.conversationId);
+    if (!conv) throw new Error('Conversation not found');
+
+    const member = await ctx.db
+      .query('chatMembers')
+      .withIndex('by_conversation_user', (q) =>
+        q.eq('conversationId', args.conversationId).eq('userId', caller._id),
+      )
+      .first();
+
+    // A superadmin may clear any conversation (moderation) without being in it;
+    // everyone else has to be a member.
+    if (!member && caller.role !== 'superadmin') {
+      throw new Error('Not a member of this conversation');
+    }
+
+    const members = await ctx.db
+      .query('chatMembers')
+      .withIndex('by_conversation', (q) => q.eq('conversationId', args.conversationId))
+      .take(DEFAULT_LIST_CAP);
+
+    const clearForEveryone =
+      caller.role === 'superadmin' ||
+      conv.type === 'direct' ||
+      member?.role === 'owner' ||
+      member?.role === 'admin';
+
+    // ── Clear for me only ────────────────────────────────────────────────────
+    if (!clearForEveryone) {
+      const memberIds = new Set(members.map((m) => m.userId as string));
+      const window = await ctx.db
+        .query('chatMessages')
+        .withIndex('by_conversation_created', (q) => q.eq('conversationId', args.conversationId))
+        .order('desc')
+        .take(DEFAULT_LIST_CAP + 1);
+
+      const hasMore = window.length > DEFAULT_LIST_CAP;
+      const toHide = hasMore ? window.slice(0, DEFAULT_LIST_CAP) : window;
+
+      let hidden = 0;
+      await Promise.all(
+        toHide.map(async (msg) => {
+          const already = (msg.deletedForUsers as Id<'users'>[] | undefined) ?? [];
+          if (already.includes(caller._id)) return;
+          hidden += 1;
+          const next = [...already, caller._id];
+          // Invisible to every remaining member — keeping the row would only
+          // retain content nobody can reach.
+          const invisibleToAll = [...memberIds].every((id) =>
+            next.some((hiddenFor) => hiddenFor === id),
+          );
+          if (invisibleToAll) {
+            await ctx.db.delete(msg._id);
+          } else {
+            await ctx.db.patch(msg._id, { deletedForUsers: next });
+          }
+        }),
+      );
+
+      // The caller's own bookmarks would point at messages they can no longer
+      // open; other members' saved messages are untouched.
+      const saved = await ctx.db
+        .query('chatSavedMessages')
+        .withIndex('by_user_conversation', (q) =>
+          q.eq('userId', caller._id).eq('conversationId', args.conversationId),
+        )
+        .take(DEFAULT_LIST_CAP);
+      await Promise.all(saved.map((row) => ctx.db.delete(row._id)));
+
+      if (member) {
+        await ctx.db.patch(member._id, {
+          unreadCount: 0,
+          lastReadMessageId: undefined,
+          lastReadAt: Date.now(),
+          // Masks the shared list preview for this member — see the field's note
+          // in the schema.
+          historyClearedAt: Date.now(),
+        });
+      }
+
+      await ctx.db.insert('auditLogs', {
+        organizationId: conv.organizationId,
+        userId: caller._id,
+        action: 'chat_conversation_cleared_for_me',
+        target: args.conversationId,
+        details: JSON.stringify({ conversationName: conv.name, hidden }),
+        createdAt: Date.now(),
+      });
+
+      return { mode: 'self' as const, cleared: hidden, hasMore };
+    }
+
+    // ── Clear for everyone ───────────────────────────────────────────────────
+    // One extra document tells us whether another batch is needed without a
+    // second query.
+    const batch = await ctx.db
+      .query('chatMessages')
+      .withIndex('by_conversation_created', (q) => q.eq('conversationId', args.conversationId))
+      .take(CLEAR_BATCH_SIZE + 1);
+
+    const hasMore = batch.length > CLEAR_BATCH_SIZE;
+    const toDelete = hasMore ? batch.slice(0, CLEAR_BATCH_SIZE) : batch;
+
+    await Promise.all(toDelete.map((msg) => ctx.db.delete(msg._id)));
+
+    if (hasMore) {
+      return { mode: 'everyone' as const, cleared: toDelete.length, hasMore: true };
+    }
+
+    // Final batch: drop everything that pointed at those messages.
+    // `chatSavedMessages` has no by-conversation index, but it is indexed per
+    // user, and a conversation has few members — so this stays index-backed.
+    await Promise.all(
+      members.map(async (m) => {
+        const saved = await ctx.db
+          .query('chatSavedMessages')
+          .withIndex('by_user_conversation', (q) =>
+            q.eq('userId', m.userId).eq('conversationId', args.conversationId),
+          )
+          .take(DEFAULT_LIST_CAP);
+        await Promise.all(saved.map((row) => ctx.db.delete(row._id)));
+
+        // `lastReadMessageId` would dangle, and an unread count over an empty
+        // history would keep a badge lit forever.
+        await ctx.db.patch(m._id, {
+          unreadCount: 0,
+          lastReadMessageId: undefined,
+          lastReadAt: Date.now(),
+        });
+      }),
+    );
+
+    const typing = await ctx.db
+      .query('chatTyping')
+      .withIndex('by_conversation', (q) => q.eq('conversationId', args.conversationId))
+      .take(DEFAULT_LIST_CAP);
+    await Promise.all(typing.map((row) => ctx.db.delete(row._id)));
+
+    await ctx.db.patch(args.conversationId, {
+      lastMessageText: undefined,
+      lastMessageAt: undefined,
+      lastMessageSenderId: undefined,
+      updatedAt: Date.now(),
+    });
+
+    await ctx.db.insert('auditLogs', {
+      organizationId: conv.organizationId,
+      userId: caller._id,
+      action: 'chat_conversation_cleared',
+      target: args.conversationId,
+      details: JSON.stringify({
+        conversationName: conv.name,
+        conversationType: conv.type,
+        memberCount: members.length,
+      }),
+      createdAt: Date.now(),
+    });
+
+    return { mode: 'everyone' as const, cleared: toDelete.length, hasMore: false };
   },
 });
 

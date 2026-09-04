@@ -1543,6 +1543,36 @@ export const CalendarClient = React.memo(function CalendarClient() {
     return map;
   }, [scopedCompanyEvents]);
 
+  /**
+   * Deep link: `/calendar?highlight=<eventId>` — where an event notification
+   * lands.
+   *
+   * Unlike tasks and leaves there is no row to flash: an event is a 9px chip in
+   * a month cell that may not even be among the two the cell renders. And the id
+   * alone does not say which day to look at, so the event is resolved from the
+   * loaded lists first, and then the calendar jumps to its day and opens the day
+   * sheet — the same destination the `?date=` link produces.
+   *
+   * While the events query is still in flight nothing is found and the parameter
+   * stays unconsumed; the effect re-runs when the data arrives.
+   */
+  const consumedHighlightRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!mounted) return;
+    const id = new URLSearchParams(urlSearch).get('highlight');
+    if (!id || consumedHighlightRef.current === id) return;
+
+    const custom = scopedCustomEvents.find((evt) => evt.id === id);
+    const company = scopedCompanyEvents.find((evt) => evt._id === id);
+    const target = custom ? parseISO(custom.date) : company ? new Date(company.startDate) : null;
+    if (!target || isNaN(target.getTime())) return;
+
+    consumedHighlightRef.current = id;
+    setCurrentMonth(startOfMonth(target));
+    setSelectedDay(target);
+    setShowDayDetails(true);
+  }, [mounted, urlSearch, scopedCustomEvents, scopedCompanyEvents]);
+
   // Build calendar grid
   const calendarDays = useMemo(() => {
     const start = startOfWeek(startOfMonth(currentMonth));
