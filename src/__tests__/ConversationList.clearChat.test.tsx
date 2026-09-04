@@ -82,10 +82,33 @@ const direct = {
   membership: { unreadCount: 0, isArchived: false, isDeleted: false, isMuted: false },
 };
 
-function renderList(onClearChat?: (id: never) => Promise<void>) {
+/** Group where the caller is a plain member — clearing only affects their view. */
+const groupAsMember = {
+  _id: 'conv-group' as never,
+  type: 'group' as const,
+  name: 'HR Assistant',
+  isPinned: false,
+  isArchived: false,
+  createdAt: 2,
+  membership: {
+    unreadCount: 0,
+    isArchived: false,
+    isDeleted: false,
+    isMuted: false,
+    role: 'member' as const,
+  },
+};
+
+/** Same group, but owned by the caller — clearing wipes it for everybody. */
+const groupAsOwner = {
+  ...groupAsMember,
+  membership: { ...groupAsMember.membership, role: 'owner' as const },
+};
+
+function renderList(onClearChat?: (id: never) => Promise<void>, conversation: unknown = direct) {
   return render(
     <ConversationList
-      conversations={[direct] as never}
+      conversations={[conversation] as never}
       selectedId={null as never}
       currentUserId={'u-1' as never}
       onSelect={jest.fn()}
@@ -121,6 +144,28 @@ describe('ConversationList — clear chat', () => {
     renderList(onClearChat);
     await openConfirm();
     expect(onClearChat).not.toHaveBeenCalled();
+    expect(screen.getByText('chat.clearChatConfirm')).toBeInTheDocument();
+  });
+
+  it('warns that a group member only clears their own copy', async () => {
+    // The list must not promise a wipe for everyone when the backend will only
+    // hide the history from this member.
+    localStorage.setItem('chat_filters', JSON.stringify(['all']));
+    renderList(
+      jest.fn(async () => {}),
+      groupAsMember,
+    );
+    await openConfirm();
+    expect(screen.getByText('chat.clearChatConfirmSelf')).toBeInTheDocument();
+  });
+
+  it('warns the group owner that everyone loses the history', async () => {
+    localStorage.setItem('chat_filters', JSON.stringify(['all']));
+    renderList(
+      jest.fn(async () => {}),
+      groupAsOwner,
+    );
+    await openConfirm();
     expect(screen.getByText('chat.clearChatConfirm')).toBeInTheDocument();
   });
 

@@ -124,6 +124,7 @@ import type * as lib_reportingLine from "../lib/reportingLine.js";
 import type * as lib_resolveServiceAssignee from "../lib/resolveServiceAssignee.js";
 import type * as lib_sanitize from "../lib/sanitize.js";
 import type * as lib_sha256 from "../lib/sha256.js";
+import type * as lib_systemAccounts from "../lib/systemAccounts.js";
 import type * as lib_systemMessage from "../lib/systemMessage.js";
 import type * as lib_taskAccess from "../lib/taskAccess.js";
 import type * as lib_taskConfig from "../lib/taskConfig.js";
@@ -421,6 +422,7 @@ declare const fullApi: ApiFromModules<{
   "lib/resolveServiceAssignee": typeof lib_resolveServiceAssignee;
   "lib/sanitize": typeof lib_sanitize;
   "lib/sha256": typeof lib_sha256;
+  "lib/systemAccounts": typeof lib_systemAccounts;
   "lib/systemMessage": typeof lib_systemMessage;
   "lib/taskAccess": typeof lib_taskAccess;
   "lib/taskConfig": typeof lib_taskConfig;
