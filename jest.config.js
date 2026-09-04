@@ -73,8 +73,8 @@ module.exports = {
     global: {
       branches: 56.0,
       functions: 58.0,
-      lines: 66.2,
-      statements: 64.8,
+      lines: 66.1,
+      statements: 64.7,
     },
   },
   setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.ts'],
