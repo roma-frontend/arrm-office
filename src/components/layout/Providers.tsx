@@ -155,6 +155,7 @@ const PlanRouteGate = dynamic(
 export function Providers({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
   const user = useAuthStore(useShallow((state: { user: User | null }) => state.user));
+  const isSigningOut = useAuthStore((state) => state.isSigningOut);
   // Superadmin translation overrides — fetched once and injected into i18next.
   useI18nOverrides(user?.role === 'superadmin');
   const { status } = useSession();
@@ -173,6 +174,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
     pathname?.startsWith('/onboarding/pending');
   const redirectedRef = React.useRef(false);
   const hasHydratedRef = React.useRef(false);
+  // Signed-out gate: see the effects below and the render gate further down.
+  const [sessionGone, setSessionGone] = useState(false);
+  const leavingRef = React.useRef(false);
+  // This shell wraps the `(dashboard)` route group only — every route under it
+  // is private. So a null user (after hydration) always means "no session":
+  // logout, expired JWT, cookies cleared in another tab.
+  const isSignedOut = !user && !isAuthOnboardingPage;
 
   // Dashboard-only translation namespaces are lazy-loaded (see src/i18n/config.ts);
   // fetch them as soon as the dashboard mounts. Fire-and-forget — t() consumers
@@ -218,6 +226,57 @@ export function Providers({ children }: { children: React.ReactNode }) {
     }
   }, [hydrated, user, isAuthOnboardingPage, router]);
 
+  // Confirm there is really no session before sending anyone to /login.
+  //
+  // An empty store is not proof on its own: `useAuthSync` restores the user
+  // from the `hr-auth-token` cookie asynchronously, so right after a reload the
+  // store can be empty while the session is perfectly valid. We therefore probe
+  // the JWT and only mark the session gone when the cookie is missing too.
+  // Until then the render gate below keeps the loader up — the shell is never
+  // rendered without a user, which is what used to flash the public navbar.
+  useEffect(() => {
+    if (!hydrated || !isSignedOut) return;
+    // A deliberate sign-out already owns the navigation (hard redirect to
+    // /api/clear-session); don't race it with a push to /login.
+    if (isSigningOut) return;
+    // Only NextAuth's `unauthenticated` verdict makes the JWT probe meaningful.
+    // While it is `loading` the answer isn't in yet, and while it is
+    // `authenticated` a Google sign-in is mid-flight: the session exists but the
+    // `hr-auth-token` bridge cookie hasn't been minted yet, so probing would
+    // wrongly conclude "signed out" and bounce a valid login to /login (from
+    // which the proxy sends it straight back — an endless loop).
+    if (status !== 'unauthenticated') return;
+
+    let cancelled = false;
+    const probe = async () => {
+      let hasJwt = false;
+      try {
+        const { getSessionAction } = await import('@/actions/auth');
+        const jwt = (await getSessionAction()) as { userId?: string } | null;
+        hasJwt = Boolean(jwt?.userId);
+      } catch {
+        hasJwt = false;
+      }
+      if (!cancelled && !hasJwt) setSessionGone(true);
+    };
+
+    void probe();
+    // Re-probe while we sit in the "cookie is valid but the store is still
+    // empty" limbo, so a session that expires on an open tab is caught too.
+    const timer = setInterval(probe, 3000);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [hydrated, isSignedOut, isSigningOut, status]);
+
+  useEffect(() => {
+    if (!sessionGone || leavingRef.current) return;
+    leavingRef.current = true;
+    const next = pathname ? `?next=${encodeURIComponent(pathname)}` : '';
+    router.replace(`/login${next}`);
+  }, [sessionGone, pathname, router]);
+
   // Don't redirect to login if user is on auth onboarding page
   if (isAuthOnboardingPage) {
     return <>{children}</>;
@@ -226,8 +285,14 @@ export function Providers({ children }: { children: React.ReactNode }) {
   // Show Shield HR loader while:
   // 1. Stores haven't hydrated from localStorage yet
   // 2. OAuth session is active (Google login) but user data hasn't been synced from Convex yet
+  // 3. A sign-out is in flight — the store is already empty but the browser
+  //    hasn't left the page, and the shell must not repaint as a visitor
+  // 4. There is no user at all: either the session is being restored from the
+  //    JWT cookie, or it is gone and the effect above is redirecting to /login.
+  //    Either way the dashboard shell (and its public "Sign In / Get Started"
+  //    navbar) must stay unmounted.
   const isOAuthSyncing = status === 'authenticated' && !user;
-  if (!hydrated || isOAuthSyncing) {
+  if (!hydrated || isOAuthSyncing || isSigningOut || isSignedOut) {
     return (
       <div className="flex h-screen items-center justify-center bg-(--background)">
         <ShieldLoader size="lg" />

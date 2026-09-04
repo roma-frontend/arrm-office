@@ -24,6 +24,7 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { Navbar, getInitials, notificationTarget } from '@/components/layout/Navbar';
 import { signOut } from 'next-auth/react';
 import { logoutAction } from '@/actions/auth';
+import { hardRedirect } from '@/lib/hardRedirect';
 
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -105,22 +106,27 @@ let mockUser: any = {
 jest.mock('@/store/useAuthStore', () => {
   const logout = jest.fn();
   const setUser = jest.fn();
+  const beginSignOut = jest.fn();
   const state: any = {
     get user() {
       return mockUser;
     },
     logout,
     setUser,
+    beginSignOut,
   };
   const useAuthStoreMock: any = (selectorOrCb?: any) =>
     typeof selectorOrCb === 'function' ? selectorOrCb(state) : state;
   useAuthStoreMock.getState = () => state;
-  useAuthStoreMock.__mocks = { logout, setUser };
+  useAuthStoreMock.__mocks = { logout, setUser, beginSignOut };
   return { useAuthStore: useAuthStoreMock };
 });
 // Pull mock function references from the self-contained mock
-const { logout: mockLogout, setUser: mockSetUser } = (require('@/store/useAuthStore') as any)
-  .useAuthStore.__mocks;
+const {
+  logout: mockLogout,
+  setUser: mockSetUser,
+  beginSignOut: mockBeginSignOut,
+} = (require('@/store/useAuthStore') as any).useAuthStore.__mocks;
 
 jest.mock('zustand/shallow', () => ({
   useShallow: (selector: any) => selector,
@@ -132,6 +138,12 @@ jest.mock('next-auth/react', () => ({
 
 jest.mock('@/actions/auth', () => ({
   logoutAction: jest.fn().mockResolvedValue(undefined),
+}));
+
+// jsdom's window.location is [LegacyUnforgeable] (cannot be redefined or
+// spied on), so the sign-out navigation goes through this module instead.
+jest.mock('@/lib/hardRedirect', () => ({
+  hardRedirect: jest.fn(),
 }));
 
 let mockNow = 1_750_000_000_000;
@@ -282,10 +294,12 @@ const seed = () => {
   mockShowNotification.mockClear();
   mockLogout.mockClear();
   mockSetUser.mockClear();
+  mockBeginSignOut.mockClear();
   (signOut as jest.Mock).mockClear();
   (signOut as jest.Mock).mockResolvedValue(undefined);
   (logoutAction as jest.Mock).mockClear();
   (logoutAction as jest.Mock).mockResolvedValue(undefined);
+  (hardRedirect as jest.Mock).mockClear();
   menuProps = {};
   shortcutsProps = {};
   mockUser = {
@@ -515,8 +529,16 @@ describe('Navbar', () => {
       expect(mockLogout).toHaveBeenCalled();
       expect(logoutAction).toHaveBeenCalled();
       expect(signOut).toHaveBeenCalledWith({ redirect: false });
-      expect(mockPush).toHaveBeenCalledWith('/');
     });
+    // The loader gate in the dashboard shell is armed before any async work so
+    // the signed-out navbar can never be painted.
+    expect(mockBeginSignOut).toHaveBeenCalled();
+    expect(mockBeginSignOut.mock.invocationCallOrder[0]).toBeLessThan(
+      (logoutAction as jest.Mock).mock.invocationCallOrder[0],
+    );
+    // Hard navigation, not router.push — drops the RSC cache and all Convex subs.
+    expect(hardRedirect).toHaveBeenCalledWith('/api/clear-session?redirect=/');
+    expect(mockPush).not.toHaveBeenCalledWith('/');
   });
 
   it('forces logout and redirects when the session call fails', async () => {
@@ -526,8 +548,8 @@ describe('Navbar', () => {
       menuProps.onOpenChange(true);
     });
     fireEvent.click(screen.getByText('nav.logout'));
-    await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/'));
-    expect(mockLogout).toHaveBeenCalledTimes(2);
+    await waitFor(() => expect(hardRedirect).toHaveBeenCalledWith('/api/clear-session?redirect=/'));
+    expect(mockLogout).toHaveBeenCalledTimes(1);
   });
 
   it('skips the new-notification effect on first load', () => {

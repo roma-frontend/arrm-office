@@ -167,6 +167,17 @@ const PROTECTED_PREFIXES = [
   '/admin',
   '/approvals',
   '/recognition',
+  // Also under the private `(dashboard)` route group — these were missing, so
+  // the Edge guard let anonymous document requests through and the pages were
+  // protected only by whatever `getServerUser()` check they happened to have.
+  '/assets',
+  '/audit',
+  '/me',
+  '/news',
+  '/overtime',
+  '/projects',
+  '/strategy',
+  '/team',
 ];
 
 function isPublicPath(pathname: string): boolean {
@@ -180,7 +191,12 @@ function isPublicPath(pathname: string): boolean {
 }
 
 function isProtectedPath(pathname: string): boolean {
-  return PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+  // Match on a segment boundary, not a bare `startsWith`: `/me` must not
+  // capture `/meetings` (guest-accessible call links), and no prefix should
+  // ever swallow an unrelated route that merely starts with the same letters.
+  return PROTECTED_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(prefix + '/'),
+  );
 }
 
 // ═══════════════════════════════════════════════════════════════

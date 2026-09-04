@@ -57,6 +57,7 @@ import { useStatusUpdate } from '@/context/StatusUpdateContext';
 import { useScrollDirection } from '@/hooks/useScrollDirection';
 import { useNow } from '@/hooks/useNow';
 import { logger } from '@/lib/logger';
+import { hardRedirect } from '@/lib/hardRedirect';
 import { toast } from 'sonner';
 import {
   notificationMessage,
@@ -210,7 +211,7 @@ export function Navbar({ embedded = false }: { embedded?: boolean }) {
   const router = useRouter();
   const pathname = usePathname();
   const mounted = useHydrated();
-  const { user, logout } = useAuthStore();
+  const { user, logout, beginSignOut } = useAuthStore();
   const setMobileOpen = useSidebarStore((s) => s.setMobileOpen);
   const isLanding = isLandingPath(pathname);
 
@@ -366,16 +367,23 @@ export function Navbar({ embedded = false }: { embedded?: boolean }) {
   }, [showNotifications]);
 
   const handleLogout = async () => {
+    // Flip the shell onto the loader *first*: `logout()` empties the store a few
+    // frames before the navigation commits, and without this the dashboard
+    // repaints with the public "Sign In / Get Started" navbar in between.
+    beginSignOut();
     try {
-      logout();
       document.cookie = 'hr-auth-token=; path=/; max-age=0';
       await logoutAction();
       await signOut({ redirect: false });
-      router.push('/');
     } catch (error) {
       logger.error('Logout error:', error);
+    } finally {
       logout();
-      router.push('/');
+      // Hard navigation, not router.push: it drops the RSC cache and every
+      // mounted Convex subscription, so no signed-out frame of the dashboard
+      // can be rendered on the way out. /api/clear-session wipes the remaining
+      // httpOnly cookies server-side and redirects to the landing page.
+      hardRedirect('/api/clear-session?redirect=/');
     }
   };
 

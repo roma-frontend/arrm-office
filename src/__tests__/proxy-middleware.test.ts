@@ -231,6 +231,38 @@ describe('protected path guard', () => {
     // applySecurityHeaders ran without throwing; the cookie delete happened.
     expect(redirectRes.headers.get('Content-Security-Policy')).toBeTruthy();
   });
+
+  // These live in the private `(dashboard)` route group but were missing from
+  // PROTECTED_PREFIXES, so anonymous document requests reached them.
+  it.each(['/assets', '/audit', '/me', '/news', '/overtime', '/projects', '/strategy', '/team'])(
+    'redirects an unauthenticated visitor from %s to /login',
+    async (path) => {
+      jwtVerify.mockRejectedValue(new Error('bad token'));
+      getToken.mockResolvedValue(null);
+      await proxy(makeRequest(path));
+      expect(NextResponse.redirect).toHaveBeenCalled();
+      const loginUrl = NextResponse.redirect.mock.calls[0][0] as URL;
+      expect(loginUrl.pathname).toBe('/login');
+      expect(loginUrl.searchParams.get('next')).toBe(path);
+    },
+  );
+
+  it('guards nested segments of a protected prefix', async () => {
+    jwtVerify.mockRejectedValue(new Error('bad token'));
+    getToken.mockResolvedValue(null);
+    await proxy(makeRequest('/team/engineering'));
+    expect(NextResponse.redirect).toHaveBeenCalled();
+  });
+
+  // Prefixes match on a segment boundary: `/me` must not capture `/meetings`,
+  // whose guest call links are reachable without a session.
+  it('does not treat /meetings as protected because of the /me prefix', async () => {
+    jwtVerify.mockRejectedValue(new Error('bad token'));
+    getToken.mockResolvedValue(null);
+    await proxy(makeRequest('/meetings/room-42'));
+    expect(NextResponse.redirect).not.toHaveBeenCalled();
+    expect(NextResponse.next).toHaveBeenCalled();
+  });
 });
 
 describe('security headers and nonce', () => {

@@ -38,11 +38,22 @@ interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   needsOnboarding: boolean;
+  /**
+   * True from the moment a sign-out starts until the browser has left the page.
+   *
+   * Sign-out clears the store several frames before the navigation commits, so
+   * without this flag the dashboard shell repaints in a logged-out state and
+   * flashes the public navbar (Sign In / Get Started) over an empty dashboard.
+   * The shell (`components/layout/Providers`) shows the loader while it is set.
+   * Never persisted — see `partialize` below.
+   */
+  isSigningOut: boolean;
 
   // Actions
   setUser: (user: User) => void;
   login: (user: User) => void;
   logout: () => void;
+  beginSignOut: () => void;
   checkOnboarding: () => void;
   validateAndCleanup: () => void;
 }
@@ -53,15 +64,16 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       isAuthenticated: false,
       needsOnboarding: false,
+      isSigningOut: false,
 
       setUser: (user: User) => {
         const needsOnboarding = !user.organizationId || !user.isApproved;
-        set({ user, isAuthenticated: true, needsOnboarding });
+        set({ user, isAuthenticated: true, needsOnboarding, isSigningOut: false });
       },
 
       login: (user: User) => {
         const needsOnboarding = !user.organizationId || !user.isApproved;
-        set({ user, isAuthenticated: true, needsOnboarding });
+        set({ user, isAuthenticated: true, needsOnboarding, isSigningOut: false });
       },
 
       checkOnboarding: () => {
@@ -81,6 +93,15 @@ export const useAuthStore = create<AuthState>()(
         if (get().user) {
           get().logout();
         }
+      },
+
+      /**
+       * Call this *before* any async sign-out work (cookie clearing, server
+       * action, next-auth signOut). It keeps the shell on the loader for the
+       * whole teardown instead of letting it repaint as an anonymous visitor.
+       */
+      beginSignOut: () => {
+        set({ isSigningOut: true });
       },
 
       logout: () => {
