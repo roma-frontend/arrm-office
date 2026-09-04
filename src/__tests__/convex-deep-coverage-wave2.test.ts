@@ -376,16 +376,14 @@ describe('auth_module deep coverage wave 2', () => {
       const { ctx, query } = makeCtx();
       query.mockReturnValue({
         withIndex: jest.fn().mockReturnValue({
-          unique: jest
-            .fn()
-            .mockResolvedValue({
-              _id: 'u1',
-              passwordHash: 'hashed',
-              role: 'admin',
-              organizationId: 'org-1',
-              isActive: true,
-              isApproved: true,
-            }),
+          unique: jest.fn().mockResolvedValue({
+            _id: 'u1',
+            passwordHash: 'hashed',
+            role: 'admin',
+            organizationId: 'org-1',
+            isActive: true,
+            isApproved: true,
+          }),
         }),
       });
       const bcrypt = require('bcryptjs');
@@ -408,18 +406,16 @@ describe('auth_module deep coverage wave 2', () => {
       const { ctx, query, get } = makeCtx();
       query.mockReturnValue({
         withIndex: jest.fn().mockReturnValue({
-          unique: jest
-            .fn()
-            .mockResolvedValue({
-              _id: 'u1',
-              sessionToken: 'tok',
-              sessionExpiry: Date.now() + 3600000,
-              organizationId: 'org-1',
-              role: 'admin',
-              name: 'X',
-              email: 'x@t.com',
-              isActive: true,
-            }),
+          unique: jest.fn().mockResolvedValue({
+            _id: 'u1',
+            sessionToken: 'tok',
+            sessionExpiry: Date.now() + 3600000,
+            organizationId: 'org-1',
+            role: 'admin',
+            name: 'X',
+            email: 'x@t.com',
+            isActive: true,
+          }),
         }),
       });
       get.mockResolvedValue({ _id: 'org-1', name: 'Acme' });

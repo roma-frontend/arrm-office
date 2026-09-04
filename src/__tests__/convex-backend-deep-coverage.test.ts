@@ -553,11 +553,9 @@ describe('messenger deep coverage', () => {
       query.mockImplementation((table: string) => {
         if (table === 'chatConversations') {
           return {
-            withIndex: jest
-              .fn()
-              .mockReturnValue({
-                first: jest.fn().mockResolvedValue({ _id: 'conv_1', type: 'direct' }),
-              }),
+            withIndex: jest.fn().mockReturnValue({
+              first: jest.fn().mockResolvedValue({ _id: 'conv_1', type: 'direct' }),
+            }),
           };
         }
         return {
