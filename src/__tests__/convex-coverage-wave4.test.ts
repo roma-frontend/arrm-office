@@ -4,7 +4,6 @@
  * - meetings.ts: registration queries without auth
  * - calendarEvents.ts: queries
  * - auth_module: register/login with different scenarios
- * - operatorTools.ts, meetingRooms.ts, recruitment.ts: queries
  */
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 
@@ -29,7 +28,6 @@ describe('simplePdf', () => {
   it('generates valid base64', () => {
     const result = generateSimplePdfBase64('Title', 'Body');
     const base64 = result.replace('data:application/pdf;base64,', '');
-    // Should not throw
     const decoded = atob(base64);
     expect(decoded).toContain('%PDF-1.4');
   });
@@ -69,14 +67,10 @@ describe('simplePdf', () => {
   });
 
   it('generates multi-page PDF for very long content', () => {
-    const body =
-      'This is a line of text that should be repeated many times to fill multiple pages. '.repeat(
-        200,
-      );
+    const body = 'This is a line of text that should be repeated many times. '.repeat(200);
     const result = generateSimplePdfBase64('Multi-page Title', body);
     const base64 = result.replace('data:application/pdf;base64,', '');
     const decoded = atob(base64);
-    // Multi-page PDF should have multiple /Page references
     expect(decoded).toContain('/Type /Pages');
   });
 
@@ -104,12 +98,16 @@ jest.mock('../../convex/_generated/server', () => ({
   internalAction: ({ handler, args }: any) => ({ handler, args }),
 }));
 
-jest.mock('../../convex/lib/getAuthCaller', () => ({ getAuthCaller: jest.fn() }));
+jest.mock('../../convex/lib/getAuthCaller', () => ({
+  getAuthCaller: jest.fn(),
+}));
 jest.mock('../../convex/lib/auth', () => ({
   isSuperadmin: jest.fn(() => false),
   SUPERADMIN_EMAIL: 'boss@example.com',
 }));
-jest.mock('../../convex/lib/notify', () => ({ notify: jest.fn().mockResolvedValue(undefined) }));
+jest.mock('../../convex/lib/notify', () => ({
+  notify: jest.fn().mockResolvedValue(undefined),
+}));
 jest.mock('../../convex/lib/entitlements', () => ({
   assertModuleAccess: jest.fn().mockResolvedValue(undefined),
   assertQuota: jest.fn().mockResolvedValue(undefined),
@@ -122,7 +120,11 @@ jest.mock('../../convex/lib/userProfile', () => ({
   patchProfile: jest.fn().mockResolvedValue(undefined),
 }));
 jest.mock('../../convex/lib/leaveBalances', () => ({
-  getStartingLeaveBalances: jest.fn().mockResolvedValue({ paid: 0, sick: 0, family: 0 }),
+  getStartingLeaveBalances: jest.fn().mockResolvedValue({
+    paid: 0,
+    sick: 0,
+    family: 0,
+  }),
 }));
 jest.mock('../../convex/lib/orgUnits', () => ({
   resolveOrgUnitsByName: jest.fn().mockResolvedValue({}),
@@ -169,7 +171,9 @@ function makeCtx() {
   const withIndex = jest.fn().mockReturnValue({ order, collect, first, take, unique });
   const query = jest.fn().mockReturnValue({ withIndex, order, collect, first, take, unique });
   return {
-    ctx: { db: { get, insert, patch, delete: remove, query } },
+    ctx: {
+      db: { get, insert, patch, delete: remove, query },
+    },
     get,
     insert,
     patch,
@@ -191,8 +195,9 @@ describe('meetings extra coverage', () => {
     jest.isolateModules(() => {
       const mod = require('../../convex/meetings');
       for (const [name, def] of Object.entries(mod)) {
-        if (def && typeof def === 'object' && typeof (def as any).handler === 'function')
+        if (def && typeof def === 'object' && typeof (def as any).handler === 'function') {
           h[name] = (def as any).handler;
+        }
       }
     });
   });
@@ -204,14 +209,22 @@ describe('meetings extra coverage', () => {
       livekitApiSecret: 'secret',
       livekitUrl: 'https://livekit.test',
     });
-    const result = await h.livekitConfigured(ctx, { organizationId: 'org-1' as any });
+    const result = await h.livekitConfigured(ctx, {
+      organizationId: 'org-1' as any,
+    });
     expect(result).toBeDefined();
   });
 
   it('livekitConfigured returns false when not configured', async () => {
     const { ctx, get } = makeCtx();
-    get.mockResolvedValue({ livekitApiKey: '', livekitApiSecret: '', livekitUrl: '' });
-    const result = await h.livekitConfigured(ctx, { organizationId: 'org-1' as any });
+    get.mockResolvedValue({
+      livekitApiKey: '',
+      livekitApiSecret: '',
+      livekitUrl: '',
+    });
+    const result = await h.livekitConfigured(ctx, {
+      organizationId: 'org-1' as any,
+    });
     expect(result).toBeDefined();
   });
 
@@ -223,7 +236,9 @@ describe('meetings extra coverage', () => {
       s3Bucket: 'b',
       s3Region: 'r',
     });
-    const result = await h.recordingConfigured(ctx, { organizationId: 'org-1' as any });
+    const result = await h.recordingConfigured(ctx, {
+      organizationId: 'org-1' as any,
+    });
     expect(result).toBeDefined();
   });
 
@@ -231,7 +246,11 @@ describe('meetings extra coverage', () => {
     const { ctx, query } = makeCtx();
     query.mockReturnValue({
       withIndex: jest.fn().mockReturnValue({
-        unique: jest.fn().mockResolvedValue({ _id: 'm1', roomName: 'room1', status: 'active' }),
+        unique: jest.fn().mockResolvedValue({
+          _id: 'm1',
+          roomName: 'room1',
+          status: 'active',
+        }),
       }),
     });
     const result = await h.getByRoomName(ctx, { roomName: 'room1' });
@@ -256,7 +275,9 @@ describe('meetings extra coverage', () => {
         collect: jest.fn().mockResolvedValue([{ _id: 'm1', roomName: 'r1' }]),
       }),
     });
-    const result = await h.getByEvent(ctx, { calendarEventId: 'evt1' as any });
+    const result = await h.getByEvent(ctx, {
+      calendarEventId: 'evt1' as any,
+    });
     expect(result).toBeDefined();
   });
 
@@ -267,7 +288,9 @@ describe('meetings extra coverage', () => {
         order: jest.fn().mockReturnValue({ take: jest.fn().mockResolvedValue([]) }),
       }),
     });
-    const result = await h.listByOrganization(ctx, { organizationId: 'org-1' as any });
+    const result = await h.listByOrganization(ctx, {
+      organizationId: 'org-1' as any,
+    });
     expect(Array.isArray(result)).toBe(true);
   });
 
@@ -275,10 +298,14 @@ describe('meetings extra coverage', () => {
     const { ctx, query } = makeCtx();
     query.mockReturnValue({
       withIndex: jest.fn().mockReturnValue({
-        order: jest.fn().mockReturnValue({ collect: jest.fn().mockResolvedValue([]) }),
+        order: jest.fn().mockReturnValue({
+          collect: jest.fn().mockResolvedValue([]),
+        }),
       }),
     });
-    const result = await h.listPending(ctx, { organizationId: 'org-1' as any });
+    const result = await h.listPending(ctx, {
+      organizationId: 'org-1' as any,
+    });
     expect(Array.isArray(result)).toBe(true);
   });
 
@@ -289,7 +316,9 @@ describe('meetings extra coverage', () => {
         collect: jest.fn().mockResolvedValue([]),
       }),
     });
-    const result = await h.listRegistrations(ctx, { meetingId: 'm1' as any });
+    const result = await h.listRegistrations(ctx, {
+      meetingId: 'm1' as any,
+    });
     expect(Array.isArray(result)).toBe(true);
   });
 
@@ -297,11 +326,17 @@ describe('meetings extra coverage', () => {
     const { ctx, query, get } = makeCtx();
     query.mockReturnValue({
       withIndex: jest.fn().mockReturnValue({
-        first: jest.fn().mockResolvedValue({ _id: 'r1', meetingId: 'm1', fullName: 'Visitor' }),
+        first: jest.fn().mockResolvedValue({
+          _id: 'r1',
+          meetingId: 'm1',
+          fullName: 'Visitor',
+        }),
       }),
     });
     get.mockResolvedValue({ _id: 'u1', name: 'Agent' });
-    const result = await h.getRegistrationById(ctx, { registrationId: 'r1' as any });
+    const result = await h.getRegistrationById(ctx, {
+      registrationId: 'r1' as any,
+    });
     expect(result).toBeDefined();
   });
 
@@ -312,11 +347,11 @@ describe('meetings extra coverage', () => {
         first: jest.fn().mockResolvedValue(null),
       }),
     });
-    const result = await h.getRegistrationById(ctx, { registrationId: 'bad' as any });
+    const result = await h.getRegistrationById(ctx, {
+      registrationId: 'bad' as any,
+    });
     expect(result).toBeNull();
   });
-
-  // getRegistrationByVisitor skipped: uses .first() not .collect() — needs different mock chain
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -329,8 +364,9 @@ describe('calendarEvents extra coverage', () => {
     jest.isolateModules(() => {
       const mod = require('../../convex/calendarEvents');
       for (const [name, def] of Object.entries(mod)) {
-        if (def && typeof def === 'object' && typeof (def as any).handler === 'function')
+        if (def && typeof def === 'object' && typeof (def as any).handler === 'function') {
           h[name] = (def as any).handler;
+        }
       }
     });
   });
@@ -347,7 +383,9 @@ describe('calendarEvents extra coverage', () => {
   it('getByOrganization returns events', async () => {
     const { ctx, collect } = makeCtx();
     collect.mockResolvedValue([]);
-    const result = await h.getByOrganization(ctx, { organizationId: 'org-1' as any });
+    const result = await h.getByOrganization(ctx, {
+      organizationId: 'org-1' as any,
+    });
     expect(Array.isArray(result)).toBe(true);
   });
 });
@@ -362,8 +400,9 @@ describe('auth_module wave 4 coverage', () => {
     jest.isolateModules(() => {
       const mod = require('../../convex/auth_module/main');
       for (const [name, def] of Object.entries(mod)) {
-        if (def && typeof def === 'object' && typeof (def as any).handler === 'function')
+        if (def && typeof def === 'object' && typeof (def as any).handler === 'function') {
           h[name] = (def as any).handler;
+        }
       }
     });
   });
@@ -379,15 +418,24 @@ describe('auth_module wave 4 coverage', () => {
     const order = jest.fn().mockReturnValue({ collect, first, take });
     const withIndex = jest.fn().mockReturnValue({ order, collect, first, take, unique });
     const query = jest.fn().mockReturnValue({ withIndex, order, collect, first, take, unique });
-    return { ctx: { db: { get, insert, patch, query } }, get, insert, patch, query, unique };
+    return {
+      ctx: {
+        db: { get, insert, patch, query },
+      },
+      get,
+      insert,
+      patch,
+      query,
+      unique,
+    };
   }
 
   it('register throws for duplicate email', async () => {
     const { ctx, query } = makeAuthCtx();
     query.mockReturnValue({
-      withIndex: jest
-        .fn()
-        .mockReturnValue({ unique: jest.fn().mockResolvedValue({ _id: 'existing' }) }),
+      withIndex: jest.fn().mockReturnValue({
+        unique: jest.fn().mockResolvedValue({ _id: 'existing' }),
+      }),
     });
     await expect(
       h.register(ctx, {
@@ -405,7 +453,11 @@ describe('auth_module wave 4 coverage', () => {
       withIndex: jest.fn().mockReturnValue({ unique: jest.fn().mockResolvedValue(null) }),
     });
     await expect(
-      h.register(ctx, { name: 'X', email: 'new@t.com', password: 'p' }),
+      h.register(ctx, {
+        name: 'X',
+        email: 'new@t.com',
+        password: 'p',
+      }),
     ).rejects.toThrow();
   });
 
@@ -498,7 +550,12 @@ describe('auth_module wave 4 coverage', () => {
         }),
       }),
     });
-    get.mockResolvedValue({ _id: 'org-1', name: 'Acme', timezone: 'UTC', plan: 'enterprise' });
+    get.mockResolvedValue({
+      _id: 'org-1',
+      name: 'Acme',
+      timezone: 'UTC',
+      plan: 'enterprise',
+    });
     const result = await h.getSession(ctx, { sessionToken: 'tok' });
     expect(result).toBeTruthy();
   });
@@ -507,7 +564,11 @@ describe('auth_module wave 4 coverage', () => {
     const { ctx, get } = makeAuthCtx();
     get.mockResolvedValue(null);
     await expect(
-      h.changePassword(ctx, { userId: 'bad' as any, currentPassword: 'old', newPassword: 'new' }),
+      h.changePassword(ctx, {
+        userId: 'bad' as any,
+        currentPassword: 'old',
+        newPassword: 'new',
+      }),
     ).rejects.toThrow();
   });
 
@@ -564,7 +625,13 @@ describe('auth_module wave 4 coverage', () => {
 
   it('loginWebauthn logs in with valid credential', async () => {
     const { ctx, query, get, patch } = makeAuthCtx();
-    const cred = { _id: 'c1', credentialId: 'cred', publicKey: 'pk', counter: 0, userId: 'u1' };
+    const cred = {
+      _id: 'c1',
+      credentialId: 'cred',
+      publicKey: 'pk',
+      counter: 0,
+      userId: 'u1',
+    };
     const user = {
       _id: 'u1',
       name: 'Test',
@@ -578,7 +645,10 @@ describe('auth_module wave 4 coverage', () => {
       withIndex: jest.fn().mockReturnValue({ unique: jest.fn().mockResolvedValue(cred) }),
     });
     get.mockResolvedValue(user);
-    const result = await h.loginWebauthn(ctx, { credentialId: 'cred', counter: 1 });
+    const result = await h.loginWebauthn(ctx, {
+      credentialId: 'cred',
+      counter: 1,
+    });
     expect(result).toHaveProperty('userId');
   });
 
@@ -587,7 +657,9 @@ describe('auth_module wave 4 coverage', () => {
     query.mockReturnValue({
       withIndex: jest.fn().mockReturnValue({ unique: jest.fn().mockResolvedValue(null) }),
     });
-    const result = await h.getWebauthnCredential(ctx, { credentialId: 'bad' });
+    const result = await h.getWebauthnCredential(ctx, {
+      credentialId: 'bad',
+    });
     expect(result).toBeNull();
   });
 
@@ -595,13 +667,18 @@ describe('auth_module wave 4 coverage', () => {
     const { ctx, query, get } = makeAuthCtx();
     query.mockReturnValue({
       withIndex: jest.fn().mockReturnValue({
-        unique: jest
-          .fn()
-          .mockResolvedValue({ _id: 'c1', credentialId: 'cred', publicKey: 'pk', userId: 'u1' }),
+        unique: jest.fn().mockResolvedValue({
+          _id: 'c1',
+          credentialId: 'cred',
+          publicKey: 'pk',
+          userId: 'u1',
+        }),
       }),
     });
     get.mockResolvedValue({ _id: 'u1', name: 'Test' });
-    const result = await h.getWebauthnCredential(ctx, { credentialId: 'cred' });
+    const result = await h.getWebauthnCredential(ctx, {
+      credentialId: 'cred',
+    });
     expect(result).toHaveProperty('user');
   });
 
@@ -618,13 +695,11 @@ describe('auth_module wave 4 coverage', () => {
     const { ctx, query } = makeAuthCtx();
     query.mockReturnValue({
       withIndex: jest.fn().mockReturnValue({
-        unique: jest
-          .fn()
-          .mockResolvedValue({
-            email: 't@t.com',
-            name: 'Test',
-            resetPasswordExpiry: Date.now() + 3600000,
-          }),
+        unique: jest.fn().mockResolvedValue({
+          email: 't@t.com',
+          name: 'Test',
+          resetPasswordExpiry: Date.now() + 3600000,
+        }),
       }),
     });
     const result = await h.verifyResetToken(ctx, { token: 'good' });
@@ -635,13 +710,11 @@ describe('auth_module wave 4 coverage', () => {
     const { ctx, query } = makeAuthCtx();
     query.mockReturnValue({
       withIndex: jest.fn().mockReturnValue({
-        unique: jest
-          .fn()
-          .mockResolvedValue({
-            email: 't@t.com',
-            name: 'Test',
-            resetPasswordExpiry: Date.now() - 1000,
-          }),
+        unique: jest.fn().mockResolvedValue({
+          email: 't@t.com',
+          name: 'Test',
+          resetPasswordExpiry: Date.now() - 1000,
+        }),
       }),
     });
     const result = await h.verifyResetToken(ctx, { token: 'expired' });
@@ -680,7 +753,10 @@ describe('auth_module wave 4 coverage', () => {
       employeeLimit: 100,
       isActive: true,
     });
-    const result = await h.googleOAuthLogin(ctx, { email: 'g@t.com', name: 'G' });
+    const result = await h.googleOAuthLogin(ctx, {
+      email: 'g@t.com',
+      name: 'G',
+    });
     expect(result).toHaveProperty('userId');
   });
 
@@ -698,7 +774,10 @@ describe('auth_module wave 4 coverage', () => {
     const { ctx, query } = makeAuthCtx();
     query.mockReturnValue({
       withIndex: jest.fn().mockReturnValue({
-        unique: jest.fn().mockResolvedValue({ _id: 'u1', resetPasswordExpiry: Date.now() - 1000 }),
+        unique: jest.fn().mockResolvedValue({
+          _id: 'u1',
+          resetPasswordExpiry: Date.now() - 1000,
+        }),
       }),
     });
     await expect(h.resetPassword(ctx, { token: 'expired', newPassword: 'new' })).rejects.toThrow(
