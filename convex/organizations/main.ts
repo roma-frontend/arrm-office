@@ -158,7 +158,9 @@ export const getAllOrganizations = query({
           .take(MAX_PAGE_SIZE);
 
         // Filter out superadmins and system bot accounts from employee counts
-        const filteredEmployees = employees.filter((e) => e.role !== 'superadmin' && !isSystemAccountEmail(e.email));
+        const filteredEmployees = employees.filter(
+          (e) => e.role !== 'superadmin' && !isSystemAccountEmail(e.email),
+        );
         const admins = filteredEmployees.filter((u) => u.role === 'admin');
         const activeCount = filteredEmployees.filter((u) => u.isActive && u.isApproved).length;
 

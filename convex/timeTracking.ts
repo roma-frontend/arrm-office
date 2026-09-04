@@ -535,7 +535,9 @@ export const getTodayAttendanceSummary = query({
           .take(DEFAULT_LIST_CAP)
       : await ctx.db.query('users').take(XLARGE_LIST_CAP);
     // Exclude superadmins and system bot accounts from employee counts
-    let activeEmployees = totalEmployees.filter((u) => u.isActive && u.role !== 'superadmin' && !isSystemAccountEmail(u.email));
+    let activeEmployees = totalEmployees.filter(
+      (u) => u.isActive && u.role !== 'superadmin' && !isSystemAccountEmail(u.email),
+    );
 
     // Filter by org if admin
     if (orgToFilter) {

@@ -96,7 +96,12 @@ export const getAllUsers = query({
         // cursor-based pagination not supported in this query
       }
       const users = await query.take(effectiveLimit + 1);
-      return users.filter((u) => u.role !== 'superadmin' && u.isApproved !== false && !isSystemAccountEmail(u.email)).map(redactUser);
+      return users
+        .filter(
+          (u) =>
+            u.role !== 'superadmin' && u.isApproved !== false && !isSystemAccountEmail(u.email),
+        )
+        .map(redactUser);
     }
 
     // Everyone else only sees their organization
@@ -119,7 +124,9 @@ export const getAllUsers = query({
       // cursor-based pagination not supported in this query
     }
 
-    return (await query.take(effectiveLimit + 1)).filter((u) => !isSystemAccountEmail(u.email)).map(redactUser);
+    return (await query.take(effectiveLimit + 1))
+      .filter((u) => !isSystemAccountEmail(u.email))
+      .map(redactUser);
   },
 });
 
@@ -137,7 +144,8 @@ export const listUsersPaginated = query({
 
     const isSuperadminUser = isSuperadmin(requester);
 
-    const redactPage = <T extends { _id: string }>(page: T[]) => page.filter((u: T & { email?: string }) => !isSystemAccountEmail(u.email)).map(redactUser);
+    const redactPage = <T extends { _id: string }>(page: T[]) =>
+      page.filter((u: T & { email?: string }) => !isSystemAccountEmail(u.email)).map(redactUser);
 
     // Pending-approval users are not employees yet — never list them.
     if (args.organizationId) {
@@ -198,7 +206,9 @@ export const getUsersByOrganizationId = query({
       // cursor-based pagination not supported in this query
     }
 
-    return (await query.take(effectiveLimit + 1)).filter((u) => !isSystemAccountEmail(u.email)).map(redactUser);
+    return (await query.take(effectiveLimit + 1))
+      .filter((u) => !isSystemAccountEmail(u.email))
+      .map(redactUser);
   },
 });
 
@@ -384,14 +394,16 @@ export const getUsersByRole = query({
         .take(MAX_PAGE_SIZE);
     }
 
-    return users.filter((u) => !isSystemAccountEmail(u.email)).map((u) => ({
-      _id: u._id,
-      name: u.name,
-      email: u.email,
-      phone: u.phone,
-      department: u.department,
-      position: u.position,
-    }));
+    return users
+      .filter((u) => !isSystemAccountEmail(u.email))
+      .map((u) => ({
+        _id: u._id,
+        name: u.name,
+        email: u.email,
+        phone: u.phone,
+        department: u.department,
+        position: u.position,
+      }));
   },
 });
 
@@ -655,7 +667,12 @@ export const getUsersByDepartment = query({
         .query('users')
         .filter((q) => q.eq(q.field('departmentId'), departmentId))
         .take(MAX_PAGE_SIZE);
-      return users.filter((u) => u.isActive && u.organizationId === currentUser.organizationId && !isSystemAccountEmail(u.email));
+      return users.filter(
+        (u) =>
+          u.isActive &&
+          u.organizationId === currentUser.organizationId &&
+          !isSystemAccountEmail(u.email),
+      );
     }
 
     // Employee sees only themselves

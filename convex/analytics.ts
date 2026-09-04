@@ -29,7 +29,9 @@ export const getAnalyticsOverview = query({
     }
 
     // Exclude superadmin and system bot accounts from employee count
-    const filteredUsers = users.filter((u) => u.role !== 'superadmin' && !isSystemAccountEmail(u.email));
+    const filteredUsers = users.filter(
+      (u) => u.role !== 'superadmin' && !isSystemAccountEmail(u.email),
+    );
 
     const totalEmployees = filteredUsers.filter((u) => u.isActive).length;
     const pendingApprovals = filteredUsers.filter((u) => !u.isApproved && u.isActive).length;

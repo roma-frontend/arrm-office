@@ -78,8 +78,6 @@ async function orgWideApprovers(
   );
 }
 
-
-
 /**
  * Where a new request from `requester` should go.
  *
