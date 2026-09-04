@@ -81,6 +81,23 @@ function useAuthForConvex() {
   // Convex token in place and every query resolves against the wrong identity.
   const storeUserId = useAuthStore((s) => s.user?.id);
 
+  // Gate: pause all Convex queries until the token has been freshly fetched
+  // for the current user identity. Without this, the first render after a
+  // user identity change (e.g. impersonation) fires queries with the OLD
+  // token because `useEffect` runs AFTER render — the old token is still
+  // in the Convex client and every query resolves against the wrong identity.
+  //
+  // We detect the identity change DURING render (not in useEffect) so that
+  // `isLoading` is immediately true on the stale render — Convex never
+  // sees the old token at all.
+  const [tokenReady, setTokenReady] = useState(false);
+  const prevUserIdForGateRef = useRef(storeUserId);
+  if (prevUserIdForGateRef.current !== storeUserId) {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- synchronous gate reset during render
+    setTokenReady(false);
+  }
+  prevUserIdForGateRef.current = storeUserId;
+
   const fetchAccessToken = useCallback(
     async ({ forceRefreshToken }: { forceRefreshToken: boolean }) => {
       if (!forceRefreshToken && tokenRef.current) return tokenRef.current;
@@ -106,6 +123,7 @@ function useAuthForConvex() {
         const token = data.token ?? null;
         tokenRef.current = token;
         setIsAuthenticated(!!token);
+        if (token) setTokenReady(true);
         return tokenRef.current;
       } catch {
         tokenRef.current = null;
@@ -141,9 +159,10 @@ function useAuthForConvex() {
     prevUserIdRef.current = storeUserId;
 
     if (idChanged && storeAuthenticated) {
-      // User identity switched (e.g. impersonation). Briefly flip to
-      // unauthenticated so ConvexProviderWithAuth clears the old token,
-      // then re-fetch and restore. This forces a full re-auth cycle.
+      // User identity switched (e.g. impersonation). Flip to unauthenticated
+      // so ConvexProviderWithAuth clears the old token, then re-fetch and
+      // restore with the new identity. (tokenReady is already false from the
+      // synchronous gate above.)
       setIsAuthenticated(false);
       fetchAccessToken({ forceRefreshToken: true }).then(() => {
         setIsAuthenticated(true);
@@ -156,13 +175,16 @@ function useAuthForConvex() {
   return useMemo(
     () => ({
       // Keep Convex queries paused until the persisted auth store has hydrated
-      // (see comment above). Otherwise fast production loads fire queries with
-      // no token and log "Not authenticated" for every protected page.
-      isLoading: !storeHydrated,
+      // AND the token has been freshly fetched for the current user identity.
+      // Without the `tokenReady` gate, impersonation would fire queries with
+      // the OLD (superadmin) token on the first render after navigation,
+      // because `useEffect` runs AFTER render — leaving a window where the
+      // stale token is still in the Convex client.
+      isLoading: !storeHydrated || !tokenReady,
       isAuthenticated,
       fetchAccessToken,
     }),
-    [storeHydrated, isAuthenticated, fetchAccessToken],
+    [storeHydrated, tokenReady, isAuthenticated, fetchAccessToken],
   );
 }
 
