@@ -4,6 +4,7 @@ import { isSuperadminEmail } from './lib/auth';
 import { DEFAULT_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits';
 import { getProfile, type UserProfile } from './lib/userProfile';
 import { getAuthCaller } from './lib/getAuthCaller';
+import { isSystemAccountEmail } from './lib/systemAccounts';
 
 // ── Get analytics overview ─────────────────────────────────────────────────
 export const getAnalyticsOverview = query({
@@ -27,8 +28,8 @@ export const getAnalyticsOverview = query({
       leaves = await ctx.db.query('leaveRequests').take(XLARGE_LIST_CAP);
     }
 
-    // Exclude superadmin from employee count
-    const filteredUsers = users.filter((u) => u.role !== 'superadmin');
+    // Exclude superadmin and system bot accounts from employee count
+    const filteredUsers = users.filter((u) => u.role !== 'superadmin' && !isSystemAccountEmail(u.email));
 
     const totalEmployees = filteredUsers.filter((u) => u.isActive).length;
     const pendingApprovals = filteredUsers.filter((u) => !u.isApproved && u.isActive).length;
@@ -312,7 +313,7 @@ export const getDashboardStats = query({
             .withIndex('by_org', (q) => q.eq('organizationId', orgId!))
             .take(DEFAULT_LIST_CAP);
     const totalEmployees = users.filter(
-      (u) => u.role !== 'superadmin' && u.isActive !== false,
+      (u) => u.role !== 'superadmin' && u.isActive !== false && !isSystemAccountEmail(u.email),
     ).length;
 
     // Get leaves scoped by org

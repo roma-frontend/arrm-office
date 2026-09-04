@@ -28,6 +28,7 @@ import type { Doc, Id } from '../_generated/dataModel';
 import { getAncestorIds, isAncestorOf, getOrgHeadId } from '../lib/reportingLine';
 import { hasCapability } from '../lib/capabilities';
 import { SMALL_LIST_CAP } from '../lib/limits';
+import { isSystemAccountEmail } from '../lib/systemAccounts';
 
 /** Audit/review note stamped on a head request that nobody above could approve. */
 export const HEAD_AUTO_APPROVAL_NOTE =
@@ -77,13 +78,7 @@ async function orgWideApprovers(
   );
 }
 
-/** True for the email-shaped accounts used by internal automations (HR
- *  Assistant bot, future moderation bots, etc.) — anything that lives under
- *  the `.internal` namespace. Kept loose on purpose so we don't have to
- *  thread a flag through every bot provisioning path. */
-function isSystemAccountEmail(email: string | undefined): boolean {
-  return !!email && email.endsWith('.internal');
-}
+
 
 /**
  * Where a new request from `requester` should go.

@@ -11,6 +11,7 @@ import { paginationOptsValidator } from 'convex/server';
 import type { Doc, Id } from './_generated/dataModel';
 import { isSuperadmin } from './lib/auth';
 import { getSubordinateIds, resolveSupervisorId } from './lib/reportingLine';
+import { isSystemAccountEmail } from './lib/systemAccounts';
 
 import { DEFAULT_LIST_CAP, SMALL_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
@@ -1254,6 +1255,7 @@ export const getUsersForAssignment = query({
         u.role !== 'superadmin' &&
         u.isActive !== false &&
         u.isApproved !== false &&
+        !isSystemAccountEmail(u.email) &&
         (u.role === 'employee' ||
           u.role === 'supervisor' ||
           u.role === 'admin' ||

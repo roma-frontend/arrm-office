@@ -10,6 +10,7 @@ import { hasCapability, hasOrgWideReach } from './lib/capabilities';
 import { assertModuleAccess } from './lib/entitlements';
 import { isAncestorOf, getSubordinateIds } from './lib/reportingLine';
 import { canAccessUser } from './lib/rbac';
+import { isSystemAccountEmail } from './lib/systemAccounts';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Whose attendance may the caller touch?
@@ -533,8 +534,8 @@ export const getTodayAttendanceSummary = query({
           .withIndex('by_org', (q) => q.eq('organizationId', orgToFilter))
           .take(DEFAULT_LIST_CAP)
       : await ctx.db.query('users').take(XLARGE_LIST_CAP);
-    // Exclude superadmins from employee counts
-    let activeEmployees = totalEmployees.filter((u) => u.isActive && u.role !== 'superadmin');
+    // Exclude superadmins and system bot accounts from employee counts
+    let activeEmployees = totalEmployees.filter((u) => u.isActive && u.role !== 'superadmin' && !isSystemAccountEmail(u.email));
 
     // Filter by org if admin
     if (orgToFilter) {

@@ -10,6 +10,7 @@ import { getStartingLeaveBalances } from '../lib/leaveBalances';
 import { resolveOrgUnitsByName } from '../lib/orgUnits';
 import { resolveTravelAllowanceForOrg } from '../lib/travelAllowance';
 import { logger } from '../../src/lib/logger';
+import { isSystemAccountEmail } from '../lib/systemAccounts';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SUPERADMIN: Create a new organization
@@ -156,8 +157,8 @@ export const getAllOrganizations = query({
           .withIndex('by_org', (q) => q.eq('organizationId', org._id))
           .take(MAX_PAGE_SIZE);
 
-        // Filter out superadmins from employee counts
-        const filteredEmployees = employees.filter((e) => e.role !== 'superadmin');
+        // Filter out superadmins and system bot accounts from employee counts
+        const filteredEmployees = employees.filter((e) => e.role !== 'superadmin' && !isSystemAccountEmail(e.email));
         const admins = filteredEmployees.filter((u) => u.role === 'admin');
         const activeCount = filteredEmployees.filter((u) => u.isActive && u.isApproved).length;
 

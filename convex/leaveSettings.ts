@@ -12,6 +12,7 @@ import {
 } from './lib/entitlements';
 import { ALL_LEAVE_TYPES, getActiveLeaveTypes } from './lib/leaveTypes';
 import type { Id } from './_generated/dataModel';
+import { isSystemAccountEmail } from './lib/systemAccounts';
 
 // ── Access helpers ──────────────────────────────────────────────────────────
 // Leave settings are org-scoped: everyone in the org may read them (holidays
@@ -351,9 +352,10 @@ export const getEmployeeLeaveBalances = query({
       .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
       .filter((q) => q.and(q.neq(q.field('role'), 'superadmin'), q.eq(q.field('isActive'), true)))
       .take(DEFAULT_LIST_CAP);
+    const filteredEmployees = employees.filter((e) => !isSystemAccountEmail(e.email));
 
     const enriched = await Promise.all(
-      employees.map(async (emp) => {
+      filteredEmployees.map(async (emp) => {
         const profile = await ctx.db
           .query('userProfiles')
           .withIndex('by_user', (q) => q.eq('userId', emp._id))
@@ -472,9 +474,10 @@ export const syncAllBalances = mutation({
       .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
       .filter((q) => q.and(q.neq(q.field('role'), 'superadmin'), q.eq(q.field('isActive'), true)))
       .take(1000);
+    const filteredEmployees = employees.filter((e) => !isSystemAccountEmail(e.email));
 
     let updated = 0;
-    for (const emp of employees) {
+    for (const emp of filteredEmployees) {
       const patch: Record<string, number> = {};
       for (const [field, target] of Object.entries(targetBalances)) {
         const current = (emp as unknown as Record<string, number | undefined>)[field] ?? 0;
@@ -495,7 +498,7 @@ export const syncAllBalances = mutation({
       details: JSON.stringify({
         targetBalances,
         employeesUpdated: updated,
-        totalEmployees: employees.length,
+        totalEmployees: filteredEmployees.length,
       }),
       createdAt: Date.now(),
     });

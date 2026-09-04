@@ -9,6 +9,7 @@ import { isSuperadmin } from '../lib/auth';
 import { redactUser } from '../lib/userRedaction';
 import { getProfile } from '../lib/userProfile';
 import { loadDriverPositionIds, isDriverUser } from '../lib/driverEligibility';
+import { isSystemAccountEmail } from '../lib/systemAccounts';
 
 // ── Helper: Get user ID from email or userId ────────────────────────────────
 async function _getUserIdIdentityOrEmail(
@@ -85,7 +86,7 @@ export const getAllUsers = query({
           ),
         )
         .take(effectiveLimit + 1);
-      return scoped.map(redactUser);
+      return scoped.filter((u) => !isSystemAccountEmail(u.email)).map(redactUser);
     }
 
     // Superadmin sees all users across all orgs (with org info)
@@ -95,7 +96,7 @@ export const getAllUsers = query({
         // cursor-based pagination not supported in this query
       }
       const users = await query.take(effectiveLimit + 1);
-      return users.filter((u) => u.role !== 'superadmin' && u.isApproved !== false).map(redactUser);
+      return users.filter((u) => u.role !== 'superadmin' && u.isApproved !== false && !isSystemAccountEmail(u.email)).map(redactUser);
     }
 
     // Everyone else only sees their organization
@@ -118,7 +119,7 @@ export const getAllUsers = query({
       // cursor-based pagination not supported in this query
     }
 
-    return (await query.take(effectiveLimit + 1)).map(redactUser);
+    return (await query.take(effectiveLimit + 1)).filter((u) => !isSystemAccountEmail(u.email)).map(redactUser);
   },
 });
 
@@ -136,7 +137,7 @@ export const listUsersPaginated = query({
 
     const isSuperadminUser = isSuperadmin(requester);
 
-    const redactPage = <T extends { _id: string }>(page: T[]) => page.map(redactUser);
+    const redactPage = <T extends { _id: string }>(page: T[]) => page.filter((u: T & { email?: string }) => !isSystemAccountEmail(u.email)).map(redactUser);
 
     // Pending-approval users are not employees yet — never list them.
     if (args.organizationId) {
@@ -197,7 +198,7 @@ export const getUsersByOrganizationId = query({
       // cursor-based pagination not supported in this query
     }
 
-    return (await query.take(effectiveLimit + 1)).map(redactUser);
+    return (await query.take(effectiveLimit + 1)).filter((u) => !isSystemAccountEmail(u.email)).map(redactUser);
   },
 });
 
@@ -383,7 +384,7 @@ export const getUsersByRole = query({
         .take(MAX_PAGE_SIZE);
     }
 
-    return users.map((u) => ({
+    return users.filter((u) => !isSystemAccountEmail(u.email)).map((u) => ({
       _id: u._id,
       name: u.name,
       email: u.email,
@@ -419,7 +420,7 @@ export const getDriverCandidates = query({
       return [];
     }
 
-    const users = orgId
+    const allUsers = orgId
       ? await ctx.db
           .query('users')
           .withIndex('by_org_active', (q) => q.eq('organizationId', orgId).eq('isActive', true))
@@ -428,6 +429,7 @@ export const getDriverCandidates = query({
           .query('users')
           .filter((q) => q.eq(q.field('isActive'), true))
           .take(MAX_PAGE_SIZE);
+    const users = allUsers.filter((u) => !isSystemAccountEmail(u.email));
 
     const driverPositionIds = await loadDriverPositionIds(ctx, orgId ?? undefined);
 
@@ -604,7 +606,7 @@ export const listAll = query({
     // Superadmin sees all users across all organizations
     if (isSuperadmin(currentUser)) {
       const allUsers = await ctx.db.query('users').take(MAX_PAGE_SIZE);
-      return allUsers.filter((u) => u.role !== 'superadmin');
+      return allUsers.filter((u) => u.role !== 'superadmin' && !isSystemAccountEmail(u.email));
     }
 
     // Admin sees only users from their organization
@@ -615,7 +617,7 @@ export const listAll = query({
         .query('users')
         .withIndex('by_org', (q) => q.eq('organizationId', currentUser.organizationId))
         .take(MAX_PAGE_SIZE);
-      return users.filter((u) => u.role !== 'superadmin');
+      return users.filter((u) => u.role !== 'superadmin' && !isSystemAccountEmail(u.email));
     }
 
     return [];
@@ -644,7 +646,7 @@ export const getUsersByDepartment = query({
         .query('users')
         .filter((q) => q.eq(q.field('departmentId'), departmentId))
         .take(MAX_PAGE_SIZE);
-      return users.filter((u) => u.isActive);
+      return users.filter((u) => u.isActive && !isSystemAccountEmail(u.email));
     }
 
     // Supervisor sees users in their org's departments
@@ -653,7 +655,7 @@ export const getUsersByDepartment = query({
         .query('users')
         .filter((q) => q.eq(q.field('departmentId'), departmentId))
         .take(MAX_PAGE_SIZE);
-      return users.filter((u) => u.isActive && u.organizationId === currentUser.organizationId);
+      return users.filter((u) => u.isActive && u.organizationId === currentUser.organizationId && !isSystemAccountEmail(u.email));
     }
 
     // Employee sees only themselves
