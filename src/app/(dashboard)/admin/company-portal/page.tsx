@@ -206,9 +206,19 @@ export default function CompanyPortalPage() {
   const user = useAuthUser();
   const organizationId = useSelectedOrganization() as Id<'organizations'> | undefined;
 
+  // For superadmins who selected a specific org, fetch that org directly.
+  // getMyOrganization always returns the *user's* own org, so switching
+  // organizations in the picker would never update the portal info.
+  const userRole = user?.role ?? 'employee';
   const org = useQuery(
-    api.organizations.getMyOrganization,
-    user?.id ? { userId: user.id as Id<'users'> } : 'skip',
+    userRole === 'superadmin' && organizationId
+      ? api.organizations.getOrganizationById
+      : api.organizations.getMyOrganization,
+    userRole === 'superadmin' && organizationId && user?.id
+      ? { callerUserId: user.id as Id<'users'>, organizationId }
+      : user?.id
+        ? { userId: user.id as Id<'users'> }
+        : 'skip',
   );
 
   const leaveConfigs = useQuery(
@@ -222,8 +232,6 @@ export default function CompanyPortalPage() {
   );
 
   if (!organizationId || !user) return <ShieldLoader />;
-
-  const userRole = user.role ?? 'employee';
 
   const activeLeaveTypes = leaveConfigs?.filter((c) => c.isActive).length ?? 0;
   const totalLeaveTypes = leaveConfigs?.length ?? 0;

@@ -195,10 +195,12 @@ export function ToolDock() {
           onClick={() => {
             recordVisit(href);
             closeAll();
-            if (pending) {
-              // Fire-and-forget: the navigation must not wait on the patch, and
-              // the counters follow the subscription once it lands.
-              void markAsRead({ notificationId: pending._id as Id<'notifications'> }).catch(
+            // Mark ALL unread notifications for this module as read — the badge
+            // counts every unread item, so marking only the first would leave
+            // the rest visible.
+            const unread = notificationsFor(href);
+            for (const n of unread) {
+              void markAsRead({ notificationId: n._id as Id<'notifications'> }).catch(
                 (err: unknown) => logger.error('Failed to mark notification read', err),
               );
             }
