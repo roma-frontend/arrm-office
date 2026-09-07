@@ -556,11 +556,15 @@ export function parseDocumentContent(content: string): FrozenDocument | null {
   if (!prefix) {
     try {
       const parsed: unknown = JSON.parse(content);
-      if (typeof parsed === 'object' && parsed !== null && Array.isArray((parsed as any).blocks)) {
+      if (
+        typeof parsed === 'object' &&
+        parsed !== null &&
+        Array.isArray((parsed as { blocks?: unknown }).blocks)
+      ) {
         return {
           ...(parsed as FrozenDocument),
           version: 2,
-          source: (parsed as any).source ?? 'catalog',
+          source: (parsed as { source?: 'blueprint' | 'catalog' }).source ?? 'catalog',
         };
       }
     } catch {

@@ -701,7 +701,12 @@ export default function MobileMenu({ isOpen, onClose, activeSection = null }: Mo
               <Rocket
                 size={18}
                 className="group-hover:-translate-y-0.5"
-                style={{ transition: 'transform 0.2s cubic-bezier(0.22, 1, 0.36, 1)' }}
+                style={{
+                  /* v4 translate utilities animate the native `translate`
+                     property — it must be in the transition list. */
+                  transition:
+                    'translate 0.2s cubic-bezier(0.22, 1, 0.36, 1), transform 0.2s cubic-bezier(0.22, 1, 0.36, 1)',
+                }}
               />
               <span>{t('landing.getStartedFree', 'Get Started Free')}</span>
             </button>

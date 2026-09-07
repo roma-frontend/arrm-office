@@ -3,7 +3,6 @@ import { query } from './_generated/server';
 import { MAX_PAGE_SIZE } from './pagination';
 import { getProfile } from './lib/userProfile';
 import { getAuthCaller } from './lib/getAuthCaller';
-import { isSuperadmin } from './lib/auth';
 import { canAccessUser } from './lib/rbac';
 
 /**

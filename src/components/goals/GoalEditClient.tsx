@@ -62,6 +62,7 @@ export default function GoalEditClient() {
 
   useEffect(() => {
     if (!goal) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrate the form once the goal query resolves (classic fetch-to-form sync)
     setTitle(goal.title ?? '');
     setDescription(goal.description ?? '');
     setStatus((goal.status as Status) || 'active');

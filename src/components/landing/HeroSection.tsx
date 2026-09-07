@@ -208,9 +208,10 @@ export default function HeroSection({ initialLanguage = 'en' }: { initialLanguag
         />
       </div>
 
-      {/* Skip to content link for accessibility */}
+      {/* Skip link — targets the scroll-story "How it works" tour (#story).
+          (The old #features target has no matching id anywhere on the page.) */}
       <a
-        href="#features"
+        href="#story"
         className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:rounded-lg"
         style={{
           backgroundColor: 'var(--primary)',
@@ -252,13 +253,18 @@ export default function HeroSection({ initialLanguage = 'en' }: { initialLanguag
             <SparklesIcon />
           </div>
 
-          {/* Title */}
+          {/* Title — fluid type scale: grows gently from 44px (small phones)
+              to 84px on wide screens instead of jumping at Tailwind's sm/md
+              breakpoints. font-bold (700) is the heaviest IBM Plex Sans face
+              the self-hosted @font-face rules actually ship — font-black
+              rendered as synthetic 900 and looked worse for it. */}
           <h1 className="relative mb-6">
             <span
-              className="hero-word-1 relative block text-5xl sm:text-6xl md:text-7xl font-black tracking-tighter leading-[0.95] [overflow-wrap:anywhere] text-balance"
+              className="hero-word-1 relative block font-bold tracking-tighter leading-[0.95] [overflow-wrap:anywhere] text-balance"
               style={{
                 color: 'var(--landing-text-primary)',
                 textShadow: '0 2px 40px rgba(37, 99, 235, 0.15)',
+                fontSize: 'clamp(2.75rem, 6.5vw + 0.5rem, 5.25rem)',
               }}
             >
               {t('landing.heroTitle')}
@@ -284,11 +290,33 @@ export default function HeroSection({ initialLanguage = 'en' }: { initialLanguag
           {/* CTA Buttons */}
           <HeroCTA initialLanguage={initialLanguage} />
 
-          {/* Trust markers */}
+          {/* Trust markers — product facts (mirrors the LiveStats section
+              below), so the hero carries the same honest numbers. */}
           <div
             className="hero-fade-3 mt-10 flex flex-wrap items-center justify-center lg:justify-start gap-x-8 gap-y-3"
-            aria-label="Product guarantees"
+            aria-label="Product facts"
           >
+            {(
+              [
+                ['landing.metricModules', '58'],
+                ['landing.metricLanguages', '4'],
+                ['landing.metricAccuracy', '99.7%'],
+              ] as const
+            ).map(([labelKey, value]) => (
+              <span
+                key={labelKey}
+                className="inline-flex items-baseline gap-2 text-sm font-medium"
+                style={{ color: 'var(--landing-text-muted)' }}
+              >
+                <span
+                  className="num text-base font-bold"
+                  style={{ color: 'var(--landing-text-primary)' }}
+                >
+                  {value}
+                </span>
+                {t(labelKey)}
+              </span>
+            ))}
             {(['noCreditCard', 'freeToStart', 'gdprReady'] as const).map((key) => (
               <span
                 key={key}
@@ -304,17 +332,18 @@ export default function HeroSection({ initialLanguage = 'en' }: { initialLanguag
           </div>
         </div>
 
-        {/* ── Right: product demo — tall wrapper, the demo itself is pinned ── */}
-        <div
-          ref={demoWrapRef}
-          className="relative min-h-[560px] lg:min-h-[720px]"
-          aria-hidden="true"
-        >
+        {/* ── Right: product demo — tall wrapper, the demo itself is pinned.
+            NOT aria-hidden: the demo carries real, labelled tab buttons —
+            hiding focusable elements from AT is a WCAG 4.1.2 failure. The
+            decorative glow is hidden instead, and the floating mock cards
+            (decorative) carry their own aria-hidden below. */}
+        <div ref={demoWrapRef} className="relative min-h-[560px] lg:min-h-[720px]">
           <div className="lg:sticky lg:top-24">
             {/* Glow behind the frame — fades subtly as the panel drifts */}
             <div
               ref={glowRef}
               className="absolute -inset-10 -z-10 rounded-[3rem] pointer-events-none"
+              aria-hidden="true"
               style={{
                 background:
                   'radial-gradient(ellipse 60% 50% at 50% 45%, var(--landing-orb-1) 0%, transparent 70%)',
@@ -327,8 +356,10 @@ export default function HeroSection({ initialLanguage = 'en' }: { initialLanguag
               <HeroDemo t={t} />
             </div>
 
-            {/* Floating card — biometric check-in (top right) */}
+            {/* Floating card — biometric check-in (top right). Decorative
+                mock notification, hidden from AT. */}
             <div
+              aria-hidden="true"
               className="hero-float-a absolute -top-5 -right-2 md:-right-8 hidden sm:flex items-center gap-2.5 rounded-2xl px-4 py-3 backdrop-blur-md"
               style={{
                 background: 'var(--landing-card-bg)',
@@ -361,9 +392,12 @@ export default function HeroSection({ initialLanguage = 'en' }: { initialLanguag
               </div>
             </div>
 
-            {/* Floating card — AI assistant (bottom left) */}
+            {/* Floating card — AI assistant (bottom left). Decorative mock,
+                hidden from AT. Only shown from md up: on small viewports one
+                floating card reads as a detail, two read as clutter. */}
             <div
-              className="hero-float-b absolute -bottom-5 -left-2 md:-left-8 hidden sm:flex items-center gap-2.5 rounded-2xl px-4 py-3 backdrop-blur-md"
+              aria-hidden="true"
+              className="hero-float-b absolute -bottom-5 -left-2 md:-left-8 hidden md:flex items-center gap-2.5 rounded-2xl px-4 py-3 backdrop-blur-md"
               style={{
                 background: 'var(--landing-card-bg)',
                 border: '1px solid var(--landing-card-border)',

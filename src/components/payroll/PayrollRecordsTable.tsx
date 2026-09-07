@@ -77,13 +77,17 @@ export default function PayrollRecordsTable() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [page, setPage] = useState(1);
-  const [breakdownRecord, setBreakdownRecord] = useState<Record<string, unknown> | null>(null);
   const [breakdownOpen, setBreakdownOpen] = useState(false);
 
   const records = useQuery(
     api.payroll.queries.getPayrollRecords,
     orgId && user?.id && isAdmin ? { organizationId: orgId } : 'skip',
   );
+
+  /** The breakdown sheet stores the row it was opened from, so it needs the
+   *  exact query row type — not a widened Record the JSX had to cast back. */
+  type PayrollRecordRow = NonNullable<typeof records>[number];
+  const [breakdownRecord, setBreakdownRecord] = useState<PayrollRecordRow | null>(null);
 
   const filteredRecords = useMemo(() => {
     if (!records) return [];
@@ -277,8 +281,8 @@ export default function PayrollRecordsTable() {
             <PayrollBreakdownSheet
               open={breakdownOpen}
               onOpenChange={setBreakdownOpen}
-              record={breakdownRecord as any}
-              employeeName={(breakdownRecord as any).user?.name}
+              record={breakdownRecord}
+              employeeName={breakdownRecord.user?.name}
             />
           )}
 

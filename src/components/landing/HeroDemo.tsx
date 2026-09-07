@@ -912,10 +912,39 @@ export default function HeroDemo({ t }: { t: TFunction }) {
 
   const goTo = useCallback((i: number) => setScreen(i), []);
 
+  /* Pointer spotlight (Vercel/Linear-style glass sheen): the cursor position is
+     written straight onto two CSS vars — no React state, no re-renders — and a
+     single absolutely-positioned radial gradient follows it. Mouse only
+     (`pointer: fine`), disabled entirely under reduced motion, and it ignores
+     touch so mobile never pays for it. */
+  useEffect(() => {
+    const el = frameRef.current;
+    if (!el) return;
+    if (window.matchMedia(REDUCED).matches) return;
+    if (!window.matchMedia('(pointer: fine)').matches) return;
+
+    const onMove = (e: PointerEvent) => {
+      const rect = el.getBoundingClientRect();
+      el.style.setProperty('--spot-x', `${e.clientX - rect.left}px`);
+      el.style.setProperty('--spot-y', `${e.clientY - rect.top}px`);
+      el.style.setProperty('--spot-opacity', '1');
+    };
+    const onLeave = () => {
+      el.style.setProperty('--spot-opacity', '0');
+    };
+
+    el.addEventListener('pointermove', onMove);
+    el.addEventListener('pointerleave', onLeave);
+    return () => {
+      el.removeEventListener('pointermove', onMove);
+      el.removeEventListener('pointerleave', onLeave);
+    };
+  }, []);
+
   return (
     <div
       ref={frameRef}
-      className="relative rounded-2xl overflow-hidden text-left"
+      className="hero-demo-frame relative rounded-2xl overflow-hidden text-left"
       style={{
         background: 'var(--card)',
         border: '1px solid var(--landing-card-border)',
@@ -924,6 +953,9 @@ export default function HeroDemo({ t }: { t: TFunction }) {
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
+      {/* Pointer spotlight — position driven by --spot-x/--spot-y on the frame */}
+      <div className="hero-spotlight" aria-hidden="true" />
+
       {/* Title bar */}
       <div
         className="flex items-center gap-2 px-4 py-2.5"

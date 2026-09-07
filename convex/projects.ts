@@ -198,7 +198,7 @@ export const getProject = query({
         avatarUrl: m?.avatarUrl ?? null,
       })),
       // Unique assignees from tasks (people actually working on the project)
-      assigneeCount: new Set(allTasks.map((t) => (t as any).assignedTo).filter(Boolean)).size,
+      assigneeCount: new Set(allTasks.map((t) => t.assignedTo).filter(Boolean)).size,
       tasks: allTasks,
       taskCount: allTasks.length,
       completedTasks: allTasks.filter((t) => t.status === 'completed').length,

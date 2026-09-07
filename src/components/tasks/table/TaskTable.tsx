@@ -122,12 +122,12 @@ export interface TaskTableProps {
   /** Context menu handlers — when provided, each task row gets a right-click menu. */
   contextMenu?: {
     canManage: boolean;
-    onEdit: (task: any) => void;
-    onRename?: (task: any) => void;
+    onEdit: (task: ContextTask) => void;
+    onRename?: (task: ContextTask) => void;
     onSetStatus: (taskId: string, statusKey: string) => void;
     onSetPriority: (taskId: string, priority: string) => void;
-    onDelete: (task: any) => void;
-    onToggleActive?: (task: any) => void;
+    onDelete: (task: ContextTask) => void;
+    onToggleActive?: (task: ContextTask) => void;
   };
 }
 
@@ -563,11 +563,11 @@ export function TaskTable({
       onSetField,
       onToggleSelect: toggleSelect,
       onEditTask: contextMenu?.onEdit
-        ? (id: string) => contextMenu.onEdit({ _id: id, title: '' } as any)
+        ? (id: string) => contextMenu.onEdit({ _id: id, title: '' })
         : undefined,
       onSetPriority: contextMenu?.onSetPriority,
       onDeleteTask: contextMenu?.onDelete
-        ? (id: string) => contextMenu.onDelete({ _id: id, title: '' } as any)
+        ? (id: string) => contextMenu.onDelete({ _id: id, title: '' })
         : undefined,
     }),
     [

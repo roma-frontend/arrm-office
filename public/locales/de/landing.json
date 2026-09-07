@@ -3,8 +3,8 @@
     "scroll": "Scrollen Sie nach unten, um mehr zu entdecken",
     "leaveTypes": "Abwesenheitstypen",
     "hrLeave": "Strata",
-    "heroTitle": "Von der Strategie zum Ergebnis",
-    "heroSubtitle": "Verbinden Sie die Unternehmensvision mit der täglichen Arbeit. Kaskadieren Sie OKRs vom Vorstand bis zu jedem Mitarbeiter, verfolgen Sie den Fortschritt in Echtzeit und erzielen Sie Ergebnisse.",
+    "heroTitle": "Die HR-Plattform, auf der Ihr Unternehmen läuft",
+    "heroSubtitle": "Biometrische Zeiterfassung, Abwesenheiten und OKRs – kaskadiert vom Vorstand bis zu jedem Mitarbeiter – mit einem KI-Assistenten, der in natürlicher Sprache antwortet.",
     "getStartedFree": "Kostenlos starten",
     "watchDemo": "Demo ansehen",
     "trustedBy": "Echte Teams, die mit Strata arbeiten",
@@ -62,7 +62,7 @@
       "followUs": "Folgen Sie uns",
       "allRightsReserved": "Alle Rechte vorbehalten"
     },
-    "exclusiveHR": "Exklusives HR",
+    "exclusiveHR": "HR · OKR · Anwesenheit — eine Plattform",
     "goToDashboard": "Zum Dashboard",
     "viewAnalytics": "Analytik anzeigen",
     "signIn": "Anmelden",
@@ -407,6 +407,8 @@
     "metricCheckin": "Check-in-Zeit"
   },
   "landingExtra": {
+    "register": "Registrieren",
+    "logoTooltip": "Zur Startseite",
     "myAccount": "Mein Konto",
     "logOut": "Abmelden",
     "switchToLight": "Auf helles Thema wechseln",
@@ -1142,10 +1144,10 @@
       "ogDescription": "Finden Sie offene Stellen und bewerben Sie sich über Strata."
     },
     "home": {
-      "title": "Strata — All-in-One HR-Management-Plattform",
-      "description": "Strata ist eine leistungsstarke HR-Plattform mit Echtzeit-Anwesenheit, Urlaubsverwaltung, Aufgabenmanagement, Mitarbeiteranalytik, Gesichtserkennung und KI-Assistent.",
-      "ogTitle": "Strata — All-in-One HR-Plattform",
-      "ogDescription": "Verwalten Sie Ihre Belegschaft mit KI-Analytik, Anwesenheitserfassung und Aufgabenmanagement."
+      "title": "Strata — Die HR-Plattform, auf der Ihr Unternehmen läuft",
+      "description": "Die All-in-One-HR-Plattform: biometrische Zeiterfassung, Abwesenheiten und OKRs bis zu jedem Mitarbeiter — mit einem KI-Assistenten in natürlicher Sprache.",
+      "ogTitle": "Strata — Die HR-Plattform für Ihr ganzes Unternehmen",
+      "ogDescription": "Biometrische Zeiterfassung, Abwesenheiten, kaskadierte OKRs und ein KI-Assistent — alles in einer Plattform."
     },
     "pricing": {
       "title": "Preise — Strata HR",

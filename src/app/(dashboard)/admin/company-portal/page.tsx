@@ -17,8 +17,6 @@ import {
   Sun,
   Wallet,
   Clock,
-  Globe,
-  ShieldCheck,
   ScrollText,
   Palette,
   Bot,

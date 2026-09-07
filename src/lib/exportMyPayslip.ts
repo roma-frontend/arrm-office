@@ -100,7 +100,12 @@ export async function exportMyPayslipPdf({
   t: TFunction;
 }): Promise<void> {
   if (!summary || !user) throw new Error('Missing data');
-  const { pdfMake, font } = await loadPdfMakeWithFonts();
+  // The loader widens pdfMake to `any` for every caller; narrow it here to the
+  // subset this export uses so the calls below stay type-checked.
+  const { pdfMake, font } = (await loadPdfMakeWithFonts()) as {
+    pdfMake: { createPdf: (dd: unknown) => { download: (filename?: string) => void } };
+    font: string;
+  };
 
   const latest = summary.latest;
   const currency = latest?.currency ?? 'AMD';
@@ -272,8 +277,7 @@ export async function exportMyPayslipPdf({
     },
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const pdf = (pdfMake as any).createPdf(docDefinition);
+  const pdf = pdfMake.createPdf(docDefinition);
   pdf.download(`payslip-${summary.year}-${user.name?.replace(/\s+/g, '-') ?? 'me'}.pdf`);
   // Mark imported type so it isn't tree-shaken in dev — handy if the
   // build target needs to verify the helper was bundled.

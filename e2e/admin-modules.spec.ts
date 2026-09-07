@@ -1,4 +1,4 @@
-import { test, expect, gotoAndSettle, login, selectOrganizationForSuperadmin } from './fixtures';
+import { test, expect, gotoAndSettle } from './fixtures';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // ADMIN: HOLIDAYS

@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useRouter } from 'next/navigation';
-import { useQuery, useMutation, useConvex } from '@/lib/convex-typed';
+import { useQuery, useMutation } from '@/lib/convex-typed';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useShallow } from 'zustand/shallow';
 import { Button } from '@/components/ui/button';
@@ -36,7 +36,6 @@ export default function SignatureDocumentPage() {
   const router = useRouter();
   const { t, i18n } = useTranslation();
   const { user } = useAuthStore(useShallow((s) => ({ user: s.user })));
-  const convex = useConvex();
 
   const [signatureData, setSignatureData] = useState<string | null>(null);
   const [isSigning, setIsSigning] = useState(false);
@@ -208,6 +207,7 @@ export default function SignatureDocumentPage() {
             ) : signatureData ? (
               <div className="space-y-3">
                 <div className="border rounded-lg p-3 bg-white flex justify-center">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- live data-URL preview of the just-drawn signature; next/image adds nothing for a blob */}
                   <img src={signatureData} alt="Your signature" className="max-h-[80px]" />
                 </div>
                 <div className="flex justify-between">

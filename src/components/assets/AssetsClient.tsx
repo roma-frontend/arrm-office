@@ -1039,7 +1039,7 @@ export default function AssetsClient() {
       if (isSuperuser) setActiveTab('catalog');
       setSelectedAsset({ _id: assetIdParam as Id<'assetCatalog'> });
     }
-  }, []);
+  }, [isSuperuser]);
 
   // Queries
   const stats = useQuery(api.assets.getAssetStats, orgId ? { organizationId: orgId } : 'skip');

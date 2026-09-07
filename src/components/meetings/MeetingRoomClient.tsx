@@ -238,7 +238,7 @@ export function MeetingRoomClient() {
       roomName,
       getJoinToken,
       displayName,
-      user?.name,
+      user,
       micOn,
       camOn,
       previewTracks,

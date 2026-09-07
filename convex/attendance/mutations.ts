@@ -5,7 +5,6 @@
  */
 import { v } from 'convex/values';
 import { mutation } from '../_generated/server';
-import type { Id, Doc } from '../_generated/dataModel';
 import { internal } from '../_generated/api';
 import { getAuthCaller } from '../lib/getAuthCaller';
 import { canAccessUser } from '../lib/rbac';

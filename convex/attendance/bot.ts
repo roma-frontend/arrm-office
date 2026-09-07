@@ -12,10 +12,10 @@
  *     renderer / cron entry-point.
  *   - `convex/crons.ts` registers the daily run (00:00 UTC by default; every
  *     organization can shift it via `dailyDigestCronHour`).
- *   - On demand, `convex/attendance/leaveBridge.ts` calls
- *     `renderAndPostDigest` from the leave / overtime approval mutations
- *     so the digest is current whenever someone approves a request, not
- *     only at midnight.
+ *   - `buildDigest` merges approved `leaveRequests` covering the date — an
+ *     approved leave overrides any attendance entry for the same day (see
+ *     schema/attendance.ts), so the digest is current whenever someone
+ *     approves a request, not only at midnight.
  */
 import { internalMutation, internalAction, internalQuery } from '../_generated/server';
 import { v } from 'convex/values';
@@ -189,11 +189,11 @@ export function renderDigest(
   const total = everyone.length;
   const present = buckets.office.length + buckets.wfh.length;
 
+  // NOTE: the title is deliberately NOT part of the body. The chat UI
+  // (MessageBubble) renders broadcastTitle + broadcastIcon as the card header,
+  // so a title line here would show up twice — one header above the card and
+  // a stray duplicate as the body's first line.
   const lines: string[] = [];
-  // Title
-  lines.push(msg.digestTitle.replace('{{date}}', date));
-  lines.push('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  lines.push('');
 
   // Summary box
   const summaryParts: string[] = [];
@@ -280,11 +280,35 @@ export const buildDigest = internalQuery({
       endTime: e.endTime,
     }));
 
-    // Pick the locale of the first active employee — a group channel has
-    // many members and one message; we render the dominant language rather
-    // than per-row mixed. (Future enhancement: per-user mention pings with
-    // a localized fragment; for now the digest is a single primary locale.)
-    const firstWithLocale = everyone.find((u) => u && userIds.has(u._id));
+    // Approved leave requests covering this date. Without this merge an
+    // approved leave never reached the digest at all — the person kept the
+    // implicit `office` default, so the bot reported "everyone is present"
+    // while someone was legitimately away (the schema documents that a leave
+    // overrides the attendance entry for the same day). Appended AFTER the
+    // explicit entries so the leave wins the by-user map in renderDigest.
+    const approvedLeaves = await ctx.db
+      .query('leaveRequests')
+      .withIndex('by_org_status', (q) =>
+        q.eq('organizationId', args.organizationId).eq('status', 'approved'),
+      )
+      .collect();
+
+    for (const leave of approvedLeaves) {
+      if (!userIds.has(leave.userId)) continue;
+      // ISO yyyy-mm-dd compares correctly as a plain string range check.
+      if (leave.startDate > args.date || args.date > leave.endDate) continue;
+      liteEntries.push({
+        userId: leave.userId,
+        userName: userIdToName.get(leave.userId) ?? 'Unknown',
+        // Sick / doctor leave belongs in the 🤒 section, everything else in 🌴.
+        type: leave.type === 'sick' || leave.type === 'doctor' ? 'sick' : 'leave',
+        note: leave.reason,
+      });
+    }
+
+    // A group channel has many members and one message; we render a single
+    // primary locale rather than per-row mixed. (Future enhancement: per-user
+    // mention pings with a localized fragment.)
     const locale = pickLocale('en'); // single-locale digest for the channel
 
     // Format in the organization's timezone so the "Refreshed at" line
@@ -407,7 +431,6 @@ async function findOrCreateBotUser(
   ctx: { db: import('../_generated/server').DatabaseWriter },
   organizationId: Id<'organizations'>,
 ): Promise<Id<'users'>> {
-  const slug = `bot-${organizationId}`;
   const botEmail = `+hr-assistant-bot@${organizationId}.internal`;
   const existing = await ctx.db
     .query('users')
@@ -585,24 +608,30 @@ export const seedHrAssistantMembers = internalMutation({
 export const runDailyDigest = internalAction({
   args: { date: v.optional(v.string()) },
   handler: async (ctx, args): Promise<{ ok: true; date: string; organizations: number }> => {
-    const date = args.date ?? new Date().toISOString().slice(0, 10);
-    const orgs: Array<Id<'organizations'>> = await ctx.runQuery(
+    const orgs: Array<{ id: Id<'organizations'>; timezone?: string }> = await ctx.runQuery(
       internal.attendance.bot.listActiveOrgs,
     );
-    for (const orgId of orgs) {
+    for (const org of orgs) {
+      // Digest date in the org's own timezone. A plain UTC date lags a day
+      // behind for UTC+ orgs between local midnight and 04:00, so the hourly
+      // dispatcher kept refreshing *yesterday's* digest with a fresh
+      // "Refreshed at" stamp and today's message only appeared at 04:00.
+      const date =
+        args.date ??
+        new Date().toLocaleDateString('en-CA', { timeZone: org.timezone || 'Asia/Yerevan' });
       // Make sure the channel exists and every active employee is a member
       // before posting — the first cron run after a new org provisions the
       // channel; subsequent runs are cheap no-ops.
       await ctx.runMutation(internal.attendance.bot.seedHrAssistantMembers, {
-        organizationId: orgId,
+        organizationId: org.id,
       });
       await ctx.runMutation(internal.attendance.bot.renderAndPostDigest, {
-        organizationId: orgId,
+        organizationId: org.id,
         date,
         trigger: 'cron',
       });
     }
-    return { ok: true, date, organizations: orgs.length };
+    return { ok: true, date: args.date ?? 'per-organization', organizations: orgs.length };
   },
 });
 
@@ -610,6 +639,8 @@ export const listActiveOrgs = internalQuery({
   args: {},
   handler: async (ctx) => {
     const orgs = await ctx.db.query('organizations').collect();
-    return orgs.filter((o) => o.isActive && !o.frozenAt).map((o) => o._id);
+    return orgs
+      .filter((o) => o.isActive && !o.frozenAt)
+      .map((o) => ({ id: o._id, timezone: o.timezone }));
   },
 });

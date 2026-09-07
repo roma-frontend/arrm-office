@@ -355,7 +355,7 @@ export const getUserConsents = query({
 
 export const getOrgConsentStats = query({
   args: {},
-  handler: async (ctx, args) => {
+  handler: async (ctx, _args) => {
     const { orgId } = await requireAdmin(ctx);
     if (!orgId) throw new Error('Admin must belong to an organization');
 
@@ -683,7 +683,7 @@ export const deletePolicy = mutation({
 
 export const getComplianceStats = query({
   args: {},
-  handler: async (ctx, args) => {
+  handler: async (ctx, _args) => {
     const { orgId } = await requireAdmin(ctx);
 
     // Scope all counts by org via by_org indexes when admin is non-superadmin;

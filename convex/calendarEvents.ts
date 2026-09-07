@@ -291,7 +291,7 @@ export const respondToEventInvite = mutation({
       let parsed: { type?: string; eventId?: string } | null = null;
       if (note.metadata) {
         try {
-          parsed = JSON.parse(note.metadata);
+          parsed = JSON.parse(note.metadata) as { type?: string; eventId?: string };
         } catch {
           // Older rows may have stored metadata as a plain string — fall
           // through and skip; no harm done, the user just keeps the badge

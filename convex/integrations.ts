@@ -982,22 +982,6 @@ function safeErrorBody(body: string, config: Record<string, unknown>): string {
   return out;
 }
 
-/**
- * Base64 of a UTF-8 string, for HTTP Basic credentials.
- *
- * `btoa` alone throws on any code point above U+00FF, so an Armenian username
- * or password — entirely normal for an Armenian ERP — would fail the sync
- * before a request was ever made. RFC 7617 §2.1 lets the client pick the
- * charset and names UTF-8 as the one to prefer, so encode to UTF-8 bytes first
- * and hand `btoa` the latin1 view it actually accepts.
- */
-function basicAuthHeader(username: string, password: string): string {
-  const bytes = new TextEncoder().encode(`${username}:${password}`);
-  let latin1 = '';
-  for (const byte of bytes) latin1 += String.fromCharCode(byte);
-  return `Basic ${btoa(latin1)}`;
-}
-
 /** Join a base URL and path without doubling or dropping the separator. */
 function joinUrl(base: string, path: string): string {
   const b = base.replace(/\/+$/, '');
@@ -2710,7 +2694,9 @@ async function syncArmsoft(
     throw new Error(`ՀԾ Armsoft API error (${response.status}): ${body.slice(0, 300)}`);
   }
 
-  const payload = await response.json();
+  // Actions lose the runMutation type bridge, so annotate the batch result the
+  // internal mutation is known to return (see upsertEmployeeBatch).
+  const payload: unknown = await response.json();
   const rows = extractList(payload, config.employeesListKey as string | undefined);
   const { employees, dropped } = normalizeEmployees(rows, config.fieldMap as string | undefined);
 
@@ -2726,11 +2712,11 @@ async function syncArmsoft(
 
   for (let i = 0; i < employees.length; i += UPSERT_BATCH_SIZE) {
     const batch = employees.slice(i, i + UPSERT_BATCH_SIZE);
-    const res = await ctx.runMutation(internal.integrations.upsertEmployeeBatch, {
+    const res = (await ctx.runMutation(internal.integrations.upsertEmployeeBatch, {
       organizationId,
       provider: 'armsoft',
       employees: batch,
-    });
+    })) as { created: number; updated: number; skipped: number; notes: string[] };
     created += res.created;
     updated += res.updated;
     skipped += res.skipped;

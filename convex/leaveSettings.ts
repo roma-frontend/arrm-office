@@ -479,7 +479,9 @@ export const syncAllBalances = mutation({
     let updated = 0;
     for (const emp of filteredEmployees) {
       const patch: Record<string, number> = {};
-      for (const [field, target] of Object.entries(targetBalances)) {
+      // `Object.entries` on a plain interface widens values to `any`; the
+      // balances are all numbers by definition of `StartingLeaveBalances`.
+      for (const [field, target] of Object.entries(targetBalances) as [string, number][]) {
         const current = (emp as unknown as Record<string, number | undefined>)[field] ?? 0;
         if (current !== target) {
           patch[field] = target;

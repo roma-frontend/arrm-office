@@ -199,6 +199,7 @@ export function ProjectTaskGrid({
     if (defaultApplied.current || !savedViews) return;
     defaultApplied.current = true;
     const preset = savedViews.find((candidate) => candidate.isDefault);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- apply the org's default view exactly once, when the saved views first arrive
     if (preset) setView(fromSavedView(preset.state, preset._id));
   }, [savedViews]);
 

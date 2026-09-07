@@ -48,7 +48,9 @@ describe('Footer', () => {
     render(<Footer />);
     expect(screen.getByText('landing.features')).toBeInTheDocument();
     expect(screen.getByText('landing.pricing')).toBeInTheDocument();
-    expect(screen.getByText('auth.signIn')).toBeInTheDocument();
+    // The footer uses the bundled `landing` namespace — the `auth` namespace is
+    // deliberately not loaded on the landing page (raw keys leaked pre-fix).
+    expect(screen.getByText('landingExtra.signIn')).toBeInTheDocument();
     expect(screen.getByText('landingExtra.footerPrivacy')).toBeInTheDocument();
   });
 

@@ -20,7 +20,6 @@ import { motion } from '@/lib/cssMotion';
 import { api } from '@/convex/_generated/api';
 import { useAuthUser } from '@/store/useAuthStore';
 import { formatCurrency } from '@/lib/payrollUtils';
-import { cn } from '@/lib/utils';
 import {
   Wallet,
   TrendingUp,
@@ -107,12 +106,14 @@ export function MyPayrollClient() {
   const [unlocked, setUnlocked] = useState(false);
   useEffect(() => {
     if (typeof window === 'undefined' || !user?.id) return;
+    let cached: string | null = null;
     try {
-      const cached = sessionStorage.getItem('payroll_unlocked_for');
-      setUnlocked(cached === user.id);
+      cached = sessionStorage.getItem('payroll_unlocked_for');
     } catch {
-      setUnlocked(false);
+      /* private mode — treat as locked */
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- restore the per-user unlock flag from sessionStorage after mount
+    setUnlocked(cached === user.id);
   }, [user?.id]);
 
   const summary = useQuery(api.payroll.queries.getMyPayrollSummary, user?.id ? { year } : 'skip');

@@ -40,12 +40,12 @@ export function TemplateListStep({
 }) {
   const { stepData, updateStepData } = useWizardContext();
   const items: TemplateItem[] = (() => {
-    const raw = stepData[field];
-    if (Array.isArray(raw)) return raw;
+    const raw: unknown = stepData[field];
+    if (Array.isArray(raw)) return raw as TemplateItem[];
     if (typeof raw === 'string') {
       try {
-        const parsed = JSON.parse(raw);
-        return Array.isArray(parsed) ? parsed : [];
+        const parsed: unknown = JSON.parse(raw);
+        return Array.isArray(parsed) ? (parsed as TemplateItem[]) : [];
       } catch {
         return [];
       }

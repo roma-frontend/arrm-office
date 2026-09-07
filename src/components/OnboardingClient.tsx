@@ -45,7 +45,6 @@ import {
   Pencil,
   ChevronRight,
   ChevronLeft,
-  BookOpen,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { EmployeeHoverCard } from '@/components/employees/EmployeeHoverCard';

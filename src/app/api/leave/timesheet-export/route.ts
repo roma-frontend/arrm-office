@@ -327,8 +327,6 @@ function thinBorder(argbColor: string): Partial<ExcelJS.Borders> {
 const BASE = 'D1D5DB';
 const ALT = 'EFF6FF';
 const DARK = '1E293B';
-const NAVY = '1E40AF';
-const TOTAL_DARK = '0F172A';
 const WEEKEND = 'FECACA';
 const HOLIDAY = 'FEF3C7';
 const TODAY = 'E0E7FF';
@@ -345,7 +343,6 @@ export async function POST(request: Request) {
       body.lang && body.lang in LANG_HEADERS ? body.lang : 'ru'
     ) as keyof typeof LANG_HEADERS;
     const H = LANG_HEADERS[lang];
-    const TL = TYPE_LABEL[lang] ?? TYPE_LABEL.en;
     const { viewStart, viewEnd, days, rows, filters } = body;
 
     const today = new Date().toISOString().slice(0, 10);

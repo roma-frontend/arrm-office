@@ -92,10 +92,11 @@ function useAuthForConvex() {
   // sees the old token at all.
   const [tokenReady, setTokenReady] = useState(false);
   const prevUserIdForGateRef = useRef(storeUserId);
+  // eslint-disable-next-line react-hooks/refs -- deliberate render-phase identity gate; the block comment above explains why this cannot live in an effect
   if (prevUserIdForGateRef.current !== storeUserId) {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- synchronous gate reset during render
     setTokenReady(false);
   }
+  // eslint-disable-next-line react-hooks/refs -- pairs with the read above; both run during the same render pass
   prevUserIdForGateRef.current = storeUserId;
 
   const fetchAccessToken = useCallback(
@@ -135,7 +136,6 @@ function useAuthForConvex() {
   );
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch the auth token once on mount
     fetchAccessToken({ forceRefreshToken: true });
   }, [fetchAccessToken]);
 

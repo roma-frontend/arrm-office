@@ -676,7 +676,7 @@ export const deleteTask = mutation({
     await assertWritable(ctx, caller, task, 'You can only delete your own tasks');
 
     // Soft-delete: set deletedAt instead of hard delete
-    await ctx.db.patch(args.taskId, { deletedAt: Date.now() } as any);
+    await ctx.db.patch(args.taskId, { deletedAt: Date.now() });
 
     // Audit log: task deleted
     await ctx.db.insert('auditLogs', {
@@ -1643,7 +1643,7 @@ export const secureDeleteTask = mutation({
     }
 
     // Soft-delete instead of hard delete
-    await ctx.db.patch(taskId, { deletedAt: Date.now() } as any);
+    await ctx.db.patch(taskId, { deletedAt: Date.now() });
 
     await ctx.db.insert('auditLogs', {
       organizationId: task.organizationId,
@@ -2126,7 +2126,7 @@ export const bulkDeleteTasks = mutation({
 
     /** Soft-delete the task instead of hard delete. */
     const deleteWithComments = async (id: Id<'tasks'>) => {
-      await ctx.db.patch(id, { deletedAt: Date.now() } as any);
+      await ctx.db.patch(id, { deletedAt: Date.now() });
     };
 
     for (const taskId of args.taskIds) {
@@ -2602,7 +2602,7 @@ export const restoreTask = mutation({
     if (!task.deletedAt) throw new Error('Task is not deleted');
     await assertWritable(ctx, caller, task, 'You can only restore your own tasks');
 
-    await ctx.db.patch(args.taskId, { deletedAt: undefined } as any);
+    await ctx.db.patch(args.taskId, { deletedAt: undefined });
 
     await ctx.db.insert('auditLogs', {
       organizationId: task.organizationId,

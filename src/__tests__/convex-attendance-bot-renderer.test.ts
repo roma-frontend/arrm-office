@@ -39,6 +39,27 @@ describe('renderDigest', () => {
     expect(body).toContain('👥 Total: 3');
   });
 
+  it('lets an approved leave override an attendance entry for the same person', () => {
+    // buildDigest merges approved leaveRequests AFTER the attendance entries,
+    // so the leave must win the by-user map (schema contract: a leave
+    // overrides the attendance entry for the same day). Without that ordering
+    // a person on approved leave read as "office" in the digest.
+    const { body } = renderDigest(
+      '2026-08-30',
+      'en',
+      everyone,
+      [
+        { userId: 'u_anna' as never, userName: 'Anna', type: 'office' },
+        { userId: 'u_anna' as never, userName: 'Anna', type: 'leave', note: 'Family event' },
+      ],
+      '09:00',
+    );
+    expect(body).toContain('🌴 On leave');
+    expect(body).toContain('Family event');
+    // Anna is no longer counted present.
+    expect(body).toContain('✅ Present: 2');
+  });
+
   it('routes explicit entries into their buckets', () => {
     const { body } = renderDigest(
       '2026-08-30',

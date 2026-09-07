@@ -61,6 +61,7 @@ export function TaskSheet({ taskId, onClose, taskTitle, initialEditing }: TaskSh
 
   // Reset edit mode when the task changes or the sheet closes.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- prop-derived reset: editing mode must follow the task the sheet is open for
     setEditingId(initialEditing && taskId ? taskId : null);
   }, [taskId, initialEditing]);
 

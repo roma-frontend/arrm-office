@@ -1,4 +1,5 @@
 import nextDynamic from 'next/dynamic';
+import { requireRoles } from '@/lib/server-auth';
 
 const RecruitmentClient = nextDynamic(() => import('@/components/RecruitmentClient'), {
   loading: () => (
@@ -11,6 +12,9 @@ const RecruitmentClient = nextDynamic(() => import('@/components/RecruitmentClie
   ),
 });
 
-export default function RecruitmentPage() {
+export default async function RecruitmentPage() {
+  // Mirrors nav.ts: the recruitment pipeline is supervisor+ only. Employees
+  // keep access to the Talent section's other leaf, /learning.
+  await requireRoles(['superadmin', 'admin', 'supervisor']);
   return <RecruitmentClient />;
 }

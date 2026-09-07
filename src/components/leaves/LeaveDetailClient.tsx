@@ -24,6 +24,7 @@ import {
   Trash2,
   Pencil,
   FileSignature,
+  Eye,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { enUS, ru, hy } from 'date-fns/locale';
@@ -487,7 +488,10 @@ export default function LeaveDetailClient({
           </CardHeader>
           <CardContent className="space-y-3">
             {leaveDocs?.leaveRequestDocument && (
-              <div className="flex items-center justify-between rounded-lg border p-3">
+              <div
+                className="flex items-center justify-between rounded-lg border p-3 cursor-pointer hover:bg-(--background-subtle) transition-colors"
+                onClick={() => setSignDocId(leaveDocs.leaveRequestDocument!.id)}
+              >
                 <div className="flex items-center gap-3">
                   <FileText className="h-4 w-4 text-muted-foreground" />
                   <div>
@@ -499,6 +503,22 @@ export default function LeaveDetailClient({
                 </div>
                 <div className="flex items-center gap-2">
                   <DocumentStatusBadge status={leaveDocs.leaveRequestDocument.status} />
+                  {/* View — every status. The sign sheet doubles as the viewer:
+                      for completed documents it shows the preview, signers,
+                      audit log and PDF export, without the signing pad. */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2"
+                    title={t('common.view', 'View')}
+                    aria-label={t('common.view', 'View')}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSignDocId(leaveDocs.leaveRequestDocument!.id);
+                    }}
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
                   {(leaveDocs.leaveRequestDocument.status === 'pending' ||
                     leaveDocs.leaveRequestDocument.status === 'draft') && (
                     <Button
@@ -514,7 +534,10 @@ export default function LeaveDetailClient({
               </div>
             )}
             {leaveDocs?.leaveOrderDocument && (
-              <div className="flex items-center justify-between rounded-lg border p-3">
+              <div
+                className="flex items-center justify-between rounded-lg border p-3 cursor-pointer hover:bg-(--background-subtle) transition-colors"
+                onClick={() => setSignDocId(leaveDocs.leaveOrderDocument!.id)}
+              >
                 <div className="flex items-center gap-3">
                   <FileText className="h-4 w-4 text-muted-foreground" />
                   <div>
@@ -529,6 +552,20 @@ export default function LeaveDetailClient({
                 </div>
                 <div className="flex items-center gap-2">
                   <DocumentStatusBadge status={leaveDocs.leaveOrderDocument.status} />
+                  {/* View — every status; see the request-document row above. */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2"
+                    title={t('common.view', 'View')}
+                    aria-label={t('common.view', 'View')}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSignDocId(leaveDocs.leaveOrderDocument!.id);
+                    }}
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
                   {(leaveDocs.leaveOrderDocument.status === 'pending' ||
                     leaveDocs.leaveOrderDocument.status === 'draft') && (
                     <Button

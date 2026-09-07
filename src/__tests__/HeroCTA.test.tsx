@@ -58,13 +58,16 @@ beforeEach(() => {
 });
 
 describe('HeroCTA', () => {
-  it('renders the get-started and sign-in links for guests', () => {
+  it('renders the get-started and watch-demo links for guests', () => {
     render(<HeroCTA />);
     expect(screen.getByText('landing.getStartedFree').closest('a')).toHaveAttribute(
       'href',
       '/register',
     );
-    expect(screen.getByText('landing.signIn').closest('a')).toHaveAttribute('href', '/login');
+    // Secondary CTA points at the scroll-story product tour instead of /login
+    // (sign-in stays available in the navbar; the hero spends its second slot
+    // on a low-friction CTA).
+    expect(screen.getByText('landing.watchDemo').closest('a')).toHaveAttribute('href', '/#story');
   });
 
   it('uses the server language before mount via getFixedT', () => {

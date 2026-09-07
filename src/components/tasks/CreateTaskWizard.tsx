@@ -700,7 +700,11 @@ export function CreateTaskWizard({
           subtaskTemplates: (() => {
             try {
               const raw = typeof data.subtaskTemplates === 'string' ? data.subtaskTemplates : '[]';
-              const arr = JSON.parse(raw);
+              const arr = JSON.parse(raw) as Array<{
+                title: string;
+                priority?: 'low' | 'medium' | 'high' | 'urgent';
+                assigneeId?: Id<'users'>;
+              }>;
               return Array.isArray(arr) && arr.length > 0 ? arr : undefined;
             } catch {
               return undefined;
@@ -710,7 +714,7 @@ export function CreateTaskWizard({
             try {
               const raw =
                 typeof data.checklistTemplates === 'string' ? data.checklistTemplates : '[]';
-              const arr = JSON.parse(raw);
+              const arr = JSON.parse(raw) as Array<{ title: string }>;
               return Array.isArray(arr) && arr.length > 0 ? arr : undefined;
             } catch {
               return undefined;

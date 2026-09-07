@@ -930,8 +930,19 @@ describe('ChatWindow', () => {
     fireEvent.scroll(parent);
 
     expect(screen.getByTitle('chat.scrollToBottom')).toBeInTheDocument();
+    // The scroll-down button now uses glideToBottom (rAF-driven, re-reading
+    // the scroll target every frame to survive virtualizer re-measures).
+    // Fast-forward every frame so the glide + settle loop completes
+    // synchronously, then assert the list landed on the true bottom.
+    const rafMock = jest.spyOn(window, 'requestAnimationFrame').mockImplementation(((
+      cb: FrameRequestCallback,
+    ) => {
+      cb(performance.now() + 5000);
+      return 1;
+    }) as unknown as typeof requestAnimationFrame);
     fireEvent.click(screen.getByTitle('chat.scrollToBottom'));
-    expect((HTMLElement.prototype as any).scrollIntoView).toHaveBeenCalled();
+    expect(parent.scrollTop).toBe(600); // scrollHeight 1000 − clientHeight 400
+    rafMock.mockRestore();
   });
 
   // ── Typing indicator / read-only channel ───────────────────────────────

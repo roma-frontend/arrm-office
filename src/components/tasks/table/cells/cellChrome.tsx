@@ -271,6 +271,7 @@ export function useTypedCell(opts: {
   useEffect(() => {
     if (!editing) {
       committedRef.current = initial;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset the draft when the editor closes, so a fresh open starts from the committed value
       setDraft(initial);
     }
   }, [initial, editing]);

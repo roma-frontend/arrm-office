@@ -1,4 +1,5 @@
 import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 import { verifyJWT, type JWTPayload } from '@/lib/jwt';
 import { auth } from '@/auth';
 import { resolveConvexUserIdByEmail } from '@/lib/convex-server-query';
@@ -43,4 +44,21 @@ export async function getServerUser(): Promise<JWTPayload | null> {
   }
 
   return null;
+}
+
+/**
+ * Page-level role gate for React Server Components.
+ *
+ * The sidebar's `roles` arrays (`src/lib/nav.ts`) only hide links — they don't
+ * stop anyone from typing a URL. Pages that nav restricts by role must call
+ * this first so a forbidden route redirects instead of rendering.
+ *
+ * Same layering as the audit page: this redirect is UX; the Convex queries the
+ * page triggers remain the real authorization boundary.
+ */
+export async function requireRoles(allowed: readonly JWTPayload['role'][]): Promise<JWTPayload> {
+  const user = await getServerUser();
+  if (!user) redirect('/login');
+  if (!allowed.includes(user.role)) redirect('/dashboard');
+  return user;
 }

@@ -1313,6 +1313,73 @@ body {
    screen replays its choreography from scratch on entry.
    ═══════════════════════════════════════════════════════════════ */
 
+/* Pointer spotlight on the demo frame — a soft brand-tinted sheen that
+   follows the cursor. Position comes from --spot-x/--spot-y written by
+   HeroDemo's pointer listener (no React state); --spot-opacity eases it in
+   and out. Mouse-only (listener gates on `pointer: fine`), never animates
+   under reduced motion, and costs nothing on touch devices. */
+.hero-demo-frame {
+  --spot-x: 50%;
+  --spot-y: 0%;
+  --spot-opacity: 0;
+}
+
+.hero-spotlight {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: var(--spot-opacity);
+  transition: opacity 0.4s ease;
+  background: radial-gradient(
+    480px circle at var(--spot-x) var(--spot-y),
+    rgb(var(--brand-600-ch) / 7%),
+    transparent 65%
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-spotlight {
+    display: none;
+  }
+}
+
+/* Gradient border glow on the demo frame — the "aurora edge". A 1px ring is
+   painted with the mask-composite trick just inside the frame's solid border:
+   brand-tinted at the diagonal corners, melting into the neutral border color
+   between, so the edge reads as one border that shifts hue. Static (no
+   animation → nothing to opt out of under reduced motion) and pointer-events-
+   free. Guarded by @supports so browsers without mask-composite simply keep
+   the clean solid border. A faint brand-tinted outer halo (inline box-shadow
+   in HeroDemo.tsx) completes the glow. */
+@supports (mask-composite: exclude) or (-webkit-mask-composite: xor) {
+  .hero-demo-frame::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+      135deg,
+      rgb(var(--brand-600-ch) / 62%) 0%,
+      rgb(var(--brand-600-ch) / 16%) 24%,
+      var(--landing-card-border) 52%,
+      rgb(var(--brand-600-ch) / 28%) 80%,
+      rgb(var(--brand-600-ch) / 55%) 100%
+    );
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+}
+
 /* Pop-in for stat cards / chips / rows — staggered via inline delay */
 @keyframes demo-pop {
   from {
@@ -1710,6 +1777,11 @@ body {
   background-image: var(--primary-gradient);
   color: var(--brand-contrast);
   box-shadow: var(--inner-highlight), var(--elev-brand);
+  /* Clip + stacking context for the ::after shine sweep (below). overflow does
+     not clip the element's own focus outline. */
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
   transition:
     box-shadow var(--dur-base) var(--ease-spark),
     filter var(--dur-hover) var(--ease-spark),
@@ -1747,6 +1819,57 @@ body {
   cursor: not-allowed;
   filter: none;
   box-shadow: none;
+}
+
+/* One-shot shine sweep — a narrow, soft white band crosses the primary CTA
+   every ~7s (3.5s initial delay), a premium touch that draws the eye to the
+   main conversion action without motion noise. Runs only on hover-capable
+   devices and is removed entirely under reduced motion. */
+.cta-btn-primary::after {
+  content: '';
+  position: absolute;
+  top: -20%;
+  bottom: -20%;
+  left: -30%;
+  width: 34%;
+  transform: skewX(-18deg) translateX(0);
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 22%), transparent);
+  filter: blur(3px);
+  animation: cta-shine 7s ease-in-out 3.5s infinite;
+  pointer-events: none;
+}
+
+@keyframes cta-shine {
+  0% {
+    transform: skewX(-18deg) translateX(0);
+    opacity: 0;
+  }
+
+  8% {
+    opacity: 1;
+  }
+
+  38% {
+    opacity: 1;
+  }
+
+  46%,
+  100% {
+    transform: skewX(-18deg) translateX(560%);
+    opacity: 0;
+  }
+}
+
+@media (hover: none) {
+  .cta-btn-primary::after {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cta-btn-primary::after {
+    display: none;
+  }
 }
 
 /* Secondary CTA — quiet brand surface, no blur. Backdrop-filter on a button
@@ -2690,6 +2813,17 @@ input[type='date']:focus {
   animation-delay: -5s;
   will-change: transform;
   backface-visibility: hidden;
+}
+
+/* Mobile calm-down: on small screens the three blurred orbs sit behind less
+   whitespace and compete with the headline + demo; halve their presence
+   below md so the type carries the section. */
+@media (max-width: 767px) {
+  .mesh-orb-1,
+  .mesh-orb-2,
+  .mesh-orb-3 {
+    opacity: 0.55;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════

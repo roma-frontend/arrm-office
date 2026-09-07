@@ -524,8 +524,13 @@ export default function ActivityFeed({ limit = 8, showViewAll = true }: Activity
     user?.id && canViewAuditLogs ? {} : 'skip',
   ) as AuditLogEntry[] | undefined;
 
-  // When the query is skipped (non-admin users), treat as empty rather than loading forever
-  const effectiveAuditLogs = canViewAuditLogs ? auditLogs : [];
+  // When the query is skipped (non-admin users), treat as empty rather than loading forever.
+  // Memoized so non-admins get a stable reference — the derived-activities useMemo
+  // below would otherwise see a fresh [] every render.
+  const effectiveAuditLogs = React.useMemo(
+    () => (canViewAuditLogs ? auditLogs : []),
+    [canViewAuditLogs, auditLogs],
+  );
 
   const [loadTimedOut, setLoadTimedOut] = React.useState(false);
   React.useEffect(() => {

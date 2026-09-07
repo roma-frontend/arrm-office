@@ -165,7 +165,7 @@ export function LeaveSignDocumentSheet({
             signerName: r.signerName,
             signedAt: r.signedAt,
           })),
-        } as any,
+        },
         {
           signature: t('docLibrary.signature', 'Signature'),
           name: t('docLibrary.nameLabel', 'Name'),
@@ -183,15 +183,6 @@ export function LeaveSignDocumentSheet({
     } catch {
       toast.error(t('signatures.errors.exportFailed', 'Failed to export PDF'));
     }
-  };
-
-  const statusColor: Record<string, string> = {
-    pending: 'bg-(--warning-quiet) text-(--warning-text)',
-    signed: 'bg-(--success-quiet) text-(--success-text)',
-    completed: 'bg-(--success-quiet) text-(--success-text)',
-    partially_signed: 'bg-blue-50 text-blue-700',
-    declined: 'bg-(--danger-quiet) text-(--danger-text)',
-    expired: 'bg-(--surface-3) text-(--text-2)',
   };
 
   const requestStatusColor: Record<string, string> = {
@@ -253,7 +244,7 @@ export function LeaveSignDocumentSheet({
                           signerName: r.signerName,
                           signedAt: r.signedAt,
                         })),
-                      } as any,
+                      },
                       {
                         signature: t('docLibrary.signature', 'Signature'),
                         name: t('docLibrary.nameLabel', 'Name'),
@@ -354,6 +345,7 @@ export function LeaveSignDocumentSheet({
                   ) : signatureData ? (
                     <div className="space-y-2">
                       <div className="border rounded-lg p-3 bg-white flex justify-center">
+                        {/* eslint-disable-next-line @next/next/no-img-element -- live data-URL preview of the just-drawn signature; next/image adds nothing for a blob */}
                         <img src={signatureData} alt="Signature" className="max-h-[80px]" />
                       </div>
                       <Button variant="outline" size="sm" onClick={() => setSignatureData(null)}>

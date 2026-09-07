@@ -24,7 +24,6 @@ import {
   FileText,
   DollarSign,
   TrendingUp,
-  TrendingDown,
   Minus,
 } from 'lucide-react';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
@@ -263,7 +262,7 @@ export default function EmployeeProfileDetail({
         profile.profile.socialCardNumber ||
         profile.profile.nationality)) ||
     // SSN and health insurance are on the employee object, not the profile
-    (canViewSensitive && ((employee as any)?.nationalId || (employee as any)?.healthInsured)),
+    (canViewSensitive && (employee?.nationalId || employee?.healthInsured)),
   );
   const hasBiography = Boolean(biography?.skills?.length || biography?.languages?.length);
 
@@ -573,7 +572,7 @@ export default function EmployeeProfileDetail({
                       ? [
                           {
                             label: t('employees.nationalId', 'ՀԾՀ (National ID)'),
-                            value: (employee as any)?.nationalId,
+                            value: employee?.nationalId,
                           },
                         ]
                       : []),
@@ -594,14 +593,12 @@ export default function EmployeeProfileDetail({
                       <div className="flex items-center gap-2">
                         <span
                           className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
-                            (employee as any)?.healthInsured
+                            employee?.healthInsured
                               ? 'bg-(--success-quiet) text-(--success-text) border border-(--success-outline)'
                               : 'bg-(--background-subtle) text-(--text-muted) border border-(--border)'
                           }`}
                         >
-                          {(employee as any)?.healthInsured
-                            ? t('common.yes', 'Yes')
-                            : t('common.no', 'No')}
+                          {employee?.healthInsured ? t('common.yes', 'Yes') : t('common.no', 'No')}
                         </span>
                       </div>
                     </div>

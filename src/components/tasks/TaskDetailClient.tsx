@@ -907,7 +907,11 @@ function ActivityFeed({ taskId }: { taskId: string }) {
             let details = '';
             try {
               if (log.details) {
-                const parsed = JSON.parse(log.details);
+                const parsed = JSON.parse(log.details) as {
+                  title?: string;
+                  status?: string;
+                  oldStatus?: string;
+                };
                 if (parsed.title) details = parsed.title;
                 else if (parsed.status) details = `${parsed.oldStatus || ''} → ${parsed.status}`;
               }

@@ -145,15 +145,18 @@ export default function HeroCTA({ initialLanguage = 'en' }: { initialLanguage?: 
           <ArrowRightIcon />
         </Button>
       </Link>
-      <Link href="/login">
+      {/* Watch the demo — a low-friction secondary CTA. The scroll-story
+          section ("How it works") doubles as the product tour; existing users
+          reach sign-in from the navbar, so the hero doesn't spend its
+          second slot duplicating it. */}
+      <Link href="/#story">
         <Button
           variant="ctaSecondary"
           size="2xl"
           className="gap-3"
-          aria-label={text('landing.signIn', 'Sign In')}
+          aria-label={text('landing.watchDemo', 'Watch Demo')}
         >
-          {text('landing.signIn', 'Sign In')}
-          <ArrowRightIcon />
+          {text('landing.watchDemo', 'Watch Demo')}
         </Button>
       </Link>
     </div>

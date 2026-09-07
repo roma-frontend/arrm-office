@@ -55,7 +55,6 @@ import {
   Minimize2,
   Filter,
   RotateCcw,
-  Download,
   FileSpreadsheet,
   Users,
   Plane,
@@ -779,55 +778,6 @@ export function TimeOffCalendar({
     setOnlyWithLeave(false);
   };
 
-  // ── CSV export (the accounting deliverable) ──────────────────────────────
-  const exportCsv = useCallback(() => {
-    const sep = ';';
-    const q = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-    const dateHeaders = visibleDays.map((d) => format(d.date, 'dd.MM'));
-    const typeCols = ALL_LEAVE_TYPES.filter((ty) => rows.some((r) => r.byType.get(ty)));
-
-    const header = [
-      t('timesheet.employee'),
-      t('timesheet.position'),
-      t('timesheet.department'),
-      ...dateHeaders,
-      t('timesheet.totalDays'),
-      ...typeCols.map((ty) => typeLabel(ty)),
-    ]
-      .map(q)
-      .join(sep);
-
-    const lines = rows.map((r) => {
-      const cells = visibleDays.map((d) => {
-        const covering = r.leaves
-          .filter((l) => l.startDate <= d.ds && l.endDate >= d.ds && l.status !== 'rejected')
-          .sort((a) => (a.status === 'pending' ? 1 : -1));
-        const cov = covering[0];
-        if (!cov) return '';
-        return cov.status === 'pending' ? `${cov.type}?` : cov.type;
-      });
-      return [
-        r.emp.name,
-        r.emp.position ?? '',
-        r.emp.department ?? '',
-        ...cells,
-        String(r.approvedDays + r.pendingDays),
-        ...typeCols.map((ty) => String(r.byType.get(ty) ?? 0)),
-      ]
-        .map(q)
-        .join(sep);
-    });
-
-    const csv = '\uFEFF' + [header, ...lines, '', q(t('timesheet.exportLegend'))].join('\r\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `timesheet_${viewStart}_${viewEnd}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }, [rows, visibleDays, viewStart, viewEnd, t, typeLabel]);
-
   // ── Excel export (server-side, via API) ──────────────────────────────────
   const exportExcel = useCallback(async () => {
     try {
@@ -911,20 +861,6 @@ export function TimeOffCalendar({
       const a = 'FF';
       return a + full;
     };
-    const darken = (hex: string, amount = 0.7): string => {
-      const h = hex.replace('#', '');
-      const full =
-        h.length === 3
-          ? h
-              .split('')
-              .map((c) => c + c)
-              .join('')
-          : h;
-      const r = Math.max(0, Math.min(255, Math.round(parseInt(full.slice(0, 2), 16) * amount)));
-      const g = Math.max(0, Math.min(255, Math.round(parseInt(full.slice(2, 4), 16) * amount)));
-      const b = Math.max(0, Math.min(255, Math.round(parseInt(full.slice(4, 6), 16) * amount)));
-      return '#' + [r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('');
-    };
     const mix = (hex: string, withHex: string, t: number): string => {
       const a = hex.replace('#', '');
       const b = withHex.replace('#', '');
@@ -981,7 +917,6 @@ export function TimeOffCalendar({
     // KPI cards
     const totalEmp = rows.length;
     const totalAbsenceDays = rows.reduce((acc, r) => acc + r.approvedDays + r.pendingDays, 0);
-    const totalApproved = rows.reduce((acc, r) => acc + r.approvedDays, 0);
     const totalPending = rows.reduce((acc, r) => acc + r.pendingDays, 0);
     const todayAbsentees = rows.filter((r) => r.onLeaveToday).length;
     const onLeaveByType = new Map<string, number>();
@@ -1182,7 +1117,6 @@ export function TimeOffCalendar({
     ws.getRow(1).height = 22;
 
     // Row 2: weekday short names
-    const weekday = parseISO(visibleDays[0]?.ds ?? viewStart);
     const wkLocale =
       i18n.language === 'ru'
         ? ru
@@ -1593,7 +1527,6 @@ export function TimeOffCalendar({
       const isAlt = i % 2 === 1;
       const l = f.leave;
       const days = overlapDays(l.startDate, l.endDate, viewStart, viewEnd);
-      const tc = typeColor(l.type);
       const st = meta(l.status);
       const fill = {
         type: 'pattern' as const,
@@ -1816,7 +1749,6 @@ export function TimeOffCalendar({
           inRange.reduce((s, l) => s + overlapDays(l.startDate, l.endDate, viewStart, viewEnd), 0)
         );
       }, 0);
-      const tc = typeColor(ty);
       const isAlt = i % 2 === 1;
       const rowFill = isAlt ? 'FFF1F5F9' : 'FFFAFBFC';
 
@@ -1944,7 +1876,6 @@ export function TimeOffCalendar({
         const bar = '█'.repeat(filled) + '░'.repeat(Math.max(0, barMax - filled));
         const cell = byType.getCell(xlRow, 3);
         cell.value = `${bar} ${days}`;
-        const tc2 = typeColor(ty);
         cell.font = { name: 'Consolas', size: 10, color: { argb: hexToArgb(pastelFg(ty)) } };
         cell.alignment = { vertical: 'middle' };
         cell.fill = {
@@ -2213,7 +2144,6 @@ export function TimeOffCalendar({
     viewEnd,
     t,
     typeLabel,
-    typeColor,
     search,
     statusSet,
     typeSet,
@@ -2222,8 +2152,6 @@ export function TimeOffCalendar({
     levelFilter,
     empTypeFilter,
     onlyWithLeave,
-    overlapDays,
-    prettifyType,
   ]);
 
   // ── Render helpers ───────────────────────────────────────────────────────

@@ -85,7 +85,7 @@ export function generateSimplePdfBase64(title: string, body: string): string {
 
   // Obj 2: Pages
   const pageRefs = pages.map((_, i) => `${3 + i} 0 R`).join(' ');
-  const pagesIdx = addObject(`<</Type /Pages /Kids [${pageRefs}] /Count ${pages.length}>>`);
+  addObject(`<</Type /Pages /Kids [${pageRefs}] /Count ${pages.length}>>`);
 
   // Obj 3+: Page objects + content streams
   const contentObjIndices: number[] = [];
@@ -93,7 +93,7 @@ export function generateSimplePdfBase64(title: string, body: string): string {
     const contentIdx = 3 + pages.length + p;
     contentObjIndices.push(contentIdx);
 
-    const pageIdx = addObject(
+    addObject(
       `<</Type /Page /Parent 2 0 R /MediaBox [0 0 ${PAGE_W} ${PAGE_H}] /Contents ${contentIdx} 0 R /Resources <</Font <</F1 3 + pages.length * 2 0 R /F2 3 + pages.length * 2 + 1 0 R>>>>>>`,
     );
   }

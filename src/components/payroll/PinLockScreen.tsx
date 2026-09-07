@@ -69,6 +69,7 @@ export function PinLockScreen({
         }
         onUnlock();
       } else {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- PIN auto-submit runs from the digits effect; surfacing the error immediately is the point
         setError(
           t('payroll.myPayroll.pinWrong', {
             defaultValue: 'That code does not match. Try again.',

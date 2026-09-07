@@ -67,7 +67,6 @@ export function TaskContextMenu({
   canManage,
   onOpen,
   onEdit,
-  onRename,
   onSetStatus,
   onSetPriority,
   onDuplicate,

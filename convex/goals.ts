@@ -730,7 +730,7 @@ export const getRevieweeObjectivesWithReviews = query({
       caller.organizationId === args.organizationId;
     if (!isSelf && !isSuper && !isStaff) return null;
 
-    const { organizationId, userId, periodStart, periodEnd } = args;
+    const { userId, periodStart, periodEnd } = args;
 
     // Get all objectives owned by this user
     const objectives = await ctx.db

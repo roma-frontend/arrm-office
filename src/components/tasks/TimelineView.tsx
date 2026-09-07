@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useNow } from '@/hooks/useNow';
 import { useTranslation } from 'react-i18next';
 import { Calendar, AlertTriangle, CheckCircle2, Clock, Circle } from 'lucide-react';
-import { TaskContextMenu } from './TaskContextMenu';
+import { TaskContextMenu, type ContextTask } from './TaskContextMenu';
 
 // ── Types ──
 type Status = 'pending' | 'in_progress' | 'review' | 'completed' | 'cancelled';
@@ -32,12 +32,12 @@ interface TimelineViewProps {
   /** Context menu handlers — when provided, each task gets a right-click menu. */
   contextMenu?: {
     canManage: boolean;
-    onEdit: (task: any) => void;
-    onRename?: (task: any) => void;
+    onEdit: (task: ContextTask) => void;
+    onRename?: (task: ContextTask) => void;
     onSetStatus: (taskId: string, statusKey: string) => void;
     onSetPriority: (taskId: string, priority: string) => void;
-    onDelete: (task: any) => void;
-    onToggleActive?: (task: any) => void;
+    onDelete: (task: ContextTask) => void;
+    onToggleActive?: (task: ContextTask) => void;
   };
 }
 
@@ -382,9 +382,9 @@ export default function TimelineView({ tasks, onOpen, contextMenu }: TimelineVie
               sortedTasks.map((task, _idx) => (
                 <TaskContextMenu
                   key={task._id}
-                  task={task as any}
+                  task={task as ContextTask}
                   canManage={contextMenu?.canManage ?? false}
-                  onOpen={(t) => onOpen(t as any)}
+                  onOpen={(t) => onOpen(t as unknown as Task)}
                   onEdit={contextMenu?.onEdit ?? (() => {})}
                   onRename={contextMenu?.onRename}
                   onSetStatus={contextMenu?.onSetStatus ?? (() => {})}

@@ -54,8 +54,11 @@ export default function Footer({ initialLanguage = 'en' }: { initialLanguage?: s
       { nameKey: 'nav.recruitment', href: '/careers' },
     ],
     account: [
-      { nameKey: 'auth.signIn', href: '/login' },
-      { nameKey: 'auth.register', href: '/register' },
+      // landingExtra.* on purpose: the `auth` namespace is NOT bundled on the
+      // landing page (see i18n/config.ts — only common + landing ship), so
+      // auth.* keys here rendered as raw keys for most visitors.
+      { nameKey: 'landingExtra.signIn', href: '/login' },
+      { nameKey: 'landingExtra.register', href: '/register' },
       { nameKey: 'nav.settings', href: '/login', authHref: '/settings' },
       { nameKey: 'nav.help', href: '#faq' },
     ],
@@ -93,7 +96,7 @@ export default function Footer({ initialLanguage = 'en' }: { initialLanguage?: s
             <Link
               href="/"
               className="flex items-center gap-3 mb-4 group"
-              title={t('auth.logoTooltip')}
+              title={t('landingExtra.logoTooltip')}
             >
               <div
                 className="w-10 h-10 rounded-xl flex items-center justify-center"

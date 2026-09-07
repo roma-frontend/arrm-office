@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next';
 import { useQuery, usePaginatedQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useAuthStore } from '@/store/useAuthStore';
-import type { Id } from '@/convex/_generated/dataModel';
 import {
   Shield,
   ShieldCheck,

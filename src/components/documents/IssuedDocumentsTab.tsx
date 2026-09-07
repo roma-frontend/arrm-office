@@ -61,7 +61,6 @@ import {
 
 // Re-exported for existing consumers (tests, catalog tooling).
 export { blockText, blockKind };
-import { useAuthStore } from '@/store/useAuthStore';
 import { uploadDocument } from '@/actions/cloudinary';
 import {
   LOCALE_CAPTIONS,
@@ -74,7 +73,6 @@ import {
   exportDocumentToPDF,
   exportEditableDocx,
   isBlockBody,
-  type DocumentBlock,
   type RenderableDocument,
 } from '@/lib/exportDocument';
 import { DocxImportError, parseEditableDocx } from '@/lib/docxRoundTrip';

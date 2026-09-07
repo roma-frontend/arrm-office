@@ -9,7 +9,7 @@
  *   3. Preview resolved content and create
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '../../../convex/_generated/api';
@@ -29,7 +29,6 @@ import { WizardStepper } from '@/components/ui/wizard-stepper';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -38,18 +37,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
-import {
-  FileText,
-  ChevronLeft,
-  ChevronRight,
-  CheckCircle,
-  User,
-  Calendar,
-  Pen,
-} from 'lucide-react';
+import { FileText, ChevronLeft, ChevronRight, CheckCircle, User, Pen } from 'lucide-react';
 import { toast } from 'sonner';
-import { ShieldLoader } from '@/components/ui/ShieldLoader';
 import { uploadDocument } from '@/actions/cloudinary';
 import { resolveTokens, type MergeSourceData } from '@/lib/documentTokens';
 import {
@@ -193,7 +182,9 @@ export default function DocumentTemplateUseWizard({
       const renderable: RenderableDocument = {
         title: resolvedTitle,
         body: resolvedContent,
-        accent: (templateData as any).accent ?? 'blue',
+        // Templates carry no accent of their own (only sent documents do), so
+        // the default theme applies — this read was always 'blue' in practice.
+        accent: 'blue',
         signature: false,
         orgName: mergeSource.organization.name ?? '',
         now: Date.now(),

@@ -209,7 +209,9 @@ export default function Navbar({ embedded = false }: { embedded?: boolean }) {
         <Link
           href="/"
           className="relative flex items-center gap-3 group"
-          title={t('auth.logoTooltip')}
+          // landingExtra (bundled) — the auth namespace isn't loaded on the
+          // landing page, so auth.* showed as a raw key in the hover tooltip.
+          title={t('landingExtra.logoTooltip')}
         >
           <div
             className="w-10 h-10 rounded-xl flex items-center justify-center logo-spin"

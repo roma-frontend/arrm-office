@@ -26,12 +26,10 @@ const ARMENIA_INCOME_TAX_RATE = 0.2;
 const ARMENIA_PENSION_LOW_RATE = 0.05;
 const ARMENIA_PENSION_LOW_MAX_GROSS = 500_000;
 const ARMENIA_PENSION_HIGH_RATE = 0.1;
-const ARMENIA_PENSION_HIGH_CAP = 1_125_000;
 const ARMENIA_PENSION_HIGH_OFFSET = 25_000;
 const ARMENIA_MILITARY_LOW_FIXED = 1_000;
 const ARMENIA_MILITARY_LOW_MAX_GROSS = 1_000_000;
 const ARMENIA_MILITARY_HIGH_FIXED = 15_000;
-const ARMENIA_MILITARY_HIGH_MIN_GROSS = 1_000_000;
 
 // Medical insurance tiers (Armenia)
 const HEALTH_INSURANCE_TIERS = [
@@ -59,7 +57,7 @@ interface PayrollRecordData {
   deductions?: Deductions;
   employerContributions?: number;
   totalCost?: number;
-  currency: string;
+  currency?: string;
   taxCountry: string;
   status: string;
 }

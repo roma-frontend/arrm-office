@@ -106,6 +106,7 @@ export const ChatWindow = React.memo(function ChatWindow({
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesParentRef = useRef<HTMLDivElement>(null);
+  const scrollAnimRef = useRef<number | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [showScrollDown, setShowScrollDown] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -230,20 +231,99 @@ export const ChatWindow = React.memo(function ChatWindow({
     return;
   }, [conversationId, markAsRead, currentUserId]);
 
+  /**
+   * Glide the message list to the newest message.
+   *
+   * The list is virtualized with estimated row heights (100px), and the real
+   * heights — avatars, attachments, the tall daily-digest card — settle in
+   * over the first frames. A one-shot scrollIntoView computes its target once
+   * and stops wherever the layout happened to be when the animation ended,
+   * which read as "scrolls to some part and never reaches the end". This
+   * glide re-reads the scroll target on every frame and then holds a short
+   * settle window, nudging to the true bottom until the layout is stable.
+   * Reduced-motion users get an instant snap instead of the glide.
+   */
+  const glideToBottom = useCallback((behavior: 'smooth' | 'instant' = 'smooth') => {
+    const parent = messagesParentRef.current;
+    if (!parent) return;
+    if (scrollAnimRef.current !== null) cancelAnimationFrame(scrollAnimRef.current);
+
+    const reducedMotion =
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const snap = () => {
+      parent.scrollTop = parent.scrollHeight;
+    };
+
+    if (behavior === 'instant' || reducedMotion) {
+      snap();
+      return;
+    }
+
+    const duration = 650;
+    const startTime = performance.now();
+    const from = parent.scrollTop;
+    let settleFrames = 0;
+
+    const step = (now: number) => {
+      const target = parent.scrollHeight - parent.clientHeight;
+      const p = Math.min(1, (now - startTime) / duration);
+      const eased = 1 - Math.pow(1 - p, 3);
+      parent.scrollTop = from + (target - from) * eased;
+
+      if (p < 1) {
+        // Mid-glide: re-read the target every frame so rows measured while we
+        // travel (virtualizer estimates → real heights) are captured.
+        scrollAnimRef.current = requestAnimationFrame(step);
+        return;
+      }
+
+      // Glide finished. Late layout growth would leave us behind the real
+      // end — nudge to the bottom and hold until the height stays stable
+      // (~200ms), with a hard 3s cap so a pathological layout can't spin it.
+      const atEnd = parent.scrollTop >= target - 1;
+      if (atEnd) {
+        settleFrames++;
+      } else {
+        settleFrames = 0;
+        parent.scrollTop = target;
+      }
+      if (settleFrames >= 12 || now - startTime > 3000) {
+        scrollAnimRef.current = null;
+        return;
+      }
+      scrollAnimRef.current = requestAnimationFrame(step);
+    };
+    scrollAnimRef.current = requestAnimationFrame(step);
+  }, []);
+
   useEffect(() => {
     if (allMessages === undefined) return;
     const count = allMessages.filter(Boolean).length;
     if (isFirstLoadRef.current) {
-      // First load: jump instantly to bottom, no animation
-      messagesEndRef.current?.scrollIntoView({ behavior: 'instant' as ScrollBehavior });
+      // Opening a conversation glides down to the latest message — the daily
+      // attendance digest sits at the bottom of the HR Assistant channel, so
+      // the glide doubles as a "here is today's list" cue.
+      glideToBottom('smooth');
       isFirstLoadRef.current = false;
       prevMsgCountRef.current = count;
     } else if (count > prevMsgCountRef.current) {
-      // New message arrived: smooth scroll
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      // New message arrived: glide down too
+      glideToBottom('smooth');
       prevMsgCountRef.current = count;
     }
-  }, [allMessages]);
+  }, [allMessages, glideToBottom]);
+
+  // Cancel any in-flight glide on unmount (the window remounts per
+  // conversation via the key prop).
+  useEffect(
+    () => () => {
+      if (scrollAnimRef.current !== null) cancelAnimationFrame(scrollAnimRef.current);
+    },
+    [],
+  );
 
   // Detect scroll position to show/hide scroll down button
   useEffect(() => {
@@ -1043,7 +1123,7 @@ export const ChatWindow = React.memo(function ChatWindow({
         {/* Scroll down button */}
         {showScrollDown && (
           <button
-            onClick={() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })}
+            onClick={() => glideToBottom('smooth')}
             className="absolute bottom-20 right-4 w-10 h-10 rounded-full shadow-lg flex items-center justify-center animate-fade-in z-30"
             style={{ background: 'var(--primary)', color: 'white' }}
             title={t('chat.scrollToBottom')}

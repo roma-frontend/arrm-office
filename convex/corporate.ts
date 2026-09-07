@@ -173,7 +173,7 @@ export const rejectRequest = mutation({
  */
 export const getPendingApprovals = query({
   args: {},
-  handler: async (ctx, args) => {
+  handler: async (ctx, _args) => {
     const caller = await getAuthCaller(ctx);
     if (!caller) return [];
 

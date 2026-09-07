@@ -6,7 +6,7 @@ import { useMainRef } from '@/hooks/useMainRef';
 import { useMutation, useQuery } from 'convex/react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../../../convex/_generated/api';
-import type { Id } from '../../../convex/_generated/dataModel';
+import type { Doc, Id } from '../../../convex/_generated/dataModel';
 import { useSelectedOrganization } from '@/hooks/useSelectedOrganization';
 import { CreateTaskWizard } from './CreateTaskWizard';
 import { ProjectBadge } from './ProjectBadge';
@@ -19,14 +19,7 @@ import { TaskSheet } from './TaskSheet';
 import DetailSheet from '@/components/ui/detail-sheet';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-  SheetBody,
-} from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 
 import { DraftResumeBar } from '@/components/ui/DraftResumeBar';
 import { useDraftResume } from '@/hooks/useDraftResume';
@@ -45,7 +38,6 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core';
-import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { toast } from 'sonner';
 import { ShieldLoader } from '@/components/ui/ShieldLoader';
@@ -61,11 +53,9 @@ import {
   Pencil,
   Search as SearchIcon,
   Tag,
-  User,
   Users,
   X as XIcon,
 } from 'lucide-react';
-import type { TFunction } from 'i18next';
 import { useGlobalShortcut } from '@/hooks/useGlobalShortcut';
 import { useHighlightedEntity } from '@/hooks/useHighlightedEntity';
 import { highlightRowStyle } from '@/lib/highlightStyle';
@@ -81,7 +71,6 @@ import {
   taskViewLink,
   toSavedView,
   type TaskFilterCondition,
-  type TaskGroupField,
   type TaskViewState,
 } from '@/lib/taskViewState';
 import { exportFileStem, tasksToCsv, tasksToMarkdown, type ExportTaskRow } from '@/lib/taskExport';
@@ -154,6 +143,31 @@ interface TaskItem {
   subtaskCount?: number;
   subtaskDoneCount?: number;
 }
+
+/**
+ * A recurring-series row as the board's detail sheet receives it: the schema
+ * document (convex/tasks.ts maps series into the task list, marked
+ * `_type: 'recurring'`) plus the fields `enrichTasksWithUserData` batches in
+ * for the assignee card and counters. Typing this replaced a propagated `any`
+ * at the sheet's single entry point, which had silenced every unsafe-access
+ * check inside it.
+ */
+type RecurringSeriesRow = Doc<'recurringTasks'> & {
+  _type: 'recurring';
+  status: Doc<'tasks'>['status'];
+  deadline?: undefined;
+  completedAt?: undefined;
+  attachments?: undefined;
+  objectiveId?: undefined;
+  keyResultId?: undefined;
+  recurringTaskId?: undefined;
+  /** Hydrated assignee profile (batched with the board's user reads). */
+  assignedToUser: TaskAssignee | null;
+  commentCount: number;
+  projectName: string | null;
+  /** The series doc's `assigneeIds`, resolved to slim users server-side. */
+  assigneeUsers: TaskAssignee[];
+};
 
 const STATUS_CONFIG: Record<
   Status,
@@ -325,9 +339,6 @@ function StatusCircleButton({
 }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
-  const resolvedStatus = statuses
-    ? resolveStatus({ status: task.status as any, statusKey: task.statusKey }, statuses)
-    : null;
   const resolvedKey = statuses ? canonicalKey(task, statuses) : (task.status as Status);
   const statusCfg = STATUS_CONFIG[resolvedKey];
   const isCompleted = resolvedKey === 'completed';
@@ -425,7 +436,7 @@ function TaskCardContent({
   const { t } = useTranslation();
   const [statusPickerOpen, setStatusPickerOpen] = useState(false);
   const resolvedStatus = statuses
-    ? resolveStatus({ status: task.status as any, statusKey: task.statusKey }, statuses)
+    ? resolveStatus({ status: task.status as Status, statusKey: task.statusKey }, statuses)
     : null;
   const statusCfg = STATUS_CONFIG[task.status as Status];
   const priorityCfg = PRIORITY_CONFIG[task.priority as Priority];
@@ -725,7 +736,7 @@ function DroppableKanbanColumn({
               key={task._id}
               task={task as ContextTask}
               canManage={contextMenu.canManage}
-              onOpen={(t) => onOpen(t as any)}
+              onOpen={(t) => onOpen(t as TaskItem)}
               onEdit={contextMenu.onEdit}
               onRename={contextMenu.onRename}
               onSetStatus={contextMenu.onSetStatus}
@@ -988,7 +999,7 @@ function RecurringSeriesDetailSheet({
   userRole,
   effectiveOrgId,
 }: {
-  series: any;
+  series: RecurringSeriesRow;
   onClose: () => void;
   convexId: Id<'users'> | null | undefined;
   userRole: string;
@@ -1020,7 +1031,7 @@ function RecurringSeriesDetailSheet({
   };
 
   const WEEKDAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
-  const WEEKDAY_ORDER = [1, 2, 3, 4, 5, 6, 0] as const;
+  const WEEKDAY_ORDER: readonly number[] = [1, 2, 3, 4, 5, 6, 0];
 
   const describeRule = (): string => {
     if (series.frequency === 'monthly') {
@@ -1028,8 +1039,8 @@ function RecurringSeriesDetailSheet({
     }
     const days = (series.daysOfWeek ?? [])
       .slice()
-      .sort((a: number, b: number) => WEEKDAY_ORDER.indexOf(a as 0) - WEEKDAY_ORDER.indexOf(b as 0))
-      .map((d: number) => t(`weekdays.${WEEKDAY_KEYS[d] ?? 'mon'}`))
+      .sort((a, b) => WEEKDAY_ORDER.indexOf(a) - WEEKDAY_ORDER.indexOf(b))
+      .map((d) => t(`weekdays.${WEEKDAY_KEYS[d] ?? 'mon'}`))
       .join(', ');
     return t('recurringTasks.rule.weekly', { days });
   };
@@ -1156,15 +1167,15 @@ function RecurringSeriesDetailSheet({
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {series.assignedToUser || series.assignedToName ? (
+              {series.assignedToUser ? (
                 <div className="flex items-center gap-2">
                   <Avatar
-                    name={series.assignedToUser?.name ?? series.assignedToName ?? '?'}
-                    url={series.assignedToUser?.avatarUrl ?? series.assignedToAvatar}
+                    name={series.assignedToUser?.name ?? '?'}
+                    url={series.assignedToUser?.avatarUrl}
                     size="sm"
                   />
                   <span className="font-medium">
-                    {series.assignedToUser?.name ?? series.assignedToName ?? series.assignedTo}
+                    {series.assignedToUser?.name ?? series.assignedTo}
                   </span>
                 </div>
               ) : (
@@ -1173,21 +1184,19 @@ function RecurringSeriesDetailSheet({
                 </p>
               )}
 
-              {/* Co-assignees */}
-              {series.coAssignees && series.coAssignees.length > 0 && (
+              {/* Co-assignees — the series doc's `assigneeIds`, resolved server-side */}
+              {series.assigneeUsers && series.assigneeUsers.length > 0 && (
                 <div className="border-t border-(--border) pt-3">
                   <p className="text-xs text-muted-foreground mb-2">
                     {t('tasksClient.alsoWorking', 'Also working on this')}
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {series.coAssignees.map(
-                      (ca: { _id: string; name: string; avatarUrl?: string | null }) => (
-                        <div key={ca._id} className="flex items-center gap-1.5">
-                          <Avatar name={ca.name} url={ca.avatarUrl} size="sm" />
-                          <span className="text-sm">{ca.name}</span>
-                        </div>
-                      ),
-                    )}
+                    {series.assigneeUsers.map((ca) => (
+                      <div key={ca._id} className="flex items-center gap-1.5">
+                        <Avatar name={ca.name ?? '?'} url={ca.avatarUrl} size="sm" />
+                        <span className="text-sm">{ca.name}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
@@ -1206,13 +1215,6 @@ function RecurringSeriesDetailSheet({
               <p className="text-sm font-medium">
                 {t('recurringTasks.generatedCount', { count: series.generatedCount ?? 0 })}
               </p>
-              {series.nextOccurrence && (
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">
-                    {t('recurringTasks.nextRun', { date: series.nextOccurrence })}
-                  </span>
-                </div>
-              )}
               {/* Comment count */}
               {series.commentCount != null && series.commentCount > 0 && (
                 <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
@@ -1235,7 +1237,7 @@ function RecurringSeriesDetailSheet({
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {series.subtaskTemplates.map((st: any, i: number) => (
+                {series.subtaskTemplates.map((st, i) => (
                   <div key={i} className="flex items-center gap-2 text-sm">
                     <span className="w-4 h-4 rounded border border-(--border) shrink-0" />
                     <span>{st.title}</span>
@@ -1262,7 +1264,7 @@ function RecurringSeriesDetailSheet({
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {series.checklistTemplates.map((cl: any, i: number) => (
+                {series.checklistTemplates.map((cl, i) => (
                   <div key={i} className="flex items-center gap-2 text-sm">
                     <span className="w-4 h-4 rounded border border-(--border) shrink-0" />
                     <span>{cl.title}</span>
@@ -1284,7 +1286,7 @@ function RecurringSeriesDetailSheet({
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2">
-                {series.tags.map((tag: string, i: number) => (
+                {series.tags.map((tag, i) => (
                   <Badge key={i} variant="secondary">
                     #{tag}
                   </Badge>
@@ -1309,7 +1311,7 @@ function RecurringSeriesDetailSheet({
               </p>
             )}
             {comments &&
-              comments.map((c: any) => (
+              comments.map((c) => (
                 <div key={c._id} className="flex gap-3">
                   <Avatar name={c.authorName ?? '?'} url={c.authorAvatar} size="sm" />
                   <div className="flex-1 min-w-0">
@@ -1353,7 +1355,7 @@ function canonicalKey(
   statuses: readonly import('../../../convex/lib/taskStatus').TaskStatusDef[],
 ): Status {
   const resolved = resolveStatus(
-    { status: task.status as any, statusKey: task.statusKey },
+    { status: task.status as Status, statusKey: task.statusKey },
     statuses,
   );
   return STATUS_TYPE_TO_CANONICAL[resolved.type] as Status;
@@ -1413,10 +1415,13 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
   const [sheetTask, setSheetTask] = useState<{ id: Id<'tasks'>; title: string } | null>(null);
   const [sheetInitialEditing, setSheetInitialEditing] = useState(false);
   /** Recurring series being edited — opens the CreateTaskWizard in edit mode. */
-  const [editingRecurring, setEditingRecurring] = useState<any | null>(null);
+  const [editingRecurring, setEditingRecurring] = useState<RecurringSeriesRow | null>(null);
   /** Inline rename: set to a task id to show a rename input, null to hide. */
-  const [renamingTaskId, setRenamingTaskId] = useState<string | null>(null);
-  const [renameValue, setRenameValue] = useState('');
+  // The context-menu handler still writes these, but nothing reads them back —
+  // the inline rename input was lost in the table refactor. Kept `_`-prefixed
+  // (the lint convention for deliberately unused) until that UI returns.
+  const [_renamingTaskId, setRenamingTaskId] = useState<string | null>(null);
+  const [_renameValue, setRenameValue] = useState('');
   const [showAssign, setShowAssign] = useState(false);
   const [_activeTask, setActiveTask] = useState<TaskItem | null>(null);
   const [_isPending, startTransition] = useTransition();
@@ -1514,7 +1519,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
     (task: { _id: string } & TitledTask) => {
       // Recurring series open in the CreateTaskWizard edit sheet.
       if ((task as TaskItem)._type === 'recurring') {
-        setEditingRecurring(task as any);
+        setEditingRecurring(task as RecurringSeriesRow);
         return;
       }
       setSheetTask({ id: task._id as Id<'tasks'>, title: localizedTaskTitle(t, task) });
@@ -1525,7 +1530,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
   /** Context menu: open the edit form for a task. */
   const handleContextMenuEdit = useCallback((task: ContextTask) => {
     if (task._type === 'recurring') {
-      setEditingRecurring(task);
+      setEditingRecurring(task as RecurringSeriesRow);
     } else {
       setSheetInitialEditing(true);
       setSheetTask({ id: task._id as Id<'tasks'>, title: task.title });
@@ -1767,13 +1772,13 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
     (task: ContextTask) => {
       const deletedTitle = task.title;
       const deletedId = task._id;
-      void deleteTaskMutation({ taskId: deletedId as any }).then(() => {
+      void deleteTaskMutation({ taskId: deletedId as Id<'tasks'> }).then(() => {
         toast.success(t('tasksClient.taskDeleted', 'Task deleted'), {
           description: deletedTitle,
           action: {
             label: t('undo', 'Undo'),
             onClick: () => {
-              void restoreTaskMutation({ taskId: deletedId as any }).then(() => {
+              void restoreTaskMutation({ taskId: deletedId as Id<'tasks'> }).then(() => {
                 toast.success(t('tasksClient.taskRestored', 'Task restored'));
               });
             },
@@ -1788,7 +1793,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
   /** Context menu: set priority. */
   const handleContextMenuPriority = useCallback(
     (taskId: string, priority: string) => {
-      void handlePatchTask(taskId, { priority: priority as any });
+      void handlePatchTask(taskId, { priority: priority as Priority });
     },
     [handlePatchTask],
   );
@@ -1902,7 +1907,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
       // so a shared view never silently hides finished work from the recipient.
       const matchCompleted = !prefs.hideCompleted || rKey !== 'completed';
       // Tab: 'recurring' shows only recurring series; 'all' shows everything.
-      const matchTab = viewState.tab === 'all' || (t as any)._type === 'recurring';
+      const matchTab = viewState.tab === 'all' || (t as { _type?: string })._type === 'recurring';
       return (
         matchPriority &&
         matchStatus &&
@@ -2817,7 +2822,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
           <DeletedTasksView
             convexId={convexId}
             onRestore={(taskId) => {
-              void restoreTaskMutation({ taskId: taskId as any }).then(() => {
+              void restoreTaskMutation({ taskId: taskId as Id<'tasks'> }).then(() => {
                 toast.success(t('tasksClient.taskRestored', 'Task restored'));
               });
             }}
@@ -3065,7 +3070,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
                                     key={task._id}
                                     task={task as ContextTask}
                                     canManage={canManage}
-                                    onOpen={(t) => openTask(t as any)}
+                                    onOpen={(t) => openTask(t)}
                                     onEdit={handleContextMenuEdit}
                                     onRename={handleContextMenuRename}
                                     onSetStatus={handleSetStatus}
@@ -3158,7 +3163,7 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
                                                       t,
                                                       resolveStatus(
                                                         {
-                                                          status: task.status as any,
+                                                          status: task.status as Status,
                                                           statusKey: task.statusKey,
                                                         },
                                                         statuses,
@@ -3287,7 +3292,6 @@ function DeletedTasksView({
 }) {
   const { t } = useTranslation();
   const deletedTasks = useQuery(api.tasks.getDeletedTasks, convexId ? {} : 'skip');
-  const restoreTaskMutation = useMutation(api.tasks.restoreTask);
 
   if (deletedTasks === undefined) {
     return (
@@ -3319,7 +3323,7 @@ function DeletedTasksView({
           defaultValue: '{{count}} deleted task(s) — click Restore to bring back.',
         })}
       </p>
-      {deletedTasks.map((task: any) => (
+      {deletedTasks.map((task) => (
         <div
           key={task._id}
           className="flex items-center gap-3 p-3 rounded-xl border border-(--border) bg-(--card) hover:bg-(--background-subtle) transition-colors"
@@ -3331,7 +3335,7 @@ function DeletedTasksView({
             {task.assignedToUser?.name ?? '—'}
           </span>
           <span className="text-xs text-(--text-muted) shrink-0">
-            {new Date(task.deletedAt).toLocaleDateString()}
+            {task.deletedAt ? new Date(task.deletedAt).toLocaleDateString() : '—'}
           </span>
           <button
             onClick={() => onRestore(task._id)}

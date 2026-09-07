@@ -1101,8 +1101,10 @@ async function recalculateProbationAfterDateChange(
     const durationDays = Math.min(remainingDays, PROBATION_DAYS);
     const startDate = now;
     const endDate = now + durationDays * DAY;
+    const employee = await ctx.db.get(employeeId);
+    if (!employee?.organizationId) throw new Error('Employee not found');
     await ctx.db.insert('probationPeriods', {
-      organizationId: (await ctx.db.get(employeeId))?.organizationId as any,
+      organizationId: employee.organizationId,
       employeeId,
       startDate,
       endDate,

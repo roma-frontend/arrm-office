@@ -110,6 +110,7 @@ export function ProgressCell({ field, value, onCommit, readOnly }: TaskCellProps
   const [draft, setDraft] = useState(committed);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- while the editor is closed the draft mirrors the committed value
     if (!open) setDraft(committed);
   }, [committed, open]);
 

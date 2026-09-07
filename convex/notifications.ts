@@ -22,7 +22,7 @@ export const listPaginated = query({
 // ── Get notifications for a user (legacy, kept for badge counts) ────────────
 export const getUserNotifications = query({
   args: { userId: v.id('users') },
-  handler: async (ctx, args) => {
+  handler: async (ctx, _args) => {
     const caller = await getAuthCaller(ctx);
     if (!caller) return [];
     return await ctx.db
@@ -36,7 +36,7 @@ export const getUserNotifications = query({
 // ── Get unread count ───────────────────────────────────────────────────────
 export const getUnreadCount = query({
   args: { userId: v.id('users') },
-  handler: async (ctx, args) => {
+  handler: async (ctx, _args) => {
     const caller = await getAuthCaller(ctx);
     if (!caller) return 0;
     const unread = await ctx.db

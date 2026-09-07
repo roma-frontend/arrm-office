@@ -65,6 +65,7 @@ export function KeyboardShortcutsModal({ isOpen, onClose }: KeyboardShortcutsMod
   // to react to a hot-plugged keyboard.
   const [isMac, setIsMac] = useState(false);
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- platform detection must run client-side; a lazy initializer would break the SSR hydration match
     setIsMac(detectMac());
   }, []);
   const modLabel = isMac ? '⌘' : 'Ctrl';

@@ -338,7 +338,8 @@ export function DeadlineCell({
   const [open, setOpen] = useState(false);
   const { t } = useTranslation();
 
-  // Capture now once per render without calling Date.now() in the IIFE
+  // Capture now once per mount without calling Date.now() in the IIFE
+  // eslint-disable-next-line react-hooks/purity -- relative deadline tones need the current time; once-per-mount capture is the intended behavior
   const nowMs = useMemo(() => Date.now(), []);
 
   const tone = (() => {
