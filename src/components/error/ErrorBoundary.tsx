@@ -1,6 +1,7 @@
 'use client';
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { toast } from 'sonner';
 import { AlertTriangle, RefreshCw, Bug, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -45,6 +46,16 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     logger.error('🛡️ ErrorBoundary caught an error:', error, errorInfo);
+
+    // Policy: user-facing errors surface as a translated toast, never as a raw
+    // console-only failure. The `id` dedupes when the same boundary re-catches.
+    toast.error(i18n.t('errors.somethingWentWrong', 'Something went wrong'), {
+      id: 'app-error-boundary',
+      description: i18n.t(
+        'errors.pleaseRefresh',
+        "We're sorry for the inconvenience. Please try refreshing the page.",
+      ),
+    });
 
     // Log to error reporting service (Sentry)
     if (typeof window !== 'undefined') {

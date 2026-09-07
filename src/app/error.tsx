@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import { AlertOctagon, RefreshCw, Home } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { logger } from '@/lib/logger';
@@ -20,8 +21,15 @@ export default function GlobalError({
     return result === key ? fallback : result;
   };
 
+  const errorMessage = tr('errors.somethingWentWrong', 'Oops! Something broke');
+
   useEffect(() => {
     logger.error('Global error:', error);
+
+    // Policy: errors surface as a translated toast as well — the fallback page
+    // alone can be missed when the error hits during a background re-render.
+    // The id dedupes when the translation finishes loading and the message flips.
+    toast.error(errorMessage, { id: 'route-error' });
 
     if (typeof window !== 'undefined' && window.Sentry) {
       window.Sentry.captureException(error, {
@@ -31,7 +39,7 @@ export default function GlobalError({
         },
       });
     }
-  }, [error]);
+  }, [error, errorMessage]);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-background px-4">

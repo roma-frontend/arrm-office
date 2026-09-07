@@ -343,7 +343,13 @@ export const getUserById = query({
         requesterDoc.organizationId !== user.organizationId &&
         !isSuperadmin(requesterDoc)
       ) {
-        throw new Error('Access denied: cross-organization access is not allowed');
+        // Return null instead of throwing. During impersonation start/exit the
+        // client legitimately fires this query with the admin's id while the
+        // Convex token still carries the other identity — a transient state,
+        // not an attack. Throwing here crashed the Navbar (query errors thrown
+        // in render hit the error boundary); null degrades to "no data" for a
+        // beat until the fresh token lands and the query re-runs.
+        return null;
       }
     }
 

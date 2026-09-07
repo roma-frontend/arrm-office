@@ -481,14 +481,12 @@ describe('getUserById', () => {
     expect(await queries.getUserById.handler(h.ctx, { userId: employeeA._id })).toEqual(employeeA);
   });
 
-  it('throws for a cross-org caller', async () => {
+  it('returns null for a cross-org caller (no throw — impersonation transitions hit this transiently)', async () => {
     mockGetAuthCaller.mockResolvedValue(adminA);
     const h = makeCtx({
       docs: { [adminA._id]: adminA, [employeeA._id]: { ...employeeA, organizationId: ORG_B } },
     });
-    await expect(queries.getUserById.handler(h.ctx, { userId: employeeA._id })).rejects.toThrow(
-      'cross-organization',
-    );
+    expect(await queries.getUserById.handler(h.ctx, { userId: employeeA._id })).toBeNull();
   });
 
   it('allows a superadmin to read across orgs', async () => {

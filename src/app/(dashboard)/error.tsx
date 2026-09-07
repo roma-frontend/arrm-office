@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
 import { logger } from '@/lib/logger';
@@ -21,8 +22,14 @@ export default function DashboardError({
     const result = t(key);
     return result === key ? fallback : result;
   };
+  const errorMessage = tr('errors.somethingWentWrong', 'Something went wrong');
+
   useEffect(() => {
     logger.error('Dashboard error:', error);
+
+    // Policy: errors surface as a translated toast — the fallback UI alone is
+    // easy to miss when the error hits a sub-tree while scrolling.
+    toast.error(errorMessage, { id: 'dashboard-error' });
 
     const msg = error?.message ?? '';
     if (
@@ -43,7 +50,7 @@ export default function DashboardError({
         },
       });
     }
-  }, [error, router]);
+  }, [error, router, errorMessage]);
 
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center gap-6 px-4">
