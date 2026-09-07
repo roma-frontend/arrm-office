@@ -4,6 +4,7 @@ import { Component, ErrorInfo, ReactNode } from 'react';
 import { toast } from 'sonner';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { appErrorToast } from '@/lib/error-handler';
 import { logger } from '@/lib/logger';
 import i18n from 'i18next';
 
@@ -47,10 +48,13 @@ export class WidgetErrorBoundary extends Component<Props, State> {
     const widgetName = this.props.name || 'Unknown Widget';
     logger.error(`🛡️ [${widgetName}] ErrorBoundary caught:`, error, errorInfo.componentStack);
 
-    // Policy: every caught error surfaces as a translated toast, deduped per
-    // widget so a dashboard with several failing widgets doesn't spam.
-    toast.error(i18n.t('errors.somethingWentWrong', 'Something went wrong'), {
+    // Policy: every caught error surfaces as a translated toast (structured
+    // ConvexError codes map to their own translation), deduped per widget so a
+    // dashboard with several failing widgets doesn't spam.
+    const { title, description } = appErrorToast(error, i18n.t.bind(i18n));
+    toast.error(title, {
       id: `widget-error-${widgetName}`,
+      description,
     });
 
     // Log to Sentry if available

@@ -105,6 +105,13 @@ describe('requireRole', () => {
     );
   });
 
+  it('throws a structured error the client can translate (data.code)', async () => {
+    const { ctx } = makeCtx(USER);
+    await expect(requireRole(ctx, 'user_1' as any, 'admin' as any)).rejects.toMatchObject({
+      data: { code: 'FORBIDDEN' },
+    });
+  });
+
   it('allows the matching role', async () => {
     const { ctx } = makeCtx({ ...USER, role: 'admin' });
     const result = await requireRole(ctx, 'user_1' as any, 'admin' as any);
@@ -136,6 +143,13 @@ describe('requireRoleAtLeast', () => {
     await expect(requireRoleAtLeast(ctx, 'user_1' as any, 'admin' as any)).rejects.toThrow(
       'Insufficient permissions. Minimum role required: admin',
     );
+  });
+
+  it('carries the FORBIDDEN code in the payload', async () => {
+    const { ctx } = makeCtx(USER);
+    await expect(requireRoleAtLeast(ctx, 'user_1' as any, 'admin' as any)).rejects.toMatchObject({
+      data: { code: 'FORBIDDEN' },
+    });
   });
 });
 

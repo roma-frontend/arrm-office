@@ -264,7 +264,7 @@ export default function HeroSection({ initialLanguage = 'en' }: { initialLanguag
               style={{
                 color: 'var(--landing-text-primary)',
                 textShadow: '0 2px 40px rgba(37, 99, 235, 0.15)',
-                fontSize: 'clamp(2.75rem, 6.5vw + 0.5rem, 5.25rem)',
+                fontSize: 'clamp(2.75rem, 6.5vw + 0.5rem, 4.5rem)',
               }}
             >
               {t('landing.heroTitle')}

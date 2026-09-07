@@ -10,6 +10,7 @@
 import type { QueryCtx, MutationCtx } from '../_generated/server';
 import type { Id } from '../_generated/dataModel';
 import { isSuperadmin as isSuperadminRole } from './auth';
+import { throwAppError } from './appErrors';
 import { hasCapability } from './capabilities';
 import { isAncestorOf, getSubordinateIds } from './reportingLine';
 
@@ -65,7 +66,7 @@ export async function getUserWithRole(
   if (user.organizationId) {
     const org = await ctx.db.get(user.organizationId);
     if (org?.frozenAt) {
-      throw new Error('Organization is temporarily frozen. Contact support.');
+      throwAppError('ORG_FROZEN', 'Organization is temporarily frozen. Contact support.');
     }
   }
 
@@ -88,7 +89,7 @@ export async function requireUser(
 ): Promise<{ _id: Id<'users'>; role: Role; email: string; organizationId?: Id<'organizations'> }> {
   const user = await getUserWithRole(ctx, userId);
   if (!user) {
-    throw new Error('User not found');
+    throwAppError('USER_NOT_FOUND', 'User not found');
   }
   return user;
 }
@@ -105,7 +106,7 @@ export async function requireRole(
   const user = await requireUser(ctx, userId);
 
   if (user.role !== requiredRole && !isSuperadminRole(user)) {
-    throw new Error(`Insufficient permissions. Required role: ${requiredRole}`);
+    throwAppError('FORBIDDEN', `Insufficient permissions. Required role: ${requiredRole}`);
   }
 
   return user;
@@ -128,7 +129,7 @@ export async function requireRoleAtLeast(
   }
 
   if (!hasRoleAtLeast(user.role, minimumRole)) {
-    throw new Error(`Insufficient permissions. Minimum role required: ${minimumRole}`);
+    throwAppError('FORBIDDEN', `Insufficient permissions. Minimum role required: ${minimumRole}`);
   }
 
   return user;
@@ -152,7 +153,7 @@ export async function requireOrgAdmin(
 
   // Admin must belong to the same org
   if (user.role !== 'admin' || user.organizationId !== organizationId) {
-    throw new Error('Insufficient permissions. Organization admin access required.');
+    throwAppError('FORBIDDEN', 'Insufficient permissions. Organization admin access required.');
   }
 
   return { ...user, organizationId };
@@ -178,7 +179,7 @@ export async function requireOrgSupervisor(
     (user.role !== 'admin' && user.role !== 'supervisor') ||
     user.organizationId !== organizationId
   ) {
-    throw new Error('Insufficient permissions. Supervisor access required.');
+    throwAppError('FORBIDDEN', 'Insufficient permissions. Supervisor access required.');
   }
 
   return { ...user, organizationId };
@@ -241,7 +242,10 @@ export async function requireUserAccess(
 ): Promise<void> {
   const hasAccess = await canAccessUser(ctx, requesterId, targetUserId);
   if (!hasAccess) {
-    throw new Error("Access denied. You do not have permission to access this user's data.");
+    throwAppError(
+      'FORBIDDEN',
+      "Access denied. You do not have permission to access this user's data.",
+    );
   }
 }
 

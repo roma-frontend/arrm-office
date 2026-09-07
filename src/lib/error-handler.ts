@@ -201,6 +201,55 @@ export function getErrorStatusCode(error: unknown): number | undefined {
   return undefined;
 }
 
+// ── Structured Convex Errors (code → translation) ───────────────────────────
+
+/**
+ * Extract the structured app-error code from a Convex error, if present.
+ *
+ * Server functions throw `ConvexError({ code, message })` (see
+ * convex/lib/appErrors.ts) so the UI can translate the failure instead of
+ * showing the redacted "Server Error". Returns null for anything else.
+ */
+export function getAppErrorCode(error: unknown): string | null {
+  const data = (error as { data?: unknown } | null | undefined)?.data;
+  if (data && typeof data === 'object') {
+    const code = (data as { code?: unknown }).code;
+    if (typeof code === 'string' && code.length > 0) return code;
+  }
+  return null;
+}
+
+/**
+ * Build a translated toast payload for any thrown error.
+ *
+ * Resolution order:
+ *   1. `errors.codes.<CODE>` translation for a structured ConvexError code
+ *   2. the ConvexError's own message (domain codes without a translation)
+ *   3. the generic translated fallback
+ *
+ * `t` is a plain i18next lookup that returns the key when missing (both
+ * react-i18next's `t` and `i18n.t` behave this way), which is how unmapped
+ * codes are detected.
+ */
+export function appErrorToast(
+  error: unknown,
+  t: (key: string) => string,
+): { title: string; description?: string } {
+  const code = getAppErrorCode(error);
+  if (code) {
+    const key = `errors.codes.${code}`;
+    const translated = t(key);
+    if (translated && translated !== key) {
+      return { title: translated };
+    }
+  }
+
+  const generic = t('errors.somethingWentWrong');
+  const fallback =
+    !generic || generic === 'errors.somethingWentWrong' ? 'Something went wrong' : generic;
+  return { title: getConvexErrorMessage(error, fallback) };
+}
+
 // ── Async Error Handler ─────────────────────────────────────────────────────
 
 /**

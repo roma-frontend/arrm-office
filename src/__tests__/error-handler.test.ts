@@ -4,6 +4,8 @@ import {
   getErrorStatusCode,
   getErrorName,
   getConvexErrorMessage,
+  getAppErrorCode,
+  appErrorToast,
   safeAsync,
   toAppError,
   isError,
@@ -367,5 +369,44 @@ describe('default constructor arguments', () => {
     const error = new ServerError();
     expect(error.message).toBe('Internal server error');
     expect(error.statusCode).toBe(500);
+  });
+});
+
+describe('structured ConvexError codes', () => {
+  // Mirrors what `new ConvexError({ code, message })` looks like after Convex
+  // ships it to the client: the payload rides on `error.data`.
+  const convexErrorLike = (data: unknown) => Object.assign(new Error('[payload]'), { data });
+
+  it('getAppErrorCode extracts the code from a structured payload', () => {
+    expect(getAppErrorCode(convexErrorLike({ code: 'FORBIDDEN', message: 'nope' }))).toBe(
+      'FORBIDDEN',
+    );
+  });
+
+  it('getAppErrorCode returns null for plain errors and non-structured payloads', () => {
+    expect(getAppErrorCode(new Error('boom'))).toBeNull();
+    expect(getAppErrorCode(convexErrorLike('plain string payload'))).toBeNull();
+    expect(getAppErrorCode(undefined)).toBeNull();
+  });
+
+  it('appErrorToast translates a known code', () => {
+    const t = (key: string) => (key === 'errors.codes.FORBIDDEN' ? 'Нет прав' : key);
+    expect(appErrorToast(convexErrorLike({ code: 'FORBIDDEN', message: 'nope' }), t)).toEqual({
+      title: 'Нет прав',
+    });
+  });
+
+  it('appErrorToast falls back to the server message for unmapped codes', () => {
+    const t = (key: string) => key; // no translations loaded
+    expect(
+      appErrorToast(convexErrorLike({ code: 'DRIVER_ON_LEAVE', message: 'Driver is on leave' }), t),
+    ).toEqual({ title: 'Driver is on leave' });
+  });
+
+  it('appErrorToast falls back to the generic message for redacted server errors', () => {
+    const t = (key: string) => (key === 'errors.somethingWentWrong' ? 'Что-то пошло не так' : key);
+    expect(appErrorToast(new Error('[CONVEX Q] Server Error'), t)).toEqual({
+      title: 'Что-то пошло не так',
+    });
   });
 });

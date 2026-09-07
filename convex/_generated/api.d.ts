@@ -94,6 +94,7 @@ import type * as leaves_helpers from "../leaves/helpers.js";
 import type * as leaves_index from "../leaves/index.js";
 import type * as leaves_mutations from "../leaves/mutations.js";
 import type * as leaves_queries from "../leaves/queries.js";
+import type * as lib_appErrors from "../lib/appErrors.js";
 import type * as lib_attritionScoring from "../lib/attritionScoring.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_capabilities from "../lib/capabilities.js";
@@ -392,6 +393,7 @@ declare const fullApi: ApiFromModules<{
   "leaves/index": typeof leaves_index;
   "leaves/mutations": typeof leaves_mutations;
   "leaves/queries": typeof leaves_queries;
+  "lib/appErrors": typeof lib_appErrors;
   "lib/attritionScoring": typeof lib_attritionScoring;
   "lib/auth": typeof lib_auth;
   "lib/capabilities": typeof lib_capabilities;

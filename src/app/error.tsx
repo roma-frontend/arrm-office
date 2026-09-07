@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import { AlertOctagon, RefreshCw, Home } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { appErrorToast } from '@/lib/error-handler';
 import { logger } from '@/lib/logger';
 
 export default function GlobalError({
@@ -28,8 +29,10 @@ export default function GlobalError({
 
     // Policy: errors surface as a translated toast as well — the fallback page
     // alone can be missed when the error hits during a background re-render.
-    // The id dedupes when the translation finishes loading and the message flips.
-    toast.error(errorMessage, { id: 'route-error' });
+    // Structured ConvexError codes map to their own translation; the id dedupes
+    // when the translation finishes loading and the message flips.
+    const { title, description } = appErrorToast(error, t);
+    toast.error(title, { id: 'route-error', description });
 
     if (typeof window !== 'undefined' && window.Sentry) {
       window.Sentry.captureException(error, {
@@ -39,7 +42,7 @@ export default function GlobalError({
         },
       });
     }
-  }, [error, errorMessage]);
+  }, [error, errorMessage, t]);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-background px-4">

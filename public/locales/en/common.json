@@ -634,6 +634,16 @@
     "passwordMismatch": "Passwords don't match",
     "passwordTooShort": "Password must be at least 8 characters",
     "somethingWentWrong": "Something went wrong",
+    "codes": {
+      "NOT_AUTHENTICATED": "Please sign in again",
+      "FORBIDDEN": "You don't have permission for this action",
+      "NO_ORGANIZATION": "You are not a member of any organization",
+      "NOT_FOUND": "The requested item was not found",
+      "USER_NOT_FOUND": "This user no longer exists",
+      "ORG_NOT_FOUND": "Organization not found",
+      "ORG_FROZEN": "The organization is temporarily frozen. Please contact support.",
+      "VALIDATION": "Please check the entered data"
+    },
     "tryAgain": "Try Again",
     "tryAgainLater": "Please try again later. If the problem persists, contact support.",
     "failedToLoad": "Failed to load",

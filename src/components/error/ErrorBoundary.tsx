@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { AlertTriangle, RefreshCw, Bug, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { appErrorToast } from '@/lib/error-handler';
 import { logger } from '@/lib/logger';
 import i18n from 'i18next';
 
@@ -48,13 +49,18 @@ export class ErrorBoundary extends Component<Props, State> {
     logger.error('🛡️ ErrorBoundary caught an error:', error, errorInfo);
 
     // Policy: user-facing errors surface as a translated toast, never as a raw
-    // console-only failure. The `id` dedupes when the same boundary re-catches.
-    toast.error(i18n.t('errors.somethingWentWrong', 'Something went wrong'), {
+    // console-only failure. Structured ConvexError codes map to their own
+    // translations; anything else falls back to the generic message. The `id`
+    // dedupes when the same boundary re-catches.
+    const { title, description } = appErrorToast(error, i18n.t.bind(i18n));
+    toast.error(title, {
       id: 'app-error-boundary',
-      description: i18n.t(
-        'errors.pleaseRefresh',
-        "We're sorry for the inconvenience. Please try refreshing the page.",
-      ),
+      description:
+        description ??
+        i18n.t(
+          'errors.pleaseRefresh',
+          "We're sorry for the inconvenience. Please try refreshing the page.",
+        ),
     });
 
     // Log to error reporting service (Sentry)

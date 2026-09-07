@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
+import { appErrorToast } from '@/lib/error-handler';
 import { logger } from '@/lib/logger';
 
 export default function DashboardError({
@@ -28,8 +29,10 @@ export default function DashboardError({
     logger.error('Dashboard error:', error);
 
     // Policy: errors surface as a translated toast — the fallback UI alone is
-    // easy to miss when the error hits a sub-tree while scrolling.
-    toast.error(errorMessage, { id: 'dashboard-error' });
+    // easy to miss when the error hits a sub-tree while scrolling. Structured
+    // ConvexError codes map to their own translation.
+    const { title, description } = appErrorToast(error, t);
+    toast.error(title, { id: 'dashboard-error', description });
 
     const msg = error?.message ?? '';
     if (
@@ -50,7 +53,7 @@ export default function DashboardError({
         },
       });
     }
-  }, [error, router, errorMessage]);
+  }, [error, router, errorMessage, t]);
 
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center gap-6 px-4">
