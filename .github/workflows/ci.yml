@@ -404,34 +404,9 @@ jobs:
       - id: check
         run: echo "enabled=${{ secrets.VERCEL_TOKEN != '' }}" >> "$GITHUB_OUTPUT"
 
-  deploy-preview:
-    name: '🔍 Deploy Preview'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs: [build, check-deploy-secret]
-    if: github.event_name == 'pull_request' && needs.check-deploy-secret.outputs.enabled == 'true'
-    environment:
-      name: preview
-      url: ${{ steps.deploy.outputs.preview-url }}
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
-        with:
-          node-version-file: '.nvmrc'
-          cache: 'npm'
-      - run: npm install -g vercel
-      - run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
-        env:
-          VERCEL_ORG_ID: team_iLMSpxKnZJiX2jWT6TjTM81t
-          VERCEL_PROJECT_ID: prj_bQfsPmQAKAMSZolcGBMWxpIz7708
-      - run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
-        env:
-          VERCEL_ORG_ID: team_iLMSpxKnZJiX2jWT6TjTM81t
-          VERCEL_PROJECT_ID: prj_bQfsPmQAKAMSZolcGBMWxpIz7708
-      - id: deploy
-        run: |
-          URL=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
-          echo "preview-url=$URL" >> $GITHUB_OUTPUT
+  # Preview deployments are handled by Vercel's GitHub integration. Keeping a
+  # second CLI deployment here caused PR checks to fail when `vercel pull`
+  # could not retrieve Project Settings for the linked project.
 
   deploy-production:
     name: '🚀 Deploy Production'
