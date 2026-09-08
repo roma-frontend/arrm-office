@@ -101,6 +101,13 @@ export const tasks = {
      */
     timeSpentMinutes: v.optional(v.number()),
     /**
+     * Roll-up of this task's `taskComments`, incremented by `addComment` and
+     * backfilled lazily by the board's enrichment. Denormalized so the board
+     * can render 💬 counters without one comment-table read per row on every
+     * render (the same trade `timeSpentMinutes` already made for time).
+     */
+    commentCount: v.optional(v.number()),
+    /**
      * Archived-but-kept. Distinct from `cancelled`, which is a status somebody
      * chose and which reports still count; an archived task is simply out of
      * sight. Task surfaces filter it out, and existing consumers that never look

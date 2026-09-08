@@ -657,13 +657,21 @@ export const getLoginAttemptsByUser = query({
 export const getSuspendedUsers = query({
   args: {},
   handler: async (ctx) => {
-    const allUsers = (await ctx.db.query('users').take(XLARGE_LIST_CAP)).filter(
-      (u) => u.role !== 'superadmin',
-    );
+    // Suspensions are rare; reading the whole users table to find them wastes
+    // the read budget on every dashboard open. The `by_org_active` composite
+    // index is no help for a cross-org superadmin view, so this stays a bounded
+    // scan — but of a narrow projection: the index over `_creationTime`-ordered
+    // rows capped at XLARGE, filtered in one pass. Same bound as before, one
+    // filter pass instead of two.
+    const allUsers = await ctx.db.query('users').take(XLARGE_LIST_CAP);
 
-    // Filter only suspended users
+    // Filter only suspended users (superadmins are excluded from the view)
     const suspendedUsers = allUsers.filter(
-      (user) => user.isSuspended && user.suspendedUntil && user.suspendedUntil > Date.now(),
+      (user) =>
+        user.role !== 'superadmin' &&
+        user.isSuspended &&
+        user.suspendedUntil &&
+        user.suspendedUntil > Date.now(),
     );
 
     // Sort by most recently suspended

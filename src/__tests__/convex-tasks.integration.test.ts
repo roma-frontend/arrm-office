@@ -12,7 +12,7 @@
 import { describe, it, expect } from '@jest/globals';
 import { convexTest } from 'convex-test';
 import schema from '../../convex/schema';
-import { api } from '../../convex/_generated/api';
+import { api, internal } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 
 const modules = {
@@ -198,11 +198,10 @@ describe('employee task queries', () => {
     expect(task.assignedToUser?.name).toBe('Employee');
     expect(task.assignedByUser?.name).toBe('Manager');
     expect(task.assignedByUser?.position).toBe('Lead');
+    // Lists carry the denormalized count only — full threads are fetched
+    // separately via getTaskComments by the detail surfaces.
     expect(task.commentCount).toBe(2);
-    expect(task.comments).toHaveLength(2);
-    const authors = task.comments.map((x: { author: { name: string } | null }) => x.author?.name);
-    expect(authors).toContain('Employee');
-    expect(authors).toContain('Peer');
+    expect(task.comments).toEqual([]);
   });
 
   it('filters out tasks from other organizations for non-superadmins', async () => {
@@ -744,6 +743,143 @@ describe('comment queries', () => {
     expect(res?.comments).toHaveLength(2);
     expect(res?.assignedToUser?.name).toBe('Employee');
     expect(res?.projectName).toBeNull();
+  });
+});
+
+// ── getVisibleTasks co-assignee visibility + dedup ───────────────────
+describe('getVisibleTasks co-assignee path', () => {
+  /**
+   * The co-assignee branch of `getVisibleTasks` merges three sources per
+   * visible person — assigned-to, assigned-by, co-assignee (`assigneeIds`) —
+   * and the same task can arrive from more than one of them (a manager who
+   * assigned a task they are also a co-assignee on). The merge must de-dupe
+   * by task id, or the board renders the same card twice.
+   */
+  it('returns a co-assigned task once even when seen from several angles', async () => {
+    const c = await seed();
+    // The manager assigns to the employee and puts themselves (and the peer)
+    // on as co-assignees: for the *manager's* board this task arrives via
+    // by_assigned_by (they assigned it) AND via the assigneeIds scan (they are
+    // a co-assignee) AND potentially via by_assigned_to. Exactly one row out.
+    const sharedId = await c.t
+      .withIdentity({ email: 'manager@acme.test' })
+      .mutation(api.tasks.createTask, {
+        ...taskArgs(c),
+        assignedTo: c.employeeId,
+        assigneeIds: [c.supervisorId, c.peerId],
+      });
+    const res = await c.t
+      .withIdentity({ email: 'manager@acme.test' })
+      .query(api.tasks.getVisibleTasks, {});
+    const hits = res.filter((t) => t._id === sharedId);
+    expect(hits).toHaveLength(1);
+  });
+
+  it('shows a co-assigned task on the co-assignee board without a duplicate', async () => {
+    const c = await seed();
+    const sharedId = await c.t
+      .withIdentity({ email: 'manager@acme.test' })
+      .mutation(api.tasks.createTask, {
+        ...taskArgs(c),
+        assignedTo: c.employeeId,
+        assigneeIds: [c.peerId],
+      });
+    // The peer is a co-assignee only: the task reaches their board solely
+    // through the assigneeIds path, which is the one the org-scoped scan feeds.
+    const res = await c.t
+      .withIdentity({ email: 'peer@acme.test' })
+      .query(api.tasks.getVisibleTasks, {});
+    const hits = res.filter((t) => t._id === sharedId);
+    expect(hits).toHaveLength(1);
+    // And the assignee sees it too, through the plain by_assigned_to lookup.
+    const assigneeView = await c.t
+      .withIdentity({ email: 'employee@acme.test' })
+      .query(api.tasks.getVisibleTasks, {});
+    expect(assigneeView.map((t) => t._id)).toContain(sharedId);
+  });
+
+  it('does not leak another orgs co-assigned task into the subtree scan', async () => {
+    const c = await seed();
+    // A foreign task whose co-assignee list contains an Acme id — the old
+    // unscoped scan matched on assigneeIds alone and could pull foreign rows
+    // in; the org-scoped scan must keep them out.
+    const foreignTaskId = await c.t.run(async (ctx) =>
+      ctx.db.insert('tasks', {
+        organizationId: c.otherOrgId,
+        title: 'Foreign co-assigned',
+        assignedTo: c.foreignId,
+        assignedBy: c.foreignAdminId,
+        status: 'pending',
+        priority: 'medium',
+        assigneeIds: [c.employeeId],
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      } as never),
+    );
+    const res = await c.t
+      .withIdentity({ email: 'employee@acme.test' })
+      .query(api.tasks.getVisibleTasks, {});
+    expect(res.map((t) => t._id)).not.toContain(foreignTaskId);
+  });
+});
+
+// ── commentCount denormalization ────────────────────────────────────────
+describe('commentCount denormalization', () => {
+  it('increments the denormalized counter on addComment', async () => {
+    const c = await seed();
+    const taskId = await createTaskWithComment(c);
+    const task = await c.t.run((ctx) => ctx.db.get(taskId));
+    expect(task?.commentCount).toBe(2);
+  });
+
+  it('backfillTaskCommentCounts patches legacy rows and is idempotent', async () => {
+    const c = await seed();
+    // A legacy row: no commentCount field at all, with comments already made.
+    const legacyId = await c.t.run(async (ctx) =>
+      ctx.db.insert('tasks', {
+        organizationId: c.organizationId,
+        title: 'Legacy task',
+        assignedTo: c.employeeId,
+        assignedBy: c.supervisorId,
+        status: 'in_progress',
+        priority: 'high',
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      } as never),
+    );
+    await c.t.run((ctx) =>
+      ctx.runMutation(api.tasks.addComment, {
+        taskId: legacyId,
+        authorId: c.employeeId,
+        content: 'legacy comment',
+      }),
+    );
+
+    // The backfill is an internal mutation — run it through the raw handler
+    // identity-free, the way the cron dispatcher does.
+    let cursor: string | undefined = undefined;
+    let done = false;
+    while (!done) {
+      const res = await c.t.run((ctx) =>
+        ctx.runMutation(internal.tasks.backfillTaskCommentCounts, {
+          ...(cursor ? { cursor } : {}),
+          numItems: 10,
+        }),
+      );
+      done = res.done;
+      cursor = res.cursor;
+    }
+
+    const task = await c.t.run((ctx) => ctx.db.get(legacyId));
+    expect(task?.commentCount).toBe(1);
+
+    // Re-running must not double-count: rows already carrying a number are
+    // untouched, and a patched exact value is written again as the same value.
+    await c.t.run((ctx) =>
+      ctx.runMutation(internal.tasks.backfillTaskCommentCounts, { numItems: 100 }),
+    );
+    const taskAfterRerun = await c.t.run((ctx) => ctx.db.get(legacyId));
+    expect(taskAfterRerun?.commentCount).toBe(1);
   });
 });
 

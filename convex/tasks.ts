@@ -164,26 +164,35 @@ async function enrichTasksWithUserData(ctx: QueryCtx, tasks: Doc<'tasks'>[]) {
   const users = await Promise.all(allUserIds.map((id: Id<'users'>) => ctx.db.get(id)));
   const userMap = new Map(users.map((u: Doc<'users'> | null) => [u?._id, u]));
 
-  // Batch load comments per-task via by_task index (avoids scanning the whole
-  // taskComments table just to filter by taskId). Caps at SMALL_LIST_CAP per task.
-  // Skip recurring series (they have their own comments table via recurringTaskComments).
-  const commentsPerTask: Doc<'taskComments'>[][] = await Promise.all(
-    tasks.map((t: Doc<'tasks'>) =>
-      (t as { _type?: string })._type === 'recurring'
-        ? Promise.resolve([])
-        : ctx.db
-            .query('taskComments')
-            .withIndex('by_task', (q) => q.eq('taskId', t._id))
-            .take(SMALL_LIST_CAP),
+  // Comments are NOT read per task on the board anymore: `addComment` keeps a
+  // denormalized `commentCount` on the task row (same trade as
+  // `timeSpentMinutes`), so a 100-task board costs zero comment-table reads
+  // instead of one index walk per row on every render. Rows written before the
+  // counter existed have `commentCount === undefined`; until the one-time
+  // `backfillTaskCommentCounts` migration patches them, only those rows are
+  // read here (queries are read-only, so the write happens in the mutation).
+  // Recurring series are skipped — they have their own comments table via
+  // `recurringTaskComments`.
+  const needsCommentBackfill = tasks.filter(
+    (t: Doc<'tasks'>) =>
+      (t as { _type?: string })._type !== 'recurring' && t.commentCount === undefined,
+  );
+  const backfillRows: Doc<'taskComments'>[][] = await Promise.all(
+    needsCommentBackfill.map((t: Doc<'tasks'>) =>
+      ctx.db
+        .query('taskComments')
+        .withIndex('by_task', (q) => q.eq('taskId', t._id))
+        .take(SMALL_LIST_CAP),
     ),
   );
-  const allComments: Doc<'taskComments'>[] = commentsPerTask.flat();
+  const allComments: Doc<'taskComments'>[] = backfillRows.flat();
   const commentsByTask = new Map<Id<'tasks'>, Doc<'taskComments'>[]>();
-  tasks.forEach((t: Doc<'tasks'>, i: number) => {
-    commentsByTask.set(t._id, commentsPerTask[i] ?? []);
+  needsCommentBackfill.forEach((t: Doc<'tasks'>, i: number) => {
+    commentsByTask.set(t._id, backfillRows[i] ?? []);
   });
 
-  // Collect all comment author IDs
+  // Author profiles are only fetched for rows that were actually read — and
+  // once the backfill migration has run, that set is empty for most boards.
   const commentAuthorIds = [...new Set(allComments.map((c: Doc<'taskComments'>) => c.authorId))];
   const commentAuthors = await Promise.all(
     commentAuthorIds.map((id: Id<'users'>) => ctx.db.get(id)),
@@ -209,9 +218,9 @@ async function enrichTasksWithUserData(ctx: QueryCtx, tasks: Doc<'tasks'>[]) {
   // index read per row that could have children. A row that is itself a subtask
   // cannot — nesting is one level deep by design — so those are skipped without
   // touching the database, which on a board of parents and children halves the
-  // reads. The alternative, a denormalized counter on the parent, would be
-  // cheaper to read and would drift the first time a subtask was deleted by a
-  // path that forgot to decrement it.
+  // reads. Empty index ranges read zero documents in Convex, so childless rows
+  // (the majority) cost nothing here — which is why these counts stay computed
+  // from rows instead of denormalized like `commentCount`.
   const subtaskRows: Doc<'tasks'>[][] = await Promise.all(
     tasks.map((t: Doc<'tasks'>) =>
       t.parentTaskId || (t as { _type?: string })._type === 'recurring'
@@ -278,11 +287,13 @@ async function enrichTasksWithUserData(ctx: QueryCtx, tasks: Doc<'tasks'>[]) {
               assignedByProfile?.avatarUrl ?? assignedBy.avatarUrl ?? assignedBy.faceImageUrl,
           }
         : null,
-      comments: taskComments.map((c) => ({
-        ...c,
-        author: commentAuthorMap.get(c.authorId),
-      })),
-      commentCount: taskComments.length,
+      // Full comment threads are NOT embedded in list responses: every detail
+      // surface (TaskDetailClient, TaskSheet) fetches its own thread via
+      // `getTaskComments`, so shipping rows here only inflated the payload of
+      // every board render. The denormalized `commentCount` carries the only
+      // thing a list actually displays.
+      comments: [],
+      commentCount: task.commentCount ?? (taskComments as Doc<'taskComments'>[]).length,
       projectName: task.projectId ? (projectMap.get(task.projectId)?.name ?? null) : null,
       /** Co-assignees, resolved. Empty unless somebody has added one. */
       assigneeUsers: slimUsers(task.assigneeIds),
@@ -709,7 +720,11 @@ export const addComment = mutation({
       content: args.content,
       createdAt: now,
     });
-    await ctx.db.patch(args.taskId, { updatedAt: now });
+    // Denormalized counter (see schema note on `commentCount`): the board reads
+    // it off the task row instead of walking the comment index once per row on
+    // every render. Comments are append-only here (no delete mutation), so the
+    // counter never needs a decrement path.
+    await ctx.db.patch(args.taskId, { updatedAt: now, commentCount: (task.commentCount ?? 0) + 1 });
 
     // The assignee owns the task, so a comment they did not write is worth a
     // ping; the sidebar /tasks badge blinks off the same row.
@@ -867,31 +882,40 @@ async function fetchAllTasksForStaff(
     throw new Error('Admin must belong to an organization');
   }
 
-  const tasks = await ctx.db.query('tasks').order('desc').take(DEFAULT_LIST_CAP);
-
-  // Exclude soft-deleted tasks
-  const activeTasks = tasks.filter((t) => !t.deletedAt);
-
-  // Filter tasks by organization
-  let orgTasks = activeTasks;
-  if (userIsSuperadmin) {
-    // For superadmin: filter by selectedOrganizationId if provided
-    if (selectedOrganizationId) {
-      orgTasks = activeTasks.filter((task) => task.organizationId === selectedOrganizationId);
+  // Org-scoped read straight off the `by_org` index instead of a capped
+  // whole-table scan filtered in JS: the index walk touches only this org's
+  // rows, so board latency stops growing with every other tenant's task count.
+  // A superadmin who has not picked an org keeps the legacy "see everything"
+  // mode — one bounded scan behind an admin-only surface, unchanged. The org
+  // filter is re-applied in memory as defense-in-depth: even a mis-scoped
+  // index range must never leak another tenant's rows.
+  const orgId = userIsSuperadmin ? selectedOrganizationId : requester.organizationId;
+  const inScope = (t: Doc<'tasks'>) => {
+    if (t.deletedAt) return false;
+    if (userIsSuperadmin) {
+      return selectedOrganizationId ? t.organizationId === selectedOrganizationId : true;
     }
-    // If no selectedOrganizationId, superadmin sees all tasks (no filter)
-  } else {
-    // For regular admin: filter by their organization
-    orgTasks = activeTasks.filter((task) => task.organizationId === requester.organizationId);
-  }
+    return t.organizationId === requester.organizationId;
+  };
+  const orgTasks = orgId
+    ? (
+        await ctx.db
+          .query('tasks')
+          .withIndex('by_org', (q) => q.eq('organizationId', orgId))
+          .order('desc')
+          .take(DEFAULT_LIST_CAP)
+      ).filter(inScope)
+    : userIsSuperadmin
+      ? (await ctx.db.query('tasks').order('desc').take(DEFAULT_LIST_CAP)).filter(inScope)
+      : [];
 
   // Also include active recurring task series as visible "tasks" so they appear
   // on the board. Each series is mapped to the task shape the board expects.
-  const orgId = selectedOrganizationId ?? requester.organizationId;
-  const recurringSeries = orgId
+  const recurringOrgId = selectedOrganizationId ?? requester.organizationId;
+  const recurringSeries = recurringOrgId
     ? await ctx.db
         .query('recurringTasks')
-        .withIndex('by_org', (q) => q.eq('organizationId', orgId!))
+        .withIndex('by_org', (q) => q.eq('organizationId', recurringOrgId))
         .order('desc')
         .take(DEFAULT_LIST_CAP)
     : [];
@@ -964,9 +988,9 @@ export const getVisibleTasks = query({
     const subtreeIds = await getSubordinateIds(ctx, caller._id, caller.organizationId);
     const visibleIds = [caller._id, ...subtreeIds];
 
-    // Collect per person: tasks assigned to them, tasks they created, and tasks
-    // where they are a co-assignee. The caller's own lists get the full cap;
-    // deeper branches are capped tighter — the board renders a bounded list anyway.
+    // Assignee / assigner reads are index lookups per person. The caller's own
+    // lists get the full cap; deeper branches are capped tighter — the board
+    // renders a bounded list anyway.
     const perPerson = await Promise.all(
       visibleIds.map((id) => {
         const cap = id === caller._id ? DEFAULT_LIST_CAP : SMALL_LIST_CAP;
@@ -981,35 +1005,52 @@ export const getVisibleTasks = query({
             .withIndex('by_assigned_by', (q) => q.eq('assignedBy', id))
             .order('desc')
             .take(cap),
-          // Get all tasks and filter for co-assignees (tasks where this person is in assigneeIds)
-          ctx.db
-            .query('tasks')
-            .order('desc')
-            .take(cap)
-            .then((tasks) => tasks.filter((t) => t.assigneeIds?.includes(id))),
         ]);
       }),
+    );
+
+    // Co-assignee matching used to re-scan the whole tasks table once per
+    // person in the subtree (N × take(2000) on every board render, and this is
+    // a live subscription that re-runs on every task write). One org-scoped
+    // scan with a Set membership check replaces all of those walks at the
+    // same bound — and the `by_org` index keeps other tenants' rows out of it.
+    const visibleIdSet = new Set(visibleIds);
+    const coAssigneeCandidates = caller.organizationId
+      ? await ctx.db
+          .query('tasks')
+          .withIndex('by_org', (q) => q.eq('organizationId', caller.organizationId!))
+          .order('desc')
+          .take(DEFAULT_LIST_CAP)
+      : await ctx.db.query('tasks').order('desc').take(DEFAULT_LIST_CAP);
+    const coAssigneeTasks = coAssigneeCandidates.filter(
+      (t) =>
+        !t.deletedAt &&
+        (caller.organizationId ? true : !t.organizationId) &&
+        (t.assigneeIds ?? []).some((id) => visibleIdSet.has(id)),
     );
 
     // Merge + de-dupe, org-scoped, newest first.
     const seen = new Set<string>();
     const merged: Doc<'tasks'>[] = [];
-    for (const [assignedToTasks, assignedByTasks, coAssigneeTasks] of perPerson) {
-      for (const task of [...assignedToTasks, ...assignedByTasks, ...coAssigneeTasks]) {
-        if (seen.has(task._id)) continue;
-        seen.add(task._id);
-        // Exclude soft-deleted tasks
-        if (task.deletedAt) continue;
-        // A caller with an org only ever sees that org's tasks; an org-less
-        // caller (unplaced account) only sees legacy tasks without an org.
-        if (caller.organizationId) {
-          if (task.organizationId !== caller.organizationId) continue;
-        } else if (task.organizationId) {
-          continue;
-        }
-        merged.push(task);
+    const pushVisible = (task: Doc<'tasks'>) => {
+      if (seen.has(task._id)) return;
+      seen.add(task._id);
+      // Exclude soft-deleted tasks
+      if (task.deletedAt) return;
+      // A caller with an org only ever sees that org's tasks; an org-less
+      // caller (unplaced account) only sees legacy tasks without an org.
+      if (caller.organizationId) {
+        if (task.organizationId !== caller.organizationId) return;
+      } else if (task.organizationId) {
+        return;
       }
+      merged.push(task);
+    };
+    for (const [assignedToTasks, assignedByTasks] of perPerson) {
+      for (const task of assignedToTasks) pushVisible(task);
+      for (const task of assignedByTasks) pushVisible(task);
     }
+    for (const task of coAssigneeTasks) pushVisible(task);
     merged.sort((a, b) => b.createdAt - a.createdAt);
 
     // Also include recurring task series from the caller's org so the board
@@ -1023,13 +1064,12 @@ export const getVisibleTasks = query({
           .order('desc')
           .take(SMALL_LIST_CAP)
       : [];
-    const visibleUserSet = new Set(visibleIds);
     const visibleRecurring = recurringSeries.filter((r) => {
-      if (visibleUserSet.has(r.assignedTo)) return true;
-      if (visibleUserSet.has(r.assignedBy)) return true;
+      if (visibleIdSet.has(r.assignedTo)) return true;
+      if (visibleIdSet.has(r.assignedBy)) return true;
       if (r.assigneeIds) {
         for (const aid of r.assigneeIds) {
-          if (visibleUserSet.has(aid)) return true;
+          if (visibleIdSet.has(aid)) return true;
         }
       }
       return false;
@@ -2612,5 +2652,41 @@ export const restoreTask = mutation({
       details: JSON.stringify({ title: task.title, status: task.status }),
       createdAt: Date.now(),
     });
+  },
+});
+
+// ── One-time backfill: denormalized comment counts ─────────────────────────
+/**
+ * Patches `commentCount` onto legacy task rows that predate the denormalized
+ * counter, so the board's enrichment can stop reading the comment table once
+ * per row on every render (see `enrichTasksWithUserData`). Idempotent: rows
+ * that already carry a count are skipped, and re-running patches the exact
+ * value either way. Rows come back oldest-first, so repeated calls from a cron
+ * drain any size backlog in bounded batches.
+ */
+export const backfillTaskCommentCounts = internalMutation({
+  args: { cursor: v.optional(v.string()), numItems: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    const page = await ctx.db
+      .query('tasks')
+      .filter((q) => q.eq(q.field('commentCount'), undefined))
+      .paginate({
+        cursor: args.cursor ?? null,
+        numItems: Math.min(args.numItems ?? 500, 1000),
+      });
+
+    for (const task of page.page) {
+      const comments = await ctx.db
+        .query('taskComments')
+        .withIndex('by_task', (q) => q.eq('taskId', task._id))
+        .take(SMALL_LIST_CAP);
+      await ctx.db.patch(task._id, { commentCount: comments.length });
+    }
+
+    return {
+      done: page.isDone,
+      cursor: page.continueCursor,
+      patched: page.page.length,
+    };
   },
 });

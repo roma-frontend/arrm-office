@@ -287,6 +287,13 @@ export const CRON_REGISTRY: Array<{
     description: 'Daily nudge while scheduled maintenance is due or overdue.',
     schedule: 'daily 08:30 UTC',
   },
+  {
+    jobKey: 'task-comment-count-backfill',
+    label: 'Task comment count backfill',
+    description:
+      'One-time migration: patches denormalized commentCount onto legacy task rows. Self-retiring — it drains its backlog, then every run patches nothing.',
+    schedule: 'hourly',
+  },
 ];
 
 export const listScheduledOps = query({
@@ -430,6 +437,25 @@ export const dispatchCron = internalAction({
         case 'attendance-daily-digest':
           await ctx.runAction(internal.attendance.bot.runDailyDigest, {});
           break;
+        case 'task-comment-count-backfill': {
+          // A one-time migration is a drain, not a single mutation: chain pages
+          // by cursor until done, each page its own mutation transaction (so
+          // one bad row can never fail the whole batch). Capped per run so the
+          // action stays well inside its time budget — whatever is left is
+          // picked up by the next hourly pass. Once every row carries a count
+          // the first page comes back done and the job no-ops forever, free to
+          // leave registered (or pause from the Scheduled Ops console).
+          let cursor: string | undefined;
+          for (let page = 0; page < 20; page += 1) {
+            const res: { done: boolean; cursor: string; patched: number } = await ctx.runMutation(
+              internal.tasks.backfillTaskCommentCounts,
+              cursor ? { cursor } : {},
+            );
+            if (res.done) break;
+            cursor = res.cursor;
+          }
+          break;
+        }
         default:
           throw new Error(`Unknown cron job key: ${args.jobKey}`);
       }

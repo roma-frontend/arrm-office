@@ -154,4 +154,16 @@ crons.daily('attendance-daily-digest', { hourUTC: 5, minuteUTC: 0 }, dispatch, {
   jobKey: 'attendance-daily-digest',
 });
 
+// One-time migration behind the regular cron gate: patches the denormalized
+// `commentCount` onto every task row that predates the counter (see
+// tasks.backfillTaskCommentCounts and the schema note on `commentCount`), so
+// the board's enrichment can stop reading the comment table per row. Hourly,
+// not minutely: a legacy backlog drains a few thousand rows per run (20 pages
+// of 500), so even a large platform is done within a day. Self-retiring — the
+// first page reports `done` once every row carries a count and the run no-ops;
+// pausable from the Scheduled Ops console like any other job.
+crons.interval('task-comment-count-backfill', { hours: 1 }, dispatch, {
+  jobKey: 'task-comment-count-backfill',
+});
+
 export default crons;

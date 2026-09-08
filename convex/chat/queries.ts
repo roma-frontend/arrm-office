@@ -96,16 +96,33 @@ export const getMyConversations = query({
       isPinned?: boolean;
     }>;
 
-    // Step 5: Load ALL chat members
-    const allChatMembers = await ctx.db.query('chatMembers').order('desc').take(MAX_PAGE_SIZE);
+    // Step 5: Load the members of each conversation straight off the
+    // `by_conversation` index. This used to read the ENTIRE chatMembers table —
+    // the highest-write table in the app — on every render and filter it in JS,
+    // so every message anywhere in the org re-ran this query everywhere. The
+    // read set is now bounded by the caller's own conversation count.
+    const membersPerConv: Doc<'chatMembers'>[][] = await Promise.all(
+      filteredConvs.map((conv) =>
+        ctx.db
+          .query('chatMembers')
+          .withIndex('by_conversation', (q) => q.eq('conversationId', conv._id))
+          .take(MAX_PAGE_SIZE),
+      ),
+    );
+    const membersByConv = new Map<Id<'chatConversations'>, Doc<'chatMembers'>[]>();
+    filteredConvs.forEach((conv, i) => {
+      membersByConv.set(conv._id, membersPerConv[i] ?? []);
+    });
+    const allChatMembers = membersPerConv.flat();
 
     // Step 6: Collect all user IDs
     const allUserIds = new Set<Id<'users'>>();
     filteredConvs.forEach((conv) => {
       allUserIds.add(conv.createdBy);
       if (conv.type === 'direct') {
-        const members = allChatMembers.filter((m) => m.conversationId === conv._id);
-        const otherMember = members.find((m) => m.userId !== args.userId);
+        const otherMember = (membersByConv.get(conv._id) ?? []).find(
+          (m) => m.userId !== args.userId,
+        );
         if (otherMember) {
           allUserIds.add(otherMember.userId);
         }
@@ -118,10 +135,9 @@ export const getMyConversations = query({
 
     // Step 8: Build group members map
     const groupConvs = filteredConvs.filter((c) => c.type === 'group');
-    const groupMembersMap = new Map<Id<'chatConversations'>, typeof allChatMembers>();
+    const groupMembersMap = new Map<Id<'chatConversations'>, Doc<'chatMembers'>[]>();
     groupConvs.forEach((conv) => {
-      const members = allChatMembers.filter((m) => m.conversationId === conv._id);
-      groupMembersMap.set(conv._id, members);
+      groupMembersMap.set(conv._id, membersByConv.get(conv._id) ?? []);
     });
 
     // Collect all group member user IDs
@@ -151,8 +167,9 @@ export const getMyConversations = query({
 
       let otherUser = null;
       if (conv.type === 'direct') {
-        const allMembers = allChatMembers.filter((m) => m.conversationId === conv._id);
-        const otherMember = allMembers.find((m) => m.userId !== args.userId);
+        const otherMember = (membersByConv.get(conv._id) ?? []).find(
+          (m) => m.userId !== args.userId,
+        );
         if (otherMember) {
           const otherUserData = userMap.get(otherMember.userId);
           const otherProfile = profileMap.get(otherMember.userId);

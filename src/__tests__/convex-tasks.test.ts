@@ -646,13 +646,17 @@ describe('getAllTasks', () => {
 
   it('filters by the admin organization', async () => {
     mockGetAuthCaller.mockResolvedValue(makeCaller('admin', ORG_A, ADMIN_ID));
-    const { ctx, query, take } = makeCtx();
+    const { ctx, query, withIndex, take } = makeCtx();
+    // First take: the by_org index read (the mock chain returns the same rows
+    // for any call — the in-memory org filter must drop the foreign row).
     take.mockResolvedValueOnce([taskDoc(), taskDoc({ _id: 'task_2', organizationId: ORG_B })]);
-    take.mockResolvedValueOnce([]); // comments
+    take.mockResolvedValueOnce([]); // recurring series
+    take.mockResolvedValueOnce([]); // comment backfill
 
     const result = (await handlers.getAllTasks(ctx, {})) as any[];
 
     expect(query).toHaveBeenCalledWith('tasks');
+    expect(withIndex).toHaveBeenCalledWith('by_org', expect.any(Function));
     expect(result.map((t) => t._id)).toEqual([TASK_ID]);
   });
 
@@ -664,6 +668,7 @@ describe('getAllTasks', () => {
       taskDoc({ organizationId: ORG_A }),
       taskDoc({ _id: 'task_2', organizationId: ORG_B }),
     ]);
+    take.mockResolvedValueOnce([]);
     take.mockResolvedValueOnce([]);
 
     const result = (await handlers.getAllTasks(ctx, {

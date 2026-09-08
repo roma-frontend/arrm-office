@@ -1,11 +1,39 @@
 import { ConvexError, v } from 'convex/values';
 import { getAuthCaller } from './lib/getAuthCaller';
-import { query, mutation } from './_generated/server';
-import type { Id } from './_generated/dataModel';
+import { query, mutation, type QueryCtx, type MutationCtx } from './_generated/server';
+import type { Doc, Id } from './_generated/dataModel';
 import { requireRole } from './lib/rbac';
 import { MAX_PAGE_SIZE } from './pagination';
 import { DEFAULT_LIST_CAP, XLARGE_LIST_CAP } from './lib/limits';
 import { getProfile } from './lib/userProfile';
+import { isSuperadmin } from './lib/auth';
+
+/**
+ * Non-superadmin users, org-scoped when possible.
+ *
+ * Every caller of this helper is an admin or superadmin. An org id is known
+ * for org admins (their own) and for superadmins that picked one — those go
+ * through the `by_org` index instead of a capped whole-table scan, so cost
+ * grows with the org's headcount rather than with the platform's.
+ */
+async function loadStaffUsers(ctx: QueryCtx | MutationCtx, organizationId?: Id<'organizations'>) {
+  if (organizationId) {
+    const orgUsers = await ctx.db
+      .query('users')
+      .withIndex('by_org', (q) => q.eq('organizationId', organizationId))
+      .take(MAX_PAGE_SIZE);
+    return orgUsers.filter((u) => !isSuperadmin(u));
+  }
+  return (await ctx.db.query('users').order('desc').take(MAX_PAGE_SIZE)).filter(
+    (u) => !isSuperadmin(u),
+  );
+}
+
+/** Users from {@link loadStaffUsers} indexed by their id, for leave lookups. */
+async function loadStaffUserMap(ctx: QueryCtx | MutationCtx, organizationId?: Id<'organizations'>) {
+  const users = await loadStaffUsers(ctx, organizationId);
+  return { users, userMap: new Map(users.map((u) => [u._id, u] as const)) };
+}
 
 /**
  * Get cost analysis data for admin dashboard
@@ -47,11 +75,8 @@ export const getCostAnalysis = query({
       leaves = leaves.filter((l) => l.organizationId === args.organizationId);
     }
 
-    // Get all users
-    const users = (await ctx.db.query('users').order('desc').take(MAX_PAGE_SIZE)).filter(
-      (u) => u.role !== 'superadmin',
-    );
-    const userMap = new Map(users.map((u) => [u._id, u]));
+    // Get all users (org-scoped via index when the caller's scope is known)
+    const { users, userMap } = await loadStaffUserMap(ctx, args.organizationId);
 
     // Load profiles in parallel
     const profiles = await Promise.all(users.map((u) => getProfile(ctx, u._id)));
@@ -258,10 +283,8 @@ export const getSmartSuggestions = query({
       category: 'optimization' | 'cost' | 'conflict' | 'policy';
     }> = [];
 
-    // Get all users and leaves
-    let users = (await ctx.db.query('users').order('desc').take(MAX_PAGE_SIZE)).filter(
-      (u) => u.role !== 'superadmin',
-    );
+    // Get all users (org-scoped via index when the caller's scope is known) and leaves
+    const { users } = await loadStaffUserMap(ctx, organizationId);
     let leaves = await ctx.db
       .query('leaveRequests')
       .filter((q) => q.eq(q.field('status'), 'approved'))
@@ -270,7 +293,6 @@ export const getSmartSuggestions = query({
 
     // Filter by organization if provided
     if (organizationId) {
-      users = users.filter((u) => u.organizationId === organizationId);
       leaves = leaves.filter((l) => l.organizationId === organizationId);
     }
 
@@ -403,11 +425,8 @@ export const getCalendarExportData = query({
       leaves = leaves.filter((l) => l.organizationId === args.organizationId);
     }
 
-    // Get all users
-    const users = (await ctx.db.query('users').order('desc').take(MAX_PAGE_SIZE)).filter(
-      (u) => u.role !== 'superadmin',
-    );
-    const userMap = new Map(users.map((u) => [u._id, u]));
+    // Get all users (org-scoped via index when the caller's scope is known)
+    const { users, userMap } = await loadStaffUserMap(ctx, args.organizationId);
 
     // Load profiles in parallel
     const ceProfiles = await Promise.all(users.map((u) => getProfile(ctx, u._id)));

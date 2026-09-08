@@ -13,6 +13,7 @@ import { isSuperadmin as isSuperadminRole } from './auth';
 import { throwAppError } from './appErrors';
 import { hasCapability } from './capabilities';
 import { isAncestorOf, getSubordinateIds } from './reportingLine';
+import { XLARGE_LIST_CAP } from './limits';
 
 /**
  * Role order for the coarse tier checks below.
@@ -312,7 +313,10 @@ export async function getVisibleUserIdsForCaller(
   caller: { _id: Id<'users'>; role: Role; organizationId?: Id<'organizations'> },
 ): Promise<Set<Id<'users'>>> {
   if (caller.role === 'superadmin') {
-    const all = await ctx.db.query('users').collect();
+    // Bounded instead of `.collect()`: an unbounded read throws past Convex's
+    // 16384-document hard limit, which would take this — and every query built
+    // on it — down platform-wide rather than just truncating a set.
+    const all = await ctx.db.query('users').take(XLARGE_LIST_CAP);
     return new Set(all.map((u) => u._id));
   }
 
