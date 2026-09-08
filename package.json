@@ -35,7 +35,8 @@
   "scripts": {
     "dev": "next dev --turbo",
     "dev:webpack": "next dev",
-    "build": "next build",
+    "build": "next build && node scripts/check-bundle-guardrails.mjs",
+    "check:bundle": "node scripts/check-bundle-guardrails.mjs",
     "build:analyze": "ANALYZE=true next build --webpack",
     "start": "next start",
     "lint": "eslint",

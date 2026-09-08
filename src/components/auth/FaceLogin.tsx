@@ -15,6 +15,8 @@ import {
   detectFace,
   detectFaceBox,
   prefetchFaceApiModels,
+  prefetchFaceDetector,
+  prefetchFaceRecognition,
   retryFaceApi,
   subscribeFaceApiStatus,
   type FaceApiStatus,
@@ -122,8 +124,10 @@ export function FaceLogin() {
     const unsubscribe = subscribeFaceApiStatus(setModelStatus);
 
     // Start downloading immediately on mount rather than on button press, so the
-    // detector is usually ready by the time the camera stream opens.
-    prefetchFaceApiModels();
+    // detector is usually ready by the time the camera stream opens. Only the
+    // detector stage (193 KB) — the ~6.4 MB recognition nets load on intent
+    // (webcam start / login attempt), see prefetchFaceRecognition below.
+    prefetchFaceDetector();
 
     (async () => {
       try {
@@ -237,6 +241,12 @@ export function FaceLogin() {
 
       streamRef.current = mediaStream;
       setStream(mediaStream);
+
+      // The user has shown real intent to authenticate — start streaming the
+      // ~6.4 MB recognition nets in the background now. attemptFaceLogin()
+      // awaits loadFaceRecognition() itself, so this only moves the wait
+      // earlier; the preview loop stays detector-only.
+      prefetchFaceRecognition();
       setIsWebcamActive(true);
 
       // дождаться, когда React нарисует <video/>

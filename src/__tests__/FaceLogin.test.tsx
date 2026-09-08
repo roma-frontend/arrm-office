@@ -122,6 +122,8 @@ jest.mock('@/lib/faceApi', () => ({
   detectFace: jest.fn(() => Promise.resolve(mockDetectResult)),
   detectFaceBox: jest.fn(() => Promise.resolve(mockDetectBox)),
   prefetchFaceApiModels: jest.fn(),
+  prefetchFaceDetector: jest.fn(),
+  prefetchFaceRecognition: jest.fn(),
   retryFaceApi: jest.fn(),
   subscribeFaceApiStatus: jest.fn((cb: any) => {
     statusListener = cb;
@@ -144,7 +146,14 @@ const mockFetch = jest.fn((url: string, opts?: any) => {
 import { FaceLogin } from '@/components/auth/FaceLogin';
 import { logger } from '@/lib/logger';
 import { toast } from 'sonner';
-import { detectFaceBox, detectFace, retryFaceApi, prefetchFaceApiModels } from '@/lib/faceApi';
+import {
+  detectFaceBox,
+  detectFace,
+  retryFaceApi,
+  prefetchFaceApiModels,
+  prefetchFaceDetector,
+  prefetchFaceRecognition,
+} from '@/lib/faceApi';
 
 function makeStream() {
   return {
@@ -285,7 +294,10 @@ describe('FaceLogin — initial render & model status', () => {
     expect(screen.getByPlaceholderText('you@example.com')).toBeInTheDocument();
     expect(screen.getByText('Start Face Login')).toBeInTheDocument();
     expect(screen.getByText(/Preparing detection/)).toBeInTheDocument();
-    expect(prefetchFaceApiModels).toHaveBeenCalled();
+    // Mount prefetches the detector stage only — the ~6.4 MB recognition nets
+    // must wait for user intent (webcam start), see the webcam-start test.
+    expect(prefetchFaceDetector).toHaveBeenCalled();
+    expect(prefetchFaceApiModels).not.toHaveBeenCalled();
   });
 
   it('pre-fills the email from the query string', async () => {
@@ -314,6 +326,7 @@ describe('FaceLogin — initial render & model status', () => {
 
     fireEvent.click(screen.getByText('Retry'));
     expect(retryFaceApi).toHaveBeenCalled();
+    // An explicit user retry restarts the whole pipeline (both stages).
     expect(prefetchFaceApiModels).toHaveBeenCalled();
   });
 
@@ -363,6 +376,9 @@ describe('FaceLogin — webcam start/stop', () => {
 
     expect(navigator.mediaDevices.getUserMedia).toHaveBeenCalled();
     expect(HTMLMediaElement.prototype.play).toHaveBeenCalled();
+    // Camera start is the user-intent point — recognition nets begin streaming
+    // in the background here, never on mount.
+    expect(prefetchFaceRecognition).toHaveBeenCalled();
     expect(intervalCallback).toBeTruthy();
     expect(screen.getByText('Cancel')).toBeInTheDocument();
 

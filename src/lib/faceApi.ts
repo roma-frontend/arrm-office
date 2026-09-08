@@ -38,6 +38,32 @@ const DETECTOR_SCORE_THRESHOLD = 0.5;
 let faceapi: typeof import('@vladmandic/face-api') | null = null;
 let tfInitialized = false;
 
+/**
+ * Structural type for the tfjs engine that @vladmandic/face-api bundles and
+ * re-exports as `tf`. The package's .d.ts doesn't declare that export (the
+ * runtime does), so we type just the surface we use.
+ *
+ * This engine is the ONLY tfjs copy we ship: importing the standalone
+ * `@tensorflow/tfjs` here as well used to put a second full copy of the
+ * library (~1.1 MB) into a separate chunk — and worse, `setBackend('webgl')`
+ * was then applied to the wrong engine, because face-api's models run on its
+ * embedded copy, not the standalone one.
+ */
+interface FaceApiTf {
+  env(): { set(name: string, value: unknown): void };
+  setBackend(backend: string): Promise<boolean>;
+  ready(): Promise<void>;
+  getBackend(): string;
+}
+
+function embeddedTf(api: typeof import('@vladmandic/face-api')): FaceApiTf {
+  const tf = (api as unknown as { tf?: FaceApiTf }).tf;
+  if (!tf) {
+    throw new Error('@vladmandic/face-api did not export its bundled TensorFlow.js engine');
+  }
+  return tf;
+}
+
 /** Stage of the pipeline that is ready to use. */
 export type FaceApiStage = 'idle' | 'loading-detector' | 'detector-ready' | 'ready' | 'error';
 
@@ -89,16 +115,22 @@ export function subscribeFaceApiStatus(listener: (s: FaceApiStatus) => void): ()
   return () => listeners.delete(listener);
 }
 
-async function initTensorFlow() {
+/**
+ * Initialises the tfjs engine embedded in @vladmandic/face-api (its `tf`
+ * re-export) — the same engine every model in this module runs on.
+ *
+ * WebGL first: inference on the CPU backend takes *seconds* per frame. If the
+ * GPU path cannot start, fall back to the CPU backend rather than failing.
+ */
+async function initTensorFlow(api: typeof import('@vladmandic/face-api')) {
   if (tfInitialized) return;
 
   try {
-    const tf = await import('@tensorflow/tfjs');
+    const tf = embeddedTf(api);
 
     // Official way to suppress kernel registration warnings (HMR noise in dev)
     tf.env().set('DEBUG', false);
 
-    // Prefer WebGL — inference on the CPU backend takes *seconds* per frame.
     try {
       await tf.setBackend('webgl');
       await tf.ready();
@@ -128,8 +160,11 @@ let libraryPromise: Promise<typeof import('@vladmandic/face-api')> | null = null
 function loadFaceApiLibrary() {
   if (!libraryPromise) {
     libraryPromise = (async () => {
-      await initTensorFlow();
+      // Import face-api first: its bundle carries the only tfjs engine we
+      // use, so importing the standalone package here would ship a second
+      // full copy (see FaceApiTf above).
       faceapi = await import('@vladmandic/face-api');
+      await initTensorFlow(faceapi);
       return faceapi;
     })();
     libraryPromise.catch(() => {
@@ -361,6 +396,29 @@ export function prefetchFaceApiModels(): void {
     .catch(() => {
       // Already reported through the status; nothing to add here.
     });
+}
+
+/**
+ * Warms the detector stage only: face-api's bundled engine + 193 KB of tiny
+ * detector weights. Use on pages whose visitor may never authenticate — the
+ * ~6.4 MB recognition nets stay unloaded until the user shows real intent
+ * (opens the camera / enters the flow that computes descriptors).
+ */
+export function prefetchFaceDetector(): void {
+  void loadFaceDetector().catch(() => {
+    // Already reported through the status; nothing to add here.
+  });
+}
+
+/**
+ * Warms the recognition stage (landmark + 128-d descriptor nets, ~6.4 MB of
+ * weights, plus a main-thread shader warmup). Call when the user has shown
+ * intent to authenticate — e.g. the camera was started — not on page mount.
+ */
+export function prefetchFaceRecognition(): void {
+  void loadFaceRecognition().catch(() => {
+    // Already reported through the status; nothing to add here.
+  });
 }
 
 // ── Detection ────────────────────────────────────────────────────────────────

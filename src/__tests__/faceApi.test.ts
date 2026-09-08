@@ -3,7 +3,9 @@
  *
  * Tests: detectFace, compareFaces, isFaceMatch, findBestMatch,
  * createCanvasFromVideo, canvasToBlob (and error paths).
- * The heavy @vladmandic/face-api and @tensorflow/tfjs are mocked.
+ * The heavy @vladmandic/face-api is mocked, including the tfjs engine it
+ * bundles and re-exports as `tf` (the standalone @tensorflow/tfjs package is
+ * no longer imported anywhere — face-api's embedded engine is the only copy).
  */
 
 import {
@@ -32,7 +34,9 @@ jest.mock('@/lib/logger', () => ({
   },
 }));
 
-// Mock @tensorflow/tfjs — setBackend, env, ready, getBackend
+// Mock the tfjs engine that @vladmandic/face-api bundles and re-exports as
+// `tf` — setBackend, env, ready, getBackend. (It lives on the face-api mock
+// below; there is no standalone @tensorflow/tfjs import anymore.)
 const mockTfSetBackend = jest.fn();
 const mockTfReady = jest.fn();
 const mockTfGetBackend = jest.fn().mockReturnValue('webgl');
@@ -44,8 +48,6 @@ const mockTf = {
   env: () => ({ set: mockTfEnvSet }),
 };
 
-jest.mock('@tensorflow/tfjs', () => mockTf, { virtual: true });
-
 // Mock @vladmandic/face-api
 const mockWithFaceDescriptor = jest.fn();
 jest.mock(
@@ -54,6 +56,8 @@ jest.mock(
     function SsdMobilenetv1Options() {}
     function TinyFaceDetectorOptions() {}
     return {
+      // The bundled tfjs engine the loader initialises (see faceApi.ts).
+      tf: mockTf,
       nets: {
         tinyFaceDetector: { loadFromUri: jest.fn().mockResolvedValue(undefined) },
         ssdMobilenetv1: { loadFromUri: jest.fn().mockResolvedValue(undefined) },
@@ -437,8 +441,10 @@ describe('tfjs backend fallback (fresh module)', () => {
 
   beforeEach(() => {
     jest.resetModules();
-    // resetModules re-ran the mock factories, so re-wire the tfjs mock here.
-    const tf = jest.requireMock('@tensorflow/tfjs') as any;
+    // resetModules re-ran the mock factories, so re-wire the tf mock here.
+    // It lives on the face-api mock (the embedded engine), not a standalone
+    // @tensorflow/tfjs module.
+    const tf = (jest.requireMock('@vladmandic/face-api') as any).tf as any;
     tf.setBackend.mockReset().mockResolvedValue(undefined);
     tf.ready.mockReset().mockResolvedValue(undefined);
     tf.getBackend.mockReset().mockReturnValue('webgl');
@@ -466,7 +472,7 @@ describe('tfjs backend fallback (fresh module)', () => {
   });
 
   it('falls back to the CPU backend when WebGL is unavailable and warns', async () => {
-    const tf = jest.requireMock('@tensorflow/tfjs') as any;
+    const tf = (jest.requireMock('@vladmandic/face-api') as any).tf as any;
     tf.setBackend
       .mockRejectedValueOnce(new Error('webgl unavailable'))
       .mockResolvedValue(undefined);
@@ -482,7 +488,7 @@ describe('tfjs backend fallback (fresh module)', () => {
   });
 
   it('rejects when both backends fail and describes a non-Error failure', async () => {
-    const tf = jest.requireMock('@tensorflow/tfjs') as any;
+    const tf = (jest.requireMock('@vladmandic/face-api') as any).tf as any;
     tf.setBackend.mockRejectedValue('backend explosion');
 
     await expect(fresh.loadFaceDetector()).rejects.toEqual('backend explosion');
