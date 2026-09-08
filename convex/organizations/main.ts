@@ -138,14 +138,21 @@ export const getAllOrganizations = query({
           .withIndex('by_email', (q) => q.eq('email', identity.email!.toLowerCase()))
           .unique()
       : null;
-    if (!identityUser || !isSuperadmin(identityUser)) {
-      if (args.superadminUserId) {
-        const caller = await ctx.db.get(args.superadminUserId);
-        if (!caller || !isSuperadmin(caller)) {
-          throw new Error('Superadmin only');
-        }
-      }
+    const identityIsSuper = !!identityUser && isSuperadmin(identityUser);
+
+    // Legacy path: some callers still pass `superadminUserId`. Only honor it
+    // when that named user actually is a superadmin. This is a transient,
+    // legitimate state (e.g. the client fires this while the Convex token
+    // still carries a different identity during impersonation start/exit) —
+    // throwing here crashed the shell (OrganizationSelector is always
+    // mounted for superadmins); returning [] degrades to "no data" for a
+    // beat until the fresh token lands and the query re-runs.
+    let legacyAuthorized = false;
+    if (!identityIsSuper && args.superadminUserId) {
+      const caller = await ctx.db.get(args.superadminUserId);
+      legacyAuthorized = !!caller && isSuperadmin(caller);
     }
+    if (!identityIsSuper && !legacyAuthorized) return [];
 
     const orgs = await ctx.db.query('organizations').order('desc').take(MAX_PAGE_SIZE);
 
