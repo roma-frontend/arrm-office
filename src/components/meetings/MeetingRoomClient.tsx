@@ -24,8 +24,8 @@ import { useTranslation } from 'react-i18next';
 import { useAction, useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Room, type LocalAudioTrack, type LocalVideoTrack } from 'livekit-client';
-import { LiveKitRoom, RoomAudioRenderer, usePreviewTracks } from '@livekit/components-react';
-import { CustomConference } from './CustomConference';
+import { usePreviewTracks } from '@livekit/components-react';
+import nextDynamic from 'next/dynamic';
 import { DeviceSettings, MicMeter } from './DeviceSettings';
 import { BackgroundPicker } from './BackgroundPicker';
 import { useMeetingDevices, useMicLevel, type MeetingDeviceKind } from './useMeetingDevices';
@@ -48,8 +48,15 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ensureAppNamespaces } from '@/i18n/config';
 import { LobbyForm } from './LobbyForm';
-import '@livekit/components-styles';
 import './meetings.css';
+
+// The in-call stack (LiveKitRoom + CustomConference + krisp + components-styles)
+// is several MB — load it only when the user actually joins, never on the
+// pre-join screen. The `meeting` metadata is already resolved before this
+// renders, so there is no loading skeleton flash during the connect handshake.
+const MeetingCall = nextDynamic(() => import('./MeetingCall').then((m) => m.MeetingCall), {
+  ssr: false,
+});
 
 const MEETING_PUBLISH_STATES = ['scheduled', 'live', 'ended'] as const;
 
@@ -446,48 +453,30 @@ export function MeetingRoomClient() {
   // ── In-call ───────────────────────────────────────────────────────────────
   if (joined && token && serverUrl && room) {
     return (
-      <div className="flex h-dvh flex-col overflow-hidden bg-[#0a0c12] text-white">
-        <main className="min-h-0 flex-1 overflow-hidden">
-          <LiveKitRoom
-            room={room}
-            token={token}
-            serverUrl={serverUrl}
-            connect
-            onConnected={onConnected}
-            onDisconnected={onDisconnected}
-            onError={(error) => {
-              const msg = String(error);
-              if (msg.includes('Client initiated disconnect') || msg.includes('disconnect')) return;
-              toast.error(`${t('meetings.joinError')} — ${msg}`);
-            }}
-            className="h-full"
-            data-lk-theme="default"
-          >
-            <CustomConference
-              roomName={roomName}
-              title={meetingTitle}
-              statusKey={statusKey}
-              elapsed={elapsed}
-              mode={meeting.mode}
-              linkCopied={linkCopied}
-              onCopyLink={copyLink}
-              onLeave={handleDisconnect}
-              deviceChoices={choices}
-              onDeviceChange={handleDeviceChange}
-              isOriginalHost={Boolean('isOriginalHost' in meeting && meeting.isOriginalHost)}
-              cohostIds={
-                'cohostIds' in meeting && meeting.cohostIds
-                  ? (meeting.cohostIds as unknown as readonly string[])
-                  : ([] as readonly string[])
-              }
-              waitingRoomEnabled={Boolean(
-                'waitingRoomEnabled' in meeting && meeting.waitingRoomEnabled,
-              )}
-            />
-            <RoomAudioRenderer />
-          </LiveKitRoom>
-        </main>
-      </div>
+      <MeetingCall
+        room={room}
+        token={token}
+        serverUrl={serverUrl}
+        onConnected={onConnected}
+        onDisconnected={onDisconnected}
+        roomName={roomName}
+        title={meetingTitle}
+        statusKey={statusKey}
+        elapsed={elapsed}
+        mode={meeting.mode}
+        linkCopied={linkCopied}
+        onCopyLink={copyLink}
+        onLeave={handleDisconnect}
+        deviceChoices={choices}
+        onDeviceChange={handleDeviceChange}
+        isOriginalHost={Boolean('isOriginalHost' in meeting && meeting.isOriginalHost)}
+        cohostIds={
+          'cohostIds' in meeting && meeting.cohostIds
+            ? (meeting.cohostIds as unknown as readonly string[])
+            : ([] as readonly string[])
+        }
+        waitingRoomEnabled={Boolean('waitingRoomEnabled' in meeting && meeting.waitingRoomEnabled)}
+      />
     );
   }
 

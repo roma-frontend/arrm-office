@@ -1,9 +1,11 @@
 /**
  * Export driver trips to Excel/CSV.
  * Headers are localized (en / ru / hy / de); EN is the fallback.
+ *
+ * ExcelJS is ~1MB minified, so it is imported at click time instead of
+ * statically: the drivers page no longer pays for it unless an export is
+ * actually requested (same pattern as the PDF loaders in exportDocument.ts).
  */
-
-import ExcelJS from 'exceljs';
 
 type ExportLang = 'en' | 'ru' | 'hy' | 'de';
 
@@ -94,6 +96,7 @@ export async function exportTripsToExcel(
   lang?: string,
 ) {
   const t = DICT[normalizeLang(lang)];
+  const ExcelJS = (await import('exceljs')).default;
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet(t.sheet);
 

@@ -28,7 +28,7 @@
  * header, since a sticky element only sticks to its nearest scrolling ancestor.
  */
 
-import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronRight, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -431,6 +431,92 @@ function DroppableTableSection({ id, children }: { id: string; children: React.R
   );
 }
 
+/**
+ * A grid row that mounts its real subtree only once it approaches the
+ * viewport (600px margin), then stays mounted.
+ *
+ * A full virtualizer (`@tanstack/react-virtual`) does not fit this grid: rows
+ * live inside collapsible group sections, the header stickiness depends on the
+ * section structure, and dnd-kit droppables must exist to accept a drop. An
+ * observer gate gives the same first-paint win — a 500-row board renders one
+ * screen of real rows and cheap placeholders — without any of those costs.
+ */
+function LazyTaskRow({
+  task,
+  rowContext,
+  selected,
+  isHighlighted,
+  highlightPulse,
+  canManage,
+  contextMenu,
+}: {
+  task: TaskTableRow;
+  rowContext: TaskRowContext;
+  selected: boolean;
+  isHighlighted?: boolean;
+  highlightPulse?: boolean;
+  canManage: boolean;
+  contextMenu?: TaskTableProps['contextMenu'];
+}) {
+  const [visible, setVisible] = useState(false);
+  const ref = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || visible) return;
+    if (typeof IntersectionObserver === 'undefined') {
+      setVisible(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '600px 0px' },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [visible]);
+
+  if (!visible) {
+    return (
+      <div ref={ref} data-task-id={task._id}>
+        <div
+          role="row"
+          style={rowContext.gridStyle}
+          className="grid items-stretch border-b border-(--border)"
+        >
+          <div className={cn('min-w-0', rowContext.rowHeightClass)} />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div ref={ref} data-task-id={task._id}>
+      <TaskContextMenu
+        task={task as ContextTask}
+        canManage={canManage}
+        onOpen={(t) => rowContext.onOpenTask(t._id)}
+        onEdit={contextMenu?.onEdit ?? (() => {})}
+        onSetStatus={(id, status) => rowContext.onSetStatus(id, status)}
+        onSetPriority={contextMenu?.onSetPriority ?? (() => {})}
+        onDelete={contextMenu?.onDelete ?? (() => {})}
+      >
+        <DraggableTaskRowWrapper
+          task={task}
+          ctx={rowContext}
+          selected={selected}
+          isHighlighted={isHighlighted}
+          highlightPulse={highlightPulse}
+        />
+      </TaskContextMenu>
+    </div>
+  );
+}
+
 // ── The grid ───────────────────────────────────────────────────────────────
 export function TaskTable({
   tasks,
@@ -664,6 +750,68 @@ export function TaskTable({
     [onReorderColumns, ordered],
   );
 
+  // ── Keyboard row navigation ────────────────────────────────────────────
+  // ArrowUp/ArrowDown (and vim j/k) walk the flat row order, moving real focus
+  // to the row's title button — so screen readers, Enter-to-open and Space all
+  // work for free because the browser is doing the focusing. The highlighted
+  // ring is drawn by the existing focus-visible style on the title button.
+  const moveRowFocus = useCallback(
+    (taskId: string, delta: 1 | -1) => {
+      const index = flatIds.indexOf(taskId);
+      if (index === -1) return;
+      const nextIndex = index + delta;
+      if (nextIndex < 0 || nextIndex >= flatIds.length) return;
+      const nextId = flatIds[nextIndex];
+      if (!nextId) return;
+      // Resolve live instead of caching: a lazy row may not have mounted its
+      // title button when the cache was built, and a cached node can go stale
+      // after a re-group. Convex ids are attribute-safe, so a plain selector
+      // is enough here.
+      const next = document.querySelector<HTMLElement>(`[data-task-id="${nextId}"] button[title]`);
+      next?.focus();
+    },
+    [flatIds],
+  );
+
+  const onGridKeyDown = useCallback(
+    (event: React.KeyboardEvent) => {
+      if (event.key === 'Escape' && selected.size > 0) {
+        clearSelection();
+        return;
+      }
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+      // Do not hijack typing inside an editor, input or popover.
+      if (
+        target.isContentEditable ||
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.tagName === 'SELECT' ||
+        target.closest('[role="listbox"], [role="menu"], [data-radix-popper-content-wrapper]')
+      ) {
+        return;
+      }
+      if (
+        event.key !== 'ArrowDown' &&
+        event.key !== 'ArrowUp' &&
+        event.key !== 'j' &&
+        event.key !== 'k'
+      ) {
+        return;
+      }
+      // Only steer when the focus is already on a row title (or nothing yet) —
+      // otherwise normal tab order would fight the arrows.
+      const rowEl = target.closest<HTMLElement>('[data-task-id]');
+      if (!rowEl) return;
+      const rowId = rowEl.getAttribute('data-task-id');
+      if (!rowId) return;
+      const delta = event.key === 'ArrowDown' || event.key === 'j' ? 1 : -1;
+      event.preventDefault();
+      moveRowFocus(rowId, delta);
+    },
+    [clearSelection, moveRowFocus, selected.size],
+  );
+
   const selectedIds = useMemo(() => [...selected], [selected]);
   const hasSections = view.group !== 'none';
 
@@ -680,11 +828,7 @@ export function TaskTable({
       // keeps it filling a wide screen, where `minWidth` is the smaller number.
       style={{ minWidth }}
       className="min-w-full"
-      onKeyDown={(event) => {
-        // A cell that is being edited stops Escape before it reaches this handler
-        // (see `useTypedCell`), so this only ever clears the selection.
-        if (event.key === 'Escape' && selected.size > 0) clearSelection();
-      }}
+      onKeyDown={onGridKeyDown}
     >
       <div
         role="row"
@@ -775,24 +919,16 @@ export function TaskTable({
             {!isCollapsed && (
               <DroppableTableSection id={sectionKey}>
                 {section.tasks.map((task) => (
-                  <TaskContextMenu
+                  <LazyTaskRow
                     key={task._id}
-                    task={task as ContextTask}
+                    task={task}
+                    rowContext={rowContext}
+                    selected={selected.has(task._id)}
+                    isHighlighted={task._id === highlightTaskId}
+                    highlightPulse={highlightPulse}
                     canManage={contextMenu?.canManage ?? false}
-                    onOpen={(t) => onOpenTask(t._id)}
-                    onEdit={contextMenu?.onEdit ?? (() => {})}
-                    onSetStatus={(id, status) => rowContext.onSetStatus(id, status)}
-                    onSetPriority={contextMenu?.onSetPriority ?? (() => {})}
-                    onDelete={contextMenu?.onDelete ?? (() => {})}
-                  >
-                    <DraggableTaskRowWrapper
-                      task={task}
-                      ctx={rowContext}
-                      selected={selected.has(task._id)}
-                      isHighlighted={task._id === highlightTaskId}
-                      highlightPulse={highlightPulse}
-                    />
-                  </TaskContextMenu>
+                    contextMenu={contextMenu}
+                  />
                 ))}
 
                 {onAddTask && canEdit && adding === sectionKey && (

@@ -609,7 +609,14 @@ function TaskCardContent({
   );
 }
 
-function DraggableTaskCard({
+/**
+ * Memoized kanban card wrapper. Without `memo`, every keystroke in the search
+ * box re-renders every card on the board: the parent's state changes, so all
+ * children re-render unless React can bail out per card. The card's own props
+ * (task, callbacks, highlight flags) are stable across a search change, so the
+ * memo stops the tree walk at the first card of each column.
+ */
+const DraggableTaskCard = memo(function DraggableTaskCard({
   task,
   onOpen,
   statuses,
@@ -678,9 +685,70 @@ function DraggableTaskCard({
       </div>
     </div>
   );
+});
+
+/**
+ * Memoized kanban column: the column header (count chip) and the card stack.
+ * Cards below the fold render as a slim placeholder until they scroll close to
+ * the viewport, so a column with a hundred cards paints in one frame and the
+ * heavy card subtrees cost nothing until they are actually seen.
+ */
+/** Renders nothing until the card is near the viewport — then never unloads. */
+function LazyKanbanCard({
+  task,
+  onOpen,
+  statuses,
+  onSetStatus,
+  isHighlighted,
+  highlightPulse,
+}: {
+  task: TaskItem;
+  onOpen: (t: TaskItem) => void;
+  statuses?: readonly import('../../../convex/lib/taskStatus').TaskStatusDef[];
+  onSetStatus?: (taskId: string, statusKey: string) => void;
+  isHighlighted?: boolean;
+  highlightPulse?: boolean;
+}) {
+  const [visible, setVisible] = useState(false);
+  const ref = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || visible) return;
+    if (typeof IntersectionObserver === 'undefined') {
+      setVisible(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: '600px 0px' },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [visible]);
+  return (
+    <div ref={ref}>
+      {visible ? (
+        <DraggableTaskCard
+          task={task}
+          onOpen={() => onOpen(task)}
+          statuses={statuses}
+          onSetStatus={onSetStatus}
+          isHighlighted={isHighlighted}
+          highlightPulse={highlightPulse}
+        />
+      ) : (
+        <div className="h-[108px] rounded-2xl border border-(--border) bg-(--card) animate-pulse" />
+      )}
+    </div>
+  );
 }
 
-function DroppableKanbanColumn({
+const DroppableKanbanColumn = memo(function DroppableKanbanColumn({
   status,
   tasks,
   onOpen,
@@ -744,9 +812,9 @@ function DroppableKanbanColumn({
               onDelete={contextMenu.onDelete}
               onToggleActive={contextMenu.onToggleActive}
             >
-              <DraggableTaskCard
+              <LazyKanbanCard
                 task={task}
-                onOpen={() => onOpen(task)}
+                onOpen={onOpen}
                 statuses={statuses}
                 onSetStatus={onSetStatus}
                 isHighlighted={task._id === highlightTaskId}
@@ -754,10 +822,10 @@ function DroppableKanbanColumn({
               />
             </TaskContextMenu>
           ) : (
-            <DraggableTaskCard
+            <LazyKanbanCard
               key={task._id}
               task={task}
-              onOpen={() => onOpen(task)}
+              onOpen={onOpen}
               statuses={statuses}
               onSetStatus={onSetStatus}
               isHighlighted={task._id === highlightTaskId}
@@ -777,7 +845,7 @@ function DroppableKanbanColumn({
       </div>
     </div>
   );
-}
+});
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function TaskRow({ task, onOpen }: { task: TaskItem; onOpen: () => void }) {
@@ -1366,6 +1434,148 @@ interface TasksClientProps {
   userRole: 'superadmin' | 'admin' | 'supervisor' | 'employee' | 'driver';
 }
 
+/**
+ * One list-view row, extracted so it can be `memo`ized.
+ *
+ * Everything the row needs arrives as props that are stable across a board
+ * re-render (callbacks are `useCallback`ed upstream), so typing in search or
+ * toggling a filter only re-renders the rows whose task actually changed —
+ * not every row in every section.
+ */
+const MemoizedListViewRow = memo(function MemoizedListViewRow({
+  task,
+  isHighlighted,
+  highlightPulse,
+  canManage,
+  statuses,
+  listColumnOrder,
+  listGridStyle,
+  cellPad,
+  openTask,
+  handleSetStatus,
+  handleContextMenuEdit,
+  handleContextMenuRename,
+  handleContextMenuPriority,
+  handleDeleteSingle,
+  handleToggleActive,
+}: {
+  task: TaskItem;
+  isHighlighted: boolean;
+  highlightPulse?: boolean;
+  canManage: boolean;
+  statuses?: readonly import('../../../convex/lib/taskStatus').TaskStatusDef[];
+  listColumnOrder: readonly (readonly [string, string])[];
+  listGridStyle: React.CSSProperties;
+  cellPad: string;
+  openTask: (task: TaskItem) => void;
+  handleSetStatus: (taskId: string, statusKey: string) => void;
+  handleContextMenuEdit: (task: ContextTask) => void;
+  handleContextMenuRename: (task: ContextTask) => void;
+  handleContextMenuPriority: (taskId: string, priority: string) => void;
+  handleDeleteSingle: (task: ContextTask) => void;
+  handleToggleActive: (task: ContextTask) => void;
+}) {
+  const { t } = useTranslation();
+  const statusCfg = STATUS_CONFIG[task.status as Status];
+  const priorityCfg = PRIORITY_CONFIG[task.priority as Priority];
+  return (
+    <DraggableListRow task={task} isHighlighted={isHighlighted} highlightPulse={highlightPulse}>
+      <TaskContextMenu
+        task={task as ContextTask}
+        canManage={canManage}
+        onOpen={(t) => openTask(t as TaskItem)}
+        onEdit={handleContextMenuEdit}
+        onRename={handleContextMenuRename}
+        onSetStatus={handleSetStatus}
+        onSetPriority={handleContextMenuPriority}
+        onDelete={handleDeleteSingle}
+        onToggleActive={handleToggleActive}
+      >
+        <div
+          onClick={() => openTask(task)}
+          style={listGridStyle}
+          className="group/task grid border-b border-(--border) last:border-0 hover:bg-(--brand-quiet)/40 cursor-pointer transition-all duration-150 items-center"
+        >
+          {/* Name */}
+          <div className={`flex items-center gap-2 ${cellPad} min-w-0`}>
+            {/* Clickable status circle — opens a status picker */}
+            <StatusCircleButton
+              task={task}
+              statuses={statuses}
+              onSetStatus={handleSetStatus}
+              canManage={canManage}
+            />
+            <span className="text-sm text-(--text-primary) truncate font-medium">
+              {localizedTaskTitle(t, task)}
+            </span>
+          </div>
+          {/* Cells, in the same order as the header */}
+          {listColumnOrder.map(([key]) => {
+            if (key === 'deadline')
+              return (
+                <div key={key} className={cellPad}>
+                  <DeadlineBadge deadline={task.deadline} status={task.status as Status} />
+                </div>
+              );
+            if (key === 'assignee')
+              return (
+                <div key={key} className={`flex items-center gap-2 ${cellPad} min-w-0`}>
+                  <Avatar
+                    name={task.assignedToUser?.name ?? '?'}
+                    url={task.assignedToUser?.avatarUrl}
+                    size="sm"
+                  />
+                  <span className="text-xs text-(--text-secondary) truncate">
+                    {task.assignedToUser?.name ?? '—'}
+                  </span>
+                </div>
+              );
+            if (key === 'project')
+              return (
+                <div key={key} className={`${cellPad} min-w-0 truncate`}>
+                  <ProjectBadge
+                    projectId={task.projectId}
+                    projectName={task.projectName}
+                    className="text-xs max-w-[140px]"
+                  />
+                </div>
+              );
+            if (key === 'priority')
+              return (
+                <div key={key} className={cellPad}>
+                  <span
+                    className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${priorityCfg.bg} ${priorityCfg.color}`}
+                  >
+                    {priorityCfg.icon && <span>{priorityCfg.icon}</span>}
+                    {t(priorityCfg.labelKey)}
+                  </span>
+                </div>
+              );
+            return (
+              <div key={key} className={cellPad}>
+                <div className="flex items-center gap-1.5">
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${statusCfg.dot}`} />
+                  <span className={`text-xs font-medium ${statusCfg.color}`}>
+                    {statuses
+                      ? statusLabel(
+                          t,
+                          resolveStatus(
+                            { status: task.status as Status, statusKey: task.statusKey },
+                            statuses,
+                          ),
+                        )
+                      : t(statusCfg.labelKey)}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </TaskContextMenu>
+    </DraggableListRow>
+  );
+});
+
 export const TasksClient = memo(function TasksClient({ userId, userRole }: TasksClientProps) {
   const { t, i18n } = useTranslation();
   const mainRef = useMainRef();
@@ -1884,6 +2094,11 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
   );
 
   // Filter + Sort
+  //
+  // Typed into a transition on purpose: a keystroke must not block the input
+  // while a 500-row board narrows, re-sorts and re-groups. The filtering work
+  // runs at lower priority, so the text lands instantly and rows catch up —
+  // the difference between "snappy" and "types laggy" at scale.
   const tasks = useMemo(() => {
     if (!rawTasksWithOptimistic) return [];
     // One `now` for the whole pass so a task cannot be overdue in one row and
@@ -1978,6 +2193,23 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
     sortBy,
     sortDir,
   ]);
+
+  const [searchInput, setSearchInput] = useState('');
+  // Mirror the URL-backed search into a local input so typing is never gated
+  // by the transition that recomputes the board. Committed to the view state
+  // (and thus the address bar) at transition priority.
+  useEffect(() => {
+    if (!urlSynced.current) return;
+    if (searchInput !== search) setSearchInput(search);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- resync only when the canonical value changes externally
+  }, [search]);
+  const commitSearch = useCallback(
+    (q: string) => {
+      setSearchInput(q);
+      startTransition(() => patchView({ q }));
+    },
+    [patchView],
+  );
 
   // Stats — cancelled tasks are closed history: the kanban has no column for
   // them and overdue ignores them, so "total" counts active work only and the
@@ -2750,22 +2982,22 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
             />
             <input
               ref={searchRef}
-              value={search}
-              onChange={(e) => patchView({ q: e.target.value })}
+              value={searchInput}
+              onChange={(e) => commitSearch(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Escape' && search !== '') {
+                if (e.key === 'Escape' && searchInput !== '') {
                   e.stopPropagation();
-                  patchView({ q: '' });
+                  commitSearch('');
                 }
               }}
               placeholder={t('placeholders.searchTasks')}
               aria-label={t('placeholders.searchTasks')}
               className="w-40 rounded-lg border border-(--border) bg-(--background) py-1.5 pl-8 pr-7 text-xs text-(--text-primary) placeholder:text-(--text-muted) focus:outline-none focus:ring-1 focus:ring-(--brand) sm:w-52"
             />
-            {search !== '' && (
+            {searchInput !== '' && (
               <button
                 type="button"
-                onClick={() => patchView({ q: '' })}
+                onClick={() => commitSearch('')}
                 aria-label={t('tasksClient.clearSearch', 'Clear search')}
                 className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-(--text-muted) transition-colors hover:bg-(--background-subtle) hover:text-(--text-primary)"
               >
@@ -3056,130 +3288,26 @@ export const TasksClient = memo(function TasksClient({ userId, userRole }: Tasks
                         {/* Task Rows — each section is a droppable zone */}
                         {!isCollapsed && (
                           <DroppableListSection id={section.key}>
-                            {section.tasks.map((task) => {
-                              const statusCfg = STATUS_CONFIG[task.status as Status];
-                              const priorityCfg = PRIORITY_CONFIG[task.priority as Priority];
-                              return (
-                                <DraggableListRow
-                                  key={task._id}
-                                  task={task}
-                                  isHighlighted={task._id === highlightTaskId}
-                                  highlightPulse={highlightPulse}
-                                >
-                                  <TaskContextMenu
-                                    key={task._id}
-                                    task={task as ContextTask}
-                                    canManage={canManage}
-                                    onOpen={(t) => openTask(t)}
-                                    onEdit={handleContextMenuEdit}
-                                    onRename={handleContextMenuRename}
-                                    onSetStatus={handleSetStatus}
-                                    onSetPriority={handleContextMenuPriority}
-                                    onDelete={handleDeleteSingle}
-                                    onToggleActive={handleToggleActive}
-                                  >
-                                    <div
-                                      onClick={() => openTask(task)}
-                                      style={listGridStyle}
-                                      className="group/task grid border-b border-(--border) last:border-0 hover:bg-(--brand-quiet)/40 cursor-pointer transition-all duration-150 items-center"
-                                    >
-                                      {/* Name */}
-                                      <div className={`flex items-center gap-2 ${cellPad} min-w-0`}>
-                                        {/* Clickable status circle — opens a status picker */}
-                                        <StatusCircleButton
-                                          task={task}
-                                          statuses={statuses}
-                                          onSetStatus={handleSetStatus}
-                                          canManage={canManage}
-                                        />
-                                        <span className="text-sm text-(--text-primary) truncate font-medium">
-                                          {localizedTaskTitle(t, task)}
-                                        </span>
-                                      </div>
-                                      {/* Cells, in the same order as the header */}
-                                      {listColumnOrder.map(([key]) => {
-                                        if (key === 'deadline')
-                                          return (
-                                            <div key={key} className={cellPad}>
-                                              <DeadlineBadge
-                                                deadline={task.deadline}
-                                                status={task.status as Status}
-                                              />
-                                            </div>
-                                          );
-                                        if (key === 'assignee')
-                                          return (
-                                            <div
-                                              key={key}
-                                              className={`flex items-center gap-2 ${cellPad} min-w-0`}
-                                            >
-                                              <Avatar
-                                                name={task.assignedToUser?.name ?? '?'}
-                                                url={task.assignedToUser?.avatarUrl}
-                                                size="sm"
-                                              />
-                                              <span className="text-xs text-(--text-secondary) truncate">
-                                                {task.assignedToUser?.name ?? '—'}
-                                              </span>
-                                            </div>
-                                          );
-                                        if (key === 'project')
-                                          return (
-                                            <div
-                                              key={key}
-                                              className={`${cellPad} min-w-0 truncate`}
-                                            >
-                                              <ProjectBadge
-                                                projectId={task.projectId}
-                                                projectName={task.projectName}
-                                                className="text-xs max-w-[140px]"
-                                              />
-                                            </div>
-                                          );
-                                        if (key === 'priority')
-                                          return (
-                                            <div key={key} className={cellPad}>
-                                              <span
-                                                className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${priorityCfg.bg} ${priorityCfg.color}`}
-                                              >
-                                                {priorityCfg.icon && (
-                                                  <span>{priorityCfg.icon}</span>
-                                                )}
-                                                {t(priorityCfg.labelKey)}
-                                              </span>
-                                            </div>
-                                          );
-                                        return (
-                                          <div key={key} className={cellPad}>
-                                            <div className="flex items-center gap-1.5">
-                                              <span
-                                                className={`w-2 h-2 rounded-full shrink-0 ${statusCfg.dot}`}
-                                              />
-                                              <span
-                                                className={`text-xs font-medium ${statusCfg.color}`}
-                                              >
-                                                {statuses
-                                                  ? statusLabel(
-                                                      t,
-                                                      resolveStatus(
-                                                        {
-                                                          status: task.status as Status,
-                                                          statusKey: task.statusKey,
-                                                        },
-                                                        statuses,
-                                                      ),
-                                                    )
-                                                  : t(statusCfg.labelKey)}
-                                              </span>
-                                            </div>
-                                          </div>
-                                        );
-                                      })}
-                                    </div>
-                                  </TaskContextMenu>
-                                </DraggableListRow>
-                              );
-                            })}
+                            {section.tasks.map((task) => (
+                              <MemoizedListViewRow
+                                key={task._id}
+                                task={task}
+                                isHighlighted={task._id === highlightTaskId}
+                                highlightPulse={highlightPulse}
+                                canManage={canManage}
+                                statuses={statuses}
+                                listColumnOrder={listColumnOrder}
+                                listGridStyle={listGridStyle}
+                                cellPad={cellPad}
+                                openTask={openTask}
+                                handleSetStatus={handleSetStatus}
+                                handleContextMenuEdit={handleContextMenuEdit}
+                                handleContextMenuRename={handleContextMenuRename}
+                                handleContextMenuPriority={handleContextMenuPriority}
+                                handleDeleteSingle={handleDeleteSingle}
+                                handleToggleActive={handleToggleActive}
+                              />
+                            ))}
                           </DroppableListSection>
                         )}
 
