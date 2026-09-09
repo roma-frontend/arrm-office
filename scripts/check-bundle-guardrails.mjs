@@ -125,18 +125,24 @@ function resolveChunksDir() {
   const conventional = join(distPath, 'static', 'chunks');
   if (hasJsFiles(conventional)) return conventional;
 
-  // 2. Vercel Build Output API layout, in case the dist dir was already moved.
+  // 2. Vercel's location: it applies its own modifyConfig and emits the browser
+  //    bundle under <dist>/static/immutable/chunks (confirmed in a production
+  //    build log for this project), which is why the conventional path misses.
+  const immutable = join(distPath, 'static', 'immutable', 'chunks');
+  if (hasJsFiles(immutable)) return immutable;
+
+  // 3. Vercel Build Output API layout, in case the dist dir was already moved.
   const buildOutput = join(root, '.vercel', 'output', 'static', '_next', 'static', 'chunks');
   if (hasJsFiles(buildOutput)) return buildOutput;
 
-  // 3. Ask Next: manifest paths resolved against distDir.
+  // 4. Ask Next: manifest paths resolved against distDir.
   const manifestPaths = manifestChunkPaths();
   for (const rel of manifestPaths) {
     const direct = join(distPath, ...rel.split('/'));
     if (existsSync(direct)) return dirname(direct);
   }
 
-  // 4. Same manifest, but the tree moved: chunk *filenames* still match, so
+  // 5. Same manifest, but the tree moved: chunk *filenames* still match, so
   //    find the directory that actually contains one of them.
   const wanted = new Set(manifestPaths.map((p) => basename(p)));
   if (wanted.size > 0) {
@@ -151,12 +157,12 @@ function resolveChunksDir() {
     }
   }
 
-  // 5. No manifest at all: accept a `chunks` directory nested directly under a
-  //    `static` directory, which `<dist>/build/chunks` can never satisfy.
+  // 6. No manifest at all: accept a `chunks` directory that sits somewhere
+  //    under a `static` directory (covers both `static/chunks` and Vercel's
+  //    `static/immutable/chunks`), which `<dist>/build/chunks` cannot satisfy.
   for (const dir of walkDirs(distPath)) {
-    if (basename(dir) === 'chunks' && basename(dirname(dir)) === 'static' && hasJsFiles(dir)) {
-      return dir;
-    }
+    const segments = dir.replace(distPath + sep, '').split(sep);
+    if (segments[0] === 'static' && basename(dir) === 'chunks' && hasJsFiles(dir)) return dir;
   }
 
   return null;
