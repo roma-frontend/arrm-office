@@ -34,6 +34,19 @@ describe('validateEnvironment', () => {
     expect(() => validateEnvironment()).toThrow(/Missing required environment variables/);
   });
 
+  it('warns but does not throw during the production build phase', () => {
+    // Clear all required vars and simulate `next build` page-data collection.
+    delete process.env.CONVEX_DEPLOYMENT;
+    delete process.env.NEXT_PUBLIC_CONVEX_URL;
+    delete process.env.AUTH_SECRET;
+    delete process.env.AUTH_GOOGLE_ID;
+    delete process.env.AUTH_GOOGLE_SECRET;
+    process.env.NEXT_PHASE = 'phase-production-build';
+
+    expect(() => validateEnvironment()).not.toThrow();
+    delete process.env.NEXT_PHASE;
+  });
+
   it('throws with specific missing variable names', () => {
     delete process.env.CONVEX_DEPLOYMENT;
     delete process.env.NEXT_PUBLIC_CONVEX_URL;

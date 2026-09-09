@@ -42,12 +42,26 @@ const ENV_CONFIG: EnvConfig = {
 /**
  * Validate all required environment variables
  * Throws error if any are missing
+ *
+ * Build-safe: `next build` collects page data by importing this module via
+ * the root layout, and that build context may legitimately run without
+ * runtime secrets (Vercel scopes env vars per environment; a missing or
+ * re-scoped var must not block the entire deployment pipeline). During the
+ * build phase we warn and continue — every server request still validates
+ * and throws at runtime, where a missing var is a real, user-visible fault.
  */
 export function validateEnvironment(): void {
   const missing = ENV_CONFIG.required.filter((key) => !process.env[key]);
 
   if (missing.length > 0) {
     const message = `Missing required environment variables: ${missing.join(', ')}`;
+    if (process.env.NEXT_PHASE === 'phase-production-build') {
+      logger.warn(
+        `⚠️ Environment validation skipped during build (missing: ${missing.join(', ')}). ` +
+          'Requests will validate at runtime.',
+      );
+      return;
+    }
     logger.error('❌ Environment Validation Failed:', message);
     throw new Error(message);
   }
