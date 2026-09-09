@@ -12,6 +12,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { WebAuthnButton } from '@/components/auth/WebAuthnButton';
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
 import { ImidSignInButton } from '@/components/auth/ImidSignInButton';
+import { SsoSignInButtons } from '@/components/auth/SsoSignInButtons';
 import { OAuthSyncLoader } from '@/components/auth/OAuthSyncLoader';
 import { OnboardingTour } from '@/components/onboarding/OnboardingTour';
 import { getLoginTourSteps } from '@/components/onboarding/loginTourSteps';
@@ -273,6 +274,20 @@ export default function LoginPage() {
     handleUrlChange();
     window.addEventListener('popstate', handleUrlChange);
     return () => window.removeEventListener('popstate', handleUrlChange);
+  }, []);
+
+  // SSO round-trip errors (/login?sso_error=<key>) — the OIDC flow in Convex
+  // redirects back here. Special keys get tailored copy, the rest the generic
+  // translated banner. Cleared whenever the URL no longer carries the param.
+  const [ssoErrorKey, setSsoErrorKey] = useState<string | null>(null);
+  useEffect(() => {
+    const readSsoError = () => {
+      const params = new URLSearchParams(window.location.search);
+      setSsoErrorKey(params.get('sso_error'));
+    };
+    readSsoError();
+    window.addEventListener('popstate', readSsoError);
+    return () => window.removeEventListener('popstate', readSsoError);
   }, []);
 
   // Check maintenance mode on initial load if org parameter is present
@@ -843,7 +858,36 @@ export default function LoginPage() {
                         <div className="mb-4 space-y-2">
                           <GoogleSignInButton />
                           <ImidSignInButton />
+                          <SsoSignInButtons email={formData.email} />
                         </div>
+
+                        {/* SSO round-trip failure (redirected back from the IdP) */}
+                        {mounted && ssoErrorKey && (
+                          <div
+                            className="mb-3 rounded-xl border px-3 py-2 text-sm"
+                            style={{
+                              background: 'rgba(239, 68, 68, 0.08)',
+                              borderColor: 'rgba(239, 68, 68, 0.35)',
+                              color: 'var(--text-primary)',
+                            }}
+                            role="alert"
+                          >
+                            <p className="font-medium">{t('auth.ssoError')}</p>
+                            <p className="text-xs opacity-80">
+                              {ssoErrorKey === 'sso_domain_denied'
+                                ? t('auth.ssoErrorDomainHint', {
+                                    defaultValue:
+                                      'Your email domain is not allowed for company sign-in.',
+                                  })
+                                : ssoErrorKey === 'sso_user_not_found'
+                                  ? t('auth.ssoErrorUserHint', {
+                                      defaultValue:
+                                        'No account exists for your email. Ask your administrator to invite you.',
+                                    })
+                                  : t('auth.ssoErrorHint')}
+                            </p>
+                          </div>
+                        )}
 
                         {/* Divider */}
                         <div className="flex items-center gap-3 mb-4">

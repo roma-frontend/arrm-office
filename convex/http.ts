@@ -11,6 +11,7 @@ import {
   WEBHOOK_TIMESTAMP_HEADER,
   WEBHOOK_MAX_BODY_BYTES,
 } from './integrations';
+import { randomToken, pkceChallenge } from './sso/protocol';
 
 const http = httpRouter();
 
@@ -467,5 +468,203 @@ http.route({
  * Scans all integration configs for a matching `oauthState`.
  */
 export {};
+
+// ── SSO (OIDC) — start + callback ────────────────────────────────────────────
+// Full protocol in convex/sso/actions.ts (discovery, PKCE, token exchange,
+// id_token verification); single-use state in convex/sso/flows.ts. Sessions
+// bridge into the Next.js app via the same imid-callback pattern every other
+// federated login already uses — nothing in the existing auth stack changes.
+
+const SSO_FLOW_TTL_MS = 10 * 60 * 1000;
+const SSO_COOKIE = 'sso_flow_state';
+
+function ssoSetCookie(value: string, maxAge: number): string {
+  const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
+  return `${SSO_COOKIE}=${value}; Path=/; Max-Age=${maxAge}; HttpOnly; SameSite=Lax${secure}`;
+}
+
+/** Safe post-login redirect target — never allow open redirects. */
+
+function ssoBackToLogin(errorKey: string): Response {
+  return new Response(null, {
+    status: 302,
+    headers: { Location: `/login?sso_error=${errorKey}` },
+  });
+}
+
+http.route({
+  pathPrefix: '/api/sso/',
+  method: 'GET',
+  handler: httpAction(async (ctx, request) => {
+    const url = new URL(request.url);
+    const parts = url.pathname.split('/').filter(Boolean); // ['api','sso',…]
+    const tail = parts.slice(2);
+
+    // ── GET /api/sso/callback/<connectionId>?code&state ────────────────────
+    if (tail[0] === 'callback') {
+      const connectionId = tail[1] ?? '';
+      const code = url.searchParams.get('code') ?? '';
+      const state = url.searchParams.get('state') ?? '';
+
+      if (url.searchParams.get('error')) return ssoBackToLogin('sso_cancelled');
+      if (!code || !state) return ssoBackToLogin('sso_missing_params');
+
+      // CSRF: the state must match the single-use HttpOnly cookie set at start.
+      const cookieState = request.headers
+        .get('cookie')
+        ?.split(';')
+        .map((c) => c.trim())
+        .find((c) => c.startsWith(`${SSO_COOKIE}=`))
+        ?.slice(SSO_COOKIE.length + 1);
+      if (!cookieState || cookieState !== state) return ssoBackToLogin('sso_state_mismatch');
+
+      const flow = await ctx.runMutation(internal.sso.flows.consumeFlow, { state });
+      if (!flow || flow.connectionId !== connectionId) {
+        return ssoBackToLogin('sso_state_mismatch');
+      }
+
+      const conn = await ctx.runQuery(internal.sso.flows.getConnectionForCallback, {
+        connectionId,
+      });
+      if (!conn || !conn.enabled) return ssoBackToLogin('sso_disabled');
+
+      try {
+        // Resolve the token endpoint: explicit override first, then discovery.
+        let tokenEndpoint = conn.tokenEndpoint;
+        if (!tokenEndpoint) {
+          const discovery = await ctx.runAction(internal.sso.actions.fetchDiscovery, {
+            issuer: conn.issuer,
+          });
+          tokenEndpoint = discovery.token_endpoint;
+        }
+
+        const tokens = await ctx.runAction(internal.sso.actions.exchangeCode, {
+          tokenEndpoint,
+          clientId: conn.clientId,
+          clientSecret: conn.clientSecret,
+          code,
+          codeVerifier: flow.codeVerifier,
+          redirectUri: flow.redirectUri,
+        });
+        if (!tokens) return ssoBackToLogin('sso_token_exchange_failed');
+
+        // Throws 'SSO_LOGIN_FAILED|<key>' — signature/issuer/audience/expiry.
+        const claims = await ctx.runAction(internal.sso.actions.verifyIdToken, {
+          idToken: tokens.idToken,
+          issuer: conn.issuer,
+          clientId: conn.clientId,
+        });
+        if (!claims.email) return ssoBackToLogin('sso_no_email');
+        if (claims.email_verified === false) return ssoBackToLogin('sso_email_unverified');
+
+        const email = claims.email.toLowerCase().trim();
+        if (conn.domains.length > 0) {
+          const domain = email.split('@')[1] ?? '';
+          if (!conn.domains.includes(domain)) return ssoBackToLogin('sso_domain_denied');
+        }
+
+        const user = await ctx.runQuery(internal.sso.flows.findUserByEmail, {
+          email,
+          organizationId: conn.organizationId,
+        });
+        if (user && !user.isActive) return ssoBackToLogin('sso_account_inactive');
+
+        let userId = user?._id ?? null;
+        if (!userId && conn.autoProvision) {
+          userId = await ctx.runMutation(internal.sso.main.provisionUser, {
+            organizationId: conn.organizationId,
+            email,
+            name: claims.name ?? claims.preferred_username ?? '',
+            avatarUrl: claims.picture,
+            connectionId,
+          });
+        }
+        if (!userId) return ssoBackToLogin('sso_user_not_found');
+
+        const sessionToken = crypto.randomUUID();
+        const sessionExpiry = Date.now() + 7 * 24 * 60 * 60 * 1000;
+        const login = await ctx.runMutation(internal.sso.main.completeSsoLogin, {
+          userId,
+          sessionToken,
+          sessionExpiry,
+          connectionId,
+        });
+        if (!login) return ssoBackToLogin('sso_login_rejected');
+
+        await ctx.runMutation(internal.sso.main.recordLoginEvent, {
+          organizationId: conn.organizationId,
+          connectionId,
+          userId,
+          email,
+          result: user ? 'success' : 'provisioned',
+        });
+
+        // Bridge into the Next.js JWT-cookie flow (imid-callback pattern).
+        const cb = new URL(`${conn.appUrl}/api/auth/imid-callback`);
+        cb.searchParams.set('sessionToken', sessionToken);
+        const headers = new Headers({ Location: cb.toString() });
+        headers.append('Set-Cookie', ssoSetCookie('', 0));
+        return new Response(null, { status: 302, headers });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : '';
+        await ctx.runMutation(internal.sso.main.recordLoginEvent, {
+          organizationId: conn.organizationId,
+          connectionId,
+          email: '',
+          result: 'error' as const,
+          detail: msg.slice(0, 200),
+        });
+        if (msg.startsWith('SSO_LOGIN_FAILED|')) {
+          return ssoBackToLogin(msg.split('|')[1] ?? 'sso_error');
+        }
+        return ssoBackToLogin('sso_error');
+      }
+    }
+
+    // ── GET /api/sso/<connectionId>?redirect=<path> ────────────────────────
+    const connectionId = tail[0] ?? '';
+    if (!connectionId) return new Response('Not found', { status: 404 });
+
+    const conn = await ctx.runQuery(internal.sso.flows.getConnectionForStart, {
+      connectionId,
+    });
+    if (!conn || !conn.enabled) return ssoBackToLogin('sso_disabled');
+
+    // Explicit endpoint override first; IdP discovery as the fallback.
+    let authorizationEndpoint = conn.authorizationEndpoint;
+    if (!authorizationEndpoint) {
+      const discovery = await ctx.runAction(internal.sso.actions.fetchDiscovery, {
+        issuer: conn.issuer,
+      });
+      authorizationEndpoint = discovery.authorization_endpoint;
+    }
+
+    const state = randomToken(16);
+    const codeVerifier = randomToken(48);
+    const codeChallenge = await pkceChallenge(codeVerifier);
+    const redirectUri = `${conn.appUrl}/api/sso/callback/${conn.connectionId}`;
+
+    await ctx.runMutation(internal.sso.flows.createFlow, {
+      state,
+      connectionId: conn.connectionId,
+      redirectUri,
+      codeVerifier,
+      ttlMs: SSO_FLOW_TTL_MS,
+    });
+
+    const authUrl = new URL(authorizationEndpoint);
+    authUrl.searchParams.set('response_type', 'code');
+    authUrl.searchParams.set('client_id', conn.clientId);
+    authUrl.searchParams.set('redirect_uri', redirectUri);
+    authUrl.searchParams.set('scope', conn.scopes || 'openid email profile');
+    authUrl.searchParams.set('state', state);
+    authUrl.searchParams.set('code_challenge_method', 'S256');
+    authUrl.searchParams.set('code_challenge', codeChallenge);
+
+    const headers = new Headers({ Location: authUrl.toString() });
+    headers.append('Set-Cookie', ssoSetCookie(state, 600));
+    return new Response(null, { status: 302, headers });
+  }),
+});
 
 export default http;

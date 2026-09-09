@@ -20,6 +20,7 @@ import {
   Building2,
   Bot,
   Clock,
+  KeyRound,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -50,6 +51,10 @@ const NotificationSettings = dynamic(
 const SecuritySettings = dynamic(
   () =>
     import('@/components/settings/SecuritySettings').then((m) => ({ default: m.SecuritySettings })),
+  { ssr: false },
+);
+const SsoSettings = dynamic(
+  () => import('@/components/settings/SsoSettings').then((m) => ({ default: m.SsoSettings })),
   { ssr: false },
 );
 const AppearanceSettings = dynamic(
@@ -323,6 +328,12 @@ export default function SettingsPage() {
             icon: Clock,
             description: t('settings.meetingRooms.tabDesc', 'Room reminders & video links'),
           },
+          {
+            value: 'sso',
+            label: t('settingsSso.tab', 'Single Sign-On'),
+            icon: KeyRound,
+            description: t('settingsSso.tabDesc', 'Enterprise OIDC sign-in'),
+          },
         ]
       : []),
   ];
@@ -439,6 +450,12 @@ export default function SettingsPage() {
           <TabsContent value="integrations" className="space-y-6 mt-0">
             <IntegrationSettings />
           </TabsContent>
+
+          {user?.role === 'admin' && (
+            <TabsContent value="sso" className="space-y-6 mt-0">
+              <SsoSettings />
+            </TabsContent>
+          )}
 
           {user?.role === 'admin' && (
             <TabsContent value="billing" className="space-y-6 mt-0">

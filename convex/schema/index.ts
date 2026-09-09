@@ -59,6 +59,7 @@ import { meetings } from './meetings';
 import { billing } from './billing';
 import { overtime } from './overtime';
 import { attendance } from './attendance';
+import { sso } from './sso';
 
 export default defineSchema({
   ...organizations,
@@ -121,6 +122,7 @@ export default defineSchema({
   ...billing,
   ...overtime,
   ...attendance,
+  ...sso,
 });
 
 export {
@@ -183,4 +185,5 @@ export {
   operatorTools,
   meetings,
   billing,
+  sso,
 };
