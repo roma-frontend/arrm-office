@@ -4,8 +4,17 @@
  * The renderer is a pure function so it's covered with no Convex runtime —
  * `convex-leaves-rbac.test.ts` does the same thing for the leaves helpers.
  */
-import { describe, it, expect } from '@jest/globals';
-import { renderDigest, pickLocale } from '../../convex/attendance/bot';
+import { describe, it, expect, jest } from '@jest/globals';
+
+// Expose the internal-query handler so buildDigest can be exercised with a
+// stub ctx (same pattern as convex-leaves-mutations.test.ts).
+jest.mock('../../convex/_generated/server', () => ({
+  internalQuery: ({ handler, args }: any) => ({ handler, args }),
+  internalMutation: ({ handler, args }: any) => ({ handler, args }),
+  internalAction: ({ handler, args }: any) => ({ handler, args }),
+}));
+
+import { renderDigest, pickLocale, buildDigest } from '../../convex/attendance/bot';
 
 describe('pickLocale', () => {
   it('accepts the four supported locales', () => {
@@ -145,5 +154,105 @@ describe('renderDigest', () => {
     expect(body).toContain('Anna');
     expect(body).toContain('09:00');
     expect(body).toContain('18:00');
+  });
+});
+
+describe('buildDigest (internal query)', () => {
+  /** Minimal ctx.db stub: every query collects its table's rows. */
+  function makeCtx(tables: Record<string, unknown[]>, org: unknown = { timezone: 'Asia/Yerevan' }) {
+    return {
+      db: {
+        query: (table: string) => ({
+          withIndex: () => ({
+            collect: async () => tables[table] ?? [],
+          }),
+        }),
+        get: async () => org,
+      },
+    };
+  }
+
+  const orgUsers = [
+    { _id: 'u_active', name: 'Active', email: 'a@x.com', role: 'employee', isActive: true },
+    // Departed employee — must not appear (or be counted) in the digest.
+    { _id: 'u_gone', name: 'Gone', email: 'g@x.com', role: 'employee', isActive: false },
+    { _id: 'u_super', name: 'Super', email: 's@x.com', role: 'superadmin', isActive: true },
+    // The bot itself — email is namespaced with a leading '+'
+    {
+      _id: 'u_bot',
+      name: 'HR Assistant',
+      email: '+bot@org.internal',
+      role: 'admin',
+      isActive: true,
+    },
+  ];
+
+  it('excludes inactive users, superadmins and bots from the roster and counts', async () => {
+    const ctx = makeCtx({ users: orgUsers, attendanceEntries: [], leaveRequests: [] });
+    const digest = await (buildDigest as any).handler(ctx, {
+      organizationId: 'org_1',
+      date: '2026-09-09',
+    });
+
+    expect(digest.body).toContain('Active');
+    expect(digest.body).not.toContain('Gone');
+    expect(digest.body).not.toContain('Super');
+    expect(digest.body).not.toContain('HR Assistant');
+    expect(digest.body).toContain('👥 Total: 1');
+    expect(digest.body).toContain('✅ Present: 1');
+    expect(digest.userCount).toBe(1);
+  });
+
+  it('moves an active employee onto leave and drops rows for filtered-out people', async () => {
+    // A stale approved leave for the departed employee must not resurrect a
+    // row for them — the roster is the only thing that renders.
+    const leaves = [
+      {
+        userId: 'u_active',
+        type: 'paid',
+        startDate: '2026-09-01',
+        endDate: '2026-09-30',
+        reason: 'Vacation',
+      },
+      {
+        userId: 'u_gone',
+        type: 'paid',
+        startDate: '2026-09-01',
+        endDate: '2026-09-30',
+        reason: 'Left company',
+      },
+    ];
+    const ctx = makeCtx({ users: orgUsers, attendanceEntries: [], leaveRequests: leaves });
+    const digest = await (buildDigest as any).handler(ctx, {
+      organizationId: 'org_1',
+      date: '2026-09-09',
+    });
+
+    expect(digest.body).toContain('🌴 On leave (1)');
+    expect(digest.body).toContain('Vacation');
+    expect(digest.body).not.toContain('Gone');
+    // Present drops to zero — before the leave merge this person read as office.
+    expect(digest.body).toContain('✅ Present: 0');
+  });
+
+  it('ignores approved leaves that do not cover the digest date', async () => {
+    const leaves = [
+      {
+        userId: 'u_active',
+        type: 'paid',
+        startDate: '2026-10-01',
+        endDate: '2026-10-10',
+        reason: 'Future vacation',
+      },
+    ];
+    const ctx = makeCtx({ users: orgUsers, attendanceEntries: [], leaveRequests: leaves });
+    const digest = await (buildDigest as any).handler(ctx, {
+      organizationId: 'org_1',
+      date: '2026-09-09',
+    });
+
+    expect(digest.body).not.toContain('🌴 On leave');
+    expect(digest.body).not.toContain('Future vacation');
+    expect(digest.body).toContain('✅ Present: 1');
   });
 });

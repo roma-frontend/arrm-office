@@ -1330,6 +1330,35 @@ export const bulkApproveLeaves = mutation({
       });
     }
 
+    // Refresh the HR Assistant digest for every day each approved leave
+    // covers — the single-approve path does this, and the bulk path skipping
+    // it left the channel showing "everyone is in the office" until the next
+    // midnight cron. Grouped by org since a batch can span orgs for a
+    // superadmin reviewer.
+    const orgIdsToRefresh = new Set(
+      approved
+        .map((id) => leavesMap.get(id)?.organizationId)
+        .filter((id): id is NonNullable<typeof id> => id !== undefined),
+    );
+    for (const orgId of orgIdsToRefresh) {
+      await ctx.runMutation(internal.attendance.bot.seedHrAssistantMembers, {
+        organizationId: orgId,
+      });
+    }
+    for (const leaveId of approved) {
+      const leave = leavesMap.get(leaveId);
+      if (!leave?.organizationId) continue;
+      const start = new Date(`${leave.startDate}T00:00:00Z`);
+      const end = new Date(`${leave.endDate}T00:00:00Z`);
+      for (let d = new Date(start); d <= end; d.setUTCDate(d.getUTCDate() + 1)) {
+        await ctx.scheduler.runAfter(0, internal.attendance.bot.renderAndPostDigest, {
+          organizationId: leave.organizationId,
+          date: d.toISOString().slice(0, 10),
+          trigger: 'approval',
+        });
+      }
+    }
+
     return { approved, errors };
   },
 });

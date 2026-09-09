@@ -256,10 +256,19 @@ export const buildDigest = internalQuery({
     date: v.string(),
   },
   handler: async (ctx, args) => {
-    const everyone = await ctx.db
+    // Same eligibility rules as the roster filter below (and the channel
+    // seeding): inactive people and bots must not appear — or be counted —
+    // in the digest. Filtering here (not just at roster time) keeps the
+    // by-user map, `userIds` and the name lookup aligned with what gets
+    // rendered, so a leave/entry for a departed employee can never leak a
+    // ghost row into a section while the totals say otherwise.
+    const orgUsers = await ctx.db
       .query('users')
       .withIndex('by_org', (q) => q.eq('organizationId', args.organizationId))
       .collect();
+    const everyone = orgUsers.filter(
+      (u) => u.isActive !== false && u.role !== 'superadmin' && !u.email.startsWith('+'),
+    );
 
     const entries = await ctx.db
       .query('attendanceEntries')
@@ -318,9 +327,7 @@ export const buildDigest = internalQuery({
     const refreshedAt = new Date()
       .toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: tz })
       .replace(/:/g, ':');
-    const roster = everyone
-      .filter((u) => u.isActive !== false && u.role !== 'superadmin' && !u.email.startsWith('+'))
-      .map((u) => ({ id: u._id, name: u.name }));
+    const roster = everyone.map((u) => ({ id: u._id, name: u.name }));
     const { title, body } = renderDigest(args.date, locale, roster, liteEntries, refreshedAt);
 
     return { title, body, userCount: roster.length };

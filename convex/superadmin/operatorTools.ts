@@ -288,6 +288,13 @@ export const CRON_REGISTRY: Array<{
     schedule: 'daily 08:30 UTC',
   },
   {
+    jobKey: 'attendance-daily-digest',
+    label: 'HR Assistant daily digest',
+    description:
+      'Renders the HR Assistant channel attendance digest for every active org. Leave/attendance approvals refresh it in between.',
+    schedule: 'daily 05:00 UTC',
+  },
+  {
     jobKey: 'task-comment-count-backfill',
     label: 'Task comment count backfill',
     description:

@@ -48,6 +48,8 @@ jest.mock('../../convex/leaves/approval', () => ({
 }));
 
 // ── Module under test ────────────────────────────────────────────────────────
+import { internal } from '../../convex/_generated/api';
+
 let mockGetAuthCaller: jest.Mock;
 let mockIsSuperadmin: jest.Mock;
 let mockIsSuperadminEmail: jest.Mock;
@@ -722,6 +724,66 @@ describe('bulkApproveLeaves', () => {
     expect(result.approved).toEqual([]);
     expect(result.errors[0]).toContain('You do not have permission to review leave requests');
     expect(patch).not.toHaveBeenCalled();
+  });
+
+  it('refreshes the HR Assistant digest for every day of an approved leave', async () => {
+    mockGetAuthCaller.mockResolvedValue(makeCaller('admin', ORG_A, ADMIN_ID));
+    const { ctx, get } = makeCtx();
+    const { scheduler, runMutation } = ctx as any;
+    get.mockImplementation((id: string) => {
+      if (id === ADMIN_ID) return Promise.resolve(userDoc({ _id: ADMIN_ID, role: 'admin' }));
+      if (id === LEAVE_ID) return Promise.resolve(leaveDoc());
+      if (id === SIGNATURE_DOC_ID) return Promise.resolve(signatureDoc());
+      return Promise.resolve(userDoc({ paidLeaveBalance: 24 }));
+    });
+
+    const result = (await handlers.bulkApproveLeaves(ctx, {
+      leaveIds: [LEAVE_ID],
+    })) as any;
+
+    expect(result.approved).toEqual([LEAVE_ID]);
+    // Channel seeding happens once per org before the per-day refreshes.
+    expect(runMutation).toHaveBeenCalledWith(
+      internal.attendance.bot.seedHrAssistantMembers,
+      expect.objectContaining({ organizationId: ORG_A }),
+    );
+    // leaveDoc covers 2026-08-10 → 2026-08-12 → three per-day digest renders.
+    // runAfter signature: (delay, functionReference, args).
+    const scheduledDates = scheduler.runAfter.mock.calls
+      .map((call: any[]) => (call[2] as { date: string }).date)
+      .sort();
+    expect(scheduledDates).toEqual(['2026-08-10', '2026-08-11', '2026-08-12']);
+    for (const call of scheduler.runAfter.mock.calls as any[][]) {
+      expect(call[0]).toBe(0);
+      // The function reference is a circular api proxy — the args (and the
+      // count of calls) pin down that these are digest renders.
+      expect(call[2]).toEqual(
+        expect.objectContaining({
+          organizationId: ORG_A,
+          date: expect.stringMatching(/^2026-08-1[0-2]$/),
+          trigger: 'approval',
+        }),
+      );
+    }
+  });
+
+  it('does not touch the digest scheduler when nothing was approved', async () => {
+    mockGetAuthCaller.mockResolvedValue(makeCaller('admin', ORG_A, ADMIN_ID));
+    const { ctx, get } = makeCtx();
+    const { scheduler, runMutation } = ctx as any;
+    get.mockImplementation((id: string) => {
+      if (id === ADMIN_ID) return Promise.resolve(userDoc({ _id: ADMIN_ID, role: 'admin' }));
+      if (id === LEAVE_ID) return Promise.resolve(leaveDoc({ status: 'approved' }));
+      return Promise.resolve(userDoc({ paidLeaveBalance: 24 }));
+    });
+
+    const result = (await handlers.bulkApproveLeaves(ctx, {
+      leaveIds: [LEAVE_ID],
+    })) as any;
+
+    expect(result.approved).toEqual([]);
+    expect(scheduler.runAfter).not.toHaveBeenCalled();
+    expect(runMutation).not.toHaveBeenCalled();
   });
 });
 
