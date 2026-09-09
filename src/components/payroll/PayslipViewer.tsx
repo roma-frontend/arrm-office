@@ -424,7 +424,7 @@ export default function PayslipViewer() {
       transition={{ duration: 0.4 }}
       className="space-y-6"
     >
-      <div>
+      <div className="my-4">
         <h2 className="text-xl font-bold text-(--text-primary) flex items-center gap-2">
           <FileText className="w-5 h-5 text-(--brand-text)" />
           {t('payroll.myPayslips', 'My Payslips')}
