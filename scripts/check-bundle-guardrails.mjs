@@ -20,14 +20,55 @@
 //      nets are *content*, not JS, so a runtime scan would not fail builds —
 //      instead we pin that no JS chunk ever inlines model weight bytes.
 //
-// Run AFTER `next build` (reads .next/static). Exit 1 = regression.
+// Run AFTER `next build` (reads the dist output). Exit 1 = regression.
 
 import { readdirSync, readFileSync, statSync, existsSync } from 'node:fs';
 import { join, sep } from 'node:path';
 
 const root = process.cwd();
-const chunksDir = join(root, '.next', 'static', 'chunks');
-const serverAppDir = join(root, '.next', 'server', 'app');
+// Mirror next.config.js: builds may target an isolated dist dir via NEXT_DIST_DIR.
+const distDir = process.env.NEXT_DIST_DIR || '.next';
+const distPath = join(root, distDir);
+const serverAppDir = join(distPath, 'server', 'app');
+
+/**
+ * Locate the built client-chunks directory.
+ *
+ * `next build` normally writes `<distDir>/static/chunks`, but hosted build
+ * environments (Vercel applies its own `modifyConfig`) may place the dist
+ * output under a different sub-path. When the conventional path is missing,
+ * search the dist tree for a `static/chunks` directory instead of failing —
+ * and if nothing plausible exists, print what IS there so the log explains
+ * itself instead of a bare "not found".
+ */
+function resolveChunksDir() {
+  const conventional = join(distPath, 'static', 'chunks');
+  if (existsSync(conventional)) return conventional;
+
+  const candidates = [];
+  const walk = (dir, depth) => {
+    if (depth > 6 || candidates.length > 0) return;
+    let entries;
+    try {
+      entries = readdirSync(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue;
+      const p = join(dir, entry.name);
+      if (entry.name === 'chunks') {
+        // Any chunks dir with .js files is a usable fallback.
+        try {
+          if (readdirSync(p).some((f) => f.endsWith('.js'))) candidates.push(p);
+        } catch {}
+      }
+      walk(p, depth + 1);
+    }
+  };
+  walk(distPath, 0);
+  return candidates[0] ?? null;
+}
 
 let failed = false;
 const fail = (msg) => {
@@ -40,14 +81,21 @@ const pass = (msg) => console.log(`  ✓ ${msg}`);
 
 /** Every built JS chunk (excluding source maps) with its size. */
 function listChunks() {
-  if (!existsSync(chunksDir)) {
-    console.error('✗ .next/static/chunks not found — run `next build` first.');
+  const resolved = resolveChunksDir();
+  if (!resolved) {
+    console.error(`✗ No client chunks directory found under ${distDir}.`);
+    try {
+      console.error(`  dist tree top-level: ${readdirSync(distPath).slice(0, 20).join(', ')}`);
+    } catch {}
     process.exit(1);
   }
-  return readdirSync(chunksDir)
+  if (resolved !== join(distPath, 'static', 'chunks')) {
+    console.log(`  (using chunks at ${resolved.replace(root + sep, '')})`);
+  }
+  return readdirSync(resolved)
     .filter((f) => f.endsWith('.js'))
     .map((f) => {
-      const p = join(chunksDir, f);
+      const p = join(resolved, f);
       return { name: f, path: p, size: statSync(p).size, src: readFileSync(p, 'utf8') };
     });
 }
@@ -58,7 +106,10 @@ function listChunks() {
  * a single embedded copy always matches; two matching chunks = two engines.
  */
 function containsTfjsEngine(src) {
-  return src.includes('registerBackend') && (src.includes('MathBackendWebGL') || src.includes('GPGPUContext'));
+  return (
+    src.includes('registerBackend') &&
+    (src.includes('MathBackendWebGL') || src.includes('GPGPUContext'))
+  );
 }
 
 /**
@@ -104,13 +155,13 @@ console.log('\n1) tfjs single-engine rule');
   if (engineChunks.length === 0) {
     fail('no chunk contains a tfjs engine — face login is broken?');
   } else if (engineChunks.length === 1) {
-    pass(`exactly one tfjs engine: ${engineChunks[0].name} (${(engineChunks[0].size / 1024).toFixed(0)} KB)`);
+    pass(
+      `exactly one tfjs engine: ${engineChunks[0].name} (${(engineChunks[0].size / 1024).toFixed(0)} KB)`,
+    );
   } else {
     fail(
       `${engineChunks.length} chunks contain a tfjs engine:\n` +
-        engineChunks
-          .map((c) => `      ${c.name} (${(c.size / 1024).toFixed(0)} KB)`)
-          .join('\n') +
+        engineChunks.map((c) => `      ${c.name} (${(c.size / 1024).toFixed(0)} KB)`).join('\n') +
         `\n      → a dependency (or a new import) ships a second copy of @tensorflow/tfjs. ` +
         `face-api's embedded engine (re-exported as \`tf\`) must be the only one — see src/lib/faceApi.ts.`,
     );
